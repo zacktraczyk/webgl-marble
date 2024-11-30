@@ -1,7 +1,35 @@
 import { mat4 } from "gl-matrix";
 import "./style.css";
+import {
+  Attribute,
+  AttributeSetters,
+  createAttributeSetters,
+  createUniformSetters,
+  initShaderProgram,
+  setAttributes,
+  setUniforms,
+  Uniform,
+  UniformSetters,
+} from "./utils/util";
+
+type ProgramInfo = {
+  program: WebGLProgram;
+  attributeSetters: AttributeSetters;
+  uniformSetters: UniformSetters;
+};
+
+type DrawObject = {
+  programInfo: ProgramInfo;
+  bufferInfo: {
+    numElements: number;
+    attributes: Record<string, Attribute>;
+  };
+  uniforms: Record<string, Uniform>;
+};
 
 function main() {
+  // Get A WebGL context
+
   const canvas = document.querySelector("#gl-canvas");
   if (!canvas || !(canvas instanceof HTMLCanvasElement)) {
     throw new Error("Failed to get canvas element");
@@ -14,8 +42,7 @@ function main() {
     );
   }
 
-  gl.clearColor(0.0, 0.0, 0.0, 1.0);
-  gl.clear(gl.COLOR_BUFFER_BIT);
+  // Create Program Info
 
   const vsSource = `
     attribute vec4 aVertexPosition;
@@ -39,137 +66,25 @@ function main() {
     throw new Error("Failed to initialize shader program");
   }
 
-  const programInfo = {
+  const attribSetters = createAttributeSetters(gl, shaderProgram);
+  const uniformSetters = createUniformSetters(gl, shaderProgram);
+
+  const programInfo: ProgramInfo = {
     program: shaderProgram,
-    attribLocations: {
-      vertexPosition: gl.getAttribLocation(shaderProgram, "aVertexPosition"),
-    },
-    uniformLocations: {
-      projectionMatrix: gl.getUniformLocation(
-        shaderProgram,
-        "uProjectionMatrix"
-      ),
-      modelViewMatrix: gl.getUniformLocation(shaderProgram, "uModelViewMatrix"),
-    },
+    attributeSetters: attribSetters,
+    uniformSetters,
   };
 
-  const positionBuffer = initPositionBuffer(gl);
+  // Create Draw Objects
 
-  drawScene(gl, programInfo, positionBuffer);
-}
+  const objectsToDraw: DrawObject[] = [];
 
-function drawScene(
-  gl: WebGLRenderingContext,
-  programInfo: any,
-  positionBuffer: WebGLBuffer
-) {
-  gl.clearColor(0.0, 0.0, 0.0, 1.0);
-  gl.clearDepth(1.0);
-  gl.enable(gl.DEPTH_TEST);
-  gl.depthFunc(gl.LEQUAL);
+  // Create Circle
 
-  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  let num_vertices = 20;
 
-  const fieldOfView = (45 * Math.PI) / 180;
-  if (!(gl.canvas instanceof HTMLCanvasElement)) {
-    throw new Error("Failed to get canvas element");
-  }
-  const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
-  const zNear = 0.1;
-  const zFar = 100.0;
-  const projectionMatrix = mat4.create();
-
-  mat4.perspective(projectionMatrix, fieldOfView, aspect, zNear, zFar);
-
-  const modelViewMatrix = mat4.create();
-
-  mat4.translate(modelViewMatrix, modelViewMatrix, [-0.0, 0.0, -6.0]);
-
-  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-
-  gl.vertexAttribPointer(
-    programInfo.attribLocations.vertexPosition,
-    2,
-    gl.FLOAT,
-    false,
-    0,
-    0
-  );
-  gl.enableVertexAttribArray(programInfo.attribLocations.vertexPosition);
-
-  gl.useProgram(programInfo.program);
-
-  gl.uniformMatrix4fv(
-    programInfo.uniformLocations.projectionMatrix,
-    false,
-    projectionMatrix
-  );
-  gl.uniformMatrix4fv(
-    programInfo.uniformLocations.modelViewMatrix,
-    false,
-    modelViewMatrix
-  );
-
-  gl.drawArrays(gl.LINE_LOOP, 0, num_vertices);
-}
-
-function initShaderProgram(
-  gl: WebGLRenderingContext,
-  vsSource: string,
-  fsSource: string
-) {
-  const vertexShader = loadShader(gl, gl.VERTEX_SHADER, vsSource);
-  const fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fsSource);
-
-  if (!vertexShader || !fragmentShader) {
-    throw new Error("Failed to load shaders");
-  }
-
-  const shaderProgram = gl.createProgram();
-  if (!shaderProgram) {
-    throw new Error("Failed to create shader program");
-  }
-
-  gl.attachShader(shaderProgram, vertexShader);
-  gl.attachShader(shaderProgram, fragmentShader);
-  gl.linkProgram(shaderProgram);
-
-  if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
-    alert(
-      `Unable to initialize the shader program: ${gl.getProgramInfoLog(
-        shaderProgram
-      )}`
-    );
-    return null;
-  }
-
-  return shaderProgram;
-}
-
-function loadShader(gl: WebGLRenderingContext, type: number, source: string) {
-  const shader = gl.createShader(type);
-  if (!shader) {
-    throw new Error("Failed to create shader");
-  }
-
-  gl.shaderSource(shader, source);
-  gl.compileShader(shader);
-
-  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-    alert(
-      `An error occurred compiling the shaders: ${gl.getShaderInfoLog(shader)}`
-    );
-    gl.deleteShader(shader);
-    return null;
-  }
-
-  return shader;
-}
-
-let num_vertices = 20;
-
-function initPositionBuffer(gl: WebGLRenderingContext) {
   const positionBuffer = gl.createBuffer();
+
   if (!positionBuffer) {
     throw new Error("Failed to create buffer");
   }
@@ -189,15 +104,69 @@ function initPositionBuffer(gl: WebGLRenderingContext) {
       center[1] + radius * Math.sin(theta)
     );
   }
-  // for (let a = 0; a < 360; a += 360/sides) {
-  //   const heading = a * Math.PI / 180;
-  //   vertices.add(
-
-  //   }
 
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
 
-  return positionBuffer;
+  const circleObject: DrawObject = {
+    programInfo,
+    bufferInfo: {
+      numElements: num_vertices,
+      attributes: {
+        aVertexPosition: {
+          attributeType: "buffer",
+          buffer: positionBuffer,
+          size: 2,
+          type: gl.FLOAT,
+          normalize: false,
+          stride: 0,
+          offset: 0,
+        },
+      },
+    },
+    uniforms: {
+      uProjectionMatrix: mat4.create(),
+      uModelViewMatrix: mat4.create(),
+    },
+  };
+  objectsToDraw.push(circleObject);
+
+  drawScene(gl, objectsToDraw);
+}
+
+function drawScene(gl: WebGLRenderingContext, objectsToDraw: DrawObject[]) {
+  gl.clearColor(0.0, 0.0, 0.0, 1.0);
+  gl.clearDepth(1.0);
+  gl.enable(gl.DEPTH_TEST);
+  gl.depthFunc(gl.LEQUAL);
+
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+  const fieldOfView = (45 * Math.PI) / 180;
+  if (!(gl.canvas instanceof HTMLCanvasElement)) {
+    throw new Error("Failed to get canvas element");
+  }
+  const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
+  const zNear = 0.1;
+  const zFar = 100.0;
+
+  objectsToDraw.forEach((object) => {
+    // TODO: Fix uMatrixs
+    const projectionMatrix = object.uniforms["uProjectionMatrix"] as mat4;
+    mat4.perspective(projectionMatrix, fieldOfView, aspect, zNear, zFar);
+    const modelViewMatrix = object.uniforms["uModelViewMatrix"] as mat4;
+    mat4.translate(modelViewMatrix, modelViewMatrix, [-0.0, 0.0, -6.0]);
+
+    gl.useProgram(object.programInfo.program);
+
+    setAttributes(
+      object.programInfo.attributeSetters,
+      object.bufferInfo.attributes
+    );
+
+    setUniforms(object.programInfo.uniformSetters, object.uniforms);
+
+    gl.drawArrays(gl.LINE_LOOP, 0, object.bufferInfo.numElements);
+  });
 }
 
 main();
