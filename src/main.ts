@@ -54,56 +54,23 @@ function main() {
 
   const objectsToDraw: WebglUtils.DrawObject[] = [];
 
-  // Create Circle
-
-  let num_vertices = 20;
-
-  const positionBuffer = gl.createBuffer();
-
-  if (!positionBuffer) {
-    throw new Error("Failed to create buffer");
-  }
-
-  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-
-  const center = [0, 0];
-  const radius = 1;
-
-  const positions: number[] = [];
-  positions.concat(center);
-
-  for (let i = 0; i <= num_vertices; i++) {
-    const theta = (2 * Math.PI * i) / num_vertices;
-    positions.push(
-      center[0] + radius * Math.cos(theta),
-      center[1] + radius * Math.sin(theta)
-    );
-  }
-
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
-
-  const circleObject: WebglUtils.DrawObject = {
+  const c1 = createCircle({
+    gl,
     programInfo,
-    bufferInfo: {
-      numElements: num_vertices,
-      attributes: {
-        aVertexPosition: {
-          attributeType: "buffer",
-          buffer: positionBuffer,
-          size: 2,
-          type: gl.FLOAT,
-          normalize: false,
-          stride: 0,
-          offset: 0,
-        },
-      },
-    },
-    uniforms: {
-      uProjectionMatrix: mat4.create(),
-      uModelViewMatrix: mat4.create(),
-    },
-  };
-  objectsToDraw.push(circleObject);
+    center: [-2, 0],
+    radius: 1,
+    numVertices: 40,
+  });
+
+  const c2 = createCircle({
+    gl,
+    programInfo,
+    center: [2, 0],
+    radius: 1,
+    numVertices: 40,
+  });
+
+  objectsToDraw.push(c1, c2);
 
   // Draw Scene
 
@@ -123,7 +90,8 @@ function main() {
   const zFar = 100.0;
 
   objectsToDraw.forEach((object) => {
-    // TODO: Fix uMatrixs
+    // TODO: Fix projection and model view matrix
+    // Q: (make global ? Specific to object ? How do projection matrices work ?)
     const projectionMatrix = object.uniforms["uProjectionMatrix"] as mat4;
     mat4.perspective(projectionMatrix, fieldOfView, aspect, zNear, zFar);
     const modelViewMatrix = object.uniforms["uModelViewMatrix"] as mat4;
@@ -140,6 +108,64 @@ function main() {
 
     gl.drawArrays(gl.LINE_LOOP, 0, object.bufferInfo.numElements);
   });
+}
+
+function createCircle({
+  gl,
+  programInfo,
+  center = [0, 0],
+  radius = 1,
+  numVertices = 40,
+}: {
+  gl: WebGLRenderingContext;
+  programInfo: WebglUtils.ProgramInfo;
+  center: [number, number];
+  radius: number;
+  numVertices: number;
+}): WebglUtils.DrawObject {
+  const positionBuffer = gl.createBuffer();
+  if (!positionBuffer) {
+    throw new Error("Failed to create buffer");
+  }
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+
+  const positions: number[] = [];
+  positions.concat(center);
+
+  for (let i = 0; i <= numVertices; i++) {
+    const theta = (2 * Math.PI * i) / numVertices;
+    positions.push(
+      center[0] + radius * Math.cos(theta),
+      center[1] + radius * Math.sin(theta)
+    );
+  }
+
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+
+  const circleObject: WebglUtils.DrawObject = {
+    programInfo,
+    bufferInfo: {
+      numElements: numVertices,
+      attributes: {
+        aVertexPosition: {
+          attributeType: "buffer",
+          buffer: positionBuffer,
+          size: 2,
+          type: gl.FLOAT,
+          normalize: false,
+          stride: 0,
+          offset: 0,
+        },
+      },
+    },
+    uniforms: {
+      uProjectionMatrix: mat4.create(),
+      uModelViewMatrix: mat4.create(),
+    },
+  };
+
+  return circleObject;
 }
 
 main();
