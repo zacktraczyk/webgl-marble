@@ -1,3 +1,5 @@
+import fragShader from "./glsl/frag.glsl";
+import vertShader from "./glsl/vert.glsl";
 import { mat4 } from "gl-matrix";
 import "./style.css";
 import * as WebglUtils from "./utils/webglUtils";
@@ -19,24 +21,11 @@ function main() {
 
   // Create Program Info
 
-  const vsSource = `
-    attribute vec4 aVertexPosition;
-
-    uniform mat4 uModelViewMatrix;
-    uniform mat4 uProjectionMatrix;
-    
-    void main(void) {
-      gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
-    }
-    `;
-
-  const fsSource = `
-    void main(void) {
-      gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
-    }
-    `;
-
-  const shaderProgram = WebglUtils.initShaderProgram(gl, vsSource, fsSource);
+  const shaderProgram = WebglUtils.initShaderProgram(
+    gl,
+    vertShader,
+    fragShader
+  );
   if (!shaderProgram) {
     throw new Error("Failed to initialize shader program");
   }
