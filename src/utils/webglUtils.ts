@@ -31,23 +31,6 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-// type BufferInfo = {
-//   attribs: Record<string, Attribute>;
-//   numElements: number;
-
-//   indices: any; // TypedArray
-//   position: any;
-//   normal: any;
-//   texCoords: any;
-// };
-
-// type Attribs = {
-//   buffer: WebGLBuffer;
-//   numComponents: number;
-//   // type: number;
-//   // nomralize: boolean;
-// };
-
 // Value or Buffer
 export type Attribute =
   | {
@@ -75,6 +58,21 @@ export type AttributeSetters = Record<string, (b: Attribute) => void>;
 export type Uniform = Float32Array | number[];
 
 export type UniformSetters = Record<string, (v: Uniform) => void>;
+
+export type ProgramInfo = {
+  program: WebGLProgram;
+  attributeSetters: AttributeSetters;
+  uniformSetters: UniformSetters;
+};
+
+export type DrawObject = {
+  programInfo: ProgramInfo;
+  bufferInfo: {
+    numElements: number;
+    attributes: Record<string, Attribute>;
+  };
+  uniforms: Record<string, Uniform>;
+};
 
 /**
  * Initialize a shader program
