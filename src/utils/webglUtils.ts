@@ -1,5 +1,8 @@
 /*
+ * Functions altered from the original source:
  * Source: https://webglfundamentals.org/webgl/resources/webgl-utils.js
+ *
+ * The original source is licensed under the following terms:
  *
  * Copyright 2021 GFXFundamentals.
  * All rights reserved.
