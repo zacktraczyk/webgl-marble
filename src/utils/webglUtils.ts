@@ -444,3 +444,23 @@ export function setUniforms(
     }
   });
 }
+
+/**
+ * Resize a canvas to match the size it is displayed
+ * @param canvas an HTML5 canvas element
+ * @param multiplier amount to multiply by
+ * @returns true if the canvas was resized, false otherwise
+ */
+export function resizeCanvasToDisplaySize(
+  canvas: HTMLCanvasElement,
+  multiplier = 1
+) {
+  const width = canvas.clientWidth * multiplier;
+  const height = canvas.clientHeight * multiplier;
+  if (canvas.width !== width || canvas.height !== height) {
+    canvas.width = width;
+    canvas.height = height;
+    return true;
+  }
+  return false;
+}

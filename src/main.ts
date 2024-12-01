@@ -63,40 +63,48 @@ function main() {
 
   // Draw Scene
 
-  gl.clearColor(0.0, 0.0, 0.0, 1.0);
-  gl.clearDepth(1.0);
-  gl.enable(gl.DEPTH_TEST);
-  gl.depthFunc(gl.LEQUAL);
+  requestAnimationFrame(drawScene);
 
-  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  function drawScene(time: number) {
+    if (!gl || !(gl.canvas instanceof HTMLCanvasElement)) {
+      throw new Error("Failed to get canvas element");
+    }
+    time *= 0.0005;
 
-  const fieldOfView = (45 * Math.PI) / 180;
-  if (!(gl.canvas instanceof HTMLCanvasElement)) {
-    throw new Error("Failed to get canvas element");
+    WebglUtils.resizeCanvasToDisplaySize(gl.canvas);
+    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+    gl.enable(gl.CULL_FACE);
+    gl.enable(gl.DEPTH_TEST);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+    const fieldOfView = (45 * Math.PI) / 180;
+    const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
+    const zNear = 0.1;
+    const zFar = 100.0;
+
+    objectsToDraw.forEach((object) => {
+      gl.useProgram(object.programInfo.program);
+
+      WebglUtils.setAttributes(
+        object.programInfo.attributeSetters,
+        object.bufferInfo.attributes
+      );
+
+      // TODO: Fix projection and model view matrix
+      // Q: (make global ? Specific to object ? How do projection matrices work ?)
+      const projectionMatrix = object.uniforms["uProjectionMatrix"] as mat4;
+      mat4.perspective(projectionMatrix, fieldOfView, aspect, zNear, zFar);
+      const modelViewMatrix = object.uniforms["uModelViewMatrix"] as mat4;
+      mat4.translate(modelViewMatrix, modelViewMatrix, [-0.0, 0.0, -6.0]);
+
+      WebglUtils.setUniforms(
+        object.programInfo.uniformSetters,
+        object.uniforms
+      );
+
+      gl.drawArrays(gl.LINE_LOOP, 0, object.bufferInfo.numElements);
+    });
   }
-  const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
-  const zNear = 0.1;
-  const zFar = 100.0;
-
-  objectsToDraw.forEach((object) => {
-    // TODO: Fix projection and model view matrix
-    // Q: (make global ? Specific to object ? How do projection matrices work ?)
-    const projectionMatrix = object.uniforms["uProjectionMatrix"] as mat4;
-    mat4.perspective(projectionMatrix, fieldOfView, aspect, zNear, zFar);
-    const modelViewMatrix = object.uniforms["uModelViewMatrix"] as mat4;
-    mat4.translate(modelViewMatrix, modelViewMatrix, [-0.0, 0.0, -6.0]);
-
-    gl.useProgram(object.programInfo.program);
-
-    WebglUtils.setAttributes(
-      object.programInfo.attributeSetters,
-      object.bufferInfo.attributes
-    );
-
-    WebglUtils.setUniforms(object.programInfo.uniformSetters, object.uniforms);
-
-    gl.drawArrays(gl.LINE_LOOP, 0, object.bufferInfo.numElements);
-  });
 }
 
 function createCircle({
