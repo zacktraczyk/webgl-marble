@@ -1,31 +1,6 @@
 import { mat4 } from "gl-matrix";
 import "./style.css";
-import {
-  Attribute,
-  AttributeSetters,
-  createAttributeSetters,
-  createUniformSetters,
-  initShaderProgram,
-  setAttributes,
-  setUniforms,
-  Uniform,
-  UniformSetters,
-} from "./utils/util";
-
-type ProgramInfo = {
-  program: WebGLProgram;
-  attributeSetters: AttributeSetters;
-  uniformSetters: UniformSetters;
-};
-
-type DrawObject = {
-  programInfo: ProgramInfo;
-  bufferInfo: {
-    numElements: number;
-    attributes: Record<string, Attribute>;
-  };
-  uniforms: Record<string, Uniform>;
-};
+import * as WebglUtils from "./utils/webglUtils";
 
 function main() {
   // Get A WebGL context
@@ -61,15 +36,15 @@ function main() {
     }
     `;
 
-  const shaderProgram = initShaderProgram(gl, vsSource, fsSource);
+  const shaderProgram = WebglUtils.initShaderProgram(gl, vsSource, fsSource);
   if (!shaderProgram) {
     throw new Error("Failed to initialize shader program");
   }
 
-  const attribSetters = createAttributeSetters(gl, shaderProgram);
-  const uniformSetters = createUniformSetters(gl, shaderProgram);
+  const attribSetters = WebglUtils.createAttributeSetters(gl, shaderProgram);
+  const uniformSetters = WebglUtils.createUniformSetters(gl, shaderProgram);
 
-  const programInfo: ProgramInfo = {
+  const programInfo: WebglUtils.ProgramInfo = {
     program: shaderProgram,
     attributeSetters: attribSetters,
     uniformSetters,
@@ -77,7 +52,7 @@ function main() {
 
   // Create Draw Objects
 
-  const objectsToDraw: DrawObject[] = [];
+  const objectsToDraw: WebglUtils.DrawObject[] = [];
 
   // Create Circle
 
@@ -107,7 +82,7 @@ function main() {
 
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
 
-  const circleObject: DrawObject = {
+  const circleObject: WebglUtils.DrawObject = {
     programInfo,
     bufferInfo: {
       numElements: num_vertices,
@@ -130,10 +105,8 @@ function main() {
   };
   objectsToDraw.push(circleObject);
 
-  drawScene(gl, objectsToDraw);
-}
+  // Draw Scene
 
-function drawScene(gl: WebGLRenderingContext, objectsToDraw: DrawObject[]) {
   gl.clearColor(0.0, 0.0, 0.0, 1.0);
   gl.clearDepth(1.0);
   gl.enable(gl.DEPTH_TEST);
@@ -158,12 +131,12 @@ function drawScene(gl: WebGLRenderingContext, objectsToDraw: DrawObject[]) {
 
     gl.useProgram(object.programInfo.program);
 
-    setAttributes(
+    WebglUtils.setAttributes(
       object.programInfo.attributeSetters,
       object.bufferInfo.attributes
     );
 
-    setUniforms(object.programInfo.uniformSetters, object.uniforms);
+    WebglUtils.setUniforms(object.programInfo.uniformSetters, object.uniforms);
 
     gl.drawArrays(gl.LINE_LOOP, 0, object.bufferInfo.numElements);
   });
