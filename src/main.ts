@@ -46,16 +46,16 @@ function main() {
   const c1 = createCircle({
     gl,
     programInfo,
-    center: [-2, 0],
-    radius: 1,
+    center: [200, 200],
+    radius: 100,
     numVertices: 40,
   });
 
   const c2 = createCircle({
     gl,
     programInfo,
-    center: [2, 0],
-    radius: 1,
+    center: [200, 300],
+    radius: 50,
     numVertices: 40,
   });
 
@@ -69,7 +69,7 @@ function main() {
     if (!gl || !(gl.canvas instanceof HTMLCanvasElement)) {
       throw new Error("Failed to get canvas element");
     }
-    time *= 0.0005;
+    time *= 0.005;
 
     WebglUtils.resizeCanvasToDisplaySize(gl.canvas);
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
@@ -77,12 +77,7 @@ function main() {
     gl.enable(gl.DEPTH_TEST);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    const fieldOfView = (45 * Math.PI) / 180;
-    const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
-    const zNear = 0.1;
-    const zFar = 100.0;
-
-    objectsToDraw.forEach((object) => {
+    objectsToDraw.forEach((object, i) => {
       gl.useProgram(object.programInfo.program);
 
       WebglUtils.setAttributes(
@@ -90,12 +85,13 @@ function main() {
         object.bufferInfo.attributes
       );
 
-      // TODO: Fix projection and model view matrix
-      // Q: (make global ? Specific to object ? How do projection matrices work ?)
-      const projectionMatrix = object.uniforms["uProjectionMatrix"] as mat4;
-      mat4.perspective(projectionMatrix, fieldOfView, aspect, zNear, zFar);
-      const modelViewMatrix = object.uniforms["uModelViewMatrix"] as mat4;
-      mat4.translate(modelViewMatrix, modelViewMatrix, [-0.0, 0.0, -6.0]);
+      object.uniforms.uResolution = [gl.canvas.width, gl.canvas.height];
+      if (i === 0) {
+        object.uniforms.uTranslation[0] = Math.cos(time / 1.5) * 40;
+        object.uniforms.uTranslation[1] = Math.sin(time) * 40;
+      } else {
+        object.uniforms.uTranslation[0] = Math.cos(time / 2) * 100;
+      }
 
       WebglUtils.setUniforms(
         object.programInfo.uniformSetters,
@@ -104,6 +100,8 @@ function main() {
 
       gl.drawArrays(gl.LINE_LOOP, 0, object.bufferInfo.numElements);
     });
+
+    requestAnimationFrame(drawScene);
   }
 }
 
@@ -157,8 +155,8 @@ function createCircle({
       },
     },
     uniforms: {
-      uProjectionMatrix: mat4.create(),
-      uModelViewMatrix: mat4.create(),
+      uResolution: [gl.canvas.width, gl.canvas.height],
+      uTranslation: [0, 0],
     },
   };
 
