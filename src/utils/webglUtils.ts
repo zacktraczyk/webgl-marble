@@ -390,6 +390,8 @@ export function createUniformSetters(
     throw "unknown type: 0x" + type.toString(16); // we should never get here.
   };
 
+  // TODO: Fix the type of uniformSetters
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const uniformSetters: Record<string, (v: any) => void> = {};
   const numUniforms = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS);
 

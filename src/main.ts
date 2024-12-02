@@ -1,6 +1,5 @@
 import fragShader from "./glsl/frag.glsl";
 import vertShader from "./glsl/vert.glsl";
-import { mat4 } from "gl-matrix";
 import "./style.css";
 import * as WebglUtils from "./utils/webglUtils";
 
