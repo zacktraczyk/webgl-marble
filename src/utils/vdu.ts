@@ -84,7 +84,7 @@ class DrawObject {
  * Renders Drawable objects using WebGL
  */
 export class VDU {
-  private readonly _canvas: HTMLCanvasElement;
+  readonly canvas: HTMLCanvasElement;
   private readonly _gl: WebGLRenderingContext;
   private readonly _shaderProgram: WebGLProgram;
   private readonly _programInfo: WebglUtils.ProgramInfo;
@@ -96,7 +96,7 @@ export class VDU {
     if (!canvas || !(canvas instanceof HTMLCanvasElement)) {
       throw new Error("Failed to get canvas element");
     }
-    this._canvas = canvas;
+    this.canvas = canvas;
 
     const gl = canvas.getContext("webgl", { antialias: true, depth: false });
     if (!gl) {
