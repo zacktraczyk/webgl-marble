@@ -42,33 +42,61 @@ function main() {
 
   const objectsToDraw: WebglUtils.DrawObject[] = [];
 
+  function createCircle({
+    center,
+    radius,
+  }: {
+    center: [number, number];
+    radius: number;
+  }) {
+    if (!gl) {
+      throw new Error("WebGlRenderingContext not initialized");
+    }
+
+    const circle = {
+      center,
+      radius,
+    };
+
+    const drawCircle = createDrawCircle({
+      gl,
+      programInfo,
+      center,
+      radius,
+      numElements: 40,
+    });
+
+    objectsToDraw.push(drawCircle);
+
+    return circle;
+  }
+
   const c1 = createCircle({
-    gl,
-    programInfo,
-    center: [200, 200],
-    radius: 100,
-    numVertices: 40,
+    center: [100, 100],
+    radius: 50,
   });
 
   const c2 = createCircle({
-    gl,
-    programInfo,
-    center: [200, 300],
+    center: [150, 150],
     radius: 50,
-    numVertices: 40,
   });
-
-  objectsToDraw.push(c1, c2);
 
   // Draw Scene
 
-  requestAnimationFrame(drawScene);
+  function render(time: number) {
+    drawScene();
+    updateScene(time);
 
-  function drawScene(time: number) {
+    requestAnimationFrame(render);
+  }
+
+  let lastUsedProgram: WebGLProgram;
+  let initBuffer: boolean = true;
+  let lastUsedBuffer: WebglUtils.BufferInfo;
+  function drawScene() {
     if (!gl || !(gl.canvas instanceof HTMLCanvasElement)) {
       throw new Error("Failed to get canvas element");
     }
-    time *= 0.005;
 
     WebglUtils.resizeCanvasToDisplaySize(gl.canvas);
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
@@ -76,21 +104,21 @@ function main() {
     gl.enable(gl.DEPTH_TEST);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    objectsToDraw.forEach((object, i) => {
-      gl.useProgram(object.programInfo.program);
+    objectsToDraw.forEach((object) => {
+      if (!lastUsedProgram) {
+        gl.useProgram(object.programInfo.program);
+        lastUsedProgram = object.programInfo.program;
+        initBuffer = true;
+      }
 
-      WebglUtils.setAttributes(
-        object.programInfo.attributeSetters,
-        object.bufferInfo.attributes
-      );
+      if (initBuffer || lastUsedBuffer != object.bufferInfo) {
+        WebglUtils.setAttributes(
+          object.programInfo.attributeSetters,
+          object.bufferInfo.attributes
+        );
+      }
 
       object.uniforms.uResolution = [gl.canvas.width, gl.canvas.height];
-      if (i === 0) {
-        object.uniforms.uTranslation[0] = Math.cos(time / 1.5) * 40;
-        object.uniforms.uTranslation[1] = Math.sin(time) * 40;
-      } else {
-        object.uniforms.uTranslation[0] = Math.cos(time / 2) * 100;
-      }
 
       WebglUtils.setUniforms(
         object.programInfo.uniformSetters,
@@ -99,67 +127,52 @@ function main() {
 
       gl.drawArrays(gl.LINE_LOOP, 0, object.bufferInfo.numElements);
     });
-
-    requestAnimationFrame(drawScene);
   }
+
+  function updateScene(time: number) {
+    time *= 0.005;
+
+    c1.center[0] += Math.cos(time) * 2;
+    c1.center[1] += Math.sin(time / 2) * 2;
+
+    c2.center[0] += Math.sin(time / 1);
+    c2.center[1] += Math.cos(time / 1);
+  }
+
+  requestAnimationFrame(render);
 }
 
-function createCircle({
+function createDrawCircle({
   gl,
   programInfo,
   center = [0, 0],
   radius = 1,
-  numVertices = 40,
+  numElements = 40,
 }: {
   gl: WebGLRenderingContext;
   programInfo: WebglUtils.ProgramInfo;
   center: [number, number];
   radius: number;
-  numVertices: number;
+  numElements: number;
 }): WebglUtils.DrawObject {
-  const positionBuffer = gl.createBuffer();
-  if (!positionBuffer) {
-    throw new Error("Failed to create buffer");
-  }
+  const indicies: number[] = [];
+  indicies.concat(center);
 
-  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-
-  const positions: number[] = [];
-  positions.concat(center);
-
-  for (let i = 0; i <= numVertices; i++) {
-    const theta = (2 * Math.PI * i) / numVertices;
-    positions.push(
+  for (let i = 0; i <= numElements; i++) {
+    const theta = (2 * Math.PI * i) / numElements;
+    indicies.push(
       center[0] + radius * Math.cos(theta),
       center[1] + radius * Math.sin(theta)
     );
   }
 
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
-
-  const circleObject: WebglUtils.DrawObject = {
+  const drawObject = WebglUtils.createDrawObject({
+    gl,
     programInfo,
-    bufferInfo: {
-      numElements: numVertices,
-      attributes: {
-        aVertexPosition: {
-          attributeType: "buffer",
-          buffer: positionBuffer,
-          size: 2,
-          type: gl.FLOAT,
-          normalize: false,
-          stride: 0,
-          offset: 0,
-        },
-      },
-    },
-    uniforms: {
-      uResolution: [gl.canvas.width, gl.canvas.height],
-      uTranslation: [0, 0],
-    },
-  };
-
-  return circleObject;
+    position: center,
+    indicies,
+  });
+  return drawObject;
 }
 
 main();
