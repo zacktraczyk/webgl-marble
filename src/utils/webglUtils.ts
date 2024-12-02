@@ -68,14 +68,60 @@ export type ProgramInfo = {
   uniformSetters: UniformSetters;
 };
 
+export type BufferInfo = {
+  numElements: number;
+  attributes: Record<string, Attribute>;
+};
+
 export type DrawObject = {
   programInfo: ProgramInfo;
-  bufferInfo: {
-    numElements: number;
-    attributes: Record<string, Attribute>;
-  };
+  bufferInfo: BufferInfo;
   uniforms: Record<string, Uniform>;
 };
+
+export function createDrawObject({
+  gl,
+  programInfo,
+  position,
+  indicies,
+}: {
+  gl: WebGLRenderingContext;
+  programInfo: ProgramInfo;
+  position: [number, number];
+  indicies: number[] | Float32Array;
+}) {
+  const indiciesBuffer = gl.createBuffer();
+  if (!indiciesBuffer) {
+    throw new Error("Failed to create buffer");
+  }
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, indiciesBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(indicies), gl.STATIC_DRAW);
+
+  const drawObject: DrawObject = {
+    programInfo,
+    bufferInfo: {
+      numElements: indicies.length / 2,
+      attributes: {
+        aVertexPosition: {
+          attributeType: "buffer",
+          buffer: indiciesBuffer,
+          size: 2,
+          type: gl.FLOAT,
+          normalize: false,
+          stride: 0,
+          offset: 0,
+        },
+      },
+    },
+    uniforms: {
+      uResolution: [gl.canvas.width, gl.canvas.height],
+      uTranslation: position,
+    },
+  };
+
+  return drawObject;
+}
 
 /**
  * Initialize a shader program
