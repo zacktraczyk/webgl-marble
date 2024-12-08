@@ -151,7 +151,7 @@ export class VDU {
       throw new Error("Failed to get canvas element");
     }
 
-    WebglUtils.resizeCanvasToDisplaySize(gl.canvas);
+    // WebglUtils.resizeCanvasToDisplaySize(gl.canvas);
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
     gl.enable(gl.CULL_FACE);
     gl.enable(gl.DEPTH_TEST);

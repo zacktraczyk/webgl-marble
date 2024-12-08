@@ -7,7 +7,15 @@ const config = {
   tabWidth: 2,
   useTabs: false,
   parser: "typescript",
-  plugins: ["prettier-plugin-organize-imports"],
+  plugins: ["prettier-plugin-organize-imports", "prettier-plugin-tailwindcss"],
+  overrides: [
+    {
+      files: "*.css",
+      options: {
+        parser: "css",
+      },
+    },
+  ],
 };
 
 export default config;
