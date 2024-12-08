@@ -7,6 +7,7 @@ import * as WebglUtils from "./webglUtils";
  */
 export abstract class Drawable {
   abstract position: [number, number];
+  abstract color: [number, number, number, number];
 
   abstract createIndicies(): number[] | Float32Array;
 }
@@ -24,11 +25,13 @@ class DrawObject {
     gl,
     programInfo,
     position,
+    color,
     indicies,
   }: {
     gl: WebGLRenderingContext;
     programInfo: WebglUtils.ProgramInfo;
     position: [number, number];
+    color: [number, number, number, number];
     indicies: number[] | Float32Array;
   }) {
     this.gl = gl;
@@ -59,6 +62,7 @@ class DrawObject {
     const uniforms = {
       uResolution: [gl.canvas.width, gl.canvas.height],
       uTranslation: position,
+      uColor: color,
     };
     this.uniforms = uniforms;
   }
@@ -135,6 +139,7 @@ export class VDU {
       gl: this._gl,
       programInfo: this._programInfo,
       position: obj.position,
+      color: obj.color,
       indicies: obj.createIndicies(),
     });
 
