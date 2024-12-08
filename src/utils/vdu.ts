@@ -1,6 +1,6 @@
-import * as WebglUtils from "./webglUtils";
 import fragShader from "../glsl/frag.glsl";
 import vertShader from "../glsl/vert.glsl";
+import * as WebglUtils from "./webglUtils";
 
 /**
  * Required properties and methods for an object to be drawable by VDU
@@ -66,7 +66,7 @@ class DrawObject {
   setAttributes() {
     WebglUtils.setAttributes(
       this.programInfo.attributeSetters,
-      this.bufferInfo.attributes
+      this.bufferInfo.attributes,
     );
   }
 
@@ -101,7 +101,7 @@ export class VDU {
     const gl = canvas.getContext("webgl", { antialias: true, depth: false });
     if (!gl) {
       throw new Error(
-        "Unable to initialize WebGL. Your browser may not support it."
+        "Unable to initialize WebGL. Your browser may not support it.",
       );
     }
     this._gl = gl;
@@ -110,7 +110,7 @@ export class VDU {
     const shaderProgram = WebglUtils.initShaderProgram(
       gl,
       vertShader,
-      fragShader
+      fragShader,
     );
     if (!shaderProgram) {
       throw new Error("Failed to initialize shader program");
@@ -167,7 +167,7 @@ export class VDU {
       if (this._initBuffer || this._lastUsedBuffer != object.bufferInfo) {
         WebglUtils.setAttributes(
           object.programInfo.attributeSetters,
-          object.bufferInfo.attributes
+          object.bufferInfo.attributes,
         );
       }
 
@@ -175,7 +175,7 @@ export class VDU {
 
       WebglUtils.setUniforms(
         object.programInfo.uniformSetters,
-        object.uniforms
+        object.uniforms,
       );
 
       gl.drawArrays(gl.LINE_LOOP, 0, object.bufferInfo.numElements);

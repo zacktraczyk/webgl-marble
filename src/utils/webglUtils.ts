@@ -133,7 +133,7 @@ export function createDrawObject({
 export function initShaderProgram(
   gl: WebGLRenderingContext,
   vsSource: string,
-  fsSource: string
+  fsSource: string,
 ) {
   const vertexShader = loadShader(gl, gl.VERTEX_SHADER, vsSource);
   const fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fsSource);
@@ -154,8 +154,8 @@ export function initShaderProgram(
   if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
     alert(
       `Unable to initialize the shader program: ${gl.getProgramInfoLog(
-        shaderProgram
-      )}`
+        shaderProgram,
+      )}`,
     );
     return null;
   }
@@ -181,7 +181,7 @@ function loadShader(gl: WebGLRenderingContext, type: number, source: string) {
 
   if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
     alert(
-      `An error occurred compiling the shaders: ${gl.getShaderInfoLog(shader)}`
+      `An error occurred compiling the shaders: ${gl.getShaderInfoLog(shader)}`,
     );
     gl.deleteShader(shader);
     return null;
@@ -197,7 +197,7 @@ function loadShader(gl: WebGLRenderingContext, type: number, source: string) {
  */
 export function createAttributeSetters(
   gl: WebGLRenderingContext,
-  program: WebGLProgram
+  program: WebGLProgram,
 ): AttributeSetters {
   /**
    * Create a setter for an attribute
@@ -233,7 +233,7 @@ export function createAttributeSetters(
           b.type || gl.FLOAT,
           b.normalize || false,
           b.stride || 0,
-          b.offset || 0
+          b.offset || 0,
         );
       }
     };
@@ -280,13 +280,13 @@ type UniformInfo = {
  */
 export function createUniformSetters(
   gl: WebGLRenderingContext,
-  program: WebGLProgram
+  program: WebGLProgram,
 ): UniformSetters {
   let textureUnit = 0;
 
   const createUniformSetter = (
     program: WebGLProgram,
-    uniformInfo: UniformInfo
+    uniformInfo: UniformInfo,
   ) => {
     const location = gl.getUniformLocation(program, uniformInfo.name);
     const type = uniformInfo.type;
@@ -378,8 +378,8 @@ export function createUniformSetters(
           GLfloat,
           GLfloat,
           GLfloat,
-          GLfloat
-        ]
+          GLfloat,
+        ],
       ) => {
         gl.uniformMatrix3fv(location, false, v);
       };
@@ -402,8 +402,8 @@ export function createUniformSetters(
           GLfloat,
           GLfloat,
           GLfloat,
-          GLfloat
-        ]
+          GLfloat,
+        ],
       ) => {
         gl.uniformMatrix4fv(location, false, v);
       };
@@ -466,7 +466,7 @@ export function createUniformSetters(
  */
 export function setAttributes(
   setters: AttributeSetters,
-  attributes: Record<string, Attribute>
+  attributes: Record<string, Attribute>,
 ) {
   Object.keys(attributes).forEach((name) => {
     const setter = setters[name];
@@ -483,7 +483,7 @@ export function setAttributes(
  */
 export function setUniforms(
   setters: UniformSetters,
-  uniforms: Record<string, Uniform>
+  uniforms: Record<string, Uniform>,
 ) {
   Object.keys(uniforms).forEach((name) => {
     const setter = setters[name];
@@ -501,7 +501,7 @@ export function setUniforms(
  */
 export function resizeCanvasToDisplaySize(
   canvas: HTMLCanvasElement,
-  multiplier = 1
+  multiplier = 1,
 ) {
   const width = canvas.clientWidth * multiplier;
   const height = canvas.clientHeight * multiplier;

@@ -30,22 +30,22 @@ export class Square implements Drawable {
 
     indicies.push(
       this.position[0] + this.width * -(1 / 2),
-      this.position[1] + this.width * -(1 / 2)
+      this.position[1] + this.width * -(1 / 2),
     );
 
     indicies.push(
       this.position[0] + this.width * (1 / 2),
-      this.position[1] + this.width * -(1 / 2)
+      this.position[1] + this.width * -(1 / 2),
     );
 
     indicies.push(
       this.position[0] + this.width * (1 / 2),
-      this.position[1] + this.width * (1 / 2)
+      this.position[1] + this.width * (1 / 2),
     );
 
     indicies.push(
       this.position[0] + this.width * -(1 / 2),
-      this.position[1] + this.width * (1 / 2)
+      this.position[1] + this.width * (1 / 2),
     );
 
     return indicies;
