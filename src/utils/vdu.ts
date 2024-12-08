@@ -86,7 +86,7 @@ class DrawObject {
 export class VDU {
   readonly canvas: HTMLCanvasElement;
   private readonly _gl: WebGLRenderingContext;
-  private readonly _shaderProgram: WebGLProgram;
+  // private readonly _shaderProgram: WebGLProgram;
   private readonly _programInfo: WebglUtils.ProgramInfo;
   private readonly _objectsToDraw: DrawObject[];
 
@@ -115,7 +115,6 @@ export class VDU {
     if (!shaderProgram) {
       throw new Error("Failed to initialize shader program");
     }
-    this._shaderProgram = shaderProgram;
 
     // Create program info
     const attribSetters = WebglUtils.createAttributeSetters(gl, shaderProgram);
@@ -151,7 +150,7 @@ export class VDU {
       throw new Error("Failed to get canvas element");
     }
 
-    // WebglUtils.resizeCanvasToDisplaySize(gl.canvas);
+    WebglUtils.resizeCanvasToDisplaySize(gl.canvas);
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
     gl.enable(gl.CULL_FACE);
     gl.enable(gl.DEPTH_TEST);

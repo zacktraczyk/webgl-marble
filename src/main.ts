@@ -1,6 +1,7 @@
 import "./style.css";
 import { Circle } from "./utils/circle";
 import { Square } from "./utils/square";
+import { throttle } from "./utils/utils";
 import { VDU } from "./utils/vdu";
 
 function main() {
@@ -9,7 +10,7 @@ function main() {
   const circles: Circle[] = [];
   for (let i = 0; i < 10; i++) {
     const c = new Circle({
-      position: [50 + i * 10, 50 + i * 10],
+      position: [100 + i * 13, 100 + i * 13],
       radius: 20,
     });
     vdu.add(c);
@@ -19,23 +20,41 @@ function main() {
   const squares: Square[] = [];
   for (let i = 0; i < 10; i++) {
     const s = new Square({
-      position: [240, 50 + i * 10],
+      position: [170, 110 + i * 10],
       width: 20,
     });
     vdu.add(s);
     squares.push(s);
   }
 
-  function updateScene(time: number) {
+  let lastTime = 0;
+  const fpsElem = document.getElementById("#fps");
+  const [updateFpsText] = throttle((fps: number) => {
+    if (fpsElem) {
+      fpsElem.textContent = `FPS: ${fps.toFixed(2)}`;
+    }
+  }, 500);
+
+  const updateFps = (time: number) => {
     time *= 0.005;
+    const deltaTime = time - lastTime;
+    lastTime = time;
+    const fps = 1 / deltaTime;
+    updateFpsText(fps);
+  };
+
+  let tick = 0;
+  function updateScene(time: number) {
+    tick += 0.01;
+    updateFps(time);
 
     circles.forEach((c, i) => {
-      c.position[0] += Math.sin(time + i);
-      c.position[1] += Math.cos(time + i);
+      c.position[0] += Math.sin(tick + i);
+      c.position[1] += Math.cos(tick + i);
     });
 
     squares.forEach((s, i) => {
-      s.position[0] += Math.cos(time + i);
+      s.position[0] += Math.cos(tick + i);
     });
   }
 
