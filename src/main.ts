@@ -1,7 +1,7 @@
-import { Circle } from "./utils/circle";
-import { VDU } from "./utils/vdu";
 import "./style.css";
+import { Circle } from "./utils/circle";
 import { Square } from "./utils/square";
+import { VDU } from "./utils/vdu";
 
 function main() {
   const vdu = new VDU("#gl-canvas");

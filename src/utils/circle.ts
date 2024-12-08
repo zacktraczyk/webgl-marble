@@ -34,7 +34,7 @@ export class Circle implements Drawable {
       const theta = (2 * Math.PI * i) / numElements;
       indicies.push(
         this.position[0] + this.radius * Math.cos(theta),
-        this.position[1] + this.radius * Math.sin(theta)
+        this.position[1] + this.radius * Math.sin(theta),
       );
     }
 
