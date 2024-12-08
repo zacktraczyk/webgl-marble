@@ -2,6 +2,7 @@ import { Drawable } from "./vdu";
 
 export class Circle implements Drawable {
   private readonly _position: [number, number];
+  private readonly _color: [number, number, number, number] = [1, 0, 0, 1];
   readonly radius: number;
 
   constructor({
@@ -22,6 +23,17 @@ export class Circle implements Drawable {
 
   get position() {
     return this._position;
+  }
+
+  get color() {
+    return this._color;
+  }
+
+  set color(color: [number, number, number, number]) {
+    this._color[0] = color[0];
+    this._color[1] = color[1];
+    this._color[2] = color[2];
+    this._color[3] = color[3];
   }
 
   createIndicies(): number[] | Float32Array {
