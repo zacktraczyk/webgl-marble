@@ -8,9 +8,12 @@ function main() {
   const vdu = new VDU("#gl-canvas");
 
   const circles: Circle[] = [];
-  for (let i = 0; i < 10; i++) {
+  for (let i = 1; i < 10; i++) {
+    const x = (i / 10) * vdu.canvas.clientWidth;
+    const y = (i / 10) * vdu.canvas.clientHeight;
+
     const c = new Circle({
-      position: [240 + i * 13, 240 + i * 13],
+      position: [x, y],
       radius: 20,
       color: [Math.random(), Math.random(), Math.random(), 1],
     });
@@ -19,11 +22,14 @@ function main() {
   }
 
   const squares: Square[] = [];
-  for (let i = 0; i < 10; i++) {
+  for (let i = 1; i < 10; i++) {
+    const x = 320;
+    const y = (i / 10) * vdu.canvas.clientHeight;
+
     const s = new Square({
-      position: [320, 270 + i * 10],
+      position: [x, y],
       width: 20,
-      color: [Math.random() * 0.5 + 0.5, 0, 0, 1],
+      color: [Math.random() * 0.75 + 0.25, 0, 0, 1],
     });
     vdu.add(s);
     squares.push(s);
