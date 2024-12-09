@@ -8,12 +8,15 @@ export class Square implements Drawable {
   constructor({
     position,
     width,
+    color,
   }: {
     position: [number, number];
     width: number;
+    color?: [number, number, number, number];
   }) {
     this._position = position;
     this.width = width;
+    this._color = color ?? [1, 1, 1, 1];
   }
 
   set position(center: [number, number]) {
@@ -38,27 +41,14 @@ export class Square implements Drawable {
 
   createIndicies(): number[] | Float32Array {
     const indicies: number[] = [];
-    indicies.concat(this.position);
 
-    indicies.push(
-      this.position[0] + this.width * -(1 / 2),
-      this.position[1] + this.width * -(1 / 2),
-    );
+    indicies.push(this.width * (1 / 2), this.width * -(1 / 2));
+    indicies.push(this.width * -(1 / 2), this.width * -(1 / 2));
+    indicies.push(this.width * (1 / 2), this.width * (1 / 2));
 
-    indicies.push(
-      this.position[0] + this.width * (1 / 2),
-      this.position[1] + this.width * -(1 / 2),
-    );
-
-    indicies.push(
-      this.position[0] + this.width * (1 / 2),
-      this.position[1] + this.width * (1 / 2),
-    );
-
-    indicies.push(
-      this.position[0] + this.width * -(1 / 2),
-      this.position[1] + this.width * (1 / 2),
-    );
+    indicies.push(this.width * -(1 / 2), this.width * -(1 / 2));
+    indicies.push(this.width * -(1 / 2), this.width * (1 / 2));
+    indicies.push(this.width * (1 / 2), this.width * (1 / 2));
 
     return indicies;
   }

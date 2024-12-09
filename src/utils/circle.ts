@@ -8,11 +8,14 @@ export class Circle implements Drawable {
   constructor({
     position,
     radius,
+    color,
   }: {
     position: [number, number];
     radius: number;
+    color?: [number, number, number, number];
   }) {
     this._position = position;
+    this._color = color ?? [1, 1, 1, 1];
     this.radius = radius;
   }
 
@@ -36,17 +39,27 @@ export class Circle implements Drawable {
     this._color[3] = color[3];
   }
 
+  readonly segments = 32;
+  readonly thetaStart = 0;
+  readonly thetaLength = 2 * Math.PI;
   createIndicies(): number[] | Float32Array {
-    const numElements = 40;
-
     const indicies: number[] = [];
-    indicies.concat(this.position);
 
-    for (let i = 0; i <= numElements; i++) {
-      const theta = (2 * Math.PI * i) / numElements;
+    for (let s = 0; s <= this.segments - 1; s++) {
+      const segment = this.thetaStart + (s / this.segments) * this.thetaLength;
+      const nextSegment =
+        this.thetaStart + ((s - 1) / this.segments) * this.thetaLength;
+
+      indicies.push(0, 0);
+
       indicies.push(
-        this.position[0] + this.radius * Math.cos(theta),
-        this.position[1] + this.radius * Math.sin(theta),
+        this.radius * Math.cos(segment),
+        this.radius * Math.sin(segment),
+      );
+
+      indicies.push(
+        this.radius * Math.cos(nextSegment),
+        this.radius * Math.sin(nextSegment),
       );
     }
 

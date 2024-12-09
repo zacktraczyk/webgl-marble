@@ -77,11 +77,6 @@ class DrawObject {
   setUniforms() {
     WebglUtils.setUniforms(this.programInfo.uniformSetters, this.uniforms);
   }
-
-  draw() {
-    const gl = this.gl;
-    gl.drawArrays(gl.LINE_LOOP, 0, this.bufferInfo.numElements);
-  }
 }
 
 /**
@@ -182,7 +177,7 @@ export class VDU {
         object.uniforms,
       );
 
-      gl.drawArrays(gl.LINE_LOOP, 0, object.bufferInfo.numElements);
+      gl.drawArrays(gl.TRIANGLES, 0, object.bufferInfo.numElements);
     });
   }
 }
