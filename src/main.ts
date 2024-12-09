@@ -33,10 +33,17 @@ function main() {
     velocity += acc;
     if (
       marble.position[1] + marble.radius >=
-      ground.position[1] - ground.height / 2
+        ground.position[1] - ground.height / 2 &&
+      velocity > 0
     ) {
+      if (velocity < dampen) {
+        velocity = 0;
+        return;
+      }
+
       velocity = -velocity * dampen;
     }
+
     marble.position[1] += velocity;
 
     updateFps(time);
