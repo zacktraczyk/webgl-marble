@@ -1,53 +1,45 @@
 import "./style.css";
 import { Circle } from "./utils/circle";
-import { Square } from "./utils/square";
+import { Rectangle } from "./utils/rectangle";
 import { throttle } from "./utils/utils";
 import { VDU } from "./utils/vdu";
 
 function main() {
   const vdu = new VDU("#gl-canvas");
 
-  const circles: Circle[] = [];
-  for (let i = 1; i < 10; i++) {
-    const x = (i / 10) * vdu.canvas.clientWidth;
-    const y = (i / 10) * vdu.canvas.clientHeight;
+  const marble = new Circle({
+    position: [vdu.canvas.clientWidth / 2, 200],
+    radius: 20,
+    color: [1, 0, 0, 1],
+  });
+  vdu.add(marble);
 
-    const c = new Circle({
-      position: [x, y],
-      radius: 20,
-      color: [Math.random(), Math.random(), Math.random(), 1],
-    });
-    vdu.add(c);
-    circles.push(c);
-  }
+  const ground = new Rectangle({
+    position: [vdu.canvas.clientWidth / 2, vdu.canvas.clientHeight - 25],
+    width: vdu.canvas.clientWidth,
+    height: 50,
+    color: [0, 1, 0, 1],
+  });
+  vdu.add(ground);
 
-  const squares: Square[] = [];
-  for (let i = 1; i < 10; i++) {
-    const x = 320;
-    const y = (i / 10) * vdu.canvas.clientHeight;
-
-    const s = new Square({
-      position: [x, y],
-      width: 20,
-      color: [Math.random() * 0.75 + 0.25, 0, 0, 1],
-    });
-    vdu.add(s);
-    squares.push(s);
-  }
+  const acc = 0.03;
+  const dampen = 0.6;
+  let velocity = 0;
 
   let tick = 0;
   function updateScene(time: number) {
     tick += 0.01;
+
+    velocity += acc;
+    if (
+      marble.position[1] + marble.radius >=
+      ground.position[1] - ground.height / 2
+    ) {
+      velocity = -velocity * dampen;
+    }
+    marble.position[1] += velocity;
+
     updateFps(time);
-
-    circles.forEach((c, i) => {
-      c.position[0] += Math.sin(tick + i);
-      c.position[1] += Math.cos(tick + i);
-    });
-
-    squares.forEach((s, i) => {
-      s.position[0] += Math.cos(tick + i);
-    });
   }
 
   function render(time: number) {
