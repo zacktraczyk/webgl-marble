@@ -1,7 +1,6 @@
 import "./style.css";
 import { Circle } from "./utils/circle";
 import { Rectangle } from "./utils/rectangle";
-import { throttle } from "./utils/utils";
 import { VDU } from "./utils/vdu";
 
 function main() {
@@ -38,15 +37,14 @@ function main() {
     ) {
       if (velocity < dampen) {
         velocity = 0;
-        return;
+      } else {
+        velocity = -velocity * dampen;
       }
-
-      velocity = -velocity * dampen;
     }
 
     marble.position[1] += velocity;
 
-    updateFps(time);
+    updateFpsPerf();
   }
 
   function render(time: number) {
@@ -60,20 +58,22 @@ function main() {
 }
 
 // FPS Counter
-let lastTime = 0;
 const fpsElem = document.getElementById("#fps");
-const [updateFpsText] = throttle((fps: number) => {
-  if (fpsElem) {
-    fpsElem.textContent = `FPS: ${fps.toFixed(2)}`;
-  }
-}, 500);
+let lastTime = performance.now();
+let frameCount = 0;
+const updateFpsPerf = () => {
+  const now = performance.now();
+  const delta = now - lastTime;
+  frameCount++;
 
-const updateFps = (time: number) => {
-  time *= 0.005;
-  const deltaTime = time - lastTime;
-  lastTime = time;
-  const fps = 1 / deltaTime;
-  updateFpsText(fps);
+  if (delta > 500) {
+    const fps = (frameCount / delta) * 1000;
+    if (fpsElem) {
+      fpsElem.textContent = `FPS: ${fps.toFixed(2)}`;
+    }
+    lastTime = now;
+    frameCount = 0;
+  }
 };
 
 main();
