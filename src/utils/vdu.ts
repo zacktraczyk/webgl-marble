@@ -16,7 +16,7 @@ export abstract class Drawable {
  * Objects rendered by VDU, constructed from a Drawable object
  */
 class DrawObject {
-  private readonly gl: WebGLRenderingContext;
+  readonly gl: WebGLRenderingContext;
   readonly programInfo: WebglUtils.ProgramInfo;
   readonly bufferInfo: WebglUtils.BufferInfo;
   readonly uniforms: Record<string, WebglUtils.Uniform>;
@@ -89,6 +89,8 @@ export class VDU {
   private readonly _programInfo: WebglUtils.ProgramInfo;
   private readonly _objectsToDraw: DrawObject[];
 
+  private _drawMode: "TRIANGLES" | "LINES" = "TRIANGLES";
+
   constructor(canvasId: string) {
     // Create WebGL rendering context
     const canvas = document.querySelector(canvasId);
@@ -127,6 +129,14 @@ export class VDU {
 
     // Init draw objects
     this._objectsToDraw = [];
+  }
+
+  set drawMode(mode: "TRIANGLES" | "LINES") {
+    this._drawMode = mode;
+  }
+
+  get drawMode() {
+    return this._drawMode;
   }
 
   add(obj: Drawable) {
@@ -177,7 +187,11 @@ export class VDU {
         object.uniforms,
       );
 
-      gl.drawArrays(gl.TRIANGLES, 0, object.bufferInfo.numElements);
+      if (this._drawMode === "LINES") {
+        gl.drawArrays(gl.LINES, 0, object.bufferInfo.numElements);
+      } else {
+        gl.drawArrays(gl.TRIANGLES, 0, object.bufferInfo.numElements);
+      }
     });
   }
 }
