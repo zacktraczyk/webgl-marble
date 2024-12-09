@@ -1,21 +1,25 @@
 import { Drawable } from "./vdu";
 
-export class Square implements Drawable {
+export class Rectangle implements Drawable {
   private readonly _position: [number, number];
   private readonly _color: [number, number, number, number] = [1, 0, 0, 1];
   readonly width: number;
+  readonly height: number;
 
   constructor({
     position,
     width,
+    height,
     color,
   }: {
     position: [number, number];
     width: number;
+    height: number;
     color?: [number, number, number, number];
   }) {
     this._position = position;
     this.width = width;
+    this.height = height;
     this._color = color ?? [1, 1, 1, 1];
   }
 
@@ -42,13 +46,13 @@ export class Square implements Drawable {
   createIndicies(): number[] | Float32Array {
     const indicies: number[] = [];
 
-    indicies.push(this.width * (1 / 2), this.width * -(1 / 2));
-    indicies.push(this.width * -(1 / 2), this.width * -(1 / 2));
-    indicies.push(this.width * (1 / 2), this.width * (1 / 2));
+    indicies.push(this.width * (1 / 2), this.height * -(1 / 2));
+    indicies.push(this.width * -(1 / 2), this.height * -(1 / 2));
+    indicies.push(this.width * (1 / 2), this.height * (1 / 2));
 
-    indicies.push(this.width * -(1 / 2), this.width * -(1 / 2));
-    indicies.push(this.width * -(1 / 2), this.width * (1 / 2));
-    indicies.push(this.width * (1 / 2), this.width * (1 / 2));
+    indicies.push(this.width * -(1 / 2), this.height * -(1 / 2));
+    indicies.push(this.width * -(1 / 2), this.height * (1 / 2));
+    indicies.push(this.width * (1 / 2), this.height * (1 / 2));
 
     return indicies;
   }
