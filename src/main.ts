@@ -10,8 +10,9 @@ function main() {
   const circles: Circle[] = [];
   for (let i = 0; i < 10; i++) {
     const c = new Circle({
-      position: [100 + i * 13, 100 + i * 13],
+      position: [240 + i * 13, 240 + i * 13],
       radius: 20,
+      color: [Math.random(), Math.random(), Math.random(), 1],
     });
     vdu.add(c);
     circles.push(c);
@@ -20,8 +21,9 @@ function main() {
   const squares: Square[] = [];
   for (let i = 0; i < 10; i++) {
     const s = new Square({
-      position: [170, 110 + i * 10],
+      position: [320, 270 + i * 10],
       width: 20,
+      color: [Math.random() * 0.5 + 0.5, 0, 0, 1],
     });
     vdu.add(s);
     squares.push(s);
@@ -33,10 +35,6 @@ function main() {
     updateFps(time);
 
     circles.forEach((c, i) => {
-      c.color[0] = Math.sin(tick + i + Math.PI / 2) * 0.25 + 0.5;
-      c.color[1] = Math.sin(tick * 3 + i + Math.PI / 3) * 0.25 + 0.5;
-      c.color[2] = Math.sin(tick * 4 + i + Math.PI) * 0.25 + 0.5;
-
       c.position[0] += Math.sin(tick + i);
       c.position[1] += Math.cos(tick + i);
     });
