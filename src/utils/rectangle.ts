@@ -1,26 +1,32 @@
-import { Drawable } from "./vdu";
+import { EntityType } from "./physics";
+import { Drawable, DrawObject } from "./vdu";
+import * as WebglUtils from "./webglUtils";
 
 export class Rectangle implements Drawable {
   private readonly _position: [number, number];
   private readonly _color: [number, number, number, number] = [1, 0, 0, 1];
   readonly width: number;
   readonly height: number;
+  readonly type: EntityType;
 
   constructor({
     position,
     width,
     height,
     color,
+    type = "kinematic",
   }: {
     position: [number, number];
     width: number;
     height: number;
     color?: [number, number, number, number];
+    type?: EntityType;
   }) {
     this._position = position;
     this.width = width;
     this.height = height;
     this._color = color ?? [1, 1, 1, 1];
+    this.type = type;
   }
 
   set position(center: [number, number]) {
@@ -43,7 +49,10 @@ export class Rectangle implements Drawable {
     this._color[3] = color[3];
   }
 
-  createIndicies(): number[] | Float32Array {
+  createDrawObject(
+    gl: WebGLRenderingContext,
+    programInfo: WebglUtils.ProgramInfo,
+  ): DrawObject {
     const indicies: number[] = [];
 
     indicies.push(this.width * (1 / 2), this.height * -(1 / 2));
@@ -54,6 +63,14 @@ export class Rectangle implements Drawable {
     indicies.push(this.width * -(1 / 2), this.height * (1 / 2));
     indicies.push(this.width * (1 / 2), this.height * (1 / 2));
 
-    return indicies;
+    const drawObject = new DrawObject({
+      gl,
+      programInfo,
+      position: this.position,
+      color: this.color,
+      indicies,
+    });
+
+    return drawObject;
   }
 }
