@@ -1,4 +1,5 @@
-import { Drawable } from "./vdu";
+import { Drawable, DrawObject } from "./vdu";
+import * as WebglUtils from "./webglUtils";
 
 export class Circle implements Drawable {
   private readonly _position: [number, number];
@@ -42,7 +43,10 @@ export class Circle implements Drawable {
   readonly segments = 32;
   readonly thetaStart = 0;
   readonly thetaLength = 2 * Math.PI;
-  createIndicies(): number[] | Float32Array {
+  createDrawObject(
+    gl: WebGLRenderingContext,
+    programInfo: WebglUtils.ProgramInfo,
+  ): DrawObject {
     const indicies: number[] = [];
 
     for (let s = 0; s <= this.segments - 1; s++) {
@@ -63,6 +67,14 @@ export class Circle implements Drawable {
       );
     }
 
-    return indicies;
+    const drawObject = new DrawObject({
+      gl,
+      programInfo,
+      position: this.position,
+      color: this.color,
+      indicies,
+    });
+
+    return drawObject;
   }
 }

@@ -6,16 +6,16 @@ import * as WebglUtils from "./webglUtils";
  * Required properties and methods for an object to be drawable by VDU
  */
 export abstract class Drawable {
-  abstract position: [number, number];
-  abstract color: [number, number, number, number];
-
-  abstract createIndicies(): number[] | Float32Array;
+  abstract createDrawObject(
+    gl: WebGLRenderingContext,
+    programInfo: WebglUtils.ProgramInfo,
+  ): DrawObject;
 }
 
 /**
  * Objects rendered by VDU, constructed from a Drawable object
  */
-class DrawObject {
+export class DrawObject {
   readonly gl: WebGLRenderingContext;
   readonly programInfo: WebglUtils.ProgramInfo;
   readonly bufferInfo: WebglUtils.BufferInfo;
@@ -139,15 +139,8 @@ export class VDU {
     return this._drawMode;
   }
 
-  add(obj: Drawable) {
-    const drawObject = new DrawObject({
-      gl: this._gl,
-      programInfo: this._programInfo,
-      position: obj.position,
-      color: obj.color,
-      indicies: obj.createIndicies(),
-    });
-
+  add(drawable: Drawable) {
+    const drawObject = drawable.createDrawObject(this._gl, this._programInfo);
     this._objectsToDraw.push(drawObject);
   }
 
