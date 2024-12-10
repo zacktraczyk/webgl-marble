@@ -1,8 +1,8 @@
-import { EntityType } from "./physics";
+import { EntityType, Physical, PhysicsEntity } from "./physics";
 import { Drawable, DrawObject } from "./vdu";
 import * as WebglUtils from "./webglUtils";
 
-export class Rectangle implements Drawable {
+export class Rectangle implements Drawable, Physical {
   private readonly _position: [number, number];
   private readonly _color: [number, number, number, number] = [1, 0, 0, 1];
   readonly width: number;
@@ -72,5 +72,21 @@ export class Rectangle implements Drawable {
     });
 
     return drawObject;
+  }
+
+  createPhysicsEntity(): PhysicsEntity {
+    const physicsEntity: PhysicsEntity = new PhysicsEntity({
+      type: this.type,
+      position: this.position,
+      boundingBoxParams: {
+        shape: {
+          type: "AABB",
+          width: this.width,
+          height: this.height,
+        },
+      },
+    });
+
+    return physicsEntity;
   }
 }

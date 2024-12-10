@@ -1,17 +1,21 @@
 import "./style.css";
-import { Circle } from "./utils/circle";
+import Physics from "./utils/physics";
 import { Rectangle } from "./utils/rectangle";
 import { VDU } from "./utils/vdu";
 
 function main() {
   const vdu = new VDU("#gl-canvas");
+  const physics = new Physics();
 
-  const marble = new Circle({
+  const box = new Rectangle({
     position: [vdu.canvas.clientWidth / 2, 200],
-    radius: 20,
+    width: 20,
+    height: 20,
     color: [1, 0, 0, 1],
+    type: "dynamic",
   });
-  vdu.add(marble);
+  vdu.add(box);
+  physics.add(box);
 
   const ground = new Rectangle({
     position: [vdu.canvas.clientWidth / 2, vdu.canvas.clientHeight - 25],
@@ -20,35 +24,22 @@ function main() {
     color: [0, 1, 0, 1],
   });
   vdu.add(ground);
+  physics.add(ground);
 
-  const acc = 0.03;
-  const dampen = 0.6;
-  let velocity = 0;
+  // let tick = 0;
 
-  let tick = 0;
-  function updateScene(time: number) {
-    tick += 0.01;
+  let lastTime = performance.now();
+  function updateScene() {
+    const time = performance.now();
+    const elapsed = time - lastTime;
+    lastTime = time;
 
-    velocity += acc;
-    if (
-      marble.position[1] + marble.radius >=
-        ground.position[1] - ground.height / 2 &&
-      velocity > 0
-    ) {
-      if (velocity < dampen) {
-        velocity = 0;
-      } else {
-        velocity = -velocity * dampen;
-      }
-    }
-
-    marble.position[1] += velocity;
-
+    physics.update(elapsed);
     updateFpsPerf();
   }
 
-  function render(time: number) {
-    updateScene(time);
+  function render() {
+    updateScene();
 
     vdu.render();
     requestAnimationFrame(render);
