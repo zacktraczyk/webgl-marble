@@ -4,7 +4,8 @@ import * as WebglUtils from "./webglUtils";
 
 export class Rectangle implements Drawable, Physical {
   private readonly _position: [number, number];
-  private readonly _color: [number, number, number, number] = [1, 0, 0, 1];
+  private readonly _velocity: [number, number];
+  private readonly _color: [number, number, number, number];
   readonly width: number;
   readonly height: number;
   readonly type: EntityType;
@@ -15,18 +16,21 @@ export class Rectangle implements Drawable, Physical {
     height,
     color,
     type = "kinematic",
+    velocity,
   }: {
     position: [number, number];
     width: number;
     height: number;
     color?: [number, number, number, number];
     type?: EntityType;
+    velocity?: [number, number];
   }) {
     this._position = position;
     this.width = width;
     this.height = height;
     this._color = color ?? [1, 1, 1, 1];
     this.type = type;
+    this._velocity = velocity ?? [0, 0];
   }
 
   set position(center: [number, number]) {
@@ -47,6 +51,15 @@ export class Rectangle implements Drawable, Physical {
     this._color[1] = color[1];
     this._color[2] = color[2];
     this._color[3] = color[3];
+  }
+
+  get velocity() {
+    return this._velocity;
+  }
+
+  set velocity(velocity: [number, number]) {
+    this._velocity[0] = velocity[0];
+    this._velocity[1] = velocity[1];
   }
 
   createDrawObject(
@@ -78,13 +91,12 @@ export class Rectangle implements Drawable, Physical {
     const physicsEntity: PhysicsEntity = new PhysicsEntity({
       type: this.type,
       position: this.position,
-      boundingBoxParams: {
-        shape: {
-          type: "AABB",
-          width: this.width,
-          height: this.height,
-        },
+      boundingShapeParams: {
+        type: "BoundingBox",
+        width: this.width,
+        height: this.height,
       },
+      velocity: this.velocity,
     });
 
     return physicsEntity;

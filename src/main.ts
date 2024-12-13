@@ -8,11 +8,13 @@ function main() {
   const physics = new Physics();
 
   const box = new Rectangle({
-    position: [vdu.canvas.clientWidth / 2, 200],
+    position: [100, 400],
     width: 20,
     height: 20,
     color: [1, 0, 0, 1],
+
     type: "dynamic",
+    velocity: [40, 20],
   });
   vdu.add(box);
   physics.add(box);
@@ -25,8 +27,6 @@ function main() {
   });
   vdu.add(ground);
   physics.add(ground);
-
-  // let tick = 0;
 
   let lastTime = performance.now();
   function updateScene() {
