@@ -1,38 +1,37 @@
 // Reference article: https://developer.ibm.com/tutorials/wa-build2dphysicsengine/
 
 const GRAVITY_X = 0;
-const GRAVITY_Y = 0.003;
+const GRAVITY_Y = 9.8;
 
 export type EntityType = "kinematic" | "dynamic";
-
-export type BoundingBoxShape =
-  | {
-      type: "AABB";
-      width: number;
-      height: number;
-    }
-  | {
-      type: "Circle";
-      radius: number;
-    };
 
 export abstract class Physical {
   abstract createPhysicsEntity(): PhysicsEntity;
 }
 
-class BoundingBox {
+abstract class BoundingShape {
+  abstract position: [number, number];
+
+  abstract intersects(other: BoundingShape): boolean;
+}
+
+class BoundingBox implements BoundingShape {
   private readonly _position: [number, number];
-  readonly shape: BoundingBoxShape;
+  readonly width: number;
+  readonly height: number;
 
   constructor({
     position,
-    shape,
+    width,
+    height,
   }: {
     position: [number, number];
-    shape: BoundingBoxShape;
+    width: number;
+    height: number;
   }) {
     this._position = position;
-    this.shape = shape;
+    this.width = width;
+    this.height = height;
   }
 
   set position(center: [number, number]) {
@@ -44,54 +43,81 @@ class BoundingBox {
     return this._position;
   }
 
-  private _intersectsAABB(other: BoundingBox) {
-    if (this.shape.type !== "AABB" || other.shape.type !== "AABB") {
-      throw new Error(
-        `Invalid shape types: ${this.shape.type} and ${other.shape.type}`,
-      );
-    }
+  intersects(other: BoundingShape): boolean {
+    const [x1, y1] = this.position;
+    const [w1, h1] = [this.width, this.height];
 
-    return (
-      this.position[0] < other.position[0] + other.shape.width &&
-      this.position[0] + this.shape.width > other.position[0] &&
-      this.position[1] < other.position[1] + other.shape.height &&
-      this.position[1] + this.shape.height > other.position[1]
-    );
-  }
+    const [x2, y2] = other.position;
 
-  private _intersectsCircle(other: BoundingBox) {
-    if (this.shape.type !== "Circle" || other.shape.type !== "Circle") {
-      throw new Error(
-        `Invalid shape types: ${this.shape.type} and ${other.shape.type}`,
-      );
-    }
+    if (other instanceof BoundingBox) {
+      const [w2, h2] = [other.width, other.height];
 
-    const dx = this.position[0] - other.position[0];
-    const dy = this.position[1] - other.position[1];
-    const distance = Math.sqrt(dx * dx + dy * dy);
+      const isBoxIntersect =
+        x1 - w1 / 2 < x2 + w2 / 2 &&
+        x1 + w1 / 2 > x2 - w2 / 2 &&
+        y1 - h1 / 2 < y2 + h2 / 2 &&
+        y1 + h1 / 2 > y2 - h2 / 2;
 
-    return distance < this.shape.radius + other.shape.radius;
-  }
-
-  // TODO: Verify correct?
-  private _intersectsAABBCircle(other: BoundingBox) {
-    throw new Error("Not implemented");
-  }
-
-  intersects(other: BoundingBox) {
-    if (this.shape.type === "AABB" && other.shape.type === "AABB") {
-      return this._intersectsAABB(other);
-    } else if (this.shape.type === "Circle" && other.shape.type === "Circle") {
-      return this._intersectsCircle(other);
+      return isBoxIntersect;
     } else {
-      return this._intersectsAABBCircle(other);
+      throw new Error("Not implemented");
     }
   }
 }
 
+class BoundingCircle implements BoundingShape {
+  private readonly _position: [number, number];
+  readonly radius: number;
+
+  constructor({
+    position,
+    radius,
+  }: {
+    position: [number, number];
+    radius: number;
+  }) {
+    this._position = position;
+    this.radius = radius;
+  }
+
+  set position(center: [number, number]) {
+    this._position[0] = center[0];
+    this._position[1] = center[1];
+  }
+
+  get position() {
+    return this._position;
+  }
+
+  intersects(other: BoundingShape): boolean {
+    if (other instanceof BoundingCircle) {
+      const dx = this.position[0] - other.position[0];
+      const dy = this.position[1] - other.position[1];
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      return distance < this.radius + other.radius;
+    } else {
+      throw new Error("Not implemented");
+    }
+  }
+}
+
+// TODO: Simplify type?
+type BoundingShapeParams =
+  | Omit<
+      ConstructorParameters<typeof BoundingBox>[0] & { type: "BoundingBox" },
+      "position"
+    >
+  | Omit<
+      ConstructorParameters<typeof BoundingCircle>[0] & {
+        type: "BoundingCircle";
+      },
+      "position"
+    >;
+
 export class PhysicsEntity {
   readonly type: EntityType;
-  readonly boundingBox: BoundingBox;
+  readonly boundingShape: BoundingShape | undefined;
 
   private _position: [number, number];
   velocity: [number, number];
@@ -100,24 +126,31 @@ export class PhysicsEntity {
   constructor({
     type,
     position,
-    boundingBoxParams,
+    boundingShapeParams,
     velocity,
     acceleration,
   }: {
     type: EntityType;
-    boundingBoxParams: Omit<
-      ConstructorParameters<typeof BoundingBox>[0],
-      "position"
-    >;
+    boundingShapeParams: BoundingShapeParams;
     position: [number, number];
     velocity?: [number, number];
     acceleration?: [number, number];
   }) {
     this.type = type;
-    this.boundingBox = new BoundingBox({
-      position,
-      ...boundingBoxParams,
-    });
+
+    if (boundingShapeParams.type === "BoundingCircle") {
+      this.boundingShape = new BoundingCircle({
+        ...boundingShapeParams,
+        position,
+      });
+    } else if (boundingShapeParams.type === "BoundingBox") {
+      this.boundingShape = new BoundingBox({
+        ...boundingShapeParams,
+        position,
+      });
+    } else {
+      this.boundingShape = undefined;
+    }
 
     this._position = position;
     this.velocity = velocity ?? [0, 0];
@@ -141,20 +174,20 @@ class CollisionDetector {
   detectCollisions(
     entities: PhysicsEntity[],
   ): [PhysicsEntity, PhysicsEntity][] | null {
-    const BroadCollisions = this._testAABBOverlap(entities);
-    // TODO: Narrow phase collision detection ?
-    return BroadCollisions;
-  }
-
-  private _testAABBOverlap(
-    entities: PhysicsEntity[],
-  ): [PhysicsEntity, PhysicsEntity][] | null {
     const collisions: [PhysicsEntity, PhysicsEntity][] = [];
     for (let i = 0; i < entities.length; i++) {
       const entity = entities[i];
+      if (!entity.boundingShape) {
+        continue;
+      }
+
       for (let j = i + 1; j < entities.length; j++) {
         const otherEntity = entities[j];
-        if (entity.boundingBox.intersects(otherEntity.boundingBox)) {
+        if (!otherEntity.boundingShape) {
+          continue;
+        }
+
+        if (entity.boundingShape.intersects(otherEntity.boundingShape)) {
           collisions.push([entity, otherEntity]);
         }
       }
@@ -171,6 +204,8 @@ class CollisionResolver {
     for (let i = 0; i < collisions.length; i++) {
       const [entity1, entity2] = collisions[i];
 
+      // Q: Is this the best way to handle this? Resolution between two entities
+      // seems interdependent, might just be one resolve function...
       switch (entity1.type) {
         case "dynamic":
           this._resolveDynamicCollision(entity1, entity2);
@@ -194,7 +229,40 @@ class CollisionResolver {
   private _resolveDynamicCollision(
     entity: PhysicsEntity,
     other: PhysicsEntity,
-  ) {}
+  ) {
+    // HARDCODE for single side collision for now
+    let vx1 = entity.velocity[0] * this._restitution;
+    let vy1 = -entity.velocity[1] * this._restitution;
+
+    if (
+      entity.boundingShape instanceof BoundingBox &&
+      other.boundingShape instanceof BoundingBox
+    ) {
+      // Resolve intersection overlap
+      const mag1 = Math.sqrt(
+        entity.velocity[0] * entity.velocity[0] +
+          entity.velocity[1] * entity.velocity[1],
+      );
+      const u1 = [entity.velocity[0] / mag1, entity.velocity[1] / mag1];
+
+      const entityBottom = entity.position[1] + entity.boundingShape.height / 2;
+      const otherTop = other.position[1] - other.boundingShape.height / 2;
+
+      const dy = -(entityBottom - otherTop);
+      const dx = dy * (u1[0] / u1[1]);
+
+      entity.position[0] += dx;
+      entity.position[1] += dy;
+
+      // Correct velocity
+      // TODO: Hacky, fix this
+      vx1 = Math.sqrt(vx1 * vx1 + 2 * entity.acceleration[0] * dx);
+      vy1 = -Math.sqrt(vy1 * vy1 + 2 * entity.acceleration[1] * dy);
+    }
+
+    entity.velocity[0] = vx1;
+    entity.velocity[1] = vy1;
+  }
 
   private _resolveKinematicCollision(
     entity: PhysicsEntity,
@@ -213,6 +281,8 @@ class Physics {
   }
 
   update(elapsed: number) {
+    elapsed *= 0.005;
+
     const gx = GRAVITY_X * elapsed;
     const gy = GRAVITY_Y * elapsed;
 
@@ -220,25 +290,25 @@ class Physics {
       const entity = this._entities[i];
       switch (entity.type) {
         case "dynamic":
-          entity.velocity[0] = entity.acceleration[0] * elapsed + gx;
-          entity.velocity[1] = entity.acceleration[1] * elapsed + gy;
+          entity.velocity[0] += entity.acceleration[0] * elapsed + gx;
+          entity.velocity[1] += entity.acceleration[1] * elapsed + gy;
           entity.position[0] += entity.velocity[0] * elapsed;
           entity.position[1] += entity.velocity[1] * elapsed;
           break;
         case "kinematic":
-          entity.velocity[0] = entity.acceleration[0] * elapsed;
-          entity.velocity[1] = entity.acceleration[1] * elapsed;
+          entity.velocity[0] += entity.acceleration[0] * elapsed;
+          entity.velocity[1] += entity.acceleration[1] * elapsed;
           entity.position[0] += entity.velocity[0] * elapsed;
           entity.position[1] += entity.velocity[1] * elapsed;
           break;
       }
     }
 
-    // const collisions = this._collider.detectCollisions(this._entities);
+    const collisions = this._collider.detectCollisions(this._entities);
 
-    // if (collisions) {
-    //   this._resolver.resolveCollisions(collisions);
-    // }
+    if (collisions) {
+      this._resolver.resolveCollisions(collisions);
+    }
   }
 }
 
