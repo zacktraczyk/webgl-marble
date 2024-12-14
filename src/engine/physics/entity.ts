@@ -116,7 +116,7 @@ export class BoundingCircle implements BoundingShape {
   }
 }
 
-export type EntityType = "kinematic" | "dynamic";
+export type PhysicsEntityType = "kinematic" | "dynamic";
 
 // TODO: Simplify type?
 type BoundingShapeParams =
@@ -132,7 +132,7 @@ type BoundingShapeParams =
     >;
 
 export class PhysicsEntity {
-  readonly type: EntityType;
+  readonly type: PhysicsEntityType;
   readonly boundingShape: BoundingShape | undefined;
 
   private _position: [number, number];
@@ -146,7 +146,7 @@ export class PhysicsEntity {
     velocity,
     acceleration,
   }: {
-    type: EntityType;
+    type: PhysicsEntityType;
     boundingShapeParams: BoundingShapeParams;
     position: [number, number];
     velocity?: [number, number];

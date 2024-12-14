@@ -29,7 +29,7 @@ export class CollisionDetector {
 
 export class CollisionResolver {
   private _restitution = 0.6;
-  private _penetrationSlop = 0.4;
+  private _penetrationSlop = 0.8;
 
   resolveCollisions(collisions: [PhysicsEntity, PhysicsEntity][]) {
     for (let i = 0; i < collisions.length; i++) {
@@ -179,8 +179,6 @@ export class CollisionResolver {
 
     const dx = x1 - x2;
     const dy = y1 - y2;
-
-    const distance = Math.sqrt(dx * dx + dy * dy);
 
     const penetrationX = r1 + w2 / 2 - Math.abs(dx);
     const penetrationY = r1 + h2 / 2 - Math.abs(dy);

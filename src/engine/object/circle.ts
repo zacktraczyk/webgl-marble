@@ -1,4 +1,4 @@
-import { EntityType, Physical, PhysicsEntity } from "../physics/entity";
+import { Physical, PhysicsEntity, PhysicsEntityType } from "../physics/entity";
 import { Drawable, DrawEntity } from "../vdu/entity";
 import * as WebglUtils from "../vdu/webglUtils";
 
@@ -7,7 +7,7 @@ export class Circle implements Drawable, Physical {
   private readonly _color: [number, number, number, number] = [1, 0, 0, 1];
   readonly radius: number;
 
-  readonly type: EntityType;
+  readonly type: PhysicsEntityType;
   private readonly _velocity: [number, number];
 
   constructor({
@@ -22,7 +22,7 @@ export class Circle implements Drawable, Physical {
     radius: number;
     color?: [number, number, number, number];
 
-    type?: EntityType;
+    type?: PhysicsEntityType;
     velocity?: [number, number];
   }) {
     this._position = position;

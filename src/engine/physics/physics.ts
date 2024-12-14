@@ -2,7 +2,7 @@
 // Collision Resolution reference: https://spicyyoghurt.com/tutorials/html5-javascript-game-development/collision-detection-physics
 
 import { CollisionDetector, CollisionResolver } from "./collision";
-import { Physical, PhysicsEntity } from "./entity";
+import { BoundingBox, BoundingCircle, Physical, PhysicsEntity } from "./entity";
 
 const GRAVITY_X = 0;
 const GRAVITY_Y = 9.8;
@@ -17,6 +17,14 @@ class Physics {
   add(physical: Physical) {
     const entity = physical.createPhysicsEntity();
     this._entities.push(entity);
+
+    // TODO: Why does sim break if if circle is added first?
+    this._entities.sort((a, b) =>
+      a.boundingShape instanceof BoundingBox &&
+      b.boundingShape instanceof BoundingCircle
+        ? -1
+        : 1,
+    );
   }
 
   update(elapsed: number) {
