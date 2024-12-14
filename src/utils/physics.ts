@@ -199,6 +199,7 @@ class CollisionDetector {
 
 class CollisionResolver {
   private _restitution = 0.6;
+  private _penetrationSlop = 0.1;
 
   resolveCollisions(collisions: [PhysicsEntity, PhysicsEntity][]) {
     for (let i = 0; i < collisions.length; i++) {
@@ -211,7 +212,7 @@ class CollisionResolver {
   private _calculateCollisionNormal(
     entity1: PhysicsEntity,
     entity2: PhysicsEntity,
-  ): { normal: [number, number]; overlap: [number, number] } {
+  ): { normal: [number, number]; penetration: [number, number] | number } {
     if (
       entity1.boundingShape instanceof BoundingBox &&
       entity2.boundingShape instanceof BoundingBox
@@ -231,17 +232,17 @@ class CollisionResolver {
       const dx = x1 - x2;
       const dy = y1 - y2;
 
-      const overlapX = w1 / 2 + w2 / 2 - Math.abs(dx);
-      const overlapY = h1 / 2 + h2 / 2 - Math.abs(dy);
+      const penetrationX = w1 / 2 + w2 / 2 - Math.abs(dx);
+      const penetrationY = h1 / 2 + h2 / 2 - Math.abs(dy);
 
       let normal: [number, number];
-      if (overlapX < overlapY) {
+      if (penetrationX < penetrationY) {
         normal = [dx > 0 ? 1 : -1, 0];
       } else {
         normal = [0, dy > 0 ? 1 : -1];
       }
 
-      return { normal, overlap: [overlapX, overlapY] };
+      return { normal, penetration: [penetrationX, penetrationY] };
     } else if (
       entity1.boundingShape instanceof BoundingCircle &&
       entity2.boundingShape instanceof BoundingCircle
@@ -255,49 +256,55 @@ class CollisionResolver {
       const distance = Math.sqrt(dx * dx + dy * dy);
 
       const normal: [number, number] = [dx / distance, dy / distance];
-      // TODO: Calculate overlap
-      const overlap: [number, number] = [0, 0];
+      const penetration =
+        entity1.boundingShape.radius + entity2.boundingShape.radius - distance;
 
-      return { normal, overlap };
+      return { normal, penetration };
     } else {
       throw new Error("Not implemented");
     }
   }
 
-  private _correctOverlap(
+  // TODO: Implement "slop" for collision resolution
+  // TODO: Feed back into collision resolution rather than adjusting positions
+  // directly(Baumgarte Stabilization)
+  private _correctPenetration(
     entity1: PhysicsEntity,
     entity2: PhysicsEntity,
     normal: [number, number],
-    overlap: [number, number],
-    strength: number = 1,
+    penetration: [number, number],
   ) {
+    const overlapX = Math.max(penetration[0] - this._penetrationSlop, 0);
+    const overlapY = Math.max(penetration[1] - this._penetrationSlop, 0);
     if (entity1.type === "dynamic") {
-      if (Math.abs(overlap[0]) > 0.1) {
-        entity1.position[0] += normal[0] * overlap[0] * strength;
+      if (Math.abs(penetration[0]) > 0.1) {
+        entity1.position[0] += normal[0] * overlapX;
       }
-      if (Math.abs(overlap[1]) > 0.1) {
-        entity1.position[1] += normal[1] * overlap[1] * strength;
+      if (Math.abs(penetration[1]) > 0.1) {
+        entity1.position[1] += normal[1] * overlapY;
       }
     }
 
     if (entity2.type === "dynamic") {
-      if (Math.abs(overlap[0]) > 0.1) {
-        entity2.position[0] -= normal[0] * overlap[0] * strength;
+      if (Math.abs(penetration[0]) > 0.1) {
+        entity2.position[0] -= normal[0] * overlapX;
       }
-      if (Math.abs(overlap[1]) > 0.1) {
-        entity2.position[1] -= normal[1] * overlap[1] * strength;
+      if (Math.abs(penetration[1]) > 0.1) {
+        entity2.position[1] -= normal[1] * overlapY;
       }
     }
   }
 
   private _resolveCollision(entity1: PhysicsEntity, entity2: PhysicsEntity) {
     // Calculate collision normal
-    const { normal: collNorm, overlap: collOverlap } =
-      this._calculateCollisionNormal(entity1, entity2);
+    const { normal, penetration } = this._calculateCollisionNormal(
+      entity1,
+      entity2,
+    );
 
-    // Correct Overlap (if any)
-    for (let i = 0; i < 5; i++) {
-      this._correctOverlap(entity1, entity2, collNorm, collOverlap, 0.2);
+    // Correct Penetration
+    if (penetration instanceof Array && penetration.length === 2) {
+      this._correctPenetration(entity1, entity2, normal, penetration);
     }
 
     // Calculate relative velocity
@@ -308,117 +315,25 @@ class CollisionResolver {
 
     // Calculate relative velocity in terms of the normal direction
     const magAlongNormal =
-      relativeVelocity[0] * collNorm[0] + relativeVelocity[1] * collNorm[1];
+      relativeVelocity[0] * normal[0] + relativeVelocity[1] * normal[1];
 
     // Calculate impulse magnitude
-    // TODO: Fix dynamic / kinematic collision resolution (Consider dynamic
-    // shape colliding with dynamic that is colliding with kinematic), all
-    // shapes lose velocity in this case, when really outside shape should
-    // retain incoming velocity
     if (entity1.type === "dynamic") {
-      entity1.velocity[0] -= collNorm[0] * magAlongNormal * this._restitution;
-      entity1.velocity[1] -= collNorm[1] * magAlongNormal * this._restitution;
+      entity1.velocity[0] -= normal[0] * magAlongNormal * this._restitution;
+      entity1.velocity[1] -= normal[1] * magAlongNormal * this._restitution;
     } else {
-      entity2.velocity[0] += collNorm[0] * magAlongNormal * this._restitution;
-      entity2.velocity[1] += collNorm[1] * magAlongNormal * this._restitution;
+      entity2.velocity[0] += normal[0] * magAlongNormal * this._restitution;
+      entity2.velocity[1] += normal[1] * magAlongNormal * this._restitution;
     }
 
     if (entity2.type === "dynamic") {
-      entity2.velocity[0] += collNorm[0] * magAlongNormal * this._restitution;
-      entity2.velocity[1] += collNorm[1] * magAlongNormal * this._restitution;
+      entity2.velocity[0] += normal[0] * magAlongNormal * this._restitution;
+      entity2.velocity[1] += normal[1] * magAlongNormal * this._restitution;
     } else {
-      entity1.velocity[0] -= collNorm[0] * magAlongNormal * this._restitution;
-      entity1.velocity[1] -= collNorm[1] * magAlongNormal * this._restitution;
+      entity1.velocity[0] -= normal[0] * magAlongNormal * this._restitution;
+      entity1.velocity[1] -= normal[1] * magAlongNormal * this._restitution;
     }
   }
-
-  private _resolveDynamicCollision(
-    entity: PhysicsEntity,
-    other: PhysicsEntity,
-  ) {
-    if (
-      entity.boundingShape instanceof BoundingBox &&
-      other.boundingShape instanceof BoundingBox
-    ) {
-      // Resolve intersection overlap
-      const mag1 = Math.sqrt(
-        entity.velocity[0] * entity.velocity[0] +
-          entity.velocity[1] * entity.velocity[1],
-      );
-      const u1 = [entity.velocity[0] / mag1, entity.velocity[1] / mag1];
-
-      // Calculate X overlap
-      const distanceX = Math.abs(entity.position[0] - other.position[0]);
-      const distanceY = Math.abs(entity.position[1] - other.position[1]);
-
-      const overlapX =
-        entity.boundingShape.width / 2 +
-        other.boundingShape.width / 2 -
-        distanceX;
-      const overlapY =
-        entity.boundingShape.height / 2 +
-        other.boundingShape.height / 2 -
-        distanceY;
-
-      // Calcualte minimum displacement to resolve overlap (x or y)
-      let dx;
-      let dy;
-
-      // Q: Use unit vector to factor in shorter overlap?
-      // (i.e. isXOverlapShorter = u1[0] * overlapX < u1[1] * overlapY)
-      // However, need to address extreme where unit vector is 0 for one axis
-      // but more logical for primary displacement correction
-      const isXOverlapShorter = overlapX < overlapY;
-      if (isXOverlapShorter) {
-        dx = entity.position[0] - other.position[0] > 0 ? overlapX : -overlapX;
-        dy = dx * (u1[1] / u1[0]);
-      } else {
-        dy = entity.position[1] - other.position[1] > 0 ? overlapY : -overlapY;
-        dx = dy * (u1[0] / u1[1]);
-      }
-
-      entity.position[0] += dx;
-      entity.position[1] += dy;
-
-      // TODO: Correct velocity based on displacement correction
-      // vx1 = Math.sqrt(vx1 * vx1 + 2 * entity.acceleration[0] * dx);
-      // vy1 = -Math.sqrt(vy1 * vy1 + 2 * entity.acceleration[1] * dy);
-      // Calculate new velocity
-      switch (other.type) {
-        case "dynamic": {
-          break;
-        }
-        case "kinematic": {
-          // Calculate normal vector
-          let normalx;
-          let normaly;
-          if (isXOverlapShorter) {
-            normalx = entity.position[0] > other.position[0] ? 1 : -1;
-            normaly = 0;
-          } else {
-            normalx = 0;
-            normaly = entity.position[1] > other.position[1] ? 1 : -1;
-          }
-
-          const dotx = entity.velocity[0] * normalx;
-          const doty = entity.velocity[1] * normaly;
-
-          const vx1 = entity.velocity[0] - 2 * dotx * normalx;
-          const vy1 = entity.velocity[1] - 2 * doty * normaly;
-
-          entity.velocity[0] = vx1 * this._restitution;
-          entity.velocity[1] = vy1 * this._restitution;
-
-          break;
-        }
-      }
-    }
-  }
-
-  private _resolveKinematicCollision(
-    entity: PhysicsEntity,
-    other: PhysicsEntity,
-  ) {}
 }
 
 class Physics {
