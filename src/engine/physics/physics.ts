@@ -1,0 +1,53 @@
+// Reference article: https://developer.ibm.com/tutorials/wa-build2dphysicsengine/
+// Collision Resolution reference: https://spicyyoghurt.com/tutorials/html5-javascript-game-development/collision-detection-physics
+
+import { CollisionDetector, CollisionResolver } from "./collision";
+import { Physical, PhysicsEntity } from "./entity";
+
+const GRAVITY_X = 0;
+const GRAVITY_Y = 9.8;
+
+class Physics {
+  private _entities: PhysicsEntity[] = [];
+  private _collider: CollisionDetector = new CollisionDetector();
+  private _resolver: CollisionResolver = new CollisionResolver();
+
+  add(physical: Physical) {
+    const entity = physical.createPhysicsEntity();
+    this._entities.push(entity);
+  }
+
+  update(elapsed: number) {
+    elapsed *= 0.005;
+
+    const gx = GRAVITY_X * elapsed;
+    const gy = GRAVITY_Y * elapsed;
+
+    for (let i = 0; i < this._entities.length; i++) {
+      const entity = this._entities[i];
+
+      entity.velocity[0] += entity.acceleration[0] * elapsed;
+      entity.velocity[1] += entity.acceleration[1] * elapsed;
+
+      entity.position[0] += entity.velocity[0] * elapsed;
+      entity.position[1] += entity.velocity[1] * elapsed;
+
+      switch (entity.type) {
+        case "dynamic":
+          entity.velocity[0] += gx;
+          entity.velocity[1] += gy;
+          break;
+        case "kinematic":
+          break;
+      }
+    }
+
+    const collisions = this._collider.detectCollisions(this._entities);
+
+    if (collisions) {
+      this._resolver.resolveCollisions(collisions);
+    }
+  }
+}
+
+export default Physics;

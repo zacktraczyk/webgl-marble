@@ -1,5 +1,5 @@
-import { Drawable, DrawObject } from "./vdu";
-import * as WebglUtils from "./webglUtils";
+import { Drawable, DrawEntity } from "../vdu/entity";
+import * as WebglUtils from "../vdu/webglUtils";
 
 export class Circle implements Drawable {
   private readonly _position: [number, number];
@@ -43,10 +43,10 @@ export class Circle implements Drawable {
   readonly segments = 32;
   readonly thetaStart = 0;
   readonly thetaLength = 2 * Math.PI;
-  createDrawObject(
+  createDrawEntity(
     gl: WebGLRenderingContext,
     programInfo: WebglUtils.ProgramInfo,
-  ): DrawObject {
+  ): DrawEntity {
     const indicies: number[] = [];
 
     for (let s = 0; s <= this.segments - 1; s++) {
@@ -67,7 +67,7 @@ export class Circle implements Drawable {
       );
     }
 
-    const drawObject = new DrawObject({
+    const drawObject = new DrawEntity({
       gl,
       programInfo,
       position: this.position,

@@ -1,6 +1,6 @@
-import { EntityType, Physical, PhysicsEntity } from "./physics";
-import { Drawable, DrawObject } from "./vdu";
-import * as WebglUtils from "./webglUtils";
+import { EntityType, Physical, PhysicsEntity } from "../physics/entity";
+import { Drawable, DrawEntity } from "../vdu/entity";
+import * as WebglUtils from "../vdu/webglUtils";
 
 export class Rectangle implements Drawable, Physical {
   private readonly _position: [number, number];
@@ -62,10 +62,10 @@ export class Rectangle implements Drawable, Physical {
     this._velocity[1] = velocity[1];
   }
 
-  createDrawObject(
+  createDrawEntity(
     gl: WebGLRenderingContext,
     programInfo: WebglUtils.ProgramInfo,
-  ): DrawObject {
+  ): DrawEntity {
     const indicies: number[] = [];
 
     indicies.push(this.width * (1 / 2), this.height * -(1 / 2));
@@ -76,7 +76,7 @@ export class Rectangle implements Drawable, Physical {
     indicies.push(this.width * -(1 / 2), this.height * (1 / 2));
     indicies.push(this.width * (1 / 2), this.height * (1 / 2));
 
-    const drawObject = new DrawObject({
+    const drawObject = new DrawEntity({
       gl,
       programInfo,
       position: this.position,
