@@ -105,7 +105,7 @@ export class VDU {
       );
 
       if (this._drawMode === "LINES") {
-        gl.drawArrays(gl.LINES, 0, object.bufferInfo.numElements);
+        gl.drawArrays(gl.LINE_LOOP, 0, object.bufferInfo.numElements);
       } else {
         gl.drawArrays(gl.TRIANGLES, 0, object.bufferInfo.numElements);
       }

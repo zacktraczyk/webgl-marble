@@ -107,7 +107,7 @@ function main() {
   // Init
   spawnWalls();
   randomCirclesSpawn();
-  // randomBoxesSpawn();
+  randomBoxesSpawn();
 
   let lastTime = performance.now();
   function updateScene() {

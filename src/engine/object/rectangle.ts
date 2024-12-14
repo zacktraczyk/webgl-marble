@@ -1,4 +1,4 @@
-import { EntityType, Physical, PhysicsEntity } from "../physics/entity";
+import { Physical, PhysicsEntity, PhysicsEntityType } from "../physics/entity";
 import { Drawable, DrawEntity } from "../vdu/entity";
 import * as WebglUtils from "../vdu/webglUtils";
 
@@ -8,7 +8,7 @@ export class Rectangle implements Drawable, Physical {
   readonly width: number;
   readonly height: number;
 
-  readonly type: EntityType;
+  readonly type: PhysicsEntityType;
   private readonly _velocity: [number, number];
 
   constructor({
@@ -25,7 +25,7 @@ export class Rectangle implements Drawable, Physical {
     height: number;
     color?: [number, number, number, number];
 
-    type?: EntityType;
+    type?: PhysicsEntityType;
     velocity?: [number, number];
   }) {
     this._position = position;
