@@ -47,25 +47,8 @@ function main() {
   const boxSharedProps = {
     width: 20,
     height: 20,
-    color: [1, 0, 0, 1] as [number, number, number, number],
     type: "dynamic" as const,
   };
-
-  const box1 = new Rectangle({
-    position: [200, 250],
-    velocity: [30, 10],
-    ...boxSharedProps,
-  });
-  vdu.add(box1);
-  physics.add(box1);
-
-  const box2 = new Rectangle({
-    position: [400, 300],
-    velocity: [-10, 0],
-    ...boxSharedProps,
-  });
-  vdu.add(box2);
-  physics.add(box2);
 
   const spawnBoundary = new Rectangle({
     position: [vdu.canvas.clientWidth / 2, vdu.canvas.clientHeight / 2],
@@ -74,7 +57,7 @@ function main() {
   });
 
   // Spawn boxes
-  for (let i = 0; i < 30; i++) {
+  for (let i = 0; i < 50; i++) {
     const x =
       Math.random() * spawnBoundary.width - 100 + spawnBoundary.position[0] / 2;
     const y =
@@ -82,12 +65,13 @@ function main() {
       100 +
       spawnBoundary.position[1] / 2;
 
-    const vx = Math.random() * 100 - 50;
-    const vy = Math.random() * 100 - 50;
+    const vx = Math.random() * 200 - 100;
+    const vy = Math.random() * 200 - 100;
 
     const box = new Rectangle({
       position: [x, y],
       velocity: [vx, vy],
+      color: [Math.random() * 0.5 + 0.5, 0, 0, 1],
       ...boxSharedProps,
     });
     vdu.add(box);
