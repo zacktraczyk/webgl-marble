@@ -231,8 +231,8 @@ class CollisionResolver {
     other: PhysicsEntity,
   ) {
     // HARDCODE for single side collision for now
-    let vx1 = entity.velocity[0] * this._restitution;
-    let vy1 = -entity.velocity[1] * this._restitution;
+    const vx1 = entity.velocity[0] * this._restitution;
+    const vy1 = -entity.velocity[1] * this._restitution;
 
     if (
       entity.boundingShape instanceof BoundingBox &&
@@ -245,19 +245,43 @@ class CollisionResolver {
       );
       const u1 = [entity.velocity[0] / mag1, entity.velocity[1] / mag1];
 
-      const entityBottom = entity.position[1] + entity.boundingShape.height / 2;
-      const otherTop = other.position[1] - other.boundingShape.height / 2;
+      // Calculate X overlap
+      const distanceX = Math.abs(entity.position[0] - other.position[0]);
+      const overlapX =
+        entity.boundingShape.width / 2 +
+        other.boundingShape.width / 2 -
+        distanceX;
 
-      const dy = -(entityBottom - otherTop);
-      const dx = dy * (u1[0] / u1[1]);
+      // Calculate Y overlap
+      const distanceY = Math.abs(entity.position[1] - other.position[1]);
+      const overlapY =
+        entity.boundingShape.height / 2 +
+        other.boundingShape.height / 2 -
+        distanceY;
+
+      // Calcualte minimum displacement to resolve overlap (x or y)
+      let dx = 0;
+      let dy = 0;
+
+      // Q: Use unit vector to factor in shorter overlap?
+      // (i.e. isXOverlapShorter = u1[0] * overlapX < u1[1] * overlapY)
+      // However, need to address extreme where unit vector is 0 for one axis
+      // but more logical for primary displacement correction
+      const isXOverlapShorter = overlapX < overlapY;
+      if (isXOverlapShorter) {
+        dx = entity.position[0] - other.position[0] > 0 ? overlapX : -overlapX;
+        dy = dx * (u1[1] / u1[0]);
+      } else {
+        dy = entity.position[1] - other.position[1] > 0 ? overlapY : -overlapY;
+        dx = dy * (u1[0] / u1[1]);
+      }
 
       entity.position[0] += dx;
       entity.position[1] += dy;
 
-      // Correct velocity
-      // TODO: Hacky, fix this
-      vx1 = Math.sqrt(vx1 * vx1 + 2 * entity.acceleration[0] * dx);
-      vy1 = -Math.sqrt(vy1 * vy1 + 2 * entity.acceleration[1] * dy);
+      // TODO: Correct velocity based on displacement correction
+      // vx1 = Math.sqrt(vx1 * vx1 + 2 * entity.acceleration[0] * dx);
+      // vy1 = -Math.sqrt(vy1 * vy1 + 2 * entity.acceleration[1] * dy);
     }
 
     entity.velocity[0] = vx1;
