@@ -1,23 +1,36 @@
+import { EntityType, Physical, PhysicsEntity } from "../physics/entity";
 import { Drawable, DrawEntity } from "../vdu/entity";
 import * as WebglUtils from "../vdu/webglUtils";
 
-export class Circle implements Drawable {
+export class Circle implements Drawable, Physical {
   private readonly _position: [number, number];
   private readonly _color: [number, number, number, number] = [1, 0, 0, 1];
   readonly radius: number;
+
+  readonly type: EntityType;
+  private readonly _velocity: [number, number];
 
   constructor({
     position,
     radius,
     color,
+
+    type = "kinematic",
+    velocity,
   }: {
     position: [number, number];
     radius: number;
     color?: [number, number, number, number];
+
+    type?: EntityType;
+    velocity?: [number, number];
   }) {
     this._position = position;
     this._color = color ?? [1, 1, 1, 1];
     this.radius = radius;
+
+    this.type = type;
+    this._velocity = velocity ?? [0, 0];
   }
 
   set position(center: [number, number]) {
@@ -38,6 +51,15 @@ export class Circle implements Drawable {
     this._color[1] = color[1];
     this._color[2] = color[2];
     this._color[3] = color[3];
+  }
+
+  get velocity() {
+    return this._velocity;
+  }
+
+  set velocity(velocity: [number, number]) {
+    this._velocity[0] = velocity[0];
+    this._velocity[1] = velocity[1];
   }
 
   readonly segments = 32;
@@ -76,5 +98,19 @@ export class Circle implements Drawable {
     });
 
     return drawObject;
+  }
+
+  createPhysicsEntity(): PhysicsEntity {
+    const physicsEntity: PhysicsEntity = new PhysicsEntity({
+      type: this.type,
+      position: this.position,
+      boundingShapeParams: {
+        type: "BoundingCircle",
+        radius: this.radius,
+      },
+      velocity: this.velocity,
+    });
+
+    return physicsEntity;
   }
 }

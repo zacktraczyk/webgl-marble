@@ -4,17 +4,19 @@ import * as WebglUtils from "../vdu/webglUtils";
 
 export class Rectangle implements Drawable, Physical {
   private readonly _position: [number, number];
-  private readonly _velocity: [number, number];
   private readonly _color: [number, number, number, number];
   readonly width: number;
   readonly height: number;
+
   readonly type: EntityType;
+  private readonly _velocity: [number, number];
 
   constructor({
     position,
     width,
     height,
     color,
+
     type = "kinematic",
     velocity,
   }: {
@@ -22,6 +24,7 @@ export class Rectangle implements Drawable, Physical {
     width: number;
     height: number;
     color?: [number, number, number, number];
+
     type?: EntityType;
     velocity?: [number, number];
   }) {
@@ -29,6 +32,7 @@ export class Rectangle implements Drawable, Physical {
     this.width = width;
     this.height = height;
     this._color = color ?? [1, 1, 1, 1];
+
     this.type = type;
     this._velocity = velocity ?? [0, 0];
   }
