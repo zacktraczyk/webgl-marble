@@ -1,7 +1,7 @@
+import { Rectangle } from "./engine/object/rectangle";
+import Physics from "./engine/physics/physics";
+import { VDU } from "./engine/vdu/vdu";
 import "./style.css";
-import Physics from "./utils/physics";
-import { Rectangle } from "./utils/rectangle";
-import { VDU } from "./utils/vdu";
 
 function main() {
   const vdu = new VDU("#gl-canvas");
