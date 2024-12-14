@@ -230,14 +230,33 @@ class CollisionResolver {
     entity: PhysicsEntity,
     other: PhysicsEntity,
   ) {
-    // HARDCODE for single side collision for now
-    const vx1 = entity.velocity[0] * this._restitution;
-    const vy1 = -entity.velocity[1] * this._restitution;
-
     if (
       entity.boundingShape instanceof BoundingBox &&
       other.boundingShape instanceof BoundingBox
     ) {
+      // Calculate new velocity
+      switch (other.type) {
+        case "dynamic": {
+          break;
+        }
+        case "kinematic": {
+          // TODO: Add normal calculation
+          const normalx = 0; // FIXME
+          const normaly = 1; // FIXME
+
+          const dotx = entity.velocity[0] * normalx;
+          const doty = entity.velocity[1] * normaly;
+
+          const vx1 = entity.velocity[0] - 2 * dotx * normalx;
+          const vy1 = entity.velocity[1] - 2 * doty * normaly;
+
+          entity.velocity[0] = vx1 * this._restitution;
+          entity.velocity[1] = vy1 * this._restitution;
+
+          break;
+        }
+      }
+
       // Resolve intersection overlap
       const mag1 = Math.sqrt(
         entity.velocity[0] * entity.velocity[0] +
@@ -247,21 +266,20 @@ class CollisionResolver {
 
       // Calculate X overlap
       const distanceX = Math.abs(entity.position[0] - other.position[0]);
+      const distanceY = Math.abs(entity.position[1] - other.position[1]);
+
       const overlapX =
         entity.boundingShape.width / 2 +
         other.boundingShape.width / 2 -
         distanceX;
-
-      // Calculate Y overlap
-      const distanceY = Math.abs(entity.position[1] - other.position[1]);
       const overlapY =
         entity.boundingShape.height / 2 +
         other.boundingShape.height / 2 -
         distanceY;
 
       // Calcualte minimum displacement to resolve overlap (x or y)
-      let dx = 0;
-      let dy = 0;
+      let dx;
+      let dy;
 
       // Q: Use unit vector to factor in shorter overlap?
       // (i.e. isXOverlapShorter = u1[0] * overlapX < u1[1] * overlapY)
@@ -283,9 +301,6 @@ class CollisionResolver {
       // vx1 = Math.sqrt(vx1 * vx1 + 2 * entity.acceleration[0] * dx);
       // vy1 = -Math.sqrt(vy1 * vy1 + 2 * entity.acceleration[1] * dy);
     }
-
-    entity.velocity[0] = vx1;
-    entity.velocity[1] = vy1;
   }
 
   private _resolveKinematicCollision(
