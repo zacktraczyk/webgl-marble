@@ -204,25 +204,131 @@ class CollisionResolver {
     for (let i = 0; i < collisions.length; i++) {
       const [entity1, entity2] = collisions[i];
 
-      // Q: Is this the best way to handle this? Resolution between two entities
-      // seems interdependent, might just be one resolve function...
-      switch (entity1.type) {
-        case "dynamic":
-          this._resolveDynamicCollision(entity1, entity2);
-          break;
-        case "kinematic":
-          this._resolveKinematicCollision(entity1, entity2);
-          break;
+      this._resolveCollision(entity1, entity2);
+    }
+  }
+
+  private _calculateCollisionNormal(
+    entity1: PhysicsEntity,
+    entity2: PhysicsEntity,
+  ): { normal: [number, number]; overlap: [number, number] } {
+    if (
+      entity1.boundingShape instanceof BoundingBox &&
+      entity2.boundingShape instanceof BoundingBox
+    ) {
+      const [x1, y1] = entity1.position;
+      const [w1, h1] = [
+        entity1.boundingShape.width,
+        entity1.boundingShape.height,
+      ];
+
+      const [x2, y2] = entity2.position;
+      const [w2, h2] = [
+        entity2.boundingShape.width,
+        entity2.boundingShape.height,
+      ];
+
+      const dx = x1 - x2;
+      const dy = y1 - y2;
+
+      const overlapX = w1 / 2 + w2 / 2 - Math.abs(dx);
+      const overlapY = h1 / 2 + h2 / 2 - Math.abs(dy);
+
+      let normal: [number, number];
+      if (overlapX < overlapY) {
+        normal = [dx > 0 ? 1 : -1, 0];
+      } else {
+        normal = [0, dy > 0 ? 1 : -1];
       }
 
-      switch (entity2.type) {
-        case "dynamic":
-          this._resolveDynamicCollision(entity2, entity1);
-          break;
-        case "kinematic":
-          this._resolveKinematicCollision(entity2, entity1);
-          break;
+      return { normal, overlap: [overlapX, overlapY] };
+    } else if (
+      entity1.boundingShape instanceof BoundingCircle &&
+      entity2.boundingShape instanceof BoundingCircle
+    ) {
+      const [x1, y1] = entity1.position;
+      const [x2, y2] = entity2.position;
+
+      const dx = x1 - x2;
+      const dy = y1 - y2;
+
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      const normal: [number, number] = [dx / distance, dy / distance];
+      // TODO: Calculate overlap
+      const overlap: [number, number] = [0, 0];
+
+      return { normal, overlap };
+    } else {
+      throw new Error("Not implemented");
+    }
+  }
+
+  private _correctOverlap(
+    entity1: PhysicsEntity,
+    entity2: PhysicsEntity,
+    normal: [number, number],
+    overlap: [number, number],
+    strength: number = 1,
+  ) {
+    if (entity1.type === "dynamic") {
+      if (Math.abs(overlap[0]) > 0.1) {
+        entity1.position[0] += normal[0] * overlap[0] * strength;
       }
+      if (Math.abs(overlap[1]) > 0.1) {
+        entity1.position[1] += normal[1] * overlap[1] * strength;
+      }
+    }
+
+    if (entity2.type === "dynamic") {
+      if (Math.abs(overlap[0]) > 0.1) {
+        entity2.position[0] -= normal[0] * overlap[0] * strength;
+      }
+      if (Math.abs(overlap[1]) > 0.1) {
+        entity2.position[1] -= normal[1] * overlap[1] * strength;
+      }
+    }
+  }
+
+  private _resolveCollision(entity1: PhysicsEntity, entity2: PhysicsEntity) {
+    // Calculate collision normal
+    const { normal: collNorm, overlap: collOverlap } =
+      this._calculateCollisionNormal(entity1, entity2);
+
+    // Correct Overlap (if any)
+    for (let i = 0; i < 5; i++) {
+      this._correctOverlap(entity1, entity2, collNorm, collOverlap, 0.2);
+    }
+
+    // Calculate relative velocity
+    const relativeVelocity = [
+      entity1.velocity[0] - entity2.velocity[0],
+      entity1.velocity[1] - entity2.velocity[1],
+    ];
+
+    // Calculate relative velocity in terms of the normal direction
+    const magAlongNormal =
+      relativeVelocity[0] * collNorm[0] + relativeVelocity[1] * collNorm[1];
+
+    // Calculate impulse magnitude
+    // TODO: Fix dynamic / kinematic collision resolution (Consider dynamic
+    // shape colliding with dynamic that is colliding with kinematic), all
+    // shapes lose velocity in this case, when really outside shape should
+    // retain incoming velocity
+    if (entity1.type === "dynamic") {
+      entity1.velocity[0] -= collNorm[0] * magAlongNormal * this._restitution;
+      entity1.velocity[1] -= collNorm[1] * magAlongNormal * this._restitution;
+    } else {
+      entity2.velocity[0] += collNorm[0] * magAlongNormal * this._restitution;
+      entity2.velocity[1] += collNorm[1] * magAlongNormal * this._restitution;
+    }
+
+    if (entity2.type === "dynamic") {
+      entity2.velocity[0] += collNorm[0] * magAlongNormal * this._restitution;
+      entity2.velocity[1] += collNorm[1] * magAlongNormal * this._restitution;
+    } else {
+      entity1.velocity[0] -= collNorm[0] * magAlongNormal * this._restitution;
+      entity1.velocity[1] -= collNorm[1] * magAlongNormal * this._restitution;
     }
   }
 
@@ -333,18 +439,19 @@ class Physics {
 
     for (let i = 0; i < this._entities.length; i++) {
       const entity = this._entities[i];
+
+      entity.velocity[0] += entity.acceleration[0] * elapsed;
+      entity.velocity[1] += entity.acceleration[1] * elapsed;
+
+      entity.position[0] += entity.velocity[0] * elapsed;
+      entity.position[1] += entity.velocity[1] * elapsed;
+
       switch (entity.type) {
         case "dynamic":
-          entity.velocity[0] += entity.acceleration[0] * elapsed + gx;
-          entity.velocity[1] += entity.acceleration[1] * elapsed + gy;
-          entity.position[0] += entity.velocity[0] * elapsed;
-          entity.position[1] += entity.velocity[1] * elapsed;
+          entity.velocity[0] += gx;
+          entity.velocity[1] += gy;
           break;
         case "kinematic":
-          entity.velocity[0] += entity.acceleration[0] * elapsed;
-          entity.velocity[1] += entity.acceleration[1] * elapsed;
-          entity.position[0] += entity.velocity[0] * elapsed;
-          entity.position[1] += entity.velocity[1] * elapsed;
           break;
       }
     }

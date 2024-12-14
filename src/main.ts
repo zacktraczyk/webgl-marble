@@ -7,30 +7,6 @@ function main() {
   const vdu = new VDU("#gl-canvas");
   const physics = new Physics();
 
-  const box = new Rectangle({
-    position: [100, 400],
-    width: 20,
-    height: 20,
-    color: [1, 0, 0, 1],
-
-    type: "dynamic",
-    velocity: [40, 20],
-  });
-  vdu.add(box);
-  physics.add(box);
-
-  const box2 = new Rectangle({
-    position: [100, 200],
-    width: 20,
-    height: 20,
-    color: [1, 0, 0, 1],
-
-    type: "dynamic",
-    velocity: [-180, 20],
-  });
-  vdu.add(box2);
-  physics.add(box2);
-
   // Walls
   const ground = new Rectangle({
     position: [vdu.canvas.clientWidth / 2, vdu.canvas.clientHeight - 25],
@@ -58,6 +34,65 @@ function main() {
   });
   vdu.add(rightWall);
   physics.add(rightWall);
+
+  const ceiling = new Rectangle({
+    position: [vdu.canvas.clientWidth / 2, 25],
+    width: vdu.canvas.clientWidth,
+    height: 50,
+    color: [0, 1, 0, 1],
+  });
+  vdu.add(ceiling);
+  physics.add(ceiling);
+
+  const boxSharedProps = {
+    width: 20,
+    height: 20,
+    color: [1, 0, 0, 1] as [number, number, number, number],
+    type: "dynamic" as const,
+  };
+
+  const box1 = new Rectangle({
+    position: [200, 250],
+    velocity: [30, 10],
+    ...boxSharedProps,
+  });
+  vdu.add(box1);
+  physics.add(box1);
+
+  const box2 = new Rectangle({
+    position: [400, 300],
+    velocity: [-10, 0],
+    ...boxSharedProps,
+  });
+  vdu.add(box2);
+  physics.add(box2);
+
+  const spawnBoundary = new Rectangle({
+    position: [vdu.canvas.clientWidth / 2, vdu.canvas.clientHeight / 2],
+    width: vdu.canvas.clientWidth - 100,
+    height: vdu.canvas.clientHeight - 100,
+  });
+
+  // Spawn boxes
+  for (let i = 0; i < 30; i++) {
+    const x =
+      Math.random() * spawnBoundary.width - 100 + spawnBoundary.position[0] / 2;
+    const y =
+      Math.random() * spawnBoundary.height -
+      100 +
+      spawnBoundary.position[1] / 2;
+
+    const vx = Math.random() * 100 - 50;
+    const vy = Math.random() * 100 - 50;
+
+    const box = new Rectangle({
+      position: [x, y],
+      velocity: [vx, vy],
+      ...boxSharedProps,
+    });
+    vdu.add(box);
+    physics.add(box);
+  }
 
   let lastTime = performance.now();
   function updateScene() {
