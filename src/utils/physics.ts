@@ -1,4 +1,5 @@
 // Reference article: https://developer.ibm.com/tutorials/wa-build2dphysicsengine/
+// Collision Resolution reference: https://spicyyoghurt.com/tutorials/html5-javascript-game-development/collision-detection-physics
 
 const GRAVITY_X = 0;
 const GRAVITY_Y = 9.8;
@@ -199,7 +200,7 @@ class CollisionDetector {
 
 class CollisionResolver {
   private _restitution = 0.6;
-  private _penetrationSlop = 0.1;
+  private _penetrationSlop = 0.4;
 
   resolveCollisions(collisions: [PhysicsEntity, PhysicsEntity][]) {
     for (let i = 0; i < collisions.length; i++) {
@@ -265,33 +266,32 @@ class CollisionResolver {
     }
   }
 
-  // TODO: Implement "slop" for collision resolution
   // TODO: Feed back into collision resolution rather than adjusting positions
-  // directly(Baumgarte Stabilization)
+  // directly (Baumgarte Stabilization)
   private _correctPenetration(
     entity1: PhysicsEntity,
     entity2: PhysicsEntity,
     normal: [number, number],
     penetration: [number, number],
   ) {
-    const overlapX = Math.max(penetration[0] - this._penetrationSlop, 0);
-    const overlapY = Math.max(penetration[1] - this._penetrationSlop, 0);
+    let penX = penetration[0];
+    let penY = penetration[1];
+
+    // NOTE: Only dynamic entities should be corrected (or else dynamic entities
+    // get stuck in kinematic entities)
+    if (entity1.type === "dynamic" && entity2.type === "dynamic") {
+      penX = Math.max(penX - this._penetrationSlop, 0);
+      penY = Math.max(penY - this._penetrationSlop, 0);
+    }
+
     if (entity1.type === "dynamic") {
-      if (Math.abs(penetration[0]) > 0.1) {
-        entity1.position[0] += normal[0] * overlapX;
-      }
-      if (Math.abs(penetration[1]) > 0.1) {
-        entity1.position[1] += normal[1] * overlapY;
-      }
+      entity1.position[0] += normal[0] * penX;
+      entity1.position[1] += normal[1] * penY;
     }
 
     if (entity2.type === "dynamic") {
-      if (Math.abs(penetration[0]) > 0.1) {
-        entity2.position[0] -= normal[0] * overlapX;
-      }
-      if (Math.abs(penetration[1]) > 0.1) {
-        entity2.position[1] -= normal[1] * overlapY;
-      }
+      entity2.position[0] -= normal[0] * penX;
+      entity2.position[1] -= normal[1] * penY;
     }
   }
 
