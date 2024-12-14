@@ -52,6 +52,13 @@ export class BoundingBox implements BoundingShape {
         y1 + h1 / 2 > y2 - h2 / 2;
 
       return isBoxIntersect;
+    } else if (other instanceof BoundingCircle) {
+      const r2 = other.radius;
+
+      const dx = Math.abs(x1 - x2) - w1 / 2 - r2;
+      const dy = Math.abs(y1 - y2) - h1 / 2 - r2;
+
+      return dx < 0 && dy < 0;
     } else {
       throw new Error("Not implemented");
     }
@@ -83,12 +90,26 @@ export class BoundingCircle implements BoundingShape {
   }
 
   intersects(other: BoundingShape): boolean {
+    const [x1, y1] = this.position;
+    const r1 = this.radius;
+
+    const [x2, y2] = other.position;
+
     if (other instanceof BoundingCircle) {
-      const dx = this.position[0] - other.position[0];
-      const dy = this.position[1] - other.position[1];
+      const r2 = other.radius;
+
+      const dx = x1 - x2;
+      const dy = y1 - y2;
       const distance = Math.sqrt(dx * dx + dy * dy);
 
-      return distance < this.radius + other.radius;
+      return distance < r1 + r2;
+    } else if (other instanceof BoundingBox) {
+      const [w1, h1] = [other.width, other.height];
+
+      const dx = Math.abs(this.position[0] - x1) - w1 / 2 - r1;
+      const dy = Math.abs(this.position[1] - y1) - h1 / 2 - r1;
+
+      return dx < 0 && dy < 0;
     } else {
       throw new Error("Not implemented");
     }

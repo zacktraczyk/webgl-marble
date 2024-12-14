@@ -12,6 +12,8 @@ class Physics {
   private _collider: CollisionDetector = new CollisionDetector();
   private _resolver: CollisionResolver = new CollisionResolver();
 
+  private _gravity_enabled: boolean = true;
+
   add(physical: Physical) {
     const entity = physical.createPhysicsEntity();
     this._entities.push(entity);
@@ -34,8 +36,10 @@ class Physics {
 
       switch (entity.type) {
         case "dynamic":
-          entity.velocity[0] += gx;
-          entity.velocity[1] += gy;
+          if (this._gravity_enabled) {
+            entity.velocity[0] += gx;
+            entity.velocity[1] += gy;
+          }
           break;
         case "kinematic":
           break;

@@ -153,6 +153,69 @@ export class CollisionResolver {
     return normal;
   }
 
+  private _correctCircleSquarePenetration(
+    entity1: PhysicsEntity,
+    entity2: PhysicsEntity,
+  ): [number, number] {
+    // Sanity check
+    if (
+      !(
+        entity1.boundingShape instanceof BoundingCircle &&
+        entity2.boundingShape instanceof BoundingBox
+      )
+    ) {
+      throw new Error("Sanity check failed: Invalid bounding shape type");
+    }
+
+    // Calculate collision normal
+    const [x1, y1] = entity1.position;
+    const r1 = entity1.boundingShape.radius;
+
+    const [x2, y2] = entity2.position;
+    const [w2, h2] = [
+      entity2.boundingShape.width,
+      entity2.boundingShape.height,
+    ];
+
+    const dx = x1 - x2;
+    const dy = y1 - y2;
+
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    const penetrationX = r1 + w2 / 2 - Math.abs(dx);
+    const penetrationY = r1 + h2 / 2 - Math.abs(dy);
+
+    let normal: [number, number];
+    if (penetrationX < penetrationY) {
+      normal = [dx > 0 ? 1 : -1, 0];
+    } else {
+      normal = [0, dy > 0 ? 1 : -1];
+    }
+
+    // Correct Penetration
+    let penX = penetrationX;
+    let penY = penetrationY;
+
+    // NOTE: Only dynamic entities should be corrected (or else dynamic entities
+    // get stuck in kinematic entities)
+    if (entity1.type === "dynamic" && entity2.type === "dynamic") {
+      penX = Math.max(penX - this._penetrationSlop, 0);
+      penY = Math.max(penY - this._penetrationSlop, 0);
+    }
+
+    if (entity1.type === "dynamic") {
+      entity1.position[0] += normal[0] * penX;
+      entity1.position[1] += normal[1] * penY;
+    }
+
+    if (entity2.type === "dynamic") {
+      entity2.position[0] -= normal[0] * penX;
+      entity2.position[1] -= normal[1] * penY;
+    }
+
+    return normal;
+  }
+
   private _correctPenetration(
     entity1: PhysicsEntity,
     entity2: PhysicsEntity,
@@ -169,6 +232,20 @@ export class CollisionResolver {
       entity2.boundingShape instanceof BoundingCircle
     ) {
       const normal = this._correctCircleCirclePenetration(entity1, entity2);
+
+      return normal;
+    } else if (
+      entity1.boundingShape instanceof BoundingBox &&
+      entity2.boundingShape instanceof BoundingCircle
+    ) {
+      const normal = this._correctCircleSquarePenetration(entity2, entity1);
+
+      return [-normal[0], -normal[1]];
+    } else if (
+      entity1.boundingShape instanceof BoundingCircle &&
+      entity2.boundingShape instanceof BoundingBox
+    ) {
+      const normal = this._correctCircleSquarePenetration(entity1, entity2);
 
       return normal;
     } else {
