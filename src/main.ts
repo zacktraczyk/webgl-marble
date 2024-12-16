@@ -104,16 +104,31 @@ function main() {
     physics.add(ceiling);
   }
 
+  const spinningSquare = new Rectangle({
+    position: [vdu.canvas.clientWidth / 2, vdu.canvas.clientHeight / 2],
+    width: 50,
+    height: 50,
+    color: [1, 1, 1, 1],
+    type: "kinematic",
+  });
+  vdu.add(spinningSquare);
+
   // Init
   spawnWalls();
   randomCirclesSpawn();
-  randomBoxesSpawn();
+  // randomBoxesSpawn();
 
   let lastTime = performance.now();
   function updateScene() {
     const time = performance.now();
     const elapsed = time - lastTime;
     lastTime = time;
+
+    spinningSquare.rotation += 1;
+
+    if (spinningSquare.rotation > 360) {
+      spinningSquare.rotation = 0;
+    }
 
     physics.update(elapsed);
     updateFpsPerf();

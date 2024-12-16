@@ -1,4 +1,4 @@
-import { Drawable } from "./entity";
+import { BufferInfo, Drawable, DrawEntity, ProgramInfo } from "./entity";
 import fragShader from "./glsl/frag.glsl";
 import vertShader from "./glsl/vert.glsl";
 import * as WebglUtils from "./webglUtils";
@@ -10,8 +10,8 @@ export class VDU {
   readonly canvas: HTMLCanvasElement;
   private readonly _gl: WebGLRenderingContext;
   // private readonly _shaderProgram: WebGLProgram;
-  private readonly _programInfo: WebglUtils.ProgramInfo;
-  private readonly _objectsToDraw: WebglUtils.DrawObject[];
+  private readonly _programInfo: ProgramInfo;
+  private readonly _objectsToDraw: DrawEntity[];
 
   private _drawMode: "TRIANGLES" | "LINES" = "TRIANGLES";
 
@@ -44,7 +44,7 @@ export class VDU {
     // Create program info
     const attribSetters = WebglUtils.createAttributeSetters(gl, shaderProgram);
     const uniformSetters = WebglUtils.createUniformSetters(gl, shaderProgram);
-    const programInfo: WebglUtils.ProgramInfo = {
+    const programInfo: ProgramInfo = {
       program: shaderProgram,
       attributeSetters: attribSetters,
       uniformSetters,
@@ -70,7 +70,7 @@ export class VDU {
 
   private _lastUsedProgram: WebGLProgram | undefined = undefined;
   private _initBuffer: boolean = true;
-  private _lastUsedBuffer: WebglUtils.BufferInfo | undefined = undefined;
+  private _lastUsedBuffer: BufferInfo | undefined = undefined;
   render() {
     const gl = this._gl;
     if (!(gl.canvas instanceof HTMLCanvasElement)) {
@@ -91,18 +91,12 @@ export class VDU {
       }
 
       if (this._initBuffer || this._lastUsedBuffer != object.bufferInfo) {
-        WebglUtils.setAttributes(
-          object.programInfo.attributeSetters,
-          object.bufferInfo.attributes,
-        );
+        object.setAttributes();
       }
 
       object.uniforms.uResolution = [gl.canvas.width, gl.canvas.height];
 
-      WebglUtils.setUniforms(
-        object.programInfo.uniformSetters,
-        object.uniforms,
-      );
+      object.setUniforms();
 
       if (this._drawMode === "LINES") {
         gl.drawArrays(gl.LINE_LOOP, 0, object.bufferInfo.numElements);
