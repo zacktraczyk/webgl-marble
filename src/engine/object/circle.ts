@@ -1,9 +1,9 @@
 import { Physical, PhysicsEntity, PhysicsEntityType } from "../physics/entity";
-import { Drawable, DrawEntity } from "../vdu/entity";
-import * as WebglUtils from "../vdu/webglUtils";
+import { Drawable, DrawEntity, ProgramInfo } from "../vdu/entity";
 
 export class Circle implements Drawable, Physical {
   private readonly _position: [number, number];
+  private readonly _rotation: [number, number];
   private readonly _color: [number, number, number, number] = [1, 0, 0, 1];
   readonly radius: number;
 
@@ -12,6 +12,7 @@ export class Circle implements Drawable, Physical {
 
   constructor({
     position,
+    rotation,
     radius,
     color,
 
@@ -19,6 +20,7 @@ export class Circle implements Drawable, Physical {
     velocity,
   }: {
     position: [number, number];
+    rotation?: [number, number];
     radius: number;
     color?: [number, number, number, number];
 
@@ -26,6 +28,7 @@ export class Circle implements Drawable, Physical {
     velocity?: [number, number];
   }) {
     this._position = position;
+    this._rotation = rotation ?? [0, 1];
     this._color = color ?? [1, 1, 1, 1];
     this.radius = radius;
 
@@ -40,6 +43,18 @@ export class Circle implements Drawable, Physical {
 
   get position() {
     return this._position;
+  }
+
+  get rotation() {
+    const angleInRadians = Math.atan2(this._rotation[0], this._rotation[1]);
+    const angleInDegrees = (angleInRadians * 180) / Math.PI;
+    return angleInDegrees;
+  }
+
+  set rotation(degrees: number) {
+    const angleInRadians = (degrees * Math.PI) / 180;
+    this._rotation[0] = Math.sin(angleInRadians);
+    this._rotation[1] = Math.cos(angleInRadians);
   }
 
   get color() {
@@ -67,7 +82,7 @@ export class Circle implements Drawable, Physical {
   readonly thetaLength = 2 * Math.PI;
   createDrawEntity(
     gl: WebGLRenderingContext,
-    programInfo: WebglUtils.ProgramInfo,
+    programInfo: ProgramInfo,
   ): DrawEntity {
     const indicies: number[] = [];
 
@@ -92,8 +107,9 @@ export class Circle implements Drawable, Physical {
     const drawObject = new DrawEntity({
       gl,
       programInfo,
-      position: this.position,
-      color: this.color,
+      position: this._position,
+      rotation: this._rotation,
+      color: this._color,
       indicies,
     });
 
@@ -103,7 +119,7 @@ export class Circle implements Drawable, Physical {
   createPhysicsEntity(): PhysicsEntity {
     const physicsEntity: PhysicsEntity = new PhysicsEntity({
       type: this.type,
-      position: this.position,
+      position: this._position,
       boundingShapeParams: {
         type: "BoundingCircle",
         radius: this.radius,

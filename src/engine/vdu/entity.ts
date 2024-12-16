@@ -1,12 +1,16 @@
 import * as WebglUtils from "./webglUtils";
 
+export type ProgramInfo = WebglUtils.ProgramInfo;
+export type BufferInfo = WebglUtils.BufferInfo;
+export type Uniform = WebglUtils.Uniform;
+
 /**
  * Required properties and methods for an object to be drawable by VDU
  */
 export abstract class Drawable {
   abstract createDrawEntity(
     gl: WebGLRenderingContext,
-    programInfo: WebglUtils.ProgramInfo,
+    programInfo: ProgramInfo,
   ): DrawEntity;
 }
 
@@ -15,20 +19,22 @@ export abstract class Drawable {
  */
 export class DrawEntity {
   readonly gl: WebGLRenderingContext;
-  readonly programInfo: WebglUtils.ProgramInfo;
-  readonly bufferInfo: WebglUtils.BufferInfo;
-  readonly uniforms: Record<string, WebglUtils.Uniform>;
+  readonly programInfo: ProgramInfo;
+  readonly bufferInfo: BufferInfo;
+  readonly uniforms: Record<string, Uniform>;
 
   constructor({
     gl,
     programInfo,
     position,
+    rotation,
     color,
     indicies,
   }: {
     gl: WebGLRenderingContext;
-    programInfo: WebglUtils.ProgramInfo;
+    programInfo: ProgramInfo;
     position: [number, number];
+    rotation: [number, number];
     color: [number, number, number, number];
     indicies: number[] | Float32Array;
   }) {
@@ -41,7 +47,7 @@ export class DrawEntity {
     }
     gl.bindBuffer(gl.ARRAY_BUFFER, indiciesBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(indicies), gl.STATIC_DRAW);
-    const bufferInfo: WebglUtils.BufferInfo = {
+    const bufferInfo: BufferInfo = {
       numElements: indicies.length / 2,
       attributes: {
         aVertexPosition: {
@@ -60,6 +66,7 @@ export class DrawEntity {
     const uniforms = {
       uResolution: [gl.canvas.width, gl.canvas.height],
       uTranslation: position,
+      uRotation: rotation,
       uColor: color,
     };
     this.uniforms = uniforms;
