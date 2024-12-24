@@ -1,7 +1,7 @@
 import { BoundingBox, BoundingCircle, PhysicsEntity } from "./entity";
 
 export class CollisionDetector {
-  detectCollisions(
+  collectCollisionPairs(
     entities: PhysicsEntity[],
   ): [PhysicsEntity, PhysicsEntity][] | null {
     const collisions: [PhysicsEntity, PhysicsEntity][] = [];
@@ -29,7 +29,7 @@ export class CollisionDetector {
 
 export class CollisionResolver {
   private _restitution = 0.6;
-  private _penetrationSlop = 0.8;
+  private _penetrationSlop = 0.3;
 
   resolveCollisions(collisions: [PhysicsEntity, PhysicsEntity][]) {
     for (let i = 0; i < collisions.length; i++) {

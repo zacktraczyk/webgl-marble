@@ -130,27 +130,24 @@ type BoundingShapeParams =
       },
       "position"
     >;
-
 export class PhysicsEntity {
   readonly type: PhysicsEntityType;
   readonly boundingShape: BoundingShape | undefined;
 
   private _position: [number, number];
+  private _positionPrev: [number, number] = [0, 0];
   velocity: [number, number];
-  acceleration: [number, number];
 
   constructor({
     type,
     position,
     boundingShapeParams,
     velocity,
-    acceleration,
   }: {
     type: PhysicsEntityType;
     boundingShapeParams: BoundingShapeParams;
     position: [number, number];
     velocity?: [number, number];
-    acceleration?: [number, number];
   }) {
     this.type = type;
 
@@ -170,7 +167,6 @@ export class PhysicsEntity {
 
     this._position = position;
     this.velocity = velocity ?? [0, 0];
-    this.acceleration = acceleration ?? [0, 0];
   }
 
   set position(center: [number, number]) {
@@ -180,5 +176,14 @@ export class PhysicsEntity {
 
   get position() {
     return this._position;
+  }
+
+  set positionPrev(center: [number, number]) {
+    this._positionPrev[0] = center[0];
+    this._positionPrev[1] = center[1];
+  }
+
+  get positionPrev() {
+    return this._positionPrev;
   }
 }

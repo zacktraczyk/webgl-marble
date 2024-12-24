@@ -118,19 +118,14 @@ function main() {
   randomCirclesSpawn();
   // randomBoxesSpawn();
 
-  let lastTime = performance.now();
   function updateScene() {
-    const time = performance.now();
-    const elapsed = time - lastTime;
-    lastTime = time;
-
     spinningSquare.rotation += 1;
 
     if (spinningSquare.rotation > 360) {
       spinningSquare.rotation = 0;
     }
 
-    physics.update(elapsed);
+    physics.simulate();
     updateFpsPerf();
   }
 

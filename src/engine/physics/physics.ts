@@ -12,7 +12,7 @@ class Physics {
   private _collider: CollisionDetector = new CollisionDetector();
   private _resolver: CollisionResolver = new CollisionResolver();
 
-  private _gravity_enabled: boolean = true;
+  private _gravityEnabled: boolean = true;
 
   add(physical: Physical) {
     const entity = physical.createPhysicsEntity();
@@ -27,37 +27,48 @@ class Physics {
     );
   }
 
-  update(elapsed: number) {
-    elapsed *= 0.005;
+  // PBD algorithm
+  // Reference PBD: https://matthias-research.github.io/pages/publications/posBasedDyn.pdf
+  // Reference 3.1 Particle Simulation Loop: https://matthias-research.github.io/pages/publications/PBDBodies.pdf
+  private _numSubsteps = 5;
+  private _solverIterations = 1;
+  simulate(_elapsed?: number) {
+    const elapsed = _elapsed ?? 1 / 5;
 
-    const gx = GRAVITY_X * elapsed;
-    const gy = GRAVITY_Y * elapsed;
+    const collisions = this._collider.collectCollisionPairs(this._entities);
 
-    for (let i = 0; i < this._entities.length; i++) {
-      const entity = this._entities[i];
+    const h = elapsed / this._numSubsteps;
 
-      entity.velocity[0] += entity.acceleration[0] * elapsed;
-      entity.velocity[1] += entity.acceleration[1] * elapsed;
+    for (let i = 0; i < this._numSubsteps; i++) {
+      for (const entity of this._entities) {
+        entity.positionPrev = entity.position;
 
-      entity.position[0] += entity.velocity[0] * elapsed;
-      entity.position[1] += entity.velocity[1] * elapsed;
+        if (entity.type === "dynamic" && this._gravityEnabled) {
+          entity.velocity[0] += GRAVITY_X * h;
+          entity.velocity[1] += GRAVITY_Y * h;
+        }
 
-      switch (entity.type) {
-        case "dynamic":
-          if (this._gravity_enabled) {
-            entity.velocity[0] += gx;
-            entity.velocity[1] += gy;
-          }
-          break;
-        case "kinematic":
-          break;
+        entity.position[0] += entity.velocity[0] * h;
+        entity.position[1] += entity.velocity[1] * h;
       }
-    }
 
-    const collisions = this._collider.detectCollisions(this._entities);
+      for (let i = 0; i < this._solverIterations; i++) {
+        if (collisions) {
+          this._resolver.resolveCollisions(collisions);
+        }
+      }
 
-    if (collisions) {
-      this._resolver.resolveCollisions(collisions);
+      // Verlet integration
+      for (const entity of this._entities) {
+        if (entity.type !== "dynamic") {
+          return;
+        }
+
+        entity.velocity[0] = (entity.position[0] - entity.positionPrev[0]) / h;
+        entity.velocity[1] = (entity.position[1] - entity.positionPrev[1]) / h;
+
+        entity.positionPrev = entity.position;
+      }
     }
   }
 }
