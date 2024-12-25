@@ -254,13 +254,13 @@ export class CollisionResolver {
     // }
 
     if (entity1.type === "dynamic") {
-      entity1.position[0] -= penetration[0] / 15;
-      entity1.position[1] -= penetration[1] / 15;
+      entity1.position[0] -= penetration[0] / 2;
+      entity1.position[1] -= penetration[1] / 2;
     }
 
     if (entity2.type === "dynamic") {
-      entity2.position[0] += penetration[0] / 15;
-      entity2.position[1] += penetration[1] / 15;
+      entity2.position[0] += penetration[0] / 2;
+      entity2.position[1] += penetration[1] / 2;
     }
   }
 
@@ -285,25 +285,25 @@ export class CollisionResolver {
     let dvx2 = 0;
     let dvy2 = 0;
     if (entity1.type === "dynamic") {
-      dvx1 = contactNormal[0] * magAlongNormal * this._restitution;
-      dvy1 = contactNormal[1] * magAlongNormal * this._restitution;
+      dvx1 -= contactNormal[0] * magAlongNormal * this._restitution;
+      dvy1 -= contactNormal[1] * magAlongNormal * this._restitution;
     } else {
-      dvx2 = contactNormal[0] * magAlongNormal * this._restitution;
-      dvy2 = contactNormal[1] * magAlongNormal * this._restitution;
+      dvx2 += contactNormal[0] * magAlongNormal * this._restitution;
+      dvy2 += contactNormal[1] * magAlongNormal * this._restitution;
     }
 
     if (entity2.type === "dynamic") {
-      dvx2 = contactNormal[0] * magAlongNormal * this._restitution;
-      dvy2 = contactNormal[1] * magAlongNormal * this._restitution;
+      dvx2 += contactNormal[0] * magAlongNormal * this._restitution;
+      dvy2 += contactNormal[1] * magAlongNormal * this._restitution;
     } else {
-      dvx1 = contactNormal[0] * magAlongNormal * this._restitution;
-      dvy1 = contactNormal[1] * magAlongNormal * this._restitution;
+      dvx1 -= contactNormal[0] * magAlongNormal * this._restitution;
+      dvy1 -= contactNormal[1] * magAlongNormal * this._restitution;
     }
 
     entity1.position[0] += dvx1 * time;
     entity1.position[1] += dvy1 * time;
 
-    entity2.position[0] -= dvx2 * time;
-    entity2.position[1] -= dvy2 * time;
+    entity2.position[0] += dvx2 * time;
+    entity2.position[1] += dvy2 * time;
   }
 }

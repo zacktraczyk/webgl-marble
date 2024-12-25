@@ -15,7 +15,7 @@ function main() {
   const spawnw = vdu.canvas.clientWidth - spawnPadding * 2;
   const spawnh = vdu.canvas.clientHeight - spawnPadding * 2;
 
-  const numSpawnEntities = 5;
+  const numSpawnEntities = 50;
 
   function randomBoxesSpawn() {
     const boxSharedProps = {
@@ -130,9 +130,9 @@ function main() {
   }
 
   // Init
-  // spawnWalls();
-  // randomCirclesSpawn();
-  circleCollisionSpawn();
+  spawnWalls();
+  randomCirclesSpawn();
+  // circleCollisionSpawn();
   // randomBoxesSpawn();
 
   function updateScene() {
