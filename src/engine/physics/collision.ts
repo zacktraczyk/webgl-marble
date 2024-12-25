@@ -227,12 +227,12 @@ export class CollisionDetector {
 }
 
 export class CollisionResolver {
-  private _restitution = 0.6;
+  private _restitution = 1.0;
   private _penetrationSlop = 0.3;
 
   solvePositions(collisions: Collision[], time: number) {
     for (const collision of collisions) {
-      this._resolvePenetaion(collision);
+      // this._resolvePenetaion(collision);
       this._applyCollisionImpulse(collision, time);
     }
   }
@@ -254,13 +254,13 @@ export class CollisionResolver {
     // }
 
     if (entity1.type === "dynamic") {
-      entity1.position[0] += penetration[0] / 2;
-      entity1.position[1] += penetration[1] / 2;
+      entity1.position[0] -= penetration[0] / 15;
+      entity1.position[1] -= penetration[1] / 15;
     }
 
     if (entity2.type === "dynamic") {
-      entity2.position[0] -= penetration[0] / 2;
-      entity2.position[1] -= penetration[1] / 2;
+      entity2.position[0] += penetration[0] / 15;
+      entity2.position[1] += penetration[1] / 15;
     }
   }
 
@@ -303,7 +303,7 @@ export class CollisionResolver {
     entity1.position[0] += dvx1 * time;
     entity1.position[1] += dvy1 * time;
 
-    entity2.position[0] += dvx2 * time;
-    entity2.position[1] += dvy2 * time;
+    entity2.position[0] -= dvx2 * time;
+    entity2.position[1] -= dvy2 * time;
   }
 }

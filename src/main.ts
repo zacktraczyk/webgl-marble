@@ -15,7 +15,7 @@ function main() {
   const spawnw = vdu.canvas.clientWidth - spawnPadding * 2;
   const spawnh = vdu.canvas.clientHeight - spawnPadding * 2;
 
-  const numSpawnEntities = 50;
+  const numSpawnEntities = 5;
 
   function randomBoxesSpawn() {
     const boxSharedProps = {
@@ -104,27 +104,38 @@ function main() {
     physics.add(ceiling);
   }
 
-  const spinningSquare = new Rectangle({
-    position: [vdu.canvas.clientWidth / 2, vdu.canvas.clientHeight / 2],
-    width: 50,
-    height: 50,
-    color: [1, 1, 1, 1],
-    type: "kinematic",
-  });
-  vdu.add(spinningSquare);
+  function circleCollisionSpawn() {
+    const circleSharedProps = {
+      radius: 15,
+      type: "dynamic" as const,
+    };
+
+    const c1 = new Circle({
+      position: [150, 350],
+      velocity: [50, 10],
+      color: [0, 0, Math.random() * 0.5 + 0.5, 1],
+      ...circleSharedProps,
+    });
+    vdu.add(c1);
+    physics.add(c1);
+
+    const c2 = new Circle({
+      position: [480, 310],
+      velocity: [-10, 20],
+      color: [0, 0, Math.random() * 0.5 + 0.5, 1],
+      ...circleSharedProps,
+    });
+    vdu.add(c2);
+    physics.add(c2);
+  }
 
   // Init
-  spawnWalls();
-  randomCirclesSpawn();
+  // spawnWalls();
+  // randomCirclesSpawn();
+  circleCollisionSpawn();
   // randomBoxesSpawn();
 
   function updateScene() {
-    spinningSquare.rotation += 1;
-
-    if (spinningSquare.rotation > 360) {
-      spinningSquare.rotation = 0;
-    }
-
     physics.simulate();
     updateFpsPerf();
   }

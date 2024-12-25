@@ -13,7 +13,6 @@ export interface Drawable {
     programInfo: ProgramInfo,
   ): DrawEntity;
 }
-
 /**
  * Objects rendered by VDU, constructed from a Drawable object
  */

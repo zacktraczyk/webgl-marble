@@ -12,7 +12,7 @@ class Physics {
   private _collider: CollisionDetector = new CollisionDetector();
   private _resolver: CollisionResolver = new CollisionResolver();
 
-  private _gravityEnabled: boolean = true;
+  private _gravityEnabled: boolean = false;
 
   add(physical: Physical) {
     const entity = physical.createPhysicsEntity();
@@ -33,7 +33,7 @@ class Physics {
   private _numSubsteps = 5;
   private _solverIterations = 1;
   simulate(_elapsed?: number) {
-    const elapsed = _elapsed ?? 1 / 5;
+    const elapsed = _elapsed ?? 1 / 60;
 
     const potentialCollisionPairs = this._collider.collectBroadCollisionPairs(
       this._entities,
