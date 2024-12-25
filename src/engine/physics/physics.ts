@@ -1,7 +1,7 @@
 // Reference article: https://developer.ibm.com/tutorials/wa-build2dphysicsengine/
 // Collision Resolution reference: https://spicyyoghurt.com/tutorials/html5-javascript-game-development/collision-detection-physics
 
-import { CollisionDetector, CollisionResolver } from "./collision";
+import { Collision, CollisionDetector, CollisionResolver } from "./collision";
 import { BoundingBox, BoundingCircle, Physical, PhysicsEntity } from "./entity";
 
 const GRAVITY_X = 0;
@@ -35,7 +35,9 @@ class Physics {
   simulate(_elapsed?: number) {
     const elapsed = _elapsed ?? 1 / 5;
 
-    const collisions = this._collider.collectCollisionPairs(this._entities);
+    const potentialCollisionPairs = this._collider.collectBroadCollisionPairs(
+      this._entities,
+    );
 
     const h = elapsed / this._numSubsteps;
 
@@ -52,10 +54,18 @@ class Physics {
         entity.position[1] += entity.velocity[1] * h;
       }
 
+      let collisions: Collision[] = [];
       for (let i = 0; i < this._solverIterations; i++) {
-        if (collisions) {
-          this._resolver.resolveCollisions(collisions);
+        if (!potentialCollisionPairs) {
+          break;
         }
+        // TODO: Narrow phase collision detection
+        collisions = this._collider.generateCollisions(potentialCollisionPairs);
+        if (collisions.length === 0) {
+          break;
+        }
+
+        this._resolver.solvePositions(collisions, h);
       }
 
       // Verlet integration
