@@ -7,8 +7,8 @@ export type Uniform = WebglUtils.Uniform;
 /**
  * Required properties and methods for an object to be drawable by VDU
  */
-export abstract class Drawable {
-  abstract createDrawEntity(
+export interface Drawable {
+  createDrawEntity(
     gl: WebGLRenderingContext,
     programInfo: ProgramInfo,
   ): DrawEntity;

@@ -1,5 +1,5 @@
-export abstract class Physical {
-  abstract createPhysicsEntity(): PhysicsEntity;
+export interface Physical {
+  createPhysicsEntity(): PhysicsEntity;
 }
 
 abstract class BoundingShape {
