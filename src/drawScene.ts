@@ -8,7 +8,6 @@ const vdu = new VDU("#gl-canvas");
 export default function drawScene() {
   cornerCirclesSpawn();
   pinwheelSpawn();
-  // squareXSpawn();
   squareCenterSpawn();
 
   let tick = 0;
@@ -37,27 +36,6 @@ const squareCenterSpawn = () => {
     color: [1, 0, 0, 1],
   });
   vdu.add(square);
-};
-
-const numSquares = 100;
-const squareXSpawn = () => {
-  const dx = vdu.canvas.clientWidth / numSquares;
-  const dy = vdu.canvas.clientHeight / numSquares;
-
-  let x = 0;
-  let y = 0;
-  for (let i = 0; i < numSquares; i++) {
-    x += dx;
-    y += dy;
-
-    const square = new Rectangle({
-      position: [x, y],
-      width: 50,
-      height: 50,
-      color: [1, 0, 0, 1],
-    });
-    vdu.add(square);
-  }
 };
 
 const cornerCirclesSpawn = () => {
