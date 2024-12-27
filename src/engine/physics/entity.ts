@@ -1,5 +1,8 @@
 export interface Physical {
+  readonly physicsEntity: PhysicsEntity | null;
+
   createPhysicsEntity(): PhysicsEntity;
+  deletePhysicsEntity(): void;
 }
 
 abstract class BoundingShape {
@@ -131,24 +134,30 @@ type BoundingShapeParams =
       "position"
     >;
 export class PhysicsEntity {
+  parent: Physical | null;
   readonly type: PhysicsEntityType;
   readonly boundingShape: BoundingShape | undefined;
 
   private _position: [number, number];
-  private _positionPrev: [number, number] = [0, 0];
+  private _positionPrev: [number, number];
   velocity: [number, number];
 
+  markedForDeletion: boolean = false;
+
   constructor({
+    parent,
     type,
     position,
     boundingShapeParams,
     velocity,
   }: {
+    parent: Physical;
     type: PhysicsEntityType;
     boundingShapeParams: BoundingShapeParams;
     position: [number, number];
     velocity?: [number, number];
   }) {
+    this.parent = parent;
     this.type = type;
 
     if (boundingShapeParams.type === "BoundingCircle") {
@@ -166,6 +175,7 @@ export class PhysicsEntity {
     }
 
     this._position = position;
+    this._positionPrev = [...position];
     this.velocity = velocity ?? [0, 0];
   }
 

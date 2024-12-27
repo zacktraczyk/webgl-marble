@@ -11,7 +11,7 @@ export class VDU {
   private readonly _gl: WebGLRenderingContext;
   // private readonly _shaderProgram: WebGLProgram;
   private readonly _programInfo: ProgramInfo;
-  private readonly _objectsToDraw: DrawEntity[];
+  private _drawEntities: DrawEntity[];
 
   private _drawMode: "TRIANGLES" | "LINES" = "TRIANGLES";
 
@@ -52,7 +52,15 @@ export class VDU {
     this._programInfo = programInfo;
 
     // Init draw objects
-    this._objectsToDraw = [];
+    this._drawEntities = [];
+  }
+
+  private _cleanup() {
+    const filteredEntities = this._drawEntities.filter(
+      (entity) => !entity?.markedForDeletion,
+    );
+
+    this._drawEntities = filteredEntities;
   }
 
   set drawMode(mode: "TRIANGLES" | "LINES") {
@@ -64,8 +72,10 @@ export class VDU {
   }
 
   add(drawable: Drawable) {
+    this._cleanup();
+
     const drawObject = drawable.createDrawEntity(this._gl, this._programInfo);
-    this._objectsToDraw.push(drawObject);
+    this._drawEntities.push(drawObject);
   }
 
   private _lastUsedProgram: WebGLProgram | undefined = undefined;
@@ -83,7 +93,11 @@ export class VDU {
     gl.enable(gl.DEPTH_TEST);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    this._objectsToDraw.forEach((object) => {
+    this._cleanup();
+    this._drawEntities.forEach((object) => {
+      if (object.markedForDeletion) {
+        return;
+      }
       if (!this._lastUsedProgram) {
         gl.useProgram(object.programInfo.program);
         this._lastUsedProgram = object.programInfo.program;

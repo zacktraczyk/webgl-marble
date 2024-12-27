@@ -1,8 +1,7 @@
-// Reference article: https://developer.ibm.com/tutorials/wa-build2dphysicsengine/
-// Collision Resolution reference: https://spicyyoghurt.com/tutorials/html5-javascript-game-development/collision-detection-physics
-
+import Observable, { Callback } from "../observable";
 import { Collision, CollisionDetector, CollisionResolver } from "./collision";
 import { BoundingBox, BoundingCircle, Physical, PhysicsEntity } from "./entity";
+import { PhysicsEventName, PhysicsEvents } from "./observable";
 
 const GRAVITY_X = 0;
 const GRAVITY_Y = 9.8;
@@ -14,14 +13,26 @@ class Physics {
 
   private _gravityEnabled: boolean = false;
 
+  private _observable = new Observable<PhysicsEvents>();
+
+  private _cleanup() {
+    const filteredEntities = this._entities.filter(
+      (entity) => !entity?.markedForDeletion,
+    );
+
+    this._entities = filteredEntities;
+  }
+
   add(physical: Physical) {
+    this._cleanup();
+
     const entity = physical.createPhysicsEntity();
     this._entities.push(entity);
 
     // TODO: Why does sim break if if circle is added first?
     this._entities.sort((a, b) =>
-      a.boundingShape instanceof BoundingBox &&
-      b.boundingShape instanceof BoundingCircle
+      a!.boundingShape instanceof BoundingBox &&
+      b!.boundingShape instanceof BoundingCircle
         ? -1
         : 1,
     );
@@ -35,6 +46,8 @@ class Physics {
   simulate(_elapsed?: number) {
     const elapsed = _elapsed ?? 1 / 60;
 
+    this._cleanup();
+
     const potentialCollisionPairs = this._collider.collectBroadCollisionPairs(
       this._entities,
     );
@@ -43,7 +56,9 @@ class Physics {
 
     for (let i = 0; i < this._numSubsteps; i++) {
       for (const entity of this._entities) {
-        entity.positionPrev = entity.position;
+        if (entity.markedForDeletion) {
+          continue;
+        }
 
         if (entity.type === "dynamic" && this._gravityEnabled) {
           entity.velocity[0] += GRAVITY_X * h;
@@ -65,13 +80,15 @@ class Physics {
           break;
         }
 
+        this._observable.notify("collisions", collisions);
+
         this._resolver.solvePositions(collisions, h);
       }
 
       // Verlet integration
       for (const entity of this._entities) {
-        if (entity.type !== "dynamic") {
-          return;
+        if (entity.markedForDeletion || entity.type !== "dynamic") {
+          continue;
         }
 
         entity.velocity[0] = (entity.position[0] - entity.positionPrev[0]) / h;
@@ -80,6 +97,14 @@ class Physics {
         entity.positionPrev = entity.position;
       }
     }
+  }
+
+  subscribe(callback: Callback<PhysicsEventName>) {
+    this._observable.subscribe(callback);
+  }
+
+  unsubscribe(callback: Callback<PhysicsEventName>) {
+    this._observable.unsubscribe(callback);
   }
 }
 

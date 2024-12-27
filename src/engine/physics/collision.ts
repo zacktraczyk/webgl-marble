@@ -18,19 +18,19 @@ export class CollisionDetector {
     // acclerations
     const collisions: [PhysicsEntity, PhysicsEntity][] = [];
     for (let i = 0; i < entities.length; i++) {
-      const entity = entities[i];
-      if (!entity.boundingShape) {
+      const entity1 = entities[i];
+      if (entity1.markedForDeletion || !entity1.boundingShape) {
         continue;
       }
 
       for (let j = i + 1; j < entities.length; j++) {
-        const otherEntity = entities[j];
-        if (!otherEntity.boundingShape) {
+        const entity2 = entities[j];
+        if (entity2.markedForDeletion || !entity2.boundingShape) {
           continue;
         }
 
-        if (entity.boundingShape.intersects(otherEntity.boundingShape)) {
-          collisions.push([entity, otherEntity]);
+        if (entity1.boundingShape.intersects(entity2.boundingShape)) {
+          collisions.push([entity1, entity2]);
         }
       }
     }
@@ -232,8 +232,14 @@ export class CollisionResolver {
 
   solvePositions(collisions: Collision[], time: number) {
     for (const collision of collisions) {
-      // this._resolvePenetaion(collision);
+      const isInvalidCollision =
+        collision.entity1.markedForDeletion ||
+        collision.entity2.markedForDeletion;
+      if (isInvalidCollision) {
+        continue;
+      }
       this._applyCollisionImpulse(collision, time);
+      // this._resolvePenetaion(collision);
     }
   }
 
@@ -248,19 +254,20 @@ export class CollisionResolver {
       contactNormal[1] * overlap,
     ];
 
-    // if (entity1.type === "dynamic" && entity2.type === "dynamic") {
-    //   penX = Math.max(penX - this._penetrationSlop, 0);
-    //   penY = Math.max(penY - this._penetrationSlop, 0);
-    // }
-
     if (entity1.type === "dynamic") {
-      entity1.position[0] -= penetration[0] / 2;
-      entity1.position[1] -= penetration[1] / 2;
+      entity1.position[0] += penetration[0] / 2;
+      entity1.position[1] += penetration[1] / 2;
+    } else if (entity2.type === "dynamic") {
+      entity2.position[0] -= penetration[0] / 2;
+      entity2.position[1] -= penetration[1] / 2;
     }
 
     if (entity2.type === "dynamic") {
-      entity2.position[0] += penetration[0] / 2;
-      entity2.position[1] += penetration[1] / 2;
+      entity2.position[0] -= penetration[0] / 2;
+      entity2.position[1] -= penetration[1] / 2;
+    } else if (entity1.type === "dynamic") {
+      entity1.position[0] += penetration[0] / 2;
+      entity1.position[1] += penetration[1] / 2;
     }
   }
 
@@ -287,7 +294,7 @@ export class CollisionResolver {
     if (entity1.type === "dynamic") {
       dvx1 -= contactNormal[0] * magAlongNormal * this._restitution;
       dvy1 -= contactNormal[1] * magAlongNormal * this._restitution;
-    } else {
+    } else if (entity2.type === "dynamic") {
       dvx2 += contactNormal[0] * magAlongNormal * this._restitution;
       dvy2 += contactNormal[1] * magAlongNormal * this._restitution;
     }
@@ -295,7 +302,7 @@ export class CollisionResolver {
     if (entity2.type === "dynamic") {
       dvx2 += contactNormal[0] * magAlongNormal * this._restitution;
       dvy2 += contactNormal[1] * magAlongNormal * this._restitution;
-    } else {
+    } else if (entity1.type === "dynamic") {
       dvx1 -= contactNormal[0] * magAlongNormal * this._restitution;
       dvy1 -= contactNormal[1] * magAlongNormal * this._restitution;
     }

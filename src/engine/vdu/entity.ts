@@ -12,17 +12,22 @@ export interface Drawable {
     gl: WebGLRenderingContext,
     programInfo: ProgramInfo,
   ): DrawEntity;
+  deleteDrawEntity(): void;
 }
 /**
  * Objects rendered by VDU, constructed from a Drawable object
  */
 export class DrawEntity {
+  parent: Drawable;
   readonly gl: WebGLRenderingContext;
   readonly programInfo: ProgramInfo;
   readonly bufferInfo: BufferInfo;
   readonly uniforms: Record<string, Uniform>;
 
+  markedForDeletion: boolean = false;
+
   constructor({
+    parent,
     gl,
     programInfo,
     position,
@@ -30,6 +35,7 @@ export class DrawEntity {
     color,
     indicies,
   }: {
+    parent: Drawable;
     gl: WebGLRenderingContext;
     programInfo: ProgramInfo;
     position: [number, number];
@@ -37,6 +43,7 @@ export class DrawEntity {
     color: [number, number, number, number];
     indicies: number[] | Float32Array;
   }) {
+    this.parent = parent;
     this.gl = gl;
     this.programInfo = programInfo;
 

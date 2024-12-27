@@ -1,5 +1,7 @@
 import { Circle } from "./engine/object/circle";
 import { Rectangle } from "./engine/object/rectangle";
+import { Collision } from "./engine/physics/collision";
+import { PhysicsEventName } from "./engine/physics/observable";
 import Physics from "./engine/physics/physics";
 import { VDU } from "./engine/vdu/vdu";
 import "./style.css";
@@ -129,11 +131,66 @@ function main() {
     physics.add(c2);
   }
 
+  function circleCollision2Spawn() {
+    const circleSharedProps = {
+      radius: 15,
+      type: "dynamic" as const,
+    };
+
+    const c1 = new Circle({
+      position: [300, 450],
+      velocity: [5, -40],
+      color: [0, 0, Math.random() * 0.5 + 0.5, 1],
+      ...circleSharedProps,
+    });
+    vdu.add(c1);
+    physics.add(c1);
+
+    const c2 = new Circle({
+      position: [280, 110],
+      velocity: [10, 20],
+      color: [0, 0, Math.random() * 0.5 + 0.5, 1],
+      ...circleSharedProps,
+    });
+    vdu.add(c2);
+    physics.add(c2);
+  }
+
   // Init
   spawnWalls();
   randomCirclesSpawn();
-  // circleCollisionSpawn();
+  circleCollisionSpawn();
+  circleCollision2Spawn();
   // randomBoxesSpawn();
+
+  const testDeleteCollision = (
+    eventName: PhysicsEventName,
+    ...data: unknown[]
+  ) => {
+    if (eventName === "collisions") {
+      const collisions = data[0] as Collision[];
+      collisions.forEach((collision) => {
+        const { entity1, entity2 } = collision;
+        const parent1 = entity1.parent as Circle | Rectangle;
+        const parent2 = entity2.parent as Circle | Rectangle;
+
+        if (
+          !parent1.isMarkedForDeletion &&
+          parent1.physicsEntity?.type !== "kinematic"
+        ) {
+          parent1?.delete();
+        }
+
+        if (
+          !parent2.isMarkedForDeletion &&
+          parent2.physicsEntity?.type !== "kinematic"
+        ) {
+          parent2?.delete();
+        }
+      });
+    }
+  };
+  physics.subscribe(testDeleteCollision);
 
   function updateScene() {
     physics.simulate();
