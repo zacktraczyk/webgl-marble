@@ -2,43 +2,54 @@ import { Physical, PhysicsEntity, PhysicsEntityType } from "../physics/entity";
 import { Drawable, DrawEntity, ProgramInfo } from "../vdu/entity";
 
 export class Rectangle implements Drawable, Physical {
-  private readonly _position: [number, number];
-  private readonly _rotation: [number, number];
-  private readonly _color: [number, number, number, number];
   readonly width: number;
   readonly height: number;
 
-  readonly type: PhysicsEntityType;
-  private readonly _velocity: [number, number];
+  private readonly _position: [number, number];
+  private readonly _rotation: [number]; // degrees
+  private readonly _scale: [number, number];
 
   private _drawEntity: DrawEntity | null = null;
+  private readonly _color: [number, number, number, number];
+
   private _physicsEntity: PhysicsEntity | null = null;
+  readonly type: PhysicsEntityType;
+  private readonly _velocity: [number, number];
 
   isMarkedForDeletion: boolean = false;
 
   constructor({
-    position,
-    rotation,
     width,
     height,
+
+    position,
+    rotation,
+    scale,
+
     color,
 
     type = "kinematic",
     velocity,
   }: {
-    position: [number, number];
-    rotation?: [number, number];
     width: number;
     height: number;
+
+    position: [number, number];
+    rotation?: number;
+    scale?: [number, number];
+
     color?: [number, number, number, number];
 
     type?: PhysicsEntityType;
     velocity?: [number, number];
   }) {
-    this._position = position;
-    this._rotation = rotation ?? [0, 1];
     this.width = width;
     this.height = height;
+
+    this._position = position;
+    this._rotation = [rotation ?? 0];
+    this._scale = scale ?? [1, 1];
+
     this._color = color ?? [1, 1, 1, 1];
 
     this.type = type;
@@ -55,25 +66,30 @@ export class Rectangle implements Drawable, Physical {
     this.isMarkedForDeletion = true;
   }
 
+  get position() {
+    return this._position;
+  }
+
   set position(center: [number, number]) {
     this._position[0] = center[0];
     this._position[1] = center[1];
   }
 
-  get position() {
-    return this._position;
-  }
-
   get rotation() {
-    const angleInRadians = Math.atan2(this._rotation[0], this._rotation[1]);
-    const angleInDegrees = (angleInRadians * 180) / Math.PI;
-    return angleInDegrees;
+    return this._rotation[0];
   }
 
   set rotation(degrees: number) {
-    const angleInRadians = (degrees * Math.PI) / 180;
-    this._rotation[0] = Math.sin(angleInRadians);
-    this._rotation[1] = Math.cos(angleInRadians);
+    this._rotation[0] = degrees;
+  }
+
+  get scale() {
+    return this._scale;
+  }
+
+  private set scale(scale: [number, number]) {
+    this._scale[0] = scale[0];
+    this._scale[1] = scale[1];
   }
 
   get color() {
@@ -102,6 +118,11 @@ export class Rectangle implements Drawable, Physical {
     gl: WebGLRenderingContext,
     programInfo: ProgramInfo,
   ): DrawEntity {
+    if (this._drawEntity) {
+      console.warn("Could not create draw entity: already created");
+      return this._drawEntity;
+    }
+
     const indicies: number[] = [];
 
     indicies.push(this.width * (1 / 2), this.height * -(1 / 2));
@@ -118,6 +139,7 @@ export class Rectangle implements Drawable, Physical {
       programInfo,
       position: this._position,
       rotation: this._rotation,
+      scale: this._scale,
       color: this._color,
       indicies,
     });

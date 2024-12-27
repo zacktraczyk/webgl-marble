@@ -1,3 +1,4 @@
+import { mat3 } from "gl-matrix";
 import * as WebglUtils from "./webglUtils";
 
 export type ProgramInfo = WebglUtils.ProgramInfo;
@@ -24,6 +25,12 @@ export class DrawEntity {
   readonly bufferInfo: BufferInfo;
   readonly uniforms: Record<string, Uniform>;
 
+  readonly position: [number, number];
+  readonly rotation: [number];
+  readonly scale: [number, number];
+
+  readonly matrix: mat3;
+
   markedForDeletion: boolean = false;
 
   constructor({
@@ -32,50 +39,82 @@ export class DrawEntity {
     programInfo,
     position,
     rotation,
+    scale,
     color,
-    indicies,
+    ...bufferParams
   }: {
     parent: Drawable;
     gl: WebGLRenderingContext;
     programInfo: ProgramInfo;
     position: [number, number];
-    rotation: [number, number];
+    rotation: [number];
+    scale: [number, number];
     color: [number, number, number, number];
-    indicies: number[] | Float32Array;
-  }) {
+  } & (
+    | {
+        bufferInfo: BufferInfo;
+      }
+    | {
+        indicies: number[] | Float32Array;
+      }
+  )) {
     this.parent = parent;
     this.gl = gl;
     this.programInfo = programInfo;
 
-    const indiciesBuffer = gl.createBuffer();
-    if (!indiciesBuffer) {
-      throw new Error("Failed to create buffer");
-    }
-    gl.bindBuffer(gl.ARRAY_BUFFER, indiciesBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(indicies), gl.STATIC_DRAW);
-    const bufferInfo: BufferInfo = {
-      numElements: indicies.length / 2,
-      attributes: {
-        aVertexPosition: {
-          attributeType: "buffer",
-          buffer: indiciesBuffer,
-          size: 2,
-          type: gl.FLOAT,
-          normalize: false,
-          stride: 0,
-          offset: 0,
+    this.position = position;
+    this.rotation = rotation;
+    this.scale = scale;
+
+    this.matrix = mat3.create();
+    this.computeMatrix();
+
+    if ("bufferInfo" in bufferParams) {
+      const { bufferInfo } = bufferParams;
+      this.bufferInfo = bufferInfo;
+    } else {
+      const { indicies } = bufferParams;
+
+      const indiciesBuffer = gl.createBuffer();
+      if (!indiciesBuffer) {
+        throw new Error("Failed to create buffer");
+      }
+      gl.bindBuffer(gl.ARRAY_BUFFER, indiciesBuffer);
+      gl.bufferData(
+        gl.ARRAY_BUFFER,
+        new Float32Array(indicies),
+        gl.STATIC_DRAW,
+      );
+      const bufferInfo: BufferInfo = {
+        numElements: indicies.length / 2,
+        attributes: {
+          aVertexPosition: {
+            attributeType: "buffer",
+            buffer: indiciesBuffer,
+            size: 2,
+            type: gl.FLOAT,
+            normalize: false,
+            stride: 0,
+            offset: 0,
+          },
         },
-      },
-    };
-    this.bufferInfo = bufferInfo;
+      };
+      this.bufferInfo = bufferInfo;
+    }
 
     const uniforms = {
       uResolution: [gl.canvas.width, gl.canvas.height],
-      uTranslation: position,
-      uRotation: rotation,
+      uMatrix: this.matrix,
       uColor: color,
     };
     this.uniforms = uniforms;
+  }
+
+  computeMatrix() {
+    mat3.identity(this.matrix);
+    mat3.translate(this.matrix, this.matrix, this.position);
+    mat3.rotate(this.matrix, this.matrix, this.rotation[0]);
+    mat3.scale(this.matrix, this.matrix, this.scale);
   }
 
   setAttributes() {

@@ -110,6 +110,7 @@ export class VDU {
 
       object.uniforms.uResolution = [gl.canvas.width, gl.canvas.height];
 
+      object.computeMatrix();
       object.setUniforms();
 
       if (this._drawMode === "LINES") {
