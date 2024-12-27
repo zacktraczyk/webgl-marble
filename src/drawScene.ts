@@ -6,15 +6,15 @@ import "./style.css";
 const vdu = new VDU("#gl-canvas");
 
 export default function drawScene() {
-  // cornerCirclesSpawn();
-  // pinwheelSpawn();
+  cornerCirclesSpawn();
+  pinwheelSpawn();
   // squareXSpawn();
   squareCenterSpawn();
 
   let tick = 0;
   function updateScene() {
     tick += 1;
-    // pinwheelRotate(tick);
+    pinwheelRotate(tick);
 
     updateFpsPerf();
   }
@@ -95,7 +95,7 @@ const pinwheelSpawn = () => {
     width: 50,
     height: 5,
     color: [0, 1, 0, 1],
-    rotation: 90,
+    rotation: Math.PI / 2,
   });
   vdu.add(spinningSquare2);
 };
@@ -106,16 +106,16 @@ const pinwheelRotate = (tick: number) => {
   }
 
   spinningSquare1.position = [
-    vdu.canvas.clientWidth / 2 + Math.sin(tick / 50) * 200,
-    vdu.canvas.clientHeight / 2 + Math.cos(tick / 50) * 200,
+    vdu.canvas.clientWidth / 2 + Math.sin(tick / 100) * 200,
+    vdu.canvas.clientHeight / 2 + Math.cos(tick / 100) * 200,
   ];
   spinningSquare2.position = [
-    vdu.canvas.clientWidth / 2 + Math.sin(tick / 50) * 200,
-    vdu.canvas.clientHeight / 2 + Math.cos(tick / 50) * 200,
+    vdu.canvas.clientWidth / 2 + Math.sin(tick / 100) * 200,
+    vdu.canvas.clientHeight / 2 + Math.cos(tick / 100) * 200,
   ];
 
-  spinningSquare1.rotation += 1;
-  spinningSquare2.rotation += 1;
+  spinningSquare1.rotation += 0.05;
+  spinningSquare2.rotation += 0.05;
 };
 
 // FPS Counter

@@ -9,24 +9,25 @@ export type Uniform = WebglUtils.Uniform;
  * Required properties and methods for an object to be drawable by VDU
  */
 export interface Drawable {
-  createDrawEntity(
+  drawEntity: DrawEntity | null;
+
+  initDrawEntity(
     gl: WebGLRenderingContext,
     programInfo: ProgramInfo,
   ): DrawEntity;
-  deleteDrawEntity(): void;
 }
 /**
  * Objects rendered by VDU, constructed from a Drawable object
  */
 export class DrawEntity {
-  parent: Drawable;
+  parent: Drawable | null;
   readonly gl: WebGLRenderingContext;
   readonly programInfo: ProgramInfo;
   readonly bufferInfo: BufferInfo;
   readonly uniforms: Record<string, Uniform>;
 
   readonly position: [number, number];
-  readonly rotation: [number];
+  readonly rotation: [number]; // radians
   readonly scale: [number, number];
 
   readonly matrix: mat3;
@@ -108,6 +109,18 @@ export class DrawEntity {
       uColor: color,
     };
     this.uniforms = uniforms;
+  }
+
+  delete() {
+    if (this.markedForDeletion) {
+      throw new Error(
+        "Could not delete drawEntity: already marked for deletion",
+      );
+    }
+    this.markedForDeletion = true;
+    if (this.parent) {
+      this.parent.drawEntity = null;
+    }
   }
 
   computeMatrix() {

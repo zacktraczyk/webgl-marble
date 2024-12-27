@@ -1,8 +1,7 @@
 export interface Physical {
-  readonly physicsEntity: PhysicsEntity | null;
+  physicsEntity: PhysicsEntity | null;
 
-  createPhysicsEntity(): PhysicsEntity;
-  deletePhysicsEntity(): void;
+  initPhysicsEntity(): PhysicsEntity;
 }
 
 abstract class BoundingShape {
@@ -177,6 +176,18 @@ export class PhysicsEntity {
     this._position = position;
     this._positionPrev = [...position];
     this.velocity = velocity ?? [0, 0];
+  }
+
+  delete() {
+    if (this.markedForDeletion) {
+      throw new Error(
+        "Could not delete physics entity: already marked for deletion",
+      );
+    }
+    this.markedForDeletion = true;
+    if (this.parent) {
+      this.parent.physicsEntity = null;
+    }
   }
 
   set position(center: [number, number]) {

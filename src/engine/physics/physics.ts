@@ -26,7 +26,7 @@ class Physics {
   add(physical: Physical) {
     this._cleanup();
 
-    const entity = physical.createPhysicsEntity();
+    const entity = physical.initPhysicsEntity();
     this._entities.push(entity);
 
     // TODO: Why does sim break if if circle is added first?

@@ -1,5 +1,6 @@
-import physScene from "./physScene";
+import drawScene from "./drawScene";
 import "./style.css";
 
-physScene();
-// drawScene();
+// physScene();
+drawScene();
+// drawLines();

@@ -6,13 +6,13 @@ export class Rectangle implements Drawable, Physical {
   readonly height: number;
 
   private readonly _position: [number, number];
-  private readonly _rotation: [number]; // degrees
+  private readonly _rotation: [number]; // radians
   private readonly _scale: [number, number];
 
-  private _drawEntity: DrawEntity | null = null;
+  drawEntity: DrawEntity | null = null;
   private readonly _color: [number, number, number, number];
 
-  private _physicsEntity: PhysicsEntity | null = null;
+  physicsEntity: PhysicsEntity | null = null;
   readonly type: PhysicsEntityType;
   private readonly _velocity: [number, number];
 
@@ -61,8 +61,12 @@ export class Rectangle implements Drawable, Physical {
       console.warn("Could not delete rectangle: already marked for deletion");
       return;
     }
-    this.deleteDrawEntity();
-    this.deletePhysicsEntity();
+    if (this.drawEntity) {
+      this.drawEntity.delete();
+    }
+    if (this.physicsEntity) {
+      this.physicsEntity.delete();
+    }
     this.isMarkedForDeletion = true;
   }
 
@@ -112,15 +116,13 @@ export class Rectangle implements Drawable, Physical {
     this._velocity[1] = velocity[1];
   }
 
-  // Drawable
-
-  createDrawEntity(
+  initDrawEntity(
     gl: WebGLRenderingContext,
     programInfo: ProgramInfo,
   ): DrawEntity {
-    if (this._drawEntity) {
+    if (this.drawEntity) {
       console.warn("Could not create draw entity: already created");
-      return this._drawEntity;
+      return this.drawEntity;
     }
 
     const indicies: number[] = [];
@@ -144,26 +146,11 @@ export class Rectangle implements Drawable, Physical {
       indicies,
     });
 
-    this._drawEntity = drawObject;
+    this.drawEntity = drawObject;
     return drawObject;
   }
 
-  deleteDrawEntity() {
-    if (!this._drawEntity) {
-      console.warn("Could not delete draw entity: already deleted");
-      return;
-    }
-    this._drawEntity.markedForDeletion = true;
-    this._drawEntity = null;
-  }
-
-  // Physical
-
-  get physicsEntity(): PhysicsEntity | null {
-    return this._physicsEntity;
-  }
-
-  createPhysicsEntity(): PhysicsEntity {
+  initPhysicsEntity(): PhysicsEntity {
     const physicsEntity: PhysicsEntity = new PhysicsEntity({
       parent: this,
       type: this.type,
@@ -176,16 +163,7 @@ export class Rectangle implements Drawable, Physical {
       velocity: this._velocity,
     });
 
-    this._physicsEntity = physicsEntity;
+    this.physicsEntity = physicsEntity;
     return physicsEntity;
-  }
-
-  deletePhysicsEntity() {
-    if (!this._physicsEntity) {
-      console.warn("Could not delete physics entity: already deleted");
-      return;
-    }
-    this._physicsEntity.markedForDeletion = true;
-    this._physicsEntity = null;
   }
 }

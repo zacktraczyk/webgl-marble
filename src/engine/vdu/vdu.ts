@@ -74,7 +74,7 @@ export class VDU {
   add(drawable: Drawable) {
     this._cleanup();
 
-    const drawObject = drawable.createDrawEntity(this._gl, this._programInfo);
+    const drawObject = drawable.initDrawEntity(this._gl, this._programInfo);
     this._drawEntities.push(drawObject);
   }
 

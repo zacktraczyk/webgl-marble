@@ -5,13 +5,13 @@ export class Circle implements Drawable, Physical {
   readonly radius: number;
 
   private readonly _position: [number, number];
-  private readonly _rotation: [number]; // degrees
+  private readonly _rotation: [number]; // radians
   private readonly _scale: [number, number];
 
-  private _drawEntity: DrawEntity | null = null;
+  drawEntity: DrawEntity | null = null;
   private readonly _color: [number, number, number, number] = [1, 0, 0, 1];
 
-  private _physicsEntity: PhysicsEntity | null = null;
+  physicsEntity: PhysicsEntity | null = null;
   readonly type: PhysicsEntityType;
   private readonly _velocity: [number, number];
 
@@ -57,8 +57,12 @@ export class Circle implements Drawable, Physical {
       console.warn("Could not delete rectangle: already marked for deletion");
       return;
     }
-    this.deleteDrawEntity();
-    this.deletePhysicsEntity();
+    if (this.drawEntity) {
+      this.drawEntity.delete();
+    }
+    if (this.physicsEntity) {
+      this.physicsEntity.delete();
+    }
     this.isMarkedForDeletion = true;
   }
 
@@ -108,15 +112,17 @@ export class Circle implements Drawable, Physical {
     this._velocity[1] = velocity[1];
   }
 
-  // Drawable
-
   readonly segments = 32;
   readonly thetaStart = 0;
   readonly thetaLength = 2 * Math.PI;
-  createDrawEntity(
+  initDrawEntity(
     gl: WebGLRenderingContext,
     programInfo: ProgramInfo,
   ): DrawEntity {
+    if (this.drawEntity) {
+      throw new Error("Draw entity already exists");
+    }
+
     const indicies: number[] = [];
 
     for (let s = 0; s <= this.segments - 1; s++) {
@@ -137,7 +143,7 @@ export class Circle implements Drawable, Physical {
       );
     }
 
-    const drawObject = new DrawEntity({
+    const drawEntity = new DrawEntity({
       parent: this,
       gl,
       programInfo,
@@ -148,26 +154,15 @@ export class Circle implements Drawable, Physical {
       indicies,
     });
 
-    this._drawEntity = drawObject;
-    return drawObject;
+    this.drawEntity = drawEntity;
+    return drawEntity;
   }
 
-  deleteDrawEntity() {
-    if (!this._drawEntity) {
-      console.warn("Could not delete draw entity: already deleted");
-      return;
+  initPhysicsEntity(): PhysicsEntity {
+    if (this.physicsEntity) {
+      throw new Error("Physics entity already exists");
     }
-    this._drawEntity.markedForDeletion = true;
-    this._drawEntity = null;
-  }
 
-  // Physical
-
-  get physicsEntity(): PhysicsEntity | null {
-    return this._physicsEntity;
-  }
-
-  createPhysicsEntity(): PhysicsEntity {
     const physicsEntity: PhysicsEntity = new PhysicsEntity({
       parent: this,
       type: this.type,
@@ -179,16 +174,7 @@ export class Circle implements Drawable, Physical {
       velocity: this.velocity,
     });
 
-    this._physicsEntity = physicsEntity;
+    this.physicsEntity = physicsEntity;
     return physicsEntity;
-  }
-
-  deletePhysicsEntity() {
-    if (!this._physicsEntity) {
-      console.warn("Could not delete physics entity: already deleted");
-      return;
-    }
-    this._physicsEntity.markedForDeletion = true;
-    this._physicsEntity = null;
   }
 }
