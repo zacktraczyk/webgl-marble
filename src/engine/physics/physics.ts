@@ -38,9 +38,8 @@ class Physics {
     );
   }
 
-  // PBD algorithm
-  // Reference PBD: https://matthias-research.github.io/pages/publications/posBasedDyn.pdf
-  // Reference 3.1 Particle Simulation Loop: https://matthias-research.github.io/pages/publications/PBDBodies.pdf
+  // XPBD algorithm
+  // Reference: https://matthias-research.github.io/pages/publications/PBDBodies.pdf
   private _numSubsteps = 5;
   private _solverIterations = 1;
   simulate(_elapsed?: number) {
@@ -55,6 +54,7 @@ class Physics {
     const h = elapsed / this._numSubsteps;
 
     for (let i = 0; i < this._numSubsteps; i++) {
+      // Pre-solve
       for (const entity of this._entities) {
         if (entity.markedForDeletion) {
           continue;
@@ -69,6 +69,7 @@ class Physics {
         entity.position[1] += entity.velocity[1] * h;
       }
 
+      // Solve
       let collisions: Collision[] = [];
       for (let i = 0; i < this._solverIterations; i++) {
         if (!potentialCollisionPairs) {
@@ -85,12 +86,13 @@ class Physics {
         this._resolver.solvePositions(collisions, h);
       }
 
-      // Verlet integration
+      // Post-solve
       for (const entity of this._entities) {
         if (entity.markedForDeletion || entity.type !== "dynamic") {
           continue;
         }
 
+        // Verlet integration
         entity.velocity[0] = (entity.position[0] - entity.positionPrev[0]) / h;
         entity.velocity[1] = (entity.position[1] - entity.positionPrev[1]) / h;
 
