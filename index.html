@@ -8,10 +8,13 @@
 </head>
 
 <body class="flex w-full h-screen items-center justify-center">
-  <p class="absolute top-2 right-2 font-mono z-10 bg-black/80 py-2 px-4" id="#fps">FPS: 0.00</p>
-  <canvas id="gl-canvas" class="bg-black size-full">
-    Canvas Not supported
-  </canvas>
+  <p class="absolute text-rose-500 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 text-lg" id="#error"></p>
+  <div class="relative max-w-[1000px] max-h-[1000px] size-full">
+    <p class="absolute top-5 right-5 font-mono z-10 bg-black/80 py-2 px-4" id="#fps">FPS: 0.00</p>
+    <canvas id="gl-canvas" class="bg-black size-full drop-shadow-xl">
+      Canvas Not supported
+    </canvas>
+  </div>
   <script type="module" src="/src/main.ts"></script>
 </body>
 

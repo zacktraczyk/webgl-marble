@@ -37,23 +37,39 @@ function init() {
 
   // Spawn area
   const spawnOriginx = stage.width / 2;
-  const spawnOriginy = 100;
+  const spawnOriginy = 110;
   const spawnPadding = 50;
   const spawnw = stage.width - spawnPadding * 2;
-  const spawnh = 100 - spawnPadding * 2;
+  const spawnh = 180 - spawnPadding * 2;
 
-  const numSpawnEntities = 50;
+  const numSpawnEntities = 200;
 
   function randomCirclesSpawn() {
     const circleSharedProps = {
-      radius: 15,
+      radius: 12,
       type: "dynamic" as const,
     };
 
     // Spawn circles
-    for (let i = 0; i < numSpawnEntities; i++) {
+    const spawnPositions: [number, number][] = [];
+    const spawnBuffer = 5;
+    function spawnCircle(): boolean {
       const x = spawnOriginx + Math.random() * spawnw - spawnw / 2;
       const y = spawnOriginy + Math.random() * spawnh - spawnh / 2;
+      const { radius } = circleSharedProps;
+
+      for (const pos of spawnPositions) {
+        if (
+          Math.abs(pos[0] - x) < radius + spawnBuffer &&
+          Math.abs(pos[1] - y) < radius + spawnBuffer
+        ) {
+          return false;
+        }
+      }
+
+      spawnPositions.push([x, y]);
+      i++;
+
       const vx = Math.random() * 200 - 100;
       const vy = 0;
 
@@ -65,6 +81,25 @@ function init() {
       });
       vdu.add(circle);
       physics.add(circle);
+
+      return true;
+    }
+
+    let i = 0;
+    let successiveFailures = 0;
+    while (i < numSpawnEntities) {
+      if (spawnCircle()) {
+        i++;
+        successiveFailures = 0;
+      } else {
+        successiveFailures++;
+      }
+
+      if (successiveFailures > 100) {
+        throw new Error(
+          "Failed to spawn circles, unable to find suitable spawn positions",
+        );
+      }
     }
   }
 
