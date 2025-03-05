@@ -1,11 +1,30 @@
 import { Circle } from "../engine/object/circle";
 import { Rectangle } from "../engine/object/rectangle";
+import { BoundingCircle } from "../engine/physics/entity";
 import Physics from "../engine/physics/physics";
 import Stage from "../engine/Stage";
 import { VDU } from "../engine/vdu/vdu";
 
 function main() {
   const { vdu, physics } = init();
+
+  physics.register(({ collisions }) => {
+    for (const [a, b] of collisions) {
+      if (
+        a.type === "dynamic" &&
+        a.boundingShape instanceof BoundingCircle &&
+        b.type === "dynamic" &&
+        b.boundingShape instanceof BoundingCircle
+      ) {
+        if (!a.markedForDeletion) {
+          a.delete();
+        }
+        if (!b.markedForDeletion) {
+          b.delete();
+        }
+      }
+    }
+  });
 
   let lastTime = performance.now();
   function updateScene() {
@@ -174,6 +193,15 @@ function init() {
     physics,
   };
 }
+
+// Debug info
+const debugInfoElem = document.getElementById("#debug-info");
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+const updateDebugInfo = (obj: any) => {
+  if (debugInfoElem) {
+    debugInfoElem.textContent = JSON.stringify(obj);
+  }
+};
 
 // FPS Counter
 const fpsElem = document.getElementById("#fps");
