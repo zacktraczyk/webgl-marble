@@ -1,12 +1,12 @@
 import { Circle } from "../engine/object/circle";
 import { Rectangle } from "../engine/object/rectangle";
 import Physics from "../engine/physics/physics";
+import Stage from "../engine/Stage";
 import { VDU } from "../engine/vdu/vdu";
 
 function main() {
   const {
     objects: { spinningSquare },
-
     vdu,
     physics,
   } = init();
@@ -38,15 +38,19 @@ function main() {
 }
 
 function init() {
+  const stage = new Stage({
+    width: 1000,
+    height: 1000,
+  });
   const vdu = new VDU("#gl-canvas");
   const physics = new Physics();
 
   // Spawn area
-  const spawnOriginx = vdu.canvas.clientWidth / 2;
-  const spawnOriginy = vdu.canvas.clientHeight / 2;
+  const spawnOriginx = stage.width / 2;
+  const spawnOriginy = stage.height / 2;
   const spawnPadding = 50;
-  const spawnw = vdu.canvas.clientWidth - spawnPadding * 2;
-  const spawnh = vdu.canvas.clientHeight - spawnPadding * 2;
+  const spawnw = stage.width - spawnPadding * 2;
+  const spawnh = stage.height - spawnPadding * 2;
 
   const numSpawnEntities = 50;
 
@@ -76,8 +80,8 @@ function init() {
 
   function spawnWalls() {
     const ground = new Rectangle({
-      position: [vdu.canvas.clientWidth / 2, vdu.canvas.clientHeight - 25],
-      width: vdu.canvas.clientWidth,
+      position: [stage.width / 2, stage.height - 25],
+      width: stage.width,
       height: 50,
       color: [0, 1, 0, 1],
     });
@@ -85,26 +89,26 @@ function init() {
     physics.add(ground);
 
     const leftWall = new Rectangle({
-      position: [25, vdu.canvas.clientHeight / 2],
+      position: [25, stage.height / 2],
       width: 50,
-      height: vdu.canvas.clientHeight - 100,
+      height: stage.height - 100,
       color: [0, 1, 0, 1],
     });
     vdu.add(leftWall);
     physics.add(leftWall);
 
     const rightWall = new Rectangle({
-      position: [vdu.canvas.clientWidth - 25, vdu.canvas.clientHeight / 2],
+      position: [stage.width - 25, stage.height / 2],
       width: 50,
-      height: vdu.canvas.clientHeight - 100,
+      height: stage.height - 100,
       color: [0, 1, 0, 1],
     });
     vdu.add(rightWall);
     physics.add(rightWall);
 
     const ceiling = new Rectangle({
-      position: [vdu.canvas.clientWidth / 2, 25],
-      width: vdu.canvas.clientWidth,
+      position: [stage.width / 2, 25],
+      width: stage.width,
       height: 50,
       color: [0, 1, 0, 1],
     });
@@ -113,7 +117,7 @@ function init() {
   }
 
   const spinningSquare = new Rectangle({
-    position: [vdu.canvas.clientWidth / 2, vdu.canvas.clientHeight / 2],
+    position: [stage.width / 2, stage.height / 2],
     width: 50,
     height: 50,
     color: [1, 1, 1, 1],
