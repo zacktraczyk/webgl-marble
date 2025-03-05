@@ -5,23 +5,13 @@ import Stage from "../engine/Stage";
 import { VDU } from "../engine/vdu/vdu";
 
 function main() {
-  const {
-    objects: { spinningSquare },
-    vdu,
-    physics,
-  } = init();
+  const { vdu, physics } = init();
 
   let lastTime = performance.now();
   function updateScene() {
     const time = performance.now();
     const elapsed = time - lastTime;
     lastTime = time;
-
-    spinningSquare.rotation += 0.01;
-
-    if (spinningSquare.rotation > Math.PI * 2) {
-      spinningSquare.rotation = 0;
-    }
 
     physics.update(elapsed);
     updateFpsPerf();
@@ -47,10 +37,10 @@ function init() {
 
   // Spawn area
   const spawnOriginx = stage.width / 2;
-  const spawnOriginy = stage.height / 2;
+  const spawnOriginy = 100;
   const spawnPadding = 50;
   const spawnw = stage.width - spawnPadding * 2;
-  const spawnh = stage.height - spawnPadding * 2;
+  const spawnh = 100 - spawnPadding * 2;
 
   const numSpawnEntities = 50;
 
@@ -65,7 +55,7 @@ function init() {
       const x = spawnOriginx + Math.random() * spawnw - spawnw / 2;
       const y = spawnOriginy + Math.random() * spawnh - spawnh / 2;
       const vx = Math.random() * 200 - 100;
-      const vy = Math.random() * 200 - 100;
+      const vy = 0;
 
       const circle = new Circle({
         position: [x, y],
@@ -116,21 +106,35 @@ function init() {
     physics.add(ceiling);
   }
 
-  const spinningSquare = new Rectangle({
-    position: [stage.width / 2, stage.height / 2],
-    width: 50,
-    height: 50,
-    color: [1, 1, 1, 1],
-    type: "kinematic",
-  });
-  vdu.add(spinningSquare);
+  function spawnObstacles() {
+    const numObstacles = 10;
+
+    for (let j = 0; j < numObstacles / 2; j++) {
+      for (let i = 0; i < numObstacles / 2; i++) {
+        const x =
+          ((stage.width - 100) / (numObstacles / 2)) *
+          (i + (j % 2) * 0.5 + 0.5);
+        const y = 100 + ((stage.height - 200) / (numObstacles / 2)) * (j + 0.5);
+
+        const obstacleSquare = new Rectangle({
+          position: [x, y],
+          width: 50,
+          height: 50,
+          color: [1, 1, 1, 1],
+          type: "kinematic",
+        });
+        vdu.add(obstacleSquare);
+        physics.add(obstacleSquare);
+      }
+    }
+  }
 
   // Init
   spawnWalls();
   randomCirclesSpawn();
+  spawnObstacles();
 
   return {
-    objects: { spinningSquare },
     vdu,
     physics,
   };
