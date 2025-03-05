@@ -9,7 +9,6 @@ import * as WebglUtils from "./webglUtils";
 export class VDU {
   readonly canvas: HTMLCanvasElement;
   private readonly _gl: WebGLRenderingContext;
-  // private readonly _shaderProgram: WebGLProgram;
   private readonly _programInfo: ProgramInfo;
   private readonly _objectsToDraw: DrawEntity[];
 

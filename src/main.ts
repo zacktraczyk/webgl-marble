@@ -1,4 +1,4 @@
-import randomBalls from "./scenes/random-balls";
+import firstRace from "./scenes/first-race";
 import "./style.css";
 
-randomBalls();
+firstRace();
