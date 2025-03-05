@@ -17,9 +17,9 @@ function main() {
     const elapsed = time - lastTime;
     lastTime = time;
 
-    spinningSquare.rotation += 1;
+    spinningSquare.rotation += 0.01;
 
-    if (spinningSquare.rotation > 360) {
+    if (spinningSquare.rotation > Math.PI * 2) {
       spinningSquare.rotation = 0;
     }
 

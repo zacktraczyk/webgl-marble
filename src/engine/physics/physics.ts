@@ -14,7 +14,17 @@ class Physics {
 
   private _gravity_enabled: boolean = true;
 
+  private _cleanup() {
+    const filteredEntities = this._entities.filter(
+      (entity) => !entity.markedForDeletion,
+    );
+
+    this._entities = filteredEntities;
+  }
+
   add(physical: Physical) {
+    this._cleanup();
+
     const entity = physical.createPhysicsEntity();
     this._entities.push(entity);
 

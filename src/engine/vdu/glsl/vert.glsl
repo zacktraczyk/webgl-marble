@@ -1,20 +1,11 @@
 attribute vec2 aVertexPosition;
 
 uniform vec2 uResolution;
-uniform vec2 uTranslation;
-uniform vec2 uRotation;
+uniform mat3 uMatrix;
 
 void main(void) {
-
-  // TODO: Centralize updates into a single matrix
-  // Rotate the position
-  vec2 rotatedPosition = vec2(
-    aVertexPosition.x * uRotation.y + aVertexPosition.y * uRotation.x,
-    aVertexPosition.y * uRotation.y - aVertexPosition.x * uRotation.x
-  );
-
-  // Add in the translation
-  vec2 position = rotatedPosition + uTranslation;
+  // Multiply the position by the matrix.
+  vec2 position = (uMatrix * vec3(aVertexPosition, 1)).xy;
 
   // convert the position from pixels to 0.0 to 1.0
   vec2 zeroToOne = position / uResolution;

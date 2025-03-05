@@ -1,39 +1,76 @@
+import * as id from "../../utils/id";
 import { Physical, PhysicsEntity, PhysicsEntityType } from "../physics/entity";
 import { Drawable, DrawEntity, ProgramInfo } from "../vdu/entity";
 
 export class Circle implements Drawable, Physical {
-  private readonly _position: [number, number];
-  private readonly _rotation: [number, number];
-  private readonly _color: [number, number, number, number] = [1, 0, 0, 1];
+  readonly id;
   readonly radius: number;
 
+  private readonly _position: [number, number];
+  private readonly _rotation: [number]; // radians
+  private readonly _scale: [number, number];
+
+  drawEntity: DrawEntity | null = null;
+  private readonly _color: [number, number, number, number] = [1, 0, 0, 1];
+
+  physicsEntity: PhysicsEntity | null = null;
   readonly type: PhysicsEntityType;
   private readonly _velocity: [number, number];
 
+  isMarkedForDeletion: boolean = false;
+
   constructor({
+    radius,
+
     position,
     rotation,
-    radius,
+    scale,
+
     color,
 
     type = "kinematic",
     velocity,
   }: {
-    position: [number, number];
-    rotation?: [number, number];
     radius: number;
+
+    position: [number, number];
+    rotation?: number;
+    scale?: [number, number];
+
     color?: [number, number, number, number];
 
     type?: PhysicsEntityType;
     velocity?: [number, number];
   }) {
-    this._position = position;
-    this._rotation = rotation ?? [0, 1];
-    this._color = color ?? [1, 1, 1, 1];
+    this.id = id.getNext();
     this.radius = radius;
+
+    this._position = position;
+    this._rotation = [rotation ?? 0];
+    this._scale = scale ?? [1, 1];
+
+    this._color = color ?? [1, 1, 1, 1];
 
     this.type = type;
     this._velocity = velocity ?? [0, 0];
+  }
+
+  delete() {
+    if (this.isMarkedForDeletion) {
+      console.warn("Could not delete rectangle: already marked for deletion");
+      return;
+    }
+    if (this.drawEntity) {
+      this.drawEntity.delete();
+    }
+    if (this.physicsEntity) {
+      this.physicsEntity.delete();
+    }
+    this.isMarkedForDeletion = true;
+  }
+
+  get position() {
+    return this._position;
   }
 
   set position(center: [number, number]) {
@@ -41,20 +78,21 @@ export class Circle implements Drawable, Physical {
     this._position[1] = center[1];
   }
 
-  get position() {
-    return this._position;
-  }
-
   get rotation() {
-    const angleInRadians = Math.atan2(this._rotation[0], this._rotation[1]);
-    const angleInDegrees = (angleInRadians * 180) / Math.PI;
-    return angleInDegrees;
+    return this._rotation[0];
   }
 
   set rotation(degrees: number) {
-    const angleInRadians = (degrees * Math.PI) / 180;
-    this._rotation[0] = Math.sin(angleInRadians);
-    this._rotation[1] = Math.cos(angleInRadians);
+    this._rotation[0] = degrees;
+  }
+
+  get scale() {
+    return this._scale;
+  }
+
+  private set scale(scale: [number, number]) {
+    this._scale[0] = scale[0];
+    this._scale[1] = scale[1];
   }
 
   get color() {
@@ -84,6 +122,10 @@ export class Circle implements Drawable, Physical {
     gl: WebGLRenderingContext,
     programInfo: ProgramInfo,
   ): DrawEntity {
+    if (this.drawEntity) {
+      throw new Error("Draw entity already exists");
+    }
+
     const indicies: number[] = [];
 
     for (let s = 0; s <= this.segments - 1; s++) {
@@ -104,20 +146,28 @@ export class Circle implements Drawable, Physical {
       );
     }
 
-    const drawObject = new DrawEntity({
+    const drawEntity = new DrawEntity({
+      parent: this,
       gl,
       programInfo,
       position: this._position,
       rotation: this._rotation,
+      scale: this._scale,
       color: this._color,
       indicies,
     });
 
-    return drawObject;
+    this.drawEntity = drawEntity;
+    return drawEntity;
   }
 
   createPhysicsEntity(): PhysicsEntity {
+    if (this.physicsEntity) {
+      throw new Error("Physics entity already exists");
+    }
+
     const physicsEntity: PhysicsEntity = new PhysicsEntity({
+      parent: this,
       type: this.type,
       position: this._position,
       boundingShapeParams: {
@@ -127,6 +177,7 @@ export class Circle implements Drawable, Physical {
       velocity: this.velocity,
     });
 
+    this.physicsEntity = physicsEntity;
     return physicsEntity;
   }
 }

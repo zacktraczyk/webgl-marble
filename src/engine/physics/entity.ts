@@ -1,3 +1,5 @@
+import * as id from "../../utils/id";
+
 export interface Physical {
   createPhysicsEntity(): PhysicsEntity;
 }
@@ -132,6 +134,8 @@ type BoundingShapeParams =
     >;
 
 export class PhysicsEntity {
+  readonly id: number;
+  parent: Physical | null;
   readonly type: PhysicsEntityType;
   readonly boundingShape: BoundingShape | undefined;
 
@@ -139,19 +143,25 @@ export class PhysicsEntity {
   velocity: [number, number];
   acceleration: [number, number];
 
+  markedForDeletion: boolean = false;
+
   constructor({
+    parent,
     type,
     position,
     boundingShapeParams,
     velocity,
     acceleration,
   }: {
+    parent: Physical;
     type: PhysicsEntityType;
     boundingShapeParams: BoundingShapeParams;
     position: [number, number];
     velocity?: [number, number];
     acceleration?: [number, number];
   }) {
+    this.id = id.getNext();
+    this.parent = parent;
     this.type = type;
 
     if (boundingShapeParams.type === "BoundingCircle") {
@@ -171,6 +181,15 @@ export class PhysicsEntity {
     this._position = position;
     this.velocity = velocity ?? [0, 0];
     this.acceleration = acceleration ?? [0, 0];
+  }
+
+  delete() {
+    if (this.markedForDeletion) {
+      throw new Error(
+        "Could not delete physics entity: already marked for deletion",
+      );
+    }
+    this.markedForDeletion = true;
   }
 
   set position(center: [number, number]) {
