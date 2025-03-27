@@ -8,6 +8,7 @@ export type Uniform = WebglUtils.Uniform;
 
 export interface Drawable {
   drawEntity: DrawEntity | null;
+  delete(): void;
 
   createDrawEntity(
     gl: WebGLRenderingContext,

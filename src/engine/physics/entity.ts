@@ -2,6 +2,7 @@ import * as id from "../../utils/id";
 
 export interface Physical {
   createPhysicsEntity(): PhysicsEntity;
+  delete(): void;
 }
 
 abstract class BoundingShape {

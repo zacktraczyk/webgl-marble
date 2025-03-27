@@ -6,21 +6,27 @@ import Stage from "../engine/Stage";
 import { VDU } from "../engine/vdu/vdu";
 
 function main() {
-  const { vdu, physics } = init();
+  const { vdu, physics, finishLine } = init();
 
+  const finishedBalls: number[] = [];
   physics.register(({ collisions }) => {
     for (const [a, b] of collisions) {
+      // TODO: Simplify
       if (
-        a.type === "dynamic" &&
-        a.boundingShape instanceof BoundingCircle &&
-        b.type === "dynamic" &&
-        b.boundingShape instanceof BoundingCircle
+        (a.type === "dynamic" &&
+          a.boundingShape instanceof BoundingCircle &&
+          b.parent === finishLine) ||
+        (b.type === "dynamic" &&
+          b.boundingShape instanceof BoundingCircle &&
+          a.parent === finishLine)
       ) {
-        if (!a.markedForDeletion) {
-          a.delete();
+        if (!a.markedForDeletion && a.parent && a.parent !== finishLine) {
+          a.parent.delete();
+          finishedBalls.push(a.id);
         }
-        if (!b.markedForDeletion) {
-          b.delete();
+        if (!b.markedForDeletion && b.parent && b.parent !== finishLine) {
+          b.parent.delete();
+          finishedBalls.push(b.id);
         }
       }
     }
@@ -34,6 +40,7 @@ function main() {
 
     physics.update(elapsed);
     updateFpsPerf();
+    updateDebugInfo({ finishedBalls });
   }
 
   function render() {
@@ -123,28 +130,28 @@ function init() {
   }
 
   function spawnWalls() {
-    const ground = new Rectangle({
-      position: [stage.width / 2, stage.height - 25],
-      width: stage.width,
-      height: 50,
-      color: [0, 1, 0, 1],
-    });
-    vdu.add(ground);
-    physics.add(ground);
+    // const ground = new Rectangle({
+    //   position: [stage.width / 2, stage.height - 25],
+    //   width: stage.width,
+    //   height: 50,
+    //   color: [0, 1, 0, 1],
+    // });
+    // vdu.add(ground);
+    // physics.add(ground);
 
     const leftWall = new Rectangle({
-      position: [25, stage.height / 2],
+      position: [25, stage.height / 2 + 25],
       width: 50,
-      height: stage.height - 100,
+      height: stage.height - 50,
       color: [0, 1, 0, 1],
     });
     vdu.add(leftWall);
     physics.add(leftWall);
 
     const rightWall = new Rectangle({
-      position: [stage.width - 25, stage.height / 2],
+      position: [stage.width - 25, stage.height / 2 + 25],
       width: 50,
-      height: stage.height - 100,
+      height: stage.height - 50,
       color: [0, 1, 0, 1],
     });
     vdu.add(rightWall);
@@ -183,6 +190,15 @@ function init() {
     }
   }
 
+  const finishLine = new Rectangle({
+    position: [stage.width / 2, stage.height - 25],
+    width: stage.width - 100,
+    height: 50,
+    color: [1, 0, 0, 1],
+  });
+  vdu.add(finishLine);
+  physics.add(finishLine);
+
   // Init
   spawnWalls();
   randomCirclesSpawn();
@@ -191,6 +207,7 @@ function init() {
   return {
     vdu,
     physics,
+    finishLine,
   };
 }
 
@@ -199,7 +216,7 @@ const debugInfoElem = document.getElementById("#debug-info");
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 const updateDebugInfo = (obj: any) => {
   if (debugInfoElem) {
-    debugInfoElem.textContent = JSON.stringify(obj);
+    debugInfoElem.textContent = JSON.stringify(obj, null, 2);
   }
 };
 
