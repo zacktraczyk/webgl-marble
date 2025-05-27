@@ -1,3 +1,5 @@
+import { Circle } from "../engine/object/circle";
+import { Rectangle } from "../engine/object/rectangle";
 import Physics from "../engine/physics/physics";
 import { VDU } from "../engine/vdu/vdu";
 
@@ -104,9 +106,45 @@ function init({ pan, select, square, circle }: ToolSelectors) {
 
   addToolSelectors();
 
-  canvasElement.addEventListener("click", () => {
-    if (selectedTool === SelectedTool.Pan) {
-      console.log("Pan");
+  canvasElement.addEventListener("click", (e) => {
+    switch (selectedTool) {
+      case SelectedTool.Pan:
+        console.log("TODO: Pan");
+        break;
+      case SelectedTool.Select:
+        console.log("TODO: Select");
+        break;
+      case SelectedTool.Square:
+        {
+          const x = e.clientX - canvasElement.getBoundingClientRect().left;
+          const y = e.clientY - canvasElement.getBoundingClientRect().top;
+
+          const square = new Rectangle({
+            width: 100,
+            height: 100,
+            position: [x, y],
+            color: [1, 0, 0, 1],
+          });
+          objects.push(square);
+          physics.add(square);
+          vdu.add(square);
+        }
+        break;
+      case SelectedTool.Circle:
+        {
+          const x = e.clientX - canvasElement.getBoundingClientRect().left;
+          const y = e.clientY - canvasElement.getBoundingClientRect().top;
+
+          const circle = new Circle({
+            radius: 50,
+            position: [x, y],
+            color: [0, 1, 0, 1],
+          });
+          objects.push(circle);
+          physics.add(circle);
+          vdu.add(circle);
+        }
+        break;
     }
   });
 
