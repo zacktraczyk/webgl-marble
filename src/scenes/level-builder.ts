@@ -22,6 +22,22 @@ let selectedTool: SelectedTool = SelectedTool.Select;
 function main(toolSelectors: ToolSelectors) {
   const { vdu, physics, objects } = init(toolSelectors);
 
+  function clearOutOfBoundsObjects() {
+    const outOfBoundsPadding = 1000;
+
+    for (const object of objects) {
+      if (
+        object.position[0] < -outOfBoundsPadding ||
+        object.position[0] > vdu.canvas.width + outOfBoundsPadding ||
+        object.position[1] < -outOfBoundsPadding ||
+        object.position[1] > vdu.canvas.height + outOfBoundsPadding
+      ) {
+        object.delete();
+        objects.splice(objects.indexOf(object), 1);
+      }
+    }
+  }
+
   let lastTime = performance.now();
   function updateScene() {
     const time = performance.now();
@@ -32,6 +48,8 @@ function main(toolSelectors: ToolSelectors) {
     for (const object of objects) {
       object.sync();
     }
+
+    clearOutOfBoundsObjects();
   }
 
   function render() {
@@ -45,7 +63,7 @@ function main(toolSelectors: ToolSelectors) {
 }
 
 function init({ pan, select, square, circle }: ToolSelectors) {
-  const objects: { sync: () => void }[] = [];
+  const objects: (Circle | Rectangle)[] = [];
   const canvasElement = document.getElementById("gl-canvas");
   if (!canvasElement) {
     throw new Error("Canvas element not found");
