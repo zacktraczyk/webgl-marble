@@ -55,6 +55,17 @@ export class VDU {
     this._drawEntities = [];
   }
 
+  resizeCanvasToDisplaySize() {
+    console.log("resizeCanvasToDisplaySize");
+    const gl = this._gl;
+    if (!(gl.canvas instanceof HTMLCanvasElement)) {
+      throw new Error("Failed to get canvas element");
+    }
+
+    WebglUtils.resizeCanvasToDisplaySize(gl.canvas);
+    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+  }
+
   private _cleanup() {
     const filteredEntities = this._drawEntities.filter(
       (entity) => !entity?.markedForDeletion,

@@ -7,19 +7,28 @@
   <title>Marbel Race</title>
 </head>
 
-<body class="flex w-full h-screen items-center justify-center gap-5 p-5">
+<body class="flex w-full h-screen items-center justify-center gap-5">
   <p class="absolute text-rose-500 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 text-lg" id="#error"></p>
-  <div class="relative max-w-[1000px] max-h-[1000px] size-full z-0 flex-2">
+  <div class="relative size-full z-0">
+    <div class="absolute top-0 left-0 w-full bg-black/50 z-10 h-40 flex items-center justify-center p-8">
+      <div class="flex justify-between items-center bg-slate-600 h-full w-fit p-6 gap-6 text-2xl">
+        <button class="hover:bg-slate-500 size-full px-4">
+          Pan
+        </button>
+        <button class="hover:bg-slate-500 size-full px-4">
+          Select
+        </button>
+        <button class="hover:bg-slate-500 size-full px-4">
+          Square
+        </button>
+        <button class="hover:bg-slate-500 size-full px-4">
+          Circle
+        </button>
+      </div>
+    </div>
     <canvas id="gl-canvas" class="bg-black size-full drop-shadow-xl">
       Canvas Not supported
     </canvas>
-  </div>
-  <div class="relative w-full max-w-md h-full max-h-[1000px] flex-1 px-10 py-5">
-    <div class="flex justify-between items-center w-full">
-      <h1 class="text-4xl font-bold">Debug</h1>
-      <p class="font-mono z-10 bg-black/80 py-2 px-4" id="#fps">FPS: 0.00</p>
-    </div>
-    <p id="#debug-info" class="mt-6 text-2xl leading-10"></p>
   </div>
   <script type="module" src="/src/main.ts"></script>
 </body>
