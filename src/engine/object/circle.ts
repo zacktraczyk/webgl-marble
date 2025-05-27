@@ -5,54 +5,40 @@ import { createCircle, Drawable, DrawEntity } from "../vdu/entity";
 export class Circle implements Drawable, Physical {
   readonly id;
   readonly radius: number;
-
   position: [number, number];
   rotation: number; // radians
   scale: [number, number];
-
   velocity: [number, number];
-
   color: [number, number, number, number] = [1, 0, 0, 1];
-
   private _drawEntity: DrawEntity | null = null;
   private _physicsEntity: PhysicsEntity | null = null;
-  readonly type: PhysicsEntityType;
-
+  readonly physicsType: PhysicsEntityType;
   isMarkedForDeletion: boolean = false;
 
   constructor({
     radius,
-
     position,
     rotation,
     scale,
-
     color,
-
-    type = "kinematic",
+    physicsType = "dynamic",
     velocity,
   }: {
     radius: number;
-
     position: [number, number];
     rotation?: number;
     scale?: [number, number];
-
     color?: [number, number, number, number];
-
-    type?: PhysicsEntityType;
+    physicsType?: PhysicsEntityType;
     velocity?: [number, number];
   }) {
     this.id = id.getNext();
     this.radius = radius;
-
     this.position = position;
     this.rotation = rotation ?? 0;
     this.scale = scale ?? [1, 1];
-
     this.color = color ?? [1, 1, 1, 1];
-
-    this.type = type;
+    this.physicsType = physicsType;
     this.velocity = velocity ?? [0, 0];
   }
 
@@ -83,7 +69,7 @@ export class Circle implements Drawable, Physical {
     if (!this._physicsEntity) {
       const entity: PhysicsEntity = new PhysicsEntity({
         parent: this,
-        type: this.type,
+        type: this.physicsType,
         position: this.position,
         boundingShapeParams: {
           type: "BoundingCircle",
@@ -91,7 +77,6 @@ export class Circle implements Drawable, Physical {
         },
         velocity: this.velocity,
       });
-
       this._physicsEntity = entity;
     }
 

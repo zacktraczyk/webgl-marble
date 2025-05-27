@@ -4,56 +4,42 @@ import { createRectangle, Drawable, DrawEntity } from "../vdu/entity";
 export class Rectangle implements Drawable, Physical {
   readonly width: number;
   readonly height: number;
-
   position: [number, number];
   rotation: number; // radians
   scale: [number, number];
-
   color: [number, number, number, number];
-
-  _drawEntity: DrawEntity | null = null;
-  _physicsEntity: PhysicsEntity | null = null;
-  readonly type: PhysicsEntityType;
-
+  private _drawEntity: DrawEntity | null = null;
+  private _physicsEntity: PhysicsEntity | null = null;
+  readonly physicsType: PhysicsEntityType;
   velocity: [number, number];
-
   isMarkedForDeletion: boolean = false;
 
   constructor({
     width,
     height,
-
     position,
     rotation,
     scale,
-
     color,
-
-    type = "kinematic",
+    physicsType = "kinematic",
     velocity,
   }: {
     width: number;
     height: number;
-
     position: [number, number];
     rotation?: number;
     scale?: [number, number];
-
     color?: [number, number, number, number];
-
-    type?: PhysicsEntityType;
+    physicsType?: PhysicsEntityType;
     velocity?: [number, number];
   }) {
     this.width = width;
     this.height = height;
-
     this.position = position;
     this.rotation = rotation ?? 0;
     this.scale = scale ?? [1, 1];
-
     this.color = color ?? [1, 1, 1, 1];
-
-    this.type = type;
+    this.physicsType = physicsType;
     this.velocity = velocity ?? [0, 0];
   }
 
@@ -88,7 +74,7 @@ export class Rectangle implements Drawable, Physical {
     if (!this._physicsEntity) {
       const entity: PhysicsEntity = new PhysicsEntity({
         parent: this,
-        type: this.type,
+        type: this.physicsType,
         position: this.position,
         boundingShapeParams: {
           type: "BoundingBox",
@@ -97,7 +83,6 @@ export class Rectangle implements Drawable, Physical {
         },
         velocity: this.velocity,
       });
-
       this._physicsEntity = entity;
     }
 

@@ -121,7 +121,7 @@ function init() {
     width: 50,
     height: 50,
     color: [1, 1, 1, 1],
-    type: "kinematic",
+    physicsType: "kinematic",
   });
   objects.push(spinningSquare);
   vdu.add(spinningSquare);
