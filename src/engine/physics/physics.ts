@@ -45,13 +45,10 @@ class Physics {
     this._entities = filteredEntities;
   }
 
-  add(physical: Physical) {
-    this._cleanup();
+  add({ physicsEntity }: Physical) {
+    this._entities.push(physicsEntity);
 
-    const entity = physical.createPhysicsEntity();
-    this._entities.push(entity);
-
-    // TODO: Why does sim break if if circle is added first?
+    // TODO: FIXME Why does sim break if if circle is added first?
     this._entities.sort((a, b) =>
       a.boundingShape instanceof BoundingBox &&
       b.boundingShape instanceof BoundingCircle

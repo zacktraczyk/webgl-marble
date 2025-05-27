@@ -7,26 +7,24 @@ export type BufferInfo = WebglUtils.BufferInfo;
 export type Uniform = WebglUtils.Uniform;
 
 export interface Drawable {
-  drawEntity: DrawEntity | null;
-  delete(): void;
-
-  createDrawEntity(
-    gl: WebGLRenderingContext,
-    programInfo: ProgramInfo,
-  ): DrawEntity;
+  drawEntities: DrawEntity[];
 }
 
 export class DrawEntity {
   readonly id;
   parent: Drawable | null;
-  readonly gl: WebGLRenderingContext;
-  readonly programInfo: ProgramInfo;
-  readonly bufferInfo: BufferInfo;
-  readonly uniforms: Record<string, Uniform>;
+  gl?: WebGLRenderingContext;
+  programInfo?: ProgramInfo;
+  private readonly _preInitIndicies?: number[] | Float32Array;
+  bufferInfo?: BufferInfo;
 
-  readonly position: [number, number];
-  readonly rotation: [number]; // radians
-  readonly scale: [number, number];
+  uniforms?: Record<string, Uniform>;
+
+  position: [number, number];
+  rotation: number; // radians
+  scale: [number, number];
+
+  color: [number, number, number, number];
 
   readonly matrix: mat3;
 
@@ -34,8 +32,6 @@ export class DrawEntity {
 
   constructor({
     parent,
-    gl,
-    programInfo,
     position,
     rotation,
     scale,
@@ -43,10 +39,8 @@ export class DrawEntity {
     ...bufferParams
   }: {
     parent: Drawable;
-    gl: WebGLRenderingContext;
-    programInfo: ProgramInfo;
     position: [number, number];
-    rotation: [number];
+    rotation: number;
     scale: [number, number];
     color: [number, number, number, number];
   } & (
@@ -59,21 +53,36 @@ export class DrawEntity {
   )) {
     this.id = id.getNext();
     this.parent = parent;
-    this.gl = gl;
-    this.programInfo = programInfo;
 
     this.position = position;
     this.rotation = rotation;
     this.scale = scale;
+    this.color = color;
 
     this.matrix = mat3.create();
-    this.computeMatrix();
+    this._computeMatrix();
 
     if ("bufferInfo" in bufferParams) {
       const { bufferInfo } = bufferParams;
       this.bufferInfo = bufferInfo;
     } else {
       const { indicies } = bufferParams;
+      this._preInitIndicies = indicies;
+    }
+  }
+
+  init({
+    gl,
+    programInfo,
+  }: {
+    gl: WebGLRenderingContext;
+    programInfo: ProgramInfo;
+  }) {
+    this.gl = gl;
+    this.programInfo = programInfo;
+
+    if (this._preInitIndicies) {
+      const indicies = this._preInitIndicies;
 
       const indiciesBuffer = gl.createBuffer();
       if (!indiciesBuffer) {
@@ -105,7 +114,7 @@ export class DrawEntity {
     const uniforms = {
       uResolution: [gl.canvas.width, gl.canvas.height],
       uMatrix: this.matrix,
-      uColor: color,
+      uColor: this.color,
     };
     this.uniforms = uniforms;
   }
@@ -117,19 +126,22 @@ export class DrawEntity {
       );
     }
     this.markedForDeletion = true;
-    if (this.parent && "drawEntities" in this.parent) {
-      this.parent.drawEntities = null;
-    }
   }
 
-  computeMatrix() {
+  private _computeMatrix() {
     mat3.identity(this.matrix);
     mat3.translate(this.matrix, this.matrix, this.position);
-    mat3.rotate(this.matrix, this.matrix, this.rotation[0]);
+    mat3.rotate(this.matrix, this.matrix, this.rotation);
     mat3.scale(this.matrix, this.matrix, this.scale);
   }
 
   setAttributes() {
+    if (!this.programInfo || !this.bufferInfo) {
+      throw new Error(
+        "Cannot setAttributes: programInfo or bufferInfo not initalized, please call init() before setting attributes.",
+      );
+    }
+
     WebglUtils.setAttributes(
       this.programInfo.attributeSetters,
       this.bufferInfo.attributes,
@@ -137,18 +149,22 @@ export class DrawEntity {
   }
 
   setUniforms() {
+    if (!this.programInfo || !this.uniforms) {
+      throw new Error(
+        "Cannot setUniforms: programInfo or uniforms not initialized, please call init() before setting uniforms",
+      );
+    }
+
+    // Sync uniforms with object
+    this._computeMatrix();
+    this.uniforms.uColor = this.color;
+    this.uniforms.uMatrix = this.matrix;
+
     WebglUtils.setUniforms(this.programInfo.uniformSetters, this.uniforms);
   }
 }
 
-export const createCircle = (
-  vduContext: {
-    gl: WebGLRenderingContext;
-    programInfo: ProgramInfo;
-  },
-  parent: Drawable,
-  radius: number,
-): DrawEntity => {
+export const createCircle = (parent: Drawable, radius: number): DrawEntity => {
   const segments = 32;
   const thetaStart = 0;
   const thetaLength = 2 * Math.PI;
@@ -170,10 +186,9 @@ export const createCircle = (
   }
 
   const drawEntity = new DrawEntity({
-    ...vduContext,
     parent,
     position: [0, 0],
-    rotation: [0],
+    rotation: 0,
     scale: [1, 1],
     color: [1, 1, 1, 1],
     indicies,
@@ -182,15 +197,15 @@ export const createCircle = (
   return drawEntity;
 };
 
-export const createRectangle = (
-  vduContext: {
-    gl: WebGLRenderingContext;
-    programInfo: ProgramInfo;
-  },
-  parent: Drawable,
-  width: number,
-  height: number,
-): DrawEntity => {
+export const createRectangle = ({
+  parent,
+  width,
+  height,
+}: {
+  parent: Drawable;
+  width: number;
+  height: number;
+}): DrawEntity => {
   const indicies: number[] = [];
 
   indicies.push(width * (1 / 2), height * -(1 / 2));
@@ -202,10 +217,9 @@ export const createRectangle = (
   indicies.push(width * (1 / 2), height * (1 / 2));
 
   const drawEntity = new DrawEntity({
-    ...vduContext,
     parent,
     position: [0, 0],
-    rotation: [0],
+    rotation: 0,
     scale: [1, 1],
     color: [1, 1, 1, 1],
     indicies,

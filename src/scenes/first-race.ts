@@ -6,7 +6,7 @@ import Stage from "../engine/Stage";
 import { VDU } from "../engine/vdu/vdu";
 
 function main() {
-  const { vdu, physics, finishLine } = init();
+  const { vdu, physics, objects, finishLine } = init();
 
   const finishedBalls: number[] = [];
   physics.register(({ collisions }) => {
@@ -39,6 +39,9 @@ function main() {
     lastTime = time;
 
     physics.update(elapsed);
+    for (const object of objects) {
+      object.sync();
+    }
     updateFpsPerf();
     updateDebugInfo({ finishedBalls });
   }
@@ -54,6 +57,7 @@ function main() {
 }
 
 function init() {
+  const objects: { sync: () => void }[] = [];
   const stage = new Stage({
     width: 1000,
     height: 1000,
@@ -105,6 +109,7 @@ function init() {
         color: [0, 0, Math.random() * 0.5 + 0.5, 1],
         ...circleSharedProps,
       });
+      objects.push(circle);
       vdu.add(circle);
       physics.add(circle);
 
@@ -145,6 +150,7 @@ function init() {
       height: stage.height - 50,
       color: [0, 1, 0, 1],
     });
+    objects.push(leftWall);
     vdu.add(leftWall);
     physics.add(leftWall);
 
@@ -154,6 +160,7 @@ function init() {
       height: stage.height - 50,
       color: [0, 1, 0, 1],
     });
+    objects.push(rightWall);
     vdu.add(rightWall);
     physics.add(rightWall);
 
@@ -163,6 +170,7 @@ function init() {
       height: 50,
       color: [0, 1, 0, 1],
     });
+    objects.push(ceiling);
     vdu.add(ceiling);
     physics.add(ceiling);
   }
@@ -184,6 +192,7 @@ function init() {
           color: [1, 1, 1, 1],
           type: "kinematic",
         });
+        objects.push(obstacleSquare);
         vdu.add(obstacleSquare);
         physics.add(obstacleSquare);
       }
@@ -196,6 +205,7 @@ function init() {
     height: 50,
     color: [1, 0, 0, 1],
   });
+  objects.push(finishLine);
   vdu.add(finishLine);
   physics.add(finishLine);
 
@@ -207,6 +217,7 @@ function init() {
   return {
     vdu,
     physics,
+    objects,
     finishLine,
   };
 }

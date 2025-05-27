@@ -1,20 +1,21 @@
 import { Physical, PhysicsEntity, PhysicsEntityType } from "../physics/entity";
-import { Drawable, DrawEntity, ProgramInfo } from "../vdu/entity";
+import { createRectangle, Drawable, DrawEntity } from "../vdu/entity";
 
 export class Rectangle implements Drawable, Physical {
   readonly width: number;
   readonly height: number;
 
-  private readonly _position: [number, number];
-  private readonly _rotation: [number]; // radians
-  private readonly _scale: [number, number];
+  position: [number, number];
+  rotation: number; // radians
+  scale: [number, number];
 
-  drawEntity: DrawEntity | null = null;
-  private readonly _color: [number, number, number, number];
+  color: [number, number, number, number];
 
-  physicsEntity: PhysicsEntity | null = null;
+  _drawEntity: DrawEntity | null = null;
+  _physicsEntity: PhysicsEntity | null = null;
   readonly type: PhysicsEntityType;
-  private readonly _velocity: [number, number];
+
+  velocity: [number, number];
 
   isMarkedForDeletion: boolean = false;
 
@@ -46,14 +47,14 @@ export class Rectangle implements Drawable, Physical {
     this.width = width;
     this.height = height;
 
-    this._position = position;
-    this._rotation = [rotation ?? 0];
-    this._scale = scale ?? [1, 1];
+    this.position = position;
+    this.rotation = rotation ?? 0;
+    this.scale = scale ?? [1, 1];
 
-    this._color = color ?? [1, 1, 1, 1];
+    this.color = color ?? [1, 1, 1, 1];
 
     this.type = type;
-    this._velocity = velocity ?? [0, 0];
+    this.velocity = velocity ?? [0, 0];
   }
 
   delete() {
@@ -61,109 +62,59 @@ export class Rectangle implements Drawable, Physical {
       console.warn("Could not delete rectangle: already marked for deletion");
       return;
     }
-    if (this.drawEntity) {
-      this.drawEntity.delete();
+    if (this._drawEntity) {
+      this._drawEntity.delete();
     }
-    if (this.physicsEntity) {
+    if (this._physicsEntity) {
       this.physicsEntity.delete();
     }
     this.isMarkedForDeletion = true;
   }
 
-  get position() {
-    return this._position;
-  }
-
-  set position(center: [number, number]) {
-    this._position[0] = center[0];
-    this._position[1] = center[1];
-  }
-
-  get rotation() {
-    return this._rotation[0];
-  }
-
-  set rotation(degrees: number) {
-    this._rotation[0] = degrees;
-  }
-
-  get scale() {
-    return this._scale;
-  }
-
-  private set scale(scale: [number, number]) {
-    this._scale[0] = scale[0];
-    this._scale[1] = scale[1];
-  }
-
-  get color() {
-    return this._color;
-  }
-
-  set color(color: [number, number, number, number]) {
-    this._color[0] = color[0];
-    this._color[1] = color[1];
-    this._color[2] = color[2];
-    this._color[3] = color[3];
-  }
-
-  get velocity() {
-    return this._velocity;
-  }
-
-  set velocity(velocity: [number, number]) {
-    this._velocity[0] = velocity[0];
-    this._velocity[1] = velocity[1];
-  }
-
-  createDrawEntity(
-    gl: WebGLRenderingContext,
-    programInfo: ProgramInfo,
-  ): DrawEntity {
-    if (this.drawEntity) {
-      console.warn("Could not create draw entity: already created");
-      return this.drawEntity;
-    }
-
-    const indicies: number[] = [];
-
-    indicies.push(this.width * (1 / 2), this.height * -(1 / 2));
-    indicies.push(this.width * -(1 / 2), this.height * -(1 / 2));
-    indicies.push(this.width * (1 / 2), this.height * (1 / 2));
-
-    indicies.push(this.width * -(1 / 2), this.height * -(1 / 2));
-    indicies.push(this.width * -(1 / 2), this.height * (1 / 2));
-    indicies.push(this.width * (1 / 2), this.height * (1 / 2));
-
-    const drawObject = new DrawEntity({
-      parent: this,
-      gl,
-      programInfo,
-      position: this._position,
-      rotation: this._rotation,
-      scale: this._scale,
-      color: this._color,
-      indicies,
-    });
-
-    this.drawEntity = drawObject;
-    return drawObject;
-  }
-
-  createPhysicsEntity(): PhysicsEntity {
-    const physicsEntity: PhysicsEntity = new PhysicsEntity({
-      parent: this,
-      type: this.type,
-      position: this._position,
-      boundingShapeParams: {
-        type: "BoundingBox",
+  get drawEntities() {
+    if (!this._drawEntity) {
+      const entity = createRectangle({
+        parent: this,
         width: this.width,
         height: this.height,
-      },
-      velocity: this._velocity,
-    });
+      });
+      this._drawEntity = entity;
+    }
 
-    this.physicsEntity = physicsEntity;
-    return physicsEntity;
+    return [this._drawEntity];
+  }
+
+  get physicsEntity() {
+    if (!this._physicsEntity) {
+      const entity: PhysicsEntity = new PhysicsEntity({
+        parent: this,
+        type: this.type,
+        position: this.position,
+        boundingShapeParams: {
+          type: "BoundingBox",
+          width: this.width,
+          height: this.height,
+        },
+        velocity: this.velocity,
+      });
+
+      this._physicsEntity = entity;
+    }
+
+    return this._physicsEntity;
+  }
+
+  sync() {
+    if (this._physicsEntity) {
+      this.position = this._physicsEntity.position;
+      this.velocity = this._physicsEntity.velocity;
+    }
+
+    if (this._drawEntity) {
+      this._drawEntity.position = this.position;
+      this._drawEntity.rotation = this.rotation;
+      this._drawEntity.scale = this.scale;
+      this._drawEntity.color = this.color;
+    }
   }
 }

@@ -1,9 +1,10 @@
-import firstRace from "./scenes/first-race";
+import randomBalls from "./scenes/random-balls";
 import "./style.css";
 
 // Display errors on page
 try {
-  firstRace();
+  // firstRace();
+  randomBalls();
 } catch (error) {
   const errorElem = document.getElementById("#error");
   if (errorElem) {

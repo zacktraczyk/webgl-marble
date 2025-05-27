@@ -71,11 +71,14 @@ export class VDU {
     return this._drawMode;
   }
 
-  add(drawable: Drawable) {
-    this._cleanup();
-
-    const drawObject = drawable.createDrawEntity(this._gl, this._programInfo);
-    this._drawEntities.push(drawObject);
+  add({ drawEntities }: Drawable) {
+    for (const entity of drawEntities) {
+      entity.init({
+        gl: this._gl,
+        programInfo: this._programInfo,
+      });
+      this._drawEntities.push(entity);
+    }
   }
 
   private _lastUsedProgram: WebGLProgram | undefined = undefined;
@@ -99,6 +102,12 @@ export class VDU {
         return;
       }
       if (!this._lastUsedProgram) {
+        if (!object.programInfo) {
+          throw new Error(
+            "Cannot useProgram: Programinfo is undefined for object",
+          );
+        }
+
         gl.useProgram(object.programInfo.program);
         this._lastUsedProgram = object.programInfo.program;
         this._initBuffer = true;
@@ -108,10 +117,20 @@ export class VDU {
         object.setAttributes();
       }
 
-      object.uniforms.uResolution = [gl.canvas.width, gl.canvas.height];
+      if (!object.uniforms) {
+        throw new Error(
+          "Cannot setUniforms: Uniforms are undefined for object",
+        );
+      }
 
-      object.computeMatrix();
+      object.uniforms.uResolution = [gl.canvas.width, gl.canvas.height];
       object.setUniforms();
+
+      if (!object.bufferInfo) {
+        throw new Error(
+          "Cannot drawArrays: Bufferinfo is undefined for object",
+        );
+      }
 
       if (this._drawMode === "LINES") {
         gl.drawArrays(gl.LINE_LOOP, 0, object.bufferInfo.numElements);

@@ -1,10 +1,5 @@
 import * as id from "../../utils/id";
 
-export interface Physical {
-  createPhysicsEntity(): PhysicsEntity;
-  delete(): void;
-}
-
 abstract class BoundingShape {
   abstract position: [number, number];
 
@@ -134,13 +129,19 @@ type BoundingShapeParams =
       "position"
     >;
 
+export interface Physical {
+  physicsEntity: PhysicsEntity;
+
+  delete(): void;
+}
+
 export class PhysicsEntity {
+  readonly parent: Physical;
   readonly id: number;
-  parent: Physical | null;
   readonly type: PhysicsEntityType;
   readonly boundingShape: BoundingShape | undefined;
 
-  private _position: [number, number];
+  position: [number, number];
   velocity: [number, number];
   acceleration: [number, number];
 
@@ -161,8 +162,8 @@ export class PhysicsEntity {
     velocity?: [number, number];
     acceleration?: [number, number];
   }) {
-    this.id = id.getNext();
     this.parent = parent;
+    this.id = id.getNext();
     this.type = type;
 
     if (boundingShapeParams.type === "BoundingCircle") {
@@ -179,7 +180,7 @@ export class PhysicsEntity {
       this.boundingShape = undefined;
     }
 
-    this._position = position;
+    this.position = position;
     this.velocity = velocity ?? [0, 0];
     this.acceleration = acceleration ?? [0, 0];
   }
@@ -191,14 +192,5 @@ export class PhysicsEntity {
       );
     }
     this.markedForDeletion = true;
-  }
-
-  set position(center: [number, number]) {
-    this._position[0] = center[0];
-    this._position[1] = center[1];
-  }
-
-  get position() {
-    return this._position;
   }
 }

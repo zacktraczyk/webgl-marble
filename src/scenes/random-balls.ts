@@ -4,12 +4,7 @@ import Physics from "../engine/physics/physics";
 import { VDU } from "../engine/vdu/vdu";
 
 function main() {
-  const {
-    objects: { spinningSquare },
-
-    vdu,
-    physics,
-  } = init();
+  const { objects, spinningSquare, vdu, physics } = init();
 
   let lastTime = performance.now();
   function updateScene() {
@@ -24,6 +19,9 @@ function main() {
     }
 
     physics.update(elapsed);
+    for (const object of objects) {
+      object.sync();
+    }
     updateFpsPerf();
   }
 
@@ -38,6 +36,7 @@ function main() {
 }
 
 function init() {
+  const objects: { sync: () => void }[] = [];
   const vdu = new VDU("#gl-canvas");
   const physics = new Physics();
 
@@ -69,6 +68,7 @@ function init() {
         color: [0, 0, Math.random() * 0.5 + 0.5, 1],
         ...circleSharedProps,
       });
+      objects.push(circle);
       vdu.add(circle);
       physics.add(circle);
     }
@@ -81,6 +81,7 @@ function init() {
       height: 50,
       color: [0, 1, 0, 1],
     });
+    objects.push(ground);
     vdu.add(ground);
     physics.add(ground);
 
@@ -90,6 +91,7 @@ function init() {
       height: vdu.canvas.clientHeight - 100,
       color: [0, 1, 0, 1],
     });
+    objects.push(leftWall);
     vdu.add(leftWall);
     physics.add(leftWall);
 
@@ -99,6 +101,7 @@ function init() {
       height: vdu.canvas.clientHeight - 100,
       color: [0, 1, 0, 1],
     });
+    objects.push(rightWall);
     vdu.add(rightWall);
     physics.add(rightWall);
 
@@ -108,6 +111,7 @@ function init() {
       height: 50,
       color: [0, 1, 0, 1],
     });
+    objects.push(ceiling);
     vdu.add(ceiling);
     physics.add(ceiling);
   }
@@ -119,6 +123,7 @@ function init() {
     color: [1, 1, 1, 1],
     type: "kinematic",
   });
+  objects.push(spinningSquare);
   vdu.add(spinningSquare);
 
   // Init
@@ -126,7 +131,8 @@ function init() {
   randomCirclesSpawn();
 
   return {
-    objects: { spinningSquare },
+    objects,
+    spinningSquare,
     vdu,
     physics,
   };
