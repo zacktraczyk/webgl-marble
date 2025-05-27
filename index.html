@@ -11,22 +11,34 @@
   <p class="absolute text-rose-500 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 text-lg" id="#error"></p>
   <div class="relative size-full z-0">
     <div class="absolute top-0 left-0 w-full bg-black/50 z-10 h-40 flex items-center justify-center p-8">
-      <div class="flex justify-between items-center bg-slate-600 h-full w-fit p-6 gap-6 text-2xl">
-        <button class="hover:bg-slate-500 size-full px-4">
+      <div class="flex justify-between items-center bg-slate-700 h-full w-fit p-6 gap-6 text-2xl">
+        <button 
+        id="#tool-select-pan"
+        data-active="false"
+        class="hover:bg-slate-600 size-full px-4 data-[active=true]:bg-slate-500 data-[active=true]:font-semibold">
           Pan
         </button>
-        <button class="hover:bg-slate-500 size-full px-4">
+        <button 
+        id="#tool-select-select"
+        data-active="false"
+        class="hover:bg-slate-600 size-full px-4 data-[active=true]:bg-slate-500 data-[active=true]:font-semibold">
           Select
         </button>
-        <button class="hover:bg-slate-500 size-full px-4">
+        <button 
+        id="#tool-select-square"
+        data-active="false"
+        class="hover:bg-slate-600 size-full px-4 data-[active=true]:bg-slate-500 data-[active=true]:font-semibold">
           Square
         </button>
-        <button class="hover:bg-slate-500 size-full px-4">
+        <button 
+        id="#tool-select-circle"
+        data-active="false"
+        class="hover:bg-slate-600 size-full px-4 data-[active=true]:bg-slate-500 data-[active=true]:font-semibold">
           Circle
         </button>
       </div>
     </div>
-    <canvas id="gl-canvas" class="bg-black size-full drop-shadow-xl">
+    <canvas id="gl-canvas" class="bg-black size-full drop-shadow-xl data-[pointer=pan]:cursor-grab data-[pointer=select]:cursor-default data-[pointer=shape]:cursor-crosshair">
       Canvas Not supported
     </canvas>
   </div>

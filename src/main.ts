@@ -3,7 +3,17 @@ import "./style.css";
 
 // Display errors on page
 try {
-  levelBuilder();
+  const toolSelectPan = document.getElementById("#tool-select-pan");
+  const toolSelectSelect = document.getElementById("#tool-select-select");
+  const toolSelectSquare = document.getElementById("#tool-select-square");
+  const toolSelectCircle = document.getElementById("#tool-select-circle");
+
+  levelBuilder({
+    pan: toolSelectPan,
+    select: toolSelectSelect,
+    square: toolSelectSquare,
+    circle: toolSelectCircle,
+  });
 } catch (error) {
   const errorElem = document.getElementById("#error");
   if (errorElem) {
