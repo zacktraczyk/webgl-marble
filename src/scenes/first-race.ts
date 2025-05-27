@@ -1,6 +1,6 @@
 import { Circle } from "../engine/object/circle";
 import { Rectangle } from "../engine/object/rectangle";
-import { BoundingCircle } from "../engine/physics/entity";
+import { BoundingCircle } from "../engine/physics/boundingShape";
 import Physics from "../engine/physics/physics";
 import Stage from "../engine/Stage";
 import { VDU } from "../engine/vdu/vdu";

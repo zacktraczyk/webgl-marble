@@ -2,8 +2,9 @@
 // Collision Resolution reference: https://spicyyoghurt.com/tutorials/html5-javascript-game-development/collision-detection-physics
 
 import { Observer } from "../../utils/Observer";
+import { BoundingBox, BoundingCircle } from "./boundingShape";
 import { CollisionDetector, CollisionResolver } from "./collision";
-import { BoundingBox, BoundingCircle, Physical, PhysicsEntity } from "./entity";
+import { Physical, PhysicsEntity } from "./entity";
 
 const GRAVITY_X = 0;
 const GRAVITY_Y = 9.8;

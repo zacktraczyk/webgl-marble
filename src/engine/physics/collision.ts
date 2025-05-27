@@ -1,4 +1,5 @@
-import { BoundingBox, BoundingCircle, PhysicsEntity } from "./entity";
+import { BoundingBox, BoundingCircle } from "./boundingShape";
+import { PhysicsEntity } from "./entity";
 
 export class CollisionDetector {
   detectCollisions(
