@@ -50,6 +50,9 @@ function main(toolSelectors: ToolSelectors) {
     }
 
     clearOutOfBoundsObjects();
+
+    updateDebugInfo({ numObjects: objects.length });
+    updateFpsPerf();
   }
 
   function render() {
@@ -173,5 +176,33 @@ function init({ pan, select, square, circle }: ToolSelectors) {
     objects,
   };
 }
+
+// Debug info
+const debugInfoElem = document.getElementById("#debug-info");
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+const updateDebugInfo = (obj: any) => {
+  if (debugInfoElem) {
+    debugInfoElem.textContent = JSON.stringify(obj, null, 2);
+  }
+};
+
+// FPS Counter
+const fpsElem = document.getElementById("#fps");
+let lastTime = performance.now();
+let frameCount = 0;
+const updateFpsPerf = () => {
+  const now = performance.now();
+  const delta = now - lastTime;
+  frameCount++;
+
+  if (delta > 500) {
+    const fps = (frameCount / delta) * 1000;
+    if (fpsElem) {
+      fpsElem.textContent = `FPS: ${fps.toFixed(2)}`;
+    }
+    lastTime = now;
+    frameCount = 0;
+  }
+};
 
 export default main;

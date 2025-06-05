@@ -5,34 +5,46 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Marbel Race</title>
+  <script type="module" src="/src/main.ts"></script>
 </head>
 
-<body class="relative flex flex-col w-screen h-screen items-center justify-center gap-5">
-  <p class="absolute text-rose-500 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 text-lg" id="#error"></p>
-  <div
-    class="absolute z-10 top-10 flex justify-between items-center bg-slate-700 h-fit w-fit px-6 py-4 gap-6 text-2xl ">
-    <button id="#tool-select-pan" data-active="false"
-      class="hover:bg-slate-600 size-full px-4 data-[active=true]:bg-slate-500 data-[active=true]:font-semibold py-4">
-      Pan
-    </button>
-    <button id="#tool-select-select" data-active="false"
-      class="hover:bg-slate-600 size-full px-4 data-[active=true]:bg-slate-500 data-[active=true]:font-semibold py-4">
-      Select
-    </button>
-    <button id="#tool-select-square" data-active="false"
-      class="hover:bg-slate-600 size-full px-4 data-[active=true]:bg-slate-500 data-[active=true]:font-semibold py-4">
-      Square
-    </button>
-    <button id="#tool-select-circle" data-active="false"
-      class="hover:bg-slate-600 size-full px-4 data-[active=true]:bg-slate-500 data-[active=true]:font-semibold py-4">
-      Circle
-    </button>
-  </div>
-  <canvas id="gl-canvas"
-    class="bg-black size-full drop-shadow-xl data-[pointer=pan]:cursor-grab data-[pointer=select]:cursor-default data-[pointer=shape]:cursor-crosshair">
-    Canvas Not supported
-  </canvas>
-  <script type="module" src="/src/main.ts"></script>
+<body class="h-screen w-screen">
+  <main class="relative flex flex-col w-screen h-screen items-center justify-center gap-5">
+    <p class="absolute text-rose-500 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 text-lg" id="#error"></p>
+    <div
+      class="absolute z-10 top-10 flex justify-between items-center bg-slate-700 h-fit w-fit px-6 py-4 gap-6 text-2xl">
+      <button id="#tool-select-pan" data-active="false"
+        class="hover:bg-slate-600 size-full px-4 data-[active=true]:bg-slate-500 data-[active=true]:font-semibold py-4">
+        Pan
+      </button>
+      <button id="#tool-select-select" data-active="false"
+        class="hover:bg-slate-600 size-full px-4 data-[active=true]:bg-slate-500 data-[active=true]:font-semibold py-4">
+        Select
+      </button>
+      <button id="#tool-select-square" data-active="false"
+        class="hover:bg-slate-600 size-full px-4 data-[active=true]:bg-slate-500 data-[active=true]:font-semibold py-4">
+        Square
+      </button>
+      <button id="#tool-select-circle" data-active="false"
+        class="hover:bg-slate-600 size-full px-4 data-[active=true]:bg-slate-500 data-[active=true]:font-semibold py-4">
+        Circle
+      </button>
+    </div>
+
+    <div class="absolute z-10 bottom-0 flex flex-col gap-2 bg-slate-800/40 w-full px-12 py-8 h-80 items-start backdrop-blur">
+      <h1 class="font-semibold underline text-xl">
+        Debug Info
+      </h1>
+
+      <p id="#debug-info" class=""></p>
+      <p id="#fps" class="">FPS: 0</p>
+    </div>
+
+    <canvas id="gl-canvas"
+      class="bg-black size-full drop-shadow-xl data-[pointer=pan]:cursor-grab data-[pointer=select]:cursor-default data-[pointer=shape]:cursor-crosshair">
+      Canvas Not supported
+    </canvas>
+  </main>
 </body>
 
 </html>
