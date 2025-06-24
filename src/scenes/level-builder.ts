@@ -95,6 +95,7 @@ function init({ pan, select, square, circle }: ToolSelectors) {
       circle.dataset.active = "false";
       selectedTool = SelectedTool.Pan;
       canvasElement.dataset.pointer = "pan";
+      vdu.panAndZoom = true;
     });
 
     select.addEventListener("click", () => {
@@ -104,6 +105,7 @@ function init({ pan, select, square, circle }: ToolSelectors) {
       circle.dataset.active = "false";
       selectedTool = SelectedTool.Select;
       canvasElement.dataset.pointer = "select";
+      vdu.panAndZoom = false;
     });
 
     square.addEventListener("click", () => {
@@ -113,6 +115,7 @@ function init({ pan, select, square, circle }: ToolSelectors) {
       circle.dataset.active = "false";
       selectedTool = SelectedTool.Square;
       canvasElement.dataset.pointer = "shape";
+      vdu.panAndZoom = false;
     });
 
     circle.addEventListener("click", () => {
@@ -122,6 +125,7 @@ function init({ pan, select, square, circle }: ToolSelectors) {
       circle.dataset.active = "true";
       selectedTool = SelectedTool.Circle;
       canvasElement.dataset.pointer = "shape";
+      vdu.panAndZoom = false;
     });
   };
 
@@ -130,11 +134,10 @@ function init({ pan, select, square, circle }: ToolSelectors) {
   canvasElement.addEventListener("click", (e) => {
     switch (selectedTool) {
       case SelectedTool.Pan:
-        console.log("TODO: Pan");
-        break;
+        return;
       case SelectedTool.Select:
         console.log("TODO: Select");
-        break;
+        return;
       case SelectedTool.Square:
         {
           const x = e.clientX - canvasElement.getBoundingClientRect().left;
@@ -150,7 +153,7 @@ function init({ pan, select, square, circle }: ToolSelectors) {
           physics.add(square);
           vdu.add(square);
         }
-        break;
+        return;
       case SelectedTool.Circle:
         {
           const x = e.clientX - canvasElement.getBoundingClientRect().left;
@@ -165,8 +168,10 @@ function init({ pan, select, square, circle }: ToolSelectors) {
           physics.add(circle);
           vdu.add(circle);
         }
-        break;
+        return;
     }
+
+    throw new Error(`Unknown tool: ${selectedTool}`);
   });
 
   return {

@@ -63,97 +63,6 @@ export class VDU {
     });
   }
 
-  pan(delta: [number, number]) {
-    this._camera.position[0] += delta[0] / this._camera.zoom;
-    this._camera.position[1] += delta[1] / this._camera.zoom;
-  }
-
-  set zoom(value: number) {
-    this._camera.zoom = value;
-  }
-
-  get zoom() {
-    return this._camera.zoom;
-  }
-
-  private _isPanning = false;
-  private _lastPos: [number, number] | null = null;
-  private _lastZoom: number | null = null;
-  private _registerPanAndZoomHandlers() {
-    const canvasElement = this.canvas;
-
-    // Panning
-    canvasElement.addEventListener("pointerdown", (event) => {
-      event.preventDefault();
-
-      this._lastPos = [event.clientX, event.clientY];
-      this._isPanning = true;
-    });
-    canvasElement.addEventListener("pointermove", (event) => {
-      event.preventDefault();
-      if (!this._isPanning) {
-        return;
-      }
-
-      const currentPos: [number, number] = [event.clientX, event.clientY];
-      if (this._lastPos) {
-        this.pan([
-          currentPos[0] - this._lastPos[0],
-          currentPos[1] - this._lastPos[1],
-        ]);
-      }
-      this._lastPos = currentPos;
-    });
-    canvasElement.addEventListener("pointerup", (event) => {
-      event.preventDefault();
-      this._lastPos = null;
-      this._isPanning = false;
-    });
-
-    // Zooming
-    canvasElement.addEventListener("wheel", (event) => {
-      event.preventDefault();
-
-      if (!this._lastZoom) {
-        this._lastZoom = this.zoom;
-      }
-      this.zoom = this._lastZoom + event.deltaY * 0.001;
-      this._lastZoom = this.zoom;
-    });
-
-    canvasElement.addEventListener("mouseleave", () => {
-      this._lastPos = null;
-      this._isPanning = false;
-    });
-
-    // Touch pan & zoom
-    // canvasElement.addEventListener("touchmove", (event) => {
-    //   if (!isZooming) {
-  }
-
-  private _unregisterPanAndZoomHandlers() {
-    throw new Error("Not implemented");
-  }
-
-  set panAndZoom(value: boolean) {
-    if (value) {
-      this._registerPanAndZoomHandlers();
-    } else {
-      this._unregisterPanAndZoomHandlers();
-    }
-  }
-
-  resizeCanvasToDisplaySize() {
-    console.log("resizeCanvasToDisplaySize");
-    const gl = this._gl;
-    if (!(gl.canvas instanceof HTMLCanvasElement)) {
-      throw new Error("Failed to get canvas element");
-    }
-
-    WebglUtils.resizeCanvasToDisplaySize(gl.canvas);
-    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-  }
-
   private _cleanup() {
     const filteredEntities = this._drawEntities.filter(
       (entity) => !entity?.markedForDeletion,
@@ -241,6 +150,161 @@ export class VDU {
         gl.drawArrays(gl.TRIANGLES, 0, object.bufferInfo.numElements);
       }
     });
+  }
+
+  // Camera
+
+  pan(delta: [number, number]) {
+    this._camera.position[0] += delta[0] / this._camera.zoom;
+    this._camera.position[1] += delta[1] / this._camera.zoom;
+  }
+
+  set zoom(value: number) {
+    this._camera.zoom = value;
+  }
+
+  get zoom() {
+    return this._camera.zoom;
+  }
+
+  private _isPanAndZoomEnabled = false;
+  private _isPanAndZoomRegistered = false;
+  private _isPanning = false;
+  private _lastPos: [number, number] | null = null;
+  private _lastZoom: number | null = null;
+  private _pointerDownHandler(event: PointerEvent) {
+    event.preventDefault();
+    if (!this._isPanAndZoomEnabled) {
+      return;
+    }
+
+    this._lastPos = [event.clientX, event.clientY];
+    this._isPanning = true;
+  }
+  private _pointerMoveHandler(event: PointerEvent) {
+    event.preventDefault();
+    if (!this._isPanAndZoomEnabled) {
+      return;
+    }
+    if (!this._isPanning) {
+      return;
+    }
+
+    const currentPos: [number, number] = [event.clientX, event.clientY];
+    if (this._lastPos) {
+      this.pan([
+        currentPos[0] - this._lastPos[0],
+        currentPos[1] - this._lastPos[1],
+      ]);
+    }
+    this._lastPos = currentPos;
+  }
+  private _pointerUpHandler(event: PointerEvent) {
+    if (!this._isPanAndZoomEnabled) {
+      return;
+    }
+
+    event.preventDefault();
+    this._lastPos = null;
+    this._isPanning = false;
+  }
+  private _wheelHandler(event: WheelEvent) {
+    if (!this._isPanAndZoomEnabled) {
+      return;
+    }
+
+    event.preventDefault();
+    this._lastZoom = this.zoom;
+    this.zoom = this._lastZoom + event.deltaY * 0.001;
+    this._lastZoom = this.zoom;
+  }
+  private _mouseLeaveHandler() {
+    this._lastPos = null;
+    this._isPanning = false;
+  }
+  private _registerPanAndZoomHandlers() {
+    if (this._isPanAndZoomRegistered) {
+      console.warn("VDU: Pan and zoom handlers already registered");
+      return;
+    }
+
+    this._isPanAndZoomRegistered = true;
+
+    // Panning
+    this.canvas.addEventListener(
+      "pointerdown",
+      this._pointerDownHandler.bind(this),
+    );
+    this.canvas.addEventListener(
+      "pointermove",
+      this._pointerMoveHandler.bind(this),
+    );
+    this.canvas.addEventListener(
+      "pointerup",
+      this._pointerUpHandler.bind(this),
+    );
+    this.canvas.addEventListener("wheel", this._wheelHandler.bind(this));
+    this.canvas.addEventListener(
+      "mouseleave",
+      this._mouseLeaveHandler.bind(this),
+    );
+
+    // Zooming
+    this.canvas.addEventListener("wheel", this._wheelHandler.bind(this));
+
+    // TODO: Touch pan & zoom
+
+    this.canvas.addEventListener(
+      "mouseleave",
+      this._mouseLeaveHandler.bind(this),
+    );
+  }
+
+  // TODO: Unregister handlers when VDU is destroyed
+  private _unregisterPanAndZoomHandlers() {
+    if (!this._isPanAndZoomRegistered) {
+      console.warn("VDU: Pan and zoom handlers not registered");
+      return;
+    }
+
+    this._isPanAndZoomRegistered = false;
+
+    this.canvas.removeEventListener(
+      "pointerdown",
+      this._pointerDownHandler.bind(this),
+    );
+    this.canvas.removeEventListener(
+      "pointermove",
+      this._pointerMoveHandler.bind(this),
+    );
+    this.canvas.removeEventListener(
+      "pointerup",
+      this._pointerUpHandler.bind(this),
+    );
+    this.canvas.removeEventListener("wheel", this._wheelHandler.bind(this));
+    this.canvas.removeEventListener(
+      "mouseleave",
+      this._mouseLeaveHandler.bind(this),
+    );
+  }
+
+  set panAndZoom(value: boolean) {
+    if (this._isPanAndZoomEnabled === value) {
+      return;
+    }
+
+    if (value) {
+      if (!this._isPanAndZoomRegistered) {
+        this._registerPanAndZoomHandlers();
+      }
+      this._isPanAndZoomEnabled = true;
+    } else {
+      this._isPanAndZoomEnabled = false;
+    }
+  }
+
+  get panAndZoom() {
+    return this._isPanAndZoomEnabled;
   }
 }
 
