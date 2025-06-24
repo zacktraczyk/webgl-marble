@@ -32,6 +32,59 @@ function main() {
     }
   });
 
+  const canvasElement = document.getElementById("gl-canvas");
+  if (!canvasElement) {
+    throw new Error("Canvas element not found");
+  }
+
+  // Panning
+  let isPanning = false;
+  let lastPos: [number, number] | null = null;
+  canvasElement.addEventListener("pointerdown", (event) => {
+    event.preventDefault();
+
+    lastPos = [event.clientX, event.clientY];
+    isPanning = true;
+  });
+  canvasElement.addEventListener("pointermove", (event) => {
+    event.preventDefault();
+    if (!isPanning) {
+      return;
+    }
+
+    const currentPos: [number, number] = [event.clientX, event.clientY];
+    if (lastPos) {
+      vdu.pan([currentPos[0] - lastPos[0], currentPos[1] - lastPos[1]]);
+    }
+    lastPos = currentPos;
+  });
+  canvasElement.addEventListener("pointerup", (event) => {
+    event.preventDefault();
+    lastPos = null;
+    isPanning = false;
+  });
+
+  // Zooming
+  let lastZoom: number | null = null;
+  canvasElement.addEventListener("wheel", (event) => {
+    event.preventDefault();
+
+    if (!lastZoom) {
+      lastZoom = vdu.zoom;
+    }
+    vdu.zoom = lastZoom + event.deltaY * 0.001;
+    lastZoom = vdu.zoom;
+  });
+
+  canvasElement.addEventListener("mouseleave", () => {
+    lastPos = null;
+    isPanning = false;
+  });
+
+  // Touch pan & zoom
+  // canvasElement.addEventListener("touchmove", (event) => {
+  //   if (!isZooming) {
+
   let lastTime = performance.now();
   function updateScene() {
     const time = performance.now();
@@ -43,7 +96,7 @@ function main() {
       object.sync();
     }
     updateFpsPerf();
-    updateDebugInfo({ finishedBalls });
+    updateDebugInfo({ finishedBalls, lastPos });
   }
 
   function render() {

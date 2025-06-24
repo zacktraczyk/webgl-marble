@@ -60,7 +60,7 @@ export class DrawEntity {
     this.color = color;
 
     this.matrix = mat3.create();
-    this._computeMatrix();
+    this.computeMatrix();
 
     if ("bufferInfo" in bufferParams) {
       const { bufferInfo } = bufferParams;
@@ -128,7 +128,7 @@ export class DrawEntity {
     this.markedForDeletion = true;
   }
 
-  private _computeMatrix() {
+  computeMatrix() {
     mat3.identity(this.matrix);
     mat3.translate(this.matrix, this.matrix, this.position);
     mat3.rotate(this.matrix, this.matrix, this.rotation);
@@ -156,7 +156,6 @@ export class DrawEntity {
     }
 
     // Sync uniforms with object
-    this._computeMatrix();
     this.uniforms.uColor = this.color;
     this.uniforms.uMatrix = this.matrix;
 

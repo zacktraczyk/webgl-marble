@@ -1,3 +1,4 @@
+import { mat3 } from "gl-matrix";
 import { BufferInfo, Drawable, DrawEntity, ProgramInfo } from "./entity";
 import fragShader from "./glsl/frag.glsl";
 import vertShader from "./glsl/vert.glsl";
@@ -12,6 +13,7 @@ export class VDU {
   // private readonly _shaderProgram: WebGLProgram;
   private readonly _programInfo: ProgramInfo;
   private _drawEntities: DrawEntity[];
+  private readonly _camera: Camera;
 
   private _drawMode: "TRIANGLES" | "LINES" = "TRIANGLES";
 
@@ -53,6 +55,25 @@ export class VDU {
 
     // Init draw objects
     this._drawEntities = [];
+
+    // Init camera
+    this._camera = new Camera({
+      position: [0, 0],
+      zoom: 1,
+    });
+  }
+
+  pan(delta: [number, number]) {
+    this._camera.position[0] += delta[0] / this._camera.zoom;
+    this._camera.position[1] += delta[1] / this._camera.zoom;
+  }
+
+  set zoom(value: number) {
+    this._camera.zoom = value;
+  }
+
+  get zoom() {
+    return this._camera.zoom;
   }
 
   resizeCanvasToDisplaySize() {
@@ -107,6 +128,8 @@ export class VDU {
     gl.enable(gl.DEPTH_TEST);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
+    const cameraMatrix = this._camera.matrix();
+
     this._cleanup();
     this._drawEntities.forEach((object) => {
       if (object.markedForDeletion) {
@@ -135,6 +158,8 @@ export class VDU {
       }
 
       object.uniforms.uResolution = [gl.canvas.width, gl.canvas.height];
+      object.computeMatrix();
+      mat3.multiply(object.matrix, cameraMatrix, object.matrix);
       object.setUniforms();
 
       if (!object.bufferInfo) {
@@ -149,5 +174,36 @@ export class VDU {
         gl.drawArrays(gl.TRIANGLES, 0, object.bufferInfo.numElements);
       }
     });
+  }
+}
+
+class Camera {
+  // origin: [number, number];
+  position: [number, number];
+  // rotation: number;
+  zoom: number;
+
+  private _matrix: mat3;
+
+  constructor({
+    // origin = [0, 0],
+    position = [0, 0],
+    zoom = 1,
+  }: {
+    position?: [number, number];
+    zoom?: number;
+  }) {
+    this.position = position;
+    this.zoom = zoom;
+
+    this._matrix = mat3.create();
+  }
+
+  matrix(): mat3 {
+    const matrix = mat3.identity(this._matrix);
+    mat3.scale(matrix, matrix, [this.zoom, this.zoom]);
+    mat3.translate(matrix, matrix, [this.position[0], this.position[1]]);
+
+    return matrix;
   }
 }
