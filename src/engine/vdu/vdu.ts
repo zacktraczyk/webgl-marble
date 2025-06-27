@@ -306,6 +306,13 @@ export class VDU {
   get panAndZoom() {
     return this._isPanAndZoomEnabled;
   }
+
+  screenToWorld(screenX: number, screenY: number) {
+    return [
+      screenX / this.zoom - this._camera.position[0],
+      screenY / this.zoom - this._camera.position[1],
+    ];
+  }
 }
 
 class Camera {

@@ -140,8 +140,11 @@ function init({ pan, select, square, circle }: ToolSelectors) {
         return;
       case SelectedTool.Square:
         {
-          const x = e.clientX - canvasElement.getBoundingClientRect().left;
-          const y = e.clientY - canvasElement.getBoundingClientRect().top;
+          const screenX =
+            e.clientX - canvasElement.getBoundingClientRect().left;
+          const screenY = e.clientY - canvasElement.getBoundingClientRect().top;
+
+          const [x, y] = vdu.screenToWorld(screenX, screenY);
 
           const square = new Rectangle({
             width: 100,
@@ -156,8 +159,10 @@ function init({ pan, select, square, circle }: ToolSelectors) {
         return;
       case SelectedTool.Circle:
         {
-          const x = e.clientX - canvasElement.getBoundingClientRect().left;
-          const y = e.clientY - canvasElement.getBoundingClientRect().top;
+          const screenX =
+            e.clientX - canvasElement.getBoundingClientRect().left;
+          const screenY = e.clientY - canvasElement.getBoundingClientRect().top;
+          const [x, y] = vdu.screenToWorld(screenX, screenY);
 
           const circle = new Circle({
             radius: 50,
