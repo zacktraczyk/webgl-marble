@@ -1,7 +1,6 @@
 import { Circle } from "../engine/object/circle";
 import { Rectangle } from "../engine/object/rectangle";
-import Physics from "../engine/physics/physics";
-import { VDU } from "../engine/vdu/vdu";
+import Stage from "../engine/Stage";
 
 type ToolSelectors = {
   pan: HTMLElement | null;
@@ -20,23 +19,7 @@ enum SelectedTool {
 let selectedTool: SelectedTool = SelectedTool.Select;
 
 function main(toolSelectors: ToolSelectors) {
-  const { vdu, physics, objects } = init(toolSelectors);
-
-  function clearOutOfBoundsObjects() {
-    const outOfBoundsPadding = 1000;
-
-    for (const object of objects) {
-      if (
-        object.position[0] < -outOfBoundsPadding ||
-        object.position[0] > vdu.canvas.width + outOfBoundsPadding ||
-        object.position[1] < -outOfBoundsPadding ||
-        object.position[1] > vdu.canvas.height + outOfBoundsPadding
-      ) {
-        object.delete();
-        objects.splice(objects.indexOf(object), 1);
-      }
-    }
-  }
+  const { stage } = init(toolSelectors);
 
   let lastTime = performance.now();
   function updateScene() {
@@ -44,21 +27,16 @@ function main(toolSelectors: ToolSelectors) {
     const elapsed = time - lastTime;
     lastTime = time;
 
-    physics.update(elapsed);
-    for (const object of objects) {
-      object.sync();
-    }
+    stage.update(elapsed);
 
-    clearOutOfBoundsObjects();
-
-    updateDebugInfo({ numObjects: objects.length });
+    updateDebugInfo({ numObjects: stage.objects.length });
     updateFpsPerf();
   }
 
   function render() {
     updateScene();
 
-    vdu.render();
+    stage.render();
     requestAnimationFrame(render);
   }
 
@@ -66,14 +44,14 @@ function main(toolSelectors: ToolSelectors) {
 }
 
 function init({ pan, select, square, circle }: ToolSelectors) {
-  const objects: (Circle | Rectangle)[] = [];
+  const stage = new Stage({
+    canvas: "#gl-canvas",
+  });
+
   const canvasElement = document.getElementById("gl-canvas");
   if (!canvasElement) {
     throw new Error("Canvas element not found");
   }
-
-  const vdu = new VDU("#gl-canvas");
-  const physics = new Physics();
 
   const addToolSelectors = () => {
     if (!pan || !select || !square || !circle) {
@@ -95,7 +73,7 @@ function init({ pan, select, square, circle }: ToolSelectors) {
       circle.dataset.active = "false";
       selectedTool = SelectedTool.Pan;
       canvasElement.dataset.pointer = "pan";
-      vdu.panAndZoom = true;
+      stage.panAndZoom = true;
     });
 
     select.addEventListener("click", () => {
@@ -105,7 +83,7 @@ function init({ pan, select, square, circle }: ToolSelectors) {
       circle.dataset.active = "false";
       selectedTool = SelectedTool.Select;
       canvasElement.dataset.pointer = "select";
-      vdu.panAndZoom = false;
+      stage.panAndZoom = false;
     });
 
     square.addEventListener("click", () => {
@@ -115,7 +93,7 @@ function init({ pan, select, square, circle }: ToolSelectors) {
       circle.dataset.active = "false";
       selectedTool = SelectedTool.Square;
       canvasElement.dataset.pointer = "shape";
-      vdu.panAndZoom = false;
+      stage.panAndZoom = false;
     });
 
     circle.addEventListener("click", () => {
@@ -125,7 +103,7 @@ function init({ pan, select, square, circle }: ToolSelectors) {
       circle.dataset.active = "true";
       selectedTool = SelectedTool.Circle;
       canvasElement.dataset.pointer = "shape";
-      vdu.panAndZoom = false;
+      stage.panAndZoom = false;
     });
   };
 
@@ -144,7 +122,7 @@ function init({ pan, select, square, circle }: ToolSelectors) {
             e.clientX - canvasElement.getBoundingClientRect().left;
           const screenY = e.clientY - canvasElement.getBoundingClientRect().top;
 
-          const [x, y] = vdu.screenToWorld(screenX, screenY);
+          const [x, y] = stage.screenToWorld(screenX, screenY);
 
           const square = new Rectangle({
             width: 100,
@@ -152,9 +130,7 @@ function init({ pan, select, square, circle }: ToolSelectors) {
             position: [x, y],
             color: [239 / 255, 68 / 255, 68 / 255, 1],
           });
-          objects.push(square);
-          physics.add(square);
-          vdu.add(square);
+          stage.add(square);
         }
         return;
       case SelectedTool.Circle:
@@ -162,16 +138,14 @@ function init({ pan, select, square, circle }: ToolSelectors) {
           const screenX =
             e.clientX - canvasElement.getBoundingClientRect().left;
           const screenY = e.clientY - canvasElement.getBoundingClientRect().top;
-          const [x, y] = vdu.screenToWorld(screenX, screenY);
+          const [x, y] = stage.screenToWorld(screenX, screenY);
 
           const circle = new Circle({
             radius: 50,
             position: [x, y],
             color: [34 / 255, 197 / 255, 94 / 255, 1],
           });
-          objects.push(circle);
-          physics.add(circle);
-          vdu.add(circle);
+          stage.add(circle);
         }
         return;
     }
@@ -181,9 +155,7 @@ function init({ pan, select, square, circle }: ToolSelectors) {
 
   return {
     canvasElement,
-    vdu,
-    physics,
-    objects,
+    stage,
   };
 }
 

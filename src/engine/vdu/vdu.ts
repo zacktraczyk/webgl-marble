@@ -17,14 +17,21 @@ export class VDU {
 
   private _drawMode: "TRIANGLES" | "LINES" = "TRIANGLES";
 
-  constructor(canvasId: string) {
-    // Create WebGL rendering context
-    const canvas = document.querySelector(canvasId);
-    if (!canvas || !(canvas instanceof HTMLCanvasElement)) {
-      throw new Error("Failed to get canvas element");
+  constructor(canvasParam: HTMLCanvasElement | string) {
+    // Get canvas element
+    let canvas: HTMLCanvasElement;
+    if (typeof canvasParam === "string") {
+      const canvasElement = document.querySelector(canvasParam);
+      if (!canvasElement || !(canvasElement instanceof HTMLCanvasElement)) {
+        throw new Error("Failed to get canvas element");
+      }
+      canvas = canvasElement;
+    } else {
+      canvas = canvasParam;
     }
     this.canvas = canvas;
 
+    // Get WebGL rendering context
     const gl = canvas.getContext("webgl", { antialias: true, depth: false });
     if (!gl) {
       throw new Error(
