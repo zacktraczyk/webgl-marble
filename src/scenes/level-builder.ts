@@ -150,7 +150,7 @@ function init({ pan, select, square, circle }: ToolSelectors) {
             width: 100,
             height: 100,
             position: [x, y],
-            color: [1, 0, 0, 1],
+            color: [239 / 255, 68 / 255, 68 / 255, 1],
           });
           objects.push(square);
           physics.add(square);
@@ -167,7 +167,7 @@ function init({ pan, select, square, circle }: ToolSelectors) {
           const circle = new Circle({
             radius: 50,
             position: [x, y],
-            color: [0, 1, 0, 1],
+            color: [34 / 255, 197 / 255, 94 / 255, 1],
           });
           objects.push(circle);
           physics.add(circle);
