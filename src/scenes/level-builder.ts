@@ -28,6 +28,7 @@ function main(toolSelectors: ToolSelectors) {
     lastTime = time;
 
     stage.update(elapsed);
+    stage.clearOutOfBoundsObjects();
 
     updateDebugInfo({ numObjects: stage.objects.length });
     updateFpsPerf();
@@ -44,14 +45,7 @@ function main(toolSelectors: ToolSelectors) {
 }
 
 function init({ pan, select, square, circle }: ToolSelectors) {
-  const stage = new Stage({
-    canvas: "#gl-canvas",
-  });
-
-  const canvasElement = document.getElementById("gl-canvas");
-  if (!canvasElement) {
-    throw new Error("Canvas element not found");
-  }
+  const stage = new Stage();
 
   const addToolSelectors = () => {
     if (!pan || !select || !square || !circle) {
@@ -72,7 +66,7 @@ function init({ pan, select, square, circle }: ToolSelectors) {
       square.dataset.active = "false";
       circle.dataset.active = "false";
       selectedTool = SelectedTool.Pan;
-      canvasElement.dataset.pointer = "pan";
+      stage.canvas.dataset.pointer = "pan";
       stage.panAndZoom = true;
     });
 
@@ -82,7 +76,7 @@ function init({ pan, select, square, circle }: ToolSelectors) {
       square.dataset.active = "false";
       circle.dataset.active = "false";
       selectedTool = SelectedTool.Select;
-      canvasElement.dataset.pointer = "select";
+      stage.canvas.dataset.pointer = "select";
       stage.panAndZoom = false;
     });
 
@@ -92,7 +86,7 @@ function init({ pan, select, square, circle }: ToolSelectors) {
       square.dataset.active = "true";
       circle.dataset.active = "false";
       selectedTool = SelectedTool.Square;
-      canvasElement.dataset.pointer = "shape";
+      stage.canvas.dataset.pointer = "shape";
       stage.panAndZoom = false;
     });
 
@@ -102,14 +96,14 @@ function init({ pan, select, square, circle }: ToolSelectors) {
       square.dataset.active = "false";
       circle.dataset.active = "true";
       selectedTool = SelectedTool.Circle;
-      canvasElement.dataset.pointer = "shape";
+      stage.canvas.dataset.pointer = "shape";
       stage.panAndZoom = false;
     });
   };
 
   addToolSelectors();
 
-  canvasElement.addEventListener("click", (e) => {
+  stage.canvas.addEventListener("click", (e) => {
     switch (selectedTool) {
       case SelectedTool.Pan:
         return;
@@ -118,9 +112,8 @@ function init({ pan, select, square, circle }: ToolSelectors) {
         return;
       case SelectedTool.Square:
         {
-          const screenX =
-            e.clientX - canvasElement.getBoundingClientRect().left;
-          const screenY = e.clientY - canvasElement.getBoundingClientRect().top;
+          const screenX = e.clientX - stage.canvas.getBoundingClientRect().left;
+          const screenY = e.clientY - stage.canvas.getBoundingClientRect().top;
 
           const [x, y] = stage.screenToWorld(screenX, screenY);
 
@@ -135,9 +128,8 @@ function init({ pan, select, square, circle }: ToolSelectors) {
         return;
       case SelectedTool.Circle:
         {
-          const screenX =
-            e.clientX - canvasElement.getBoundingClientRect().left;
-          const screenY = e.clientY - canvasElement.getBoundingClientRect().top;
+          const screenX = e.clientX - stage.canvas.getBoundingClientRect().left;
+          const screenY = e.clientY - stage.canvas.getBoundingClientRect().top;
           const [x, y] = stage.screenToWorld(screenX, screenY);
 
           const circle = new Circle({
@@ -154,7 +146,6 @@ function init({ pan, select, square, circle }: ToolSelectors) {
   });
 
   return {
-    canvasElement,
     stage,
   };
 }

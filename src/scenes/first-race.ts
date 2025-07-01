@@ -1,15 +1,13 @@
 import { Circle } from "../engine/object/circle";
 import { Rectangle } from "../engine/object/rectangle";
 import { BoundingCircle } from "../engine/physics/boundingShape";
-import Physics from "../engine/physics/physics";
 import Stage from "../engine/Stage";
-import { VDU } from "../engine/vdu/vdu";
 
 function main() {
-  const { vdu, physics, objects, finishLine } = init();
+  const { stage, finishLine } = init();
 
   const finishedBalls: number[] = [];
-  physics.register(({ collisions }) => {
+  stage.registerPhysicsObserver(({ collisions }) => {
     for (const [a, b] of collisions) {
       // TODO: Simplify
       if (
@@ -38,10 +36,7 @@ function main() {
     const elapsed = time - lastTime;
     lastTime = time;
 
-    physics.update(elapsed);
-    for (const object of objects) {
-      object.sync();
-    }
+    stage.update(elapsed);
     updateFpsPerf();
     updateDebugInfo({ finishedBalls });
   }
@@ -49,7 +44,7 @@ function main() {
   function render() {
     updateScene();
 
-    vdu.render();
+    stage.render();
     requestAnimationFrame(render);
   }
 
@@ -57,14 +52,11 @@ function main() {
 }
 
 function init() {
-  const objects: { sync: () => void }[] = [];
   const stage = new Stage({
-    width: 1000,
     height: 1000,
+    width: 1000,
   });
-  const vdu = new VDU("#gl-canvas");
-  vdu.panAndZoom = true;
-  const physics = new Physics();
+  stage.panAndZoom = true;
 
   // Spawn area
   const spawnOriginx = stage.width / 2;
@@ -110,9 +102,7 @@ function init() {
         color: [0, 0, Math.random() * 0.5 + 0.5, 1],
         ...circleSharedProps,
       });
-      objects.push(circle);
-      vdu.add(circle);
-      physics.add(circle);
+      stage.add(circle);
 
       return true;
     }
@@ -151,9 +141,7 @@ function init() {
       height: stage.height - 50,
       color: [0, 1, 0, 1],
     });
-    objects.push(leftWall);
-    vdu.add(leftWall);
-    physics.add(leftWall);
+    stage.add(leftWall);
 
     const rightWall = new Rectangle({
       position: [stage.width - 25, stage.height / 2 + 25],
@@ -161,9 +149,7 @@ function init() {
       height: stage.height - 50,
       color: [0, 1, 0, 1],
     });
-    objects.push(rightWall);
-    vdu.add(rightWall);
-    physics.add(rightWall);
+    stage.add(rightWall);
 
     const ceiling = new Rectangle({
       position: [stage.width / 2, 25],
@@ -171,9 +157,7 @@ function init() {
       height: 50,
       color: [0, 1, 0, 1],
     });
-    objects.push(ceiling);
-    vdu.add(ceiling);
-    physics.add(ceiling);
+    stage.add(ceiling);
   }
 
   function spawnObstacles() {
@@ -193,9 +177,7 @@ function init() {
           color: [1, 1, 1, 1],
           physicsType: "kinematic",
         });
-        objects.push(obstacleSquare);
-        vdu.add(obstacleSquare);
-        physics.add(obstacleSquare);
+        stage.add(obstacleSquare);
       }
     }
   }
@@ -206,9 +188,7 @@ function init() {
     height: 50,
     color: [1, 0, 0, 1],
   });
-  objects.push(finishLine);
-  vdu.add(finishLine);
-  physics.add(finishLine);
+  stage.add(finishLine);
 
   // Init
   spawnWalls();
@@ -216,9 +196,7 @@ function init() {
   spawnObstacles();
 
   return {
-    vdu,
-    physics,
-    objects,
+    stage,
     finishLine,
   };
 }

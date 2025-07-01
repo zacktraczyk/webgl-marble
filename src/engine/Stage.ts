@@ -1,5 +1,5 @@
 import { Physical } from "./physics/entity";
-import Physics from "./physics/physics";
+import Physics, { CollisionEvents } from "./physics/physics";
 import { Drawable } from "./vdu/entity";
 import { VDU } from "./vdu/vdu";
 
@@ -15,25 +15,37 @@ class Stage {
   private readonly _vdu: VDU;
   private readonly _physics: Physics;
 
-  // readonly height: number;
-  // readonly width: number;
+  readonly height: number;
+  readonly width: number;
 
   private _objects: StageObject[];
 
   constructor({
-    // width = 600,
-    // height = 600,
+    width = 600,
+    height = 600,
     physics,
-    ...rest
+    vdu: vduParam,
   }: {
     width?: number;
     height?: number;
     physics?: Physics;
-  } & ({ vdu: VDU } | { canvas: HTMLCanvasElement | string })) {
-    // this.height = height;
-    // this.width = width;
+    vdu?: VDU | { canvas: HTMLCanvasElement | string };
+  } = {}) {
+    this.height = height;
+    this.width = width;
 
-    this._vdu = "canvas" in rest ? new VDU(rest.canvas) : rest.vdu;
+    let vdu: VDU;
+    if (vduParam) {
+      if (vduParam instanceof VDU) {
+        vdu = vduParam;
+      } else {
+        vdu = new VDU(vduParam.canvas);
+      }
+    } else {
+      vdu = new VDU("#gl-canvas");
+    }
+    this._vdu = vdu;
+
     this._physics = physics ?? new Physics();
     this._objects = [];
   }
@@ -91,6 +103,18 @@ class Stage {
 
   get objects() {
     return this._objects;
+  }
+
+  get canvas() {
+    return this._vdu.canvas;
+  }
+
+  registerPhysicsObserver(observer: (data: CollisionEvents) => void) {
+    this._physics.register(observer);
+  }
+
+  unregisterPhysicsObserver(observer: (data: CollisionEvents) => void) {
+    this._physics.unregister(observer);
   }
 }
 

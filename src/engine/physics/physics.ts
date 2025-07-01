@@ -9,7 +9,7 @@ import { Physical, PhysicsEntity } from "./entity";
 const GRAVITY_X = 0;
 const GRAVITY_Y = 9.8;
 
-type CollisionEvents = {
+export type CollisionEvents = {
   collisions: [PhysicsEntity, PhysicsEntity][];
 };
 
