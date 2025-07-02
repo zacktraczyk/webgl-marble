@@ -5,7 +5,6 @@ import {
   PhysicsEntity,
 } from "../physics/entity";
 import { createCircle, type Drawable, type DrawEntity } from "../vdu/entity";
-import { Arrow } from "./arrow";
 
 export class Circle implements Drawable, Physical {
   readonly id;
@@ -113,59 +112,6 @@ export class Circle implements Drawable, Physical {
       this._drawEntity.rotation = this.rotation;
       this._drawEntity.scale = this.scale;
       this._drawEntity.color = this.color;
-    }
-  }
-}
-
-export class Ball extends Circle {
-  private _arrowParams: Partial<ConstructorParameters<typeof Arrow>[0]> = {
-    tipLength: 10,
-    stroke: 4,
-    color: [0.8, 0.4, 0.6, 1],
-  };
-  private _arrowMagnitude: number;
-  private _velocityArrow: Arrow | null = null;
-
-  constructor(
-    params: ConstructorParameters<typeof Circle>[0] & {
-      arrowMagnitude?: number;
-    }
-  ) {
-    const { arrowMagnitude, ...rest } = params;
-    super(rest);
-    this._arrowMagnitude = arrowMagnitude ?? params.radius * 2;
-  }
-
-  get direction() {
-    const velocity = this.velocity;
-    const length = Math.sqrt(velocity[0] ** 2 + velocity[1] ** 2);
-    return [velocity[0] / length, velocity[1] / length];
-  }
-
-  get drawEntities() {
-    const entities = super.drawEntities;
-    if (!this._velocityArrow) {
-      this._velocityArrow = new Arrow({
-        basePosition: this.position,
-        tipPosition: [
-          this.position[0] + this.direction[0] * 10,
-          this.position[1] + this.direction[1] * 10,
-        ],
-        ...this._arrowParams,
-      });
-    }
-    return [...entities, ...this._velocityArrow.drawEntities];
-  }
-
-  sync() {
-    super.sync();
-    if (this._velocityArrow) {
-      this._velocityArrow.basePosition = this.position;
-      this._velocityArrow.tipPosition = [
-        this.position[0] + this.direction[0] * this._arrowMagnitude,
-        this.position[1] + this.direction[1] * this._arrowMagnitude,
-      ];
-      this._velocityArrow.sync();
     }
   }
 }

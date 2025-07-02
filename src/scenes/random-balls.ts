@@ -1,4 +1,4 @@
-import { Ball } from "../engine/object/circle";
+import { Ball } from "../engine/object/ball";
 import { Rectangle } from "../engine/object/rectangle";
 import Stage from "../engine/Stage";
 

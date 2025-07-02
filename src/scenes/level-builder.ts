@@ -1,4 +1,4 @@
-import { Ball, Circle } from "../engine/object/circle";
+import { Ball } from "../engine/object/ball";
 import { Rectangle } from "../engine/object/rectangle";
 import { BoundingCircle } from "../engine/physics/boundingShape";
 import Stage from "../engine/Stage";
