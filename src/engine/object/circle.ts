@@ -1,6 +1,10 @@
-import * as id from "../../utils/id";
-import { Physical, PhysicsEntity, PhysicsEntityType } from "../physics/entity";
-import { createCircle, Drawable, DrawEntity } from "../vdu/entity";
+import * as id from "../utils/id";
+import {
+  type Physical,
+  type PhysicsEntityType,
+  PhysicsEntity,
+} from "../physics/entity";
+import { createCircle, type Drawable, type DrawEntity } from "../vdu/entity";
 
 export class Circle implements Drawable, Physical {
   readonly id;

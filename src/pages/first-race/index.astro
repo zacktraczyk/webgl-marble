@@ -1,0 +1,44 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import "../../styles/global.css";
+---
+
+<Layout>
+  <main
+    class="relative flex size-full items-center justify-center gap-5 text-white bg-zinc-900"
+  >
+    <p
+      class="absolute text-rose-500 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 text-lg"
+      id="#error"
+    >
+    </p>
+    <div class="relative max-w-[1000px] max-h-[1000px] size-full z-0 flex-2">
+      <canvas id="gl-canvas" class="bg-black size-full drop-shadow-xl">
+        Canvas Not supported
+      </canvas>
+    </div>
+    <div
+      class="relative w-full max-w-md h-full max-h-[1000px] flex-1 px-10 py-5 bg-zinc-600/40 backdrop-blur rounded-2xl"
+    >
+      <div class="flex justify-between items-center w-full">
+        <h1 class="text-2xl font-bold">Debug</h1>
+        <p class="font-mono z-10 bg-black/80 py-1 px-4" id="#fps">FPS: 0.00</p>
+      </div>
+      <p id="#debug-info" class="mt-6 text-lg leading-10"></p>
+    </div>
+  </main>
+</Layout>
+
+<script>
+  import main from "../../scenes/first-race.ts";
+
+  // Display errors on page
+  try {
+    main();
+  } catch (error) {
+    const errorElem = document.getElementById("#error");
+    if (errorElem) {
+      errorElem.textContent = `${error}`;
+    }
+  }
+</script>

@@ -1,7 +1,7 @@
-import { Circle } from "../engine/object/circle";
-import { Rectangle } from "../engine/object/rectangle";
-import { BoundingCircle } from "../engine/physics/boundingShape";
-import Stage from "../engine/Stage";
+import { Circle } from "../src/engine/object/circle";
+import { Rectangle } from "../src/engine/object/rectangle";
+import { BoundingCircle } from "../src/engine/physics/boundingShape";
+import Stage from "../src/engine/Stage";
 
 function main() {
   const { stage, finishLine } = init();
@@ -119,7 +119,7 @@ function init() {
 
       if (successiveFailures > 100) {
         throw new Error(
-          "Failed to spawn circles, unable to find suitable spawn positions"
+          "Failed to spawn circles, unable to find suitable spawn positions",
         );
       }
     }

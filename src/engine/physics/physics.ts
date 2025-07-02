@@ -1,10 +1,10 @@
 // Reference article: https://developer.ibm.com/tutorials/wa-build2dphysicsengine/
 // Collision Resolution reference: https://spicyyoghurt.com/tutorials/html5-javascript-game-development/collision-detection-physics
 
-import { Observer } from "../../utils/Observer";
+import { Observer } from "../utils/Observer";
 import { BoundingBox, BoundingCircle } from "./boundingShape";
 import { CollisionDetector, CollisionResolver } from "./collision";
-import { Physical, PhysicsEntity } from "./entity";
+import { type Physical, PhysicsEntity } from "./entity";
 
 const GRAVITY_X = 0;
 const GRAVITY_Y = 9.8;
@@ -40,7 +40,7 @@ class Physics {
 
   private _cleanup() {
     const filteredEntities = this._entities.filter(
-      (entity) => !entity.markedForDeletion,
+      (entity) => !entity.markedForDeletion
     );
 
     this._entities = filteredEntities;
@@ -54,7 +54,7 @@ class Physics {
       a.boundingShape instanceof BoundingBox &&
       b.boundingShape instanceof BoundingCircle
         ? -1
-        : 1,
+        : 1
     );
   }
 

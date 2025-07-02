@@ -1,5 +1,10 @@
 import { mat3 } from "gl-matrix";
-import { BufferInfo, Drawable, DrawEntity, ProgramInfo } from "./entity";
+import {
+  type BufferInfo,
+  type Drawable,
+  type ProgramInfo,
+  DrawEntity,
+} from "./entity";
 import fragShader from "./glsl/frag.glsl";
 import vertShader from "./glsl/vert.glsl";
 import * as WebglUtils from "./webglUtils";
@@ -35,7 +40,7 @@ export class VDU {
     const gl = canvas.getContext("webgl", { antialias: true, depth: false });
     if (!gl) {
       throw new Error(
-        "Unable to initialize WebGL. Your browser may not support it.",
+        "Unable to initialize WebGL. Your browser may not support it."
       );
     }
     this._gl = gl;
@@ -44,7 +49,7 @@ export class VDU {
     const shaderProgram = WebglUtils.initShaderProgram(
       gl,
       vertShader,
-      fragShader,
+      fragShader
     );
     if (!shaderProgram) {
       throw new Error("Failed to initialize shader program");
@@ -72,7 +77,7 @@ export class VDU {
 
   private _cleanup() {
     const filteredEntities = this._drawEntities.filter(
-      (entity) => !entity?.markedForDeletion,
+      (entity) => !entity?.markedForDeletion
     );
 
     this._drawEntities = filteredEntities;
@@ -121,7 +126,7 @@ export class VDU {
       if (!this._lastUsedProgram) {
         if (!object.programInfo) {
           throw new Error(
-            "Cannot useProgram: Programinfo is undefined for object",
+            "Cannot useProgram: Programinfo is undefined for object"
           );
         }
 
@@ -136,7 +141,7 @@ export class VDU {
 
       if (!object.uniforms) {
         throw new Error(
-          "Cannot setUniforms: Uniforms are undefined for object",
+          "Cannot setUniforms: Uniforms are undefined for object"
         );
       }
 
@@ -147,7 +152,7 @@ export class VDU {
 
       if (!object.bufferInfo) {
         throw new Error(
-          "Cannot drawArrays: Bufferinfo is undefined for object",
+          "Cannot drawArrays: Bufferinfo is undefined for object"
         );
       }
 
@@ -240,20 +245,20 @@ export class VDU {
     // Panning
     this.canvas.addEventListener(
       "pointerdown",
-      this._pointerDownHandler.bind(this),
+      this._pointerDownHandler.bind(this)
     );
     this.canvas.addEventListener(
       "pointermove",
-      this._pointerMoveHandler.bind(this),
+      this._pointerMoveHandler.bind(this)
     );
     this.canvas.addEventListener(
       "pointerup",
-      this._pointerUpHandler.bind(this),
+      this._pointerUpHandler.bind(this)
     );
     this.canvas.addEventListener("wheel", this._wheelHandler.bind(this));
     this.canvas.addEventListener(
       "mouseleave",
-      this._mouseLeaveHandler.bind(this),
+      this._mouseLeaveHandler.bind(this)
     );
 
     // Zooming
@@ -263,7 +268,7 @@ export class VDU {
 
     this.canvas.addEventListener(
       "mouseleave",
-      this._mouseLeaveHandler.bind(this),
+      this._mouseLeaveHandler.bind(this)
     );
   }
 
@@ -278,20 +283,20 @@ export class VDU {
 
     this.canvas.removeEventListener(
       "pointerdown",
-      this._pointerDownHandler.bind(this),
+      this._pointerDownHandler.bind(this)
     );
     this.canvas.removeEventListener(
       "pointermove",
-      this._pointerMoveHandler.bind(this),
+      this._pointerMoveHandler.bind(this)
     );
     this.canvas.removeEventListener(
       "pointerup",
-      this._pointerUpHandler.bind(this),
+      this._pointerUpHandler.bind(this)
     );
     this.canvas.removeEventListener("wheel", this._wheelHandler.bind(this));
     this.canvas.removeEventListener(
       "mouseleave",
-      this._mouseLeaveHandler.bind(this),
+      this._mouseLeaveHandler.bind(this)
     );
   }
 

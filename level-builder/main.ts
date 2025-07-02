@@ -1,5 +1,5 @@
-import levelBuilder from "./scenes/level-builder";
-import "./style.css";
+import "../src/style.css";
+import levelBuilder from "./level-builder";
 
 // Display errors on page
 try {

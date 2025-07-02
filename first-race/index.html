@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Marbel Race</title>
+</head>
+
+<body class="flex w-full h-screen items-center justify-center gap-5 p-5">
+  <p class="absolute text-rose-500 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 text-lg" id="#error"></p>
+  <div class="relative max-w-[1000px] max-h-[1000px] size-full z-0 flex-2">
+    <canvas id="gl-canvas" class="bg-black size-full drop-shadow-xl">
+      Canvas Not supported
+    </canvas>
+  </div>
+  <div class="relative w-full max-w-md h-full max-h-[1000px] flex-1 px-10 py-5">
+    <div class="flex justify-between items-center w-full">
+      <h1 class="text-4xl font-bold">Debug</h1>
+      <p class="font-mono z-10 bg-black/80 py-2 px-4" id="#fps">FPS: 0.00</p>
+    </div>
+    <p id="#debug-info" class="mt-6 text-2xl leading-10"></p>
+  </div>
+  <script type="module" src="./main.ts"></script>
+</body>
+
+</html>

@@ -1,5 +1,5 @@
 import { mat3 } from "gl-matrix";
-import * as id from "../../utils/id";
+import * as id from "../utils/id";
 import * as WebglUtils from "./webglUtils";
 
 export type ProgramInfo = WebglUtils.ProgramInfo;
@@ -92,7 +92,7 @@ export class DrawEntity {
       gl.bufferData(
         gl.ARRAY_BUFFER,
         new Float32Array(indicies),
-        gl.STATIC_DRAW,
+        gl.STATIC_DRAW
       );
       const bufferInfo: BufferInfo = {
         numElements: indicies.length / 2,
@@ -122,7 +122,7 @@ export class DrawEntity {
   delete() {
     if (this.markedForDeletion) {
       throw new Error(
-        "Could not delete drawEntity: already marked for deletion",
+        "Could not delete drawEntity: already marked for deletion"
       );
     }
     this.markedForDeletion = true;
@@ -138,20 +138,20 @@ export class DrawEntity {
   setAttributes() {
     if (!this.programInfo || !this.bufferInfo) {
       throw new Error(
-        "Cannot setAttributes: programInfo or bufferInfo not initalized, please call init() before setting attributes.",
+        "Cannot setAttributes: programInfo or bufferInfo not initalized, please call init() before setting attributes."
       );
     }
 
     WebglUtils.setAttributes(
       this.programInfo.attributeSetters,
-      this.bufferInfo.attributes,
+      this.bufferInfo.attributes
     );
   }
 
   setUniforms() {
     if (!this.programInfo || !this.uniforms) {
       throw new Error(
-        "Cannot setUniforms: programInfo or uniforms not initialized, please call init() before setting uniforms",
+        "Cannot setUniforms: programInfo or uniforms not initialized, please call init() before setting uniforms"
       );
     }
 
@@ -180,7 +180,7 @@ export const createCircle = (parent: Drawable, radius: number): DrawEntity => {
 
     indicies.push(
       radius * Math.cos(nextSegment),
-      radius * Math.sin(nextSegment),
+      radius * Math.sin(nextSegment)
     );
   }
 

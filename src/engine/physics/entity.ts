@@ -1,4 +1,4 @@
-import * as id from "../../utils/id";
+import * as id from "../utils/id";
 import { BoundingBox, BoundingCircle, BoundingShape } from "./boundingShape";
 export type PhysicsEntityType = "kinematic" | "dynamic";
 
@@ -74,7 +74,7 @@ export class PhysicsEntity {
   delete() {
     if (this.markedForDeletion) {
       throw new Error(
-        "Could not delete physics entity: already marked for deletion",
+        "Could not delete physics entity: already marked for deletion"
       );
     }
     this.markedForDeletion = true;

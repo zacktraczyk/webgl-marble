@@ -1,6 +1,6 @@
-import { Physical } from "./physics/entity";
-import Physics, { CollisionEvents } from "./physics/physics";
-import { Drawable } from "./vdu/entity";
+import { type Physical } from "./physics/entity";
+import Physics, { type CollisionEvents } from "./physics/physics";
+import { type Drawable } from "./vdu/entity";
 import { VDU } from "./vdu/vdu";
 
 export interface StageObject extends Drawable, Physical {
@@ -63,7 +63,7 @@ class Stage {
 
   private _cleanup() {
     const filteredObjects = this._objects.filter(
-      (object) => !object.markedForDeletion,
+      (object) => !object.markedForDeletion
     );
     this._objects = filteredObjects;
   }

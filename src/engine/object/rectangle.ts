@@ -1,5 +1,9 @@
-import { Physical, PhysicsEntity, PhysicsEntityType } from "../physics/entity";
-import { createRectangle, Drawable, DrawEntity } from "../vdu/entity";
+import {
+  type Physical,
+  type PhysicsEntityType,
+  PhysicsEntity,
+} from "../physics/entity";
+import { createRectangle, type Drawable, type DrawEntity } from "../vdu/entity";
 
 export class Rectangle implements Drawable, Physical {
   readonly width: number;
