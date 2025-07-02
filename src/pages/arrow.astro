@@ -1,0 +1,41 @@
+---
+import Layout from "../layouts/Layout.astro";
+import "../styles/global.css";
+---
+
+<Layout>
+  <main
+    class="relative flex flex-col w-screen h-screen items-center justify-center gap-5"
+  >
+    <p
+      class="absolute text-rose-500 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 text-2xl font-mono"
+      id="#error"
+    >
+    </p>
+    <div
+      class="absolute z-10 bottom-0 flex flex-col gap-4 bg-zinc-800/40 w-full px-12 py-8 h-40 items-start backdrop-blur"
+    >
+      <h1 class="font-semibold underline text-lg">Debug Info</h1>
+      <pre id="#debug-info" class="text-mono"></pre>
+      <p id="#fps" class="">FPS: 0</p>
+    </div>
+
+    <canvas id="gl-canvas" class="bg-zinc-900 size-full drop-shadow-xl">
+      Canvas Not supported
+    </canvas>
+  </main>
+</Layout>
+
+<script>
+  import main from "../scenes/arrow.ts";
+
+  // Display errors on page
+  try {
+    main();
+  } catch (error) {
+    const errorElem = document.getElementById("#error");
+    if (errorElem) {
+      errorElem.textContent = `${error}`;
+    }
+  }
+</script>

@@ -163,6 +163,7 @@ export class DrawEntity {
   }
 }
 
+// TODO: Use instanced rendering
 export const createCircle = (parent: Drawable, radius: number): DrawEntity => {
   const segments = 32;
   const thetaStart = 0;
@@ -196,6 +197,7 @@ export const createCircle = (parent: Drawable, radius: number): DrawEntity => {
   return drawEntity;
 };
 
+// TODO: Use instanced rendering
 export const createRectangle = ({
   parent,
   width,

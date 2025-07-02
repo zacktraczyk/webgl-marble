@@ -1,15 +1,15 @@
-import { type Physical } from "./physics/entity";
+import { PhysicsEntity, type Physical } from "./physics/entity";
 import Physics, { type CollisionEvents } from "./physics/physics";
-import { type Drawable } from "./vdu/entity";
+import { DrawEntity, type Drawable } from "./vdu/entity";
 import { VDU } from "./vdu/vdu";
 
-export interface StageObject extends Drawable, Physical {
+export type StageObject = {
   // id: string;
   position: [number, number];
   markedForDeletion: boolean;
   sync(): void;
   delete(): void;
-}
+} & (Drawable | Physical | {});
 
 class Stage {
   // TODO:
