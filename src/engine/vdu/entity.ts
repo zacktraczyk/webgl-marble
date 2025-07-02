@@ -228,3 +228,35 @@ export const createRectangle = ({
 
   return drawEntity;
 };
+
+// TODO: FIXME hacky and weird
+export const createRectangleOriginLeftCenter = ({
+  parent,
+  width,
+  height,
+}: {
+  parent: Drawable;
+  width: number;
+  height: number;
+}): DrawEntity => {
+  const indicies: number[] = [];
+
+  indicies.push(width * 1, height * -(1 / 2));
+  indicies.push(width * 0, height * -(1 / 2));
+  indicies.push(width * 1, height * (1 / 2));
+
+  indicies.push(width * 0, height * -(1 / 2));
+  indicies.push(width * 0, height * (1 / 2));
+  indicies.push(width * 1, height * (1 / 2));
+
+  const drawEntity = new DrawEntity({
+    parent,
+    position: [0, 0],
+    rotation: 0,
+    scale: [1, 1],
+    color: [1, 1, 1, 1],
+    indicies,
+  });
+
+  return drawEntity;
+};

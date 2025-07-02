@@ -1,5 +1,10 @@
 import * as id from "../utils/id";
-import { createRectangle, type Drawable, DrawEntity } from "../vdu/entity";
+import {
+  createRectangle,
+  createRectangleOriginLeftCenter,
+  type Drawable,
+  DrawEntity,
+} from "../vdu/entity";
 
 export class Arrow implements Drawable {
   readonly id;
@@ -17,7 +22,7 @@ export class Arrow implements Drawable {
   constructor({
     basePosition,
     tipPosition,
-    tipLength = 20,
+    tipLength = 10,
     stroke = 4,
     color = [0, 0, 0, 1],
   }: {
@@ -54,7 +59,7 @@ export class Arrow implements Drawable {
 
   get drawEntities() {
     if (!this._tipTopEntity) {
-      const entity = createRectangle({
+      const entity = createRectangleOriginLeftCenter({
         parent: this,
         width: 1,
         height: 1,
@@ -62,7 +67,7 @@ export class Arrow implements Drawable {
       this._tipTopEntity = entity;
     }
     if (!this._tipBottomEntity) {
-      const entity = createRectangle({
+      const entity = createRectangleOriginLeftCenter({
         parent: this,
         width: 1,
         height: 1,
@@ -70,7 +75,7 @@ export class Arrow implements Drawable {
       this._tipBottomEntity = entity;
     }
     if (!this._baseEntity) {
-      const entity = createRectangle({
+      const entity = createRectangleOriginLeftCenter({
         parent: this,
         width: 1,
         height: 1,
@@ -93,53 +98,42 @@ export class Arrow implements Drawable {
   }
 
   sync() {
-    const tipAngle = Math.PI / 4;
+    const tipAngle = Math.PI * (5 / 4);
 
-    // TODO: Use rotation and scale
     if (this._tipTopEntity) {
       const scale: [number, number] = [this.tipLength, this.stroke];
-      const pos: [number, number] = [
-        this.tipPosition[0],
-        this.tipPosition[1] - this.tipLength / 2,
-      ];
-      const rotation = Math.atan2(
-        this.tipPosition[1] - this.basePosition[1],
-        this.tipPosition[0] - this.basePosition[0]
-      );
+      const pos: [number, number] = this.tipPosition;
+      const rotation = this.rotation + tipAngle;
 
-      this._tipTopEntity.rotation = rotation + tipAngle;
+      this._tipTopEntity.rotation = rotation;
       this._tipTopEntity.scale = scale;
       this._tipTopEntity.position = pos;
+      this._tipTopEntity.color = this.color;
     }
+
     if (this._tipBottomEntity) {
       const scale: [number, number] = [this.tipLength, this.stroke];
-      const pos: [number, number] = [
-        this.tipPosition[0],
-        this.tipPosition[1] + this.tipLength / 2,
-      ];
+      const pos: [number, number] = this.tipPosition;
+      const rotation = this.rotation - tipAngle;
+
+      this._tipBottomEntity.rotation = rotation;
+      this._tipBottomEntity.scale = scale;
+      this._tipBottomEntity.position = pos;
+      this._tipBottomEntity.color = this.color;
+    }
+
+    if (this._baseEntity) {
+      const scale: [number, number] = [this.length, this.stroke];
+      const pos: [number, number] = this.basePosition;
       const rotation = Math.atan2(
         this.tipPosition[1] - this.basePosition[1],
         this.tipPosition[0] - this.basePosition[0]
-      );
-
-      this._tipBottomEntity.rotation = rotation - tipAngle;
-      this._tipBottomEntity.scale = scale;
-      this._tipBottomEntity.position = pos;
-    }
-    if (this._baseEntity) {
-      const scale: [number, number] = [this.length, this.stroke];
-      const pos: [number, number] = [
-        (this.tipPosition[0] + this.basePosition[0]) / 2,
-        (this.tipPosition[1] + this.basePosition[1]) / 2,
-      ];
-      const rotation = Math.atan2(
-        this.basePosition[1] - this.tipPosition[1],
-        this.basePosition[0] - this.tipPosition[0]
       );
 
       this._baseEntity.rotation = rotation;
       this._baseEntity.scale = scale;
       this._baseEntity.position = pos;
+      this._baseEntity.color = this.color;
     }
   }
 
