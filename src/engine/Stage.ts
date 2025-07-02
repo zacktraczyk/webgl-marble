@@ -6,6 +6,7 @@ import { VDU } from "./vdu/vdu";
 export interface StageObject extends Drawable, Physical {
   // id: string;
   position: [number, number];
+  markedForDeletion: boolean;
   sync(): void;
   delete(): void;
 }
@@ -60,15 +61,23 @@ class Stage {
     this._objects.push(object);
   }
 
-  sync() {
+  private _cleanup() {
+    const filteredObjects = this._objects.filter(
+      (object) => !object.markedForDeletion,
+    );
+    this._objects = filteredObjects;
+  }
+
+  private _sync() {
     for (const object of this._objects) {
       object.sync();
     }
   }
 
   update(elapsed: number) {
+    this._cleanup();
     this._physics.update(elapsed);
-    this.sync();
+    this._sync();
   }
 
   render() {

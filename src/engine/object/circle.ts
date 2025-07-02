@@ -13,7 +13,7 @@ export class Circle implements Drawable, Physical {
   private _drawEntity: DrawEntity | null = null;
   private _physicsEntity: PhysicsEntity | null = null;
   readonly physicsType: PhysicsEntityType;
-  isMarkedForDeletion: boolean = false;
+  markedForDeletion: boolean = false;
 
   constructor({
     radius,
@@ -43,7 +43,7 @@ export class Circle implements Drawable, Physical {
   }
 
   delete() {
-    if (this.isMarkedForDeletion) {
+    if (this.markedForDeletion) {
       console.warn("Could not delete rectangle: already marked for deletion");
       return;
     }
@@ -53,7 +53,7 @@ export class Circle implements Drawable, Physical {
     if (this._physicsEntity) {
       this._physicsEntity.delete();
     }
-    this.isMarkedForDeletion = true;
+    this.markedForDeletion = true;
   }
 
   get drawEntities() {

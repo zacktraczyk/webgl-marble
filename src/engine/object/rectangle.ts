@@ -12,7 +12,7 @@ export class Rectangle implements Drawable, Physical {
   private _physicsEntity: PhysicsEntity | null = null;
   readonly physicsType: PhysicsEntityType;
   velocity: [number, number];
-  isMarkedForDeletion: boolean = false;
+  markedForDeletion: boolean = false;
 
   constructor({
     width,
@@ -44,7 +44,7 @@ export class Rectangle implements Drawable, Physical {
   }
 
   delete() {
-    if (this.isMarkedForDeletion) {
+    if (this.markedForDeletion) {
       console.warn("Could not delete rectangle: already marked for deletion");
       return;
     }
@@ -54,7 +54,7 @@ export class Rectangle implements Drawable, Physical {
     if (this._physicsEntity) {
       this.physicsEntity.delete();
     }
-    this.isMarkedForDeletion = true;
+    this.markedForDeletion = true;
   }
 
   get drawEntities() {

@@ -1,5 +1,6 @@
 import { Circle } from "../engine/object/circle";
 import { Rectangle } from "../engine/object/rectangle";
+import { BoundingCircle } from "../engine/physics/boundingShape";
 import Stage from "../engine/Stage";
 
 type ToolSelectors = {
@@ -7,6 +8,7 @@ type ToolSelectors = {
   select: HTMLElement | null;
   square: HTMLElement | null;
   circle: HTMLElement | null;
+  finishLine: HTMLElement | null;
 };
 
 enum SelectedTool {
@@ -14,12 +16,34 @@ enum SelectedTool {
   Select,
   Square,
   Circle,
+  FinishLine,
 }
 
 let selectedTool: SelectedTool = SelectedTool.Select;
 
 function main(toolSelectors: ToolSelectors) {
   const { stage } = init(toolSelectors);
+
+  const finishedBalls: number[] = [];
+  stage.registerPhysicsObserver(({ collisions }) => {
+    for (const [a, b] of collisions) {
+      const collisionPermutations = [
+        [a, b],
+        [b, a],
+      ];
+      for (const [c, d] of collisionPermutations) {
+        if (
+          c.type === "dynamic" &&
+          c.boundingShape instanceof BoundingCircle &&
+          d.parent instanceof FinishLine
+        ) {
+          c.parent.delete();
+          finishedBalls.push(c.id);
+          break;
+        }
+      }
+    }
+  });
 
   let lastTime = performance.now();
   function updateScene() {
@@ -30,7 +54,10 @@ function main(toolSelectors: ToolSelectors) {
     stage.update(elapsed);
     stage.clearOutOfBoundsObjects();
 
-    updateDebugInfo({ numObjects: stage.objects.length });
+    updateDebugInfo({
+      numObjects: stage.objects.length,
+      finishedBalls,
+    });
     updateFpsPerf();
   }
 
@@ -44,11 +71,11 @@ function main(toolSelectors: ToolSelectors) {
   requestAnimationFrame(render);
 }
 
-function init({ pan, select, square, circle }: ToolSelectors) {
+function init({ pan, select, square, circle, finishLine }: ToolSelectors) {
   const stage = new Stage();
 
   const addToolSelectors = () => {
-    if (!pan || !select || !square || !circle) {
+    if (!pan || !select || !square || !circle || !finishLine) {
       throw new Error("Tool selectors not found");
     }
 
@@ -60,42 +87,50 @@ function init({ pan, select, square, circle }: ToolSelectors) {
     circle.dataset.active =
       selectedTool === SelectedTool.Circle ? "true" : "false";
 
-    pan.addEventListener("click", () => {
-      pan.dataset.active = "true";
+    const deselectAll = () => {
+      pan.dataset.active = "false";
       select.dataset.active = "false";
       square.dataset.active = "false";
       circle.dataset.active = "false";
+      finishLine.dataset.active = "false";
+    };
+
+    pan.addEventListener("click", () => {
+      deselectAll();
+      pan.dataset.active = "true";
       selectedTool = SelectedTool.Pan;
       stage.canvas.dataset.pointer = "pan";
       stage.panAndZoom = true;
     });
 
     select.addEventListener("click", () => {
-      pan.dataset.active = "false";
+      deselectAll();
       select.dataset.active = "true";
-      square.dataset.active = "false";
-      circle.dataset.active = "false";
       selectedTool = SelectedTool.Select;
       stage.canvas.dataset.pointer = "select";
       stage.panAndZoom = false;
     });
 
     square.addEventListener("click", () => {
-      pan.dataset.active = "false";
-      select.dataset.active = "false";
+      deselectAll();
       square.dataset.active = "true";
-      circle.dataset.active = "false";
       selectedTool = SelectedTool.Square;
       stage.canvas.dataset.pointer = "shape";
       stage.panAndZoom = false;
     });
 
     circle.addEventListener("click", () => {
-      pan.dataset.active = "false";
-      select.dataset.active = "false";
-      square.dataset.active = "false";
+      deselectAll();
       circle.dataset.active = "true";
       selectedTool = SelectedTool.Circle;
+      stage.canvas.dataset.pointer = "shape";
+      stage.panAndZoom = false;
+    });
+
+    finishLine.addEventListener("click", () => {
+      deselectAll();
+      finishLine.dataset.active = "true";
+      selectedTool = SelectedTool.FinishLine;
       stage.canvas.dataset.pointer = "shape";
       stage.panAndZoom = false;
     });
@@ -140,6 +175,20 @@ function init({ pan, select, square, circle }: ToolSelectors) {
           stage.add(circle);
         }
         return;
+      case SelectedTool.FinishLine:
+        {
+          const screenX = e.clientX - stage.canvas.getBoundingClientRect().left;
+          const screenY = e.clientY - stage.canvas.getBoundingClientRect().top;
+          const [x, y] = stage.screenToWorld(screenX, screenY);
+
+          const finishLine = new FinishLine({
+            width: 200,
+            height: 10,
+            position: [x, y],
+          });
+          stage.add(finishLine);
+        }
+        return;
     }
 
     throw new Error(`Unknown tool: ${selectedTool}`);
@@ -148,6 +197,28 @@ function init({ pan, select, square, circle }: ToolSelectors) {
   return {
     stage,
   };
+}
+
+class FinishLine extends Rectangle {
+  constructor({
+    width,
+    height,
+    position,
+    color = [255 / 255, 255 / 255, 255 / 255, 1],
+  }: {
+    width: number;
+    height: number;
+    position: [number, number];
+    color?: [number, number, number, number];
+  }) {
+    super({
+      width,
+      height,
+      position,
+      physicsType: "kinematic",
+      color,
+    });
+  }
 }
 
 // Debug info
