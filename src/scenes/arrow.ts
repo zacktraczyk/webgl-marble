@@ -5,8 +5,8 @@ import Stage from "../engine/Stage";
 function main() {
   const stage = new Stage();
 
-  const center: [number, number] = [800, 450];
-  const arrowLength = 100;
+  const pinWheelCenter: [number, number] = [800, 450];
+  const arrowLength = 150;
   const offset = 50;
 
   const constructArrows = () => {
@@ -15,18 +15,20 @@ function main() {
     for (let i = 0; i < 2; i++) {
       for (let j = 0; j < 2; j++) {
         const baseX =
-          center[0] + offset * (i % 2 ? 1 : -1) + offset * (j % 2 ? 1 : -1);
+          pinWheelCenter[0] +
+          offset * (i % 2 ? 1 : -1) +
+          offset * (j % 2 ? 1 : -1);
         const baseY =
-          center[1] + offset * (j % 2 ? 1 : -1) + offset * (i % 2 ? -1 : 1);
+          pinWheelCenter[1] +
+          offset * (j % 2 ? 1 : -1) +
+          offset * (i % 2 ? -1 : 1);
 
         const tipX =
           baseX +
-          arrowLength * (i % 2 ? 1 : -1) +
-          arrowLength * (j % 2 ? 1 : -1);
+          (arrowLength * (i % 2 ? 1 : -1) + arrowLength * (j % 2 ? 1 : -1)) / 2;
         const tipY =
           baseY +
-          arrowLength * (j % 2 ? 1 : -1) +
-          arrowLength * (i % 2 ? -1 : 1);
+          (arrowLength * (j % 2 ? 1 : -1) + arrowLength * (i % 2 ? -1 : 1)) / 2;
 
         arrows.push([baseX, baseY, tipX, tipY]);
       }
@@ -63,11 +65,43 @@ function main() {
   };
   constructArrows();
 
+  const rotatingArrowCenter: [number, number] = [200, 200];
+  const baseSquareRotating = new Rectangle({
+    width: 40,
+    height: 40,
+    position: rotatingArrowCenter,
+    color: [0.3, 0, 0, 1],
+  });
+  stage.add(baseSquareRotating);
+
+  const tipSquareRotating = new Rectangle({
+    width: 40,
+    height: 40,
+    position: [rotatingArrowCenter[0], rotatingArrowCenter[1] + arrowLength],
+    color: [0, 0.3, 0, 1],
+  });
+  stage.add(tipSquareRotating);
+
+  const rotatingArrow = new Arrow({
+    basePosition: rotatingArrowCenter,
+    tipPosition: [rotatingArrowCenter[0], rotatingArrowCenter[1] + arrowLength],
+    tipLength: 100,
+    stroke: 10,
+  });
+  stage.add(rotatingArrow);
+
   let lastTime = performance.now();
   function updateScene() {
     const time = performance.now();
     const elapsed = time - lastTime;
     lastTime = time;
+
+    const arrowTip: [number, number] = [
+      rotatingArrowCenter[0] + Math.cos(time / 1000) * arrowLength,
+      rotatingArrowCenter[1] + Math.sin(time / 1000) * arrowLength,
+    ];
+    rotatingArrow.tipPosition = arrowTip;
+    tipSquareRotating.position = arrowTip;
 
     stage.update(elapsed);
 
