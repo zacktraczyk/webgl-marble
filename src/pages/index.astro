@@ -3,12 +3,21 @@ import Layout from "../layouts/Layout.astro";
 ---
 
 <Layout>
-  <main class="flex size-full items-center justify-center">
-    <div class="max-w-md flex flex-col gap-4">
-      <a href="/first-race" class="text-2xl hover:underline">First Race</a>
-      <a href="/level-builder" class="text-2xl hover:underline">Level Builder</a
-      >
-      <a href="/random-balls" class="text-2xl hover:underline">Random Balls</a>
+  <main class="flex size-full items-center justify-center flex-col max-w-2xl">
+    <div class="flex flex-col gap-16 text-2xl">
+      <h1 class="font-bold text-3xl">Debug Pages</h1>
+      <div class="flex flex-col gap-8">
+        <a href="/random-balls" class="hover:underline text-sky-300">
+          Random Balls
+        </a>
+        <a href="/level-builder" class="hover:underline text-sky-300">
+          Level Builder
+        </a>
+        <a href="/first-race" class="hover:underline text-sky-300">
+          First Race
+        </a>
+        <a href="/arrow" class="hover:underline text-sky-300">Arrow</a>
+      </div>
     </div>
   </main>
 </Layout>

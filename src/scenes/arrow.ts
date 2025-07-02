@@ -7,6 +7,11 @@ function main() {
 
   const pinWheelCenter: [number, number] = [800, 450];
   const arrowLength = 150;
+  const arrowParams: Partial<ConstructorParameters<typeof Arrow>[0]> = {
+    tipLength: 40,
+    stroke: 4,
+    color: [0.8, 0.4, 0.6, 1],
+  };
   const offset = 50;
 
   const constructArrows = () => {
@@ -57,8 +62,7 @@ function main() {
       const arrow = new Arrow({
         basePosition: [baseX, baseY],
         tipPosition: [tipX, tipY],
-        tipLength: 100,
-        stroke: 10,
+        ...arrowParams,
       });
       stage.add(arrow);
     }
@@ -85,8 +89,7 @@ function main() {
   const rotatingArrow = new Arrow({
     basePosition: rotatingArrowCenter,
     tipPosition: [rotatingArrowCenter[0], rotatingArrowCenter[1] + arrowLength],
-    tipLength: 100,
-    stroke: 10,
+    ...arrowParams,
   });
   stage.add(rotatingArrow);
 

@@ -1,4 +1,4 @@
-import { Circle } from "../engine/object/circle";
+import { Ball, Circle } from "../engine/object/circle";
 import { Rectangle } from "../engine/object/rectangle";
 import { BoundingCircle } from "../engine/physics/boundingShape";
 import Stage from "../engine/Stage";
@@ -167,7 +167,7 @@ function init({ pan, select, square, circle, finishLine }: ToolSelectors) {
           const screenY = e.clientY - stage.canvas.getBoundingClientRect().top;
           const [x, y] = stage.screenToWorld(screenX, screenY);
 
-          const circle = new Circle({
+          const circle = new Ball({
             radius: 50,
             position: [x, y],
             color: [34 / 255, 197 / 255, 94 / 255, 1],

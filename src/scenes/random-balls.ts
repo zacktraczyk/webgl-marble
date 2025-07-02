@@ -1,10 +1,9 @@
-import { Circle } from "../engine/object/circle";
+import { Ball } from "../engine/object/circle";
 import { Rectangle } from "../engine/object/rectangle";
-import Physics from "../engine/physics/physics";
-import { VDU } from "../engine/vdu/vdu";
+import Stage from "../engine/Stage";
 
 function main() {
-  const { objects, spinningSquare, vdu, physics } = init();
+  const { stage } = init();
 
   let lastTime = performance.now();
   function updateScene() {
@@ -12,23 +11,14 @@ function main() {
     const elapsed = time - lastTime;
     lastTime = time;
 
-    spinningSquare.rotation += 1;
-
-    if (spinningSquare.rotation > 360) {
-      spinningSquare.rotation = 0;
-    }
-
-    physics.update(elapsed);
-    for (const object of objects) {
-      object.sync();
-    }
+    stage.update(elapsed);
     updateFpsPerf();
   }
 
   function render() {
     updateScene();
 
-    vdu.render();
+    stage.render();
     requestAnimationFrame(render);
   }
 
@@ -36,16 +26,15 @@ function main() {
 }
 
 function init() {
-  const objects: { sync: () => void }[] = [];
-  const vdu = new VDU("#gl-canvas");
-  const physics = new Physics();
+  const stage = new Stage({ width: 1000, height: 1000 });
+  stage.panAndZoom = true;
 
   // Spawn area
-  const spawnOriginx = vdu.canvas.clientWidth / 2;
-  const spawnOriginy = vdu.canvas.clientHeight / 2;
+  const spawnOriginx = stage.width / 2;
+  const spawnOriginy = stage.height / 2;
   const spawnPadding = 50;
-  const spawnw = vdu.canvas.clientWidth - spawnPadding * 2;
-  const spawnh = vdu.canvas.clientHeight - spawnPadding * 2;
+  const spawnw = stage.width - spawnPadding * 2;
+  const spawnh = stage.height - spawnPadding * 2;
 
   const numSpawnEntities = 50;
 
@@ -53,6 +42,7 @@ function init() {
     const circleSharedProps = {
       radius: 15,
       type: "dynamic" as const,
+      arrowMagnitude: 70,
     };
 
     // Spawn circles
@@ -62,79 +52,56 @@ function init() {
       const vx = Math.random() * 200 - 100;
       const vy = Math.random() * 200 - 100;
 
-      const circle = new Circle({
+      const circle = new Ball({
         position: [x, y],
         velocity: [vx, vy],
         color: [0, 0, Math.random() * 0.5 + 0.5, 1],
         ...circleSharedProps,
       });
-      objects.push(circle);
-      vdu.add(circle);
-      physics.add(circle);
+      stage.add(circle);
     }
   }
 
   function spawnWalls() {
     const ground = new Rectangle({
-      position: [vdu.canvas.clientWidth / 2, vdu.canvas.clientHeight - 25],
-      width: vdu.canvas.clientWidth,
+      position: [stage.width / 2, stage.height - 25],
+      width: stage.width,
       height: 50,
       color: [0, 1, 0, 1],
     });
-    objects.push(ground);
-    vdu.add(ground);
-    physics.add(ground);
+    stage.add(ground);
 
     const leftWall = new Rectangle({
-      position: [25, vdu.canvas.clientHeight / 2],
+      position: [25, stage.height / 2],
       width: 50,
-      height: vdu.canvas.clientHeight - 100,
+      height: stage.height - 100,
       color: [0, 1, 0, 1],
     });
-    objects.push(leftWall);
-    vdu.add(leftWall);
-    physics.add(leftWall);
+    stage.add(leftWall);
 
     const rightWall = new Rectangle({
-      position: [vdu.canvas.clientWidth - 25, vdu.canvas.clientHeight / 2],
+      position: [stage.width - 25, stage.height / 2],
       width: 50,
-      height: vdu.canvas.clientHeight - 100,
+      height: stage.height - 100,
       color: [0, 1, 0, 1],
     });
-    objects.push(rightWall);
-    vdu.add(rightWall);
-    physics.add(rightWall);
+    stage.add(rightWall);
 
     const ceiling = new Rectangle({
-      position: [vdu.canvas.clientWidth / 2, 25],
-      width: vdu.canvas.clientWidth,
+      position: [stage.width / 2, 25],
+      width: stage.width,
       height: 50,
       color: [0, 1, 0, 1],
     });
-    objects.push(ceiling);
-    vdu.add(ceiling);
-    physics.add(ceiling);
+    stage.add(ceiling);
   }
-
-  const spinningSquare = new Rectangle({
-    position: [vdu.canvas.clientWidth / 2, vdu.canvas.clientHeight / 2],
-    width: 50,
-    height: 50,
-    color: [1, 1, 1, 1],
-    physicsType: "kinematic",
-  });
-  objects.push(spinningSquare);
-  vdu.add(spinningSquare);
 
   // Init
   spawnWalls();
   randomCirclesSpawn();
 
   return {
-    objects,
-    spinningSquare,
-    vdu,
-    physics,
+    stage,
   };
 }
 
