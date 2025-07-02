@@ -1,11 +1,11 @@
 ---
-import Layout from "../../layouts/Layout.astro";
-import "../../styles/global.css";
+import Layout from "../layouts/Layout.astro";
+import "../styles/global.css";
 ---
 
 <Layout>
   <main
-    class="relative flex flex-col w-screen h-screen items-center justify-center gap-5 text-white"
+    class="relative flex flex-col w-screen h-screen items-center justify-center gap-5"
   >
     <p
       class="absolute text-rose-500 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 text-2xl font-mono"
@@ -161,7 +161,7 @@ import "../../styles/global.css";
 </Layout>
 
 <script>
-  import main from "../../scenes/level-builder.ts";
+  import main from "../scenes/level-builder.ts";
 
   // Display errors on page
   try {

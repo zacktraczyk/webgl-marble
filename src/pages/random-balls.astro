@@ -1,12 +1,10 @@
 ---
-import Layout from "../../layouts/Layout.astro";
-import "../../styles/global.css";
+import Layout from "../layouts/Layout.astro";
+import "../styles/global.css";
 ---
 
 <Layout>
-  <main
-    class="relative flex size-full items-center justify-center gap-5 text-white bg-zinc-900"
-  >
+  <main class="relative flex size-full items-center justify-center gap-5">
     <p
       class="absolute text-rose-500 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 text-lg"
       id="#error"
@@ -30,7 +28,7 @@ import "../../styles/global.css";
 </Layout>
 
 <script>
-  import main from "../../scenes/first-race.ts";
+  import main from "../scenes/random-balls.ts";
 
   // Display errors on page
   try {
