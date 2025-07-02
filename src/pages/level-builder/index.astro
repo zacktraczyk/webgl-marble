@@ -27,7 +27,7 @@ import "../../styles/global.css";
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
           stroke="currentColor"
-          class="size-5"
+          class="size-6"
         >
           <path
             d="M18 11V6C18 5.46957 17.7893 4.96086 17.4142 4.58579C17.0391 4.21071 16.5304 4 16 4C15.4696 4 14.9609 4.21071 14.5858 4.58579C14.2107 4.96086 14 5.46957 14 6"
@@ -63,7 +63,7 @@ import "../../styles/global.css";
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
           stroke="currentColor"
-          class="size-5 group-data-[active=true]:fill-white"
+          class="size-6 group-data-[active=true]:fill-white"
         >
           <path
             d="M12.586 12.586L19 19"
@@ -110,7 +110,7 @@ import "../../styles/global.css";
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
           stroke="currentColor"
-          class="size-5 group-data-[active=true]:fill-white"
+          class="size-6 group-data-[active=true]:fill-white"
         >
           <path
             d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z"
@@ -134,7 +134,7 @@ import "../../styles/global.css";
           stroke-width="2"
           stroke-linecap="round"
           stroke-linejoin="round"
-          class="lucide lucide-flag-icon lucide-flag"
+          class="size-6 group-data-[active=true]:fill-white"
         >
           <path
             d="M4 22V4a1 1 0 0 1 .4-.8A6 6 0 0 1 8 2c3 0 5 2 7.333 2q2 0 3.067-.8A1 1 0 0 1 20 4v10a1 1 0 0 1-.4.8A6 6 0 0 1 16 16c-3 0-5-2-8-2a6 6 0 0 0-4 1.528"
@@ -144,11 +144,10 @@ import "../../styles/global.css";
     </div>
 
     <div
-      class="absolute z-10 bottom-0 flex flex-col gap-2 bg-zinc-800/40 w-full px-12 py-8 h-80 items-start backdrop-blur"
+      class="absolute z-10 bottom-0 flex flex-col gap-4 bg-zinc-800/40 w-full px-12 py-8 h-70 items-start backdrop-blur"
     >
       <h1 class="font-semibold underline text-lg">Debug Info</h1>
-
-      <p id="#debug-info" class=""></p>
+      <pre id="#debug-info" class="text-mono"></pre>
       <p id="#fps" class="">FPS: 0</p>
     </div>
 
