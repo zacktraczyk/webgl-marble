@@ -21,6 +21,10 @@ export interface Physical {
   delete(): void;
 }
 
+export const isPhysical = (object: any): object is Physical => {
+  return "physicsEntity" in object;
+};
+
 export class PhysicsEntity {
   readonly parent: Physical;
   readonly id: number;

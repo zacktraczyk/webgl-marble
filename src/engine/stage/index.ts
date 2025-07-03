@@ -1,6 +1,6 @@
-import { type Physical } from "../physics/entity";
+import { isPhysical, type Physical } from "../physics/entity";
 import Physics, { type CollisionEvents } from "../physics/physics";
-import { type Drawable } from "../vdu/entity";
+import { isDrawable, type Drawable } from "../vdu/entity";
 import { VDU } from "../vdu/vdu";
 import {
   DragAndDropHandlers,
@@ -27,11 +27,12 @@ class Stage {
   private _objects: StageObject[];
 
   // event handlers
+  private readonly _panAndZoomHandlers: PanAndZoomHandlers;
+  private readonly _dragAndDropHandlers: DragAndDropHandlers;
+
   private _registeredEventHandlers: EventHandlers = {};
   private _isPanAndZoomEnabled = false;
-  private readonly _panAndZoomHandlers: PanAndZoomHandlers;
   private _isDragAndDropEnabled = false;
-  private readonly _dragAndDropHandlers: DragAndDropHandlers;
 
   constructor({
     width = 600,
@@ -66,10 +67,10 @@ class Stage {
   }
 
   add(object: StageObject) {
-    if ("drawEntities" in object) {
+    if (isDrawable(object)) {
       this._vdu.add(object);
     }
-    if ("physicsEntity" in object) {
+    if (isPhysical(object)) {
       this._physics.add(object);
     }
     this._objects.push(object);
@@ -106,7 +107,6 @@ class Stage {
     return this._vdu.zoom;
   }
 
-  // private _panAndZoomHandlers: { [name: string]: (event?: any) => void } = {};
   private _registerEventHandlers() {
     if (this.isEventHandlersRegistered) {
       console.error(
@@ -115,6 +115,7 @@ class Stage {
       return;
     }
 
+    // TODO: Genericize event handlers to for loop over all event handlers
     const pointerdown = (event: PointerEvent) => {
       event.preventDefault();
       if (this._isDragAndDropEnabled) {

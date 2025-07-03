@@ -8,7 +8,13 @@ export type Uniform = WebglUtils.Uniform;
 
 export interface Drawable {
   drawEntities: DrawEntity[];
+
+  delete(): void;
 }
+
+export const isDrawable = (object: any): object is Drawable => {
+  return "drawEntities" in object;
+};
 
 export class DrawEntity {
   readonly id;

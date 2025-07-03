@@ -113,11 +113,6 @@ class DragAndDropRectangle extends Rectangle implements DragAndDroppable {
     super.sync();
     if (this._grabHandleDrawEntity) {
       this._grabHandleDrawEntity.position = this.position;
-      // TODO: fixup method of radius scaling
-      // this._grabHandleDrawEntity.scale = [
-      //   this.grabHandleRadius,
-      //   this.grabHandleRadius,
-      // ];
       this._grabHandleDrawEntity.color = this.grabHandleColor;
     }
   }
