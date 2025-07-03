@@ -1,6 +1,6 @@
 import { Circle } from "../engine/object/circle";
 import { Rectangle } from "../engine/object/rectangle";
-import Stage from "../engine/Stage";
+import Stage from "../engine/stage";
 
 function main() {
   const stage = new Stage();

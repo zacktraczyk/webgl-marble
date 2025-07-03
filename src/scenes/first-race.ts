@@ -1,7 +1,7 @@
 import { Circle } from "../engine/object/circle";
 import { Rectangle } from "../engine/object/rectangle";
 import { BoundingCircle } from "../engine/physics/boundingShape";
-import Stage from "../engine/Stage";
+import Stage from "../engine/stage";
 
 function main() {
   const { stage, finishLine } = init();

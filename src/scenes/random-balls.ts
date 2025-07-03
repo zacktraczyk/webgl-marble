@@ -1,6 +1,6 @@
 import { Ball } from "../engine/object/ball";
 import { Rectangle } from "../engine/object/rectangle";
-import Stage from "../engine/Stage";
+import Stage from "../engine/stage";
 
 function main() {
   const { stage } = init();

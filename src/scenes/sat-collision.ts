@@ -1,10 +1,13 @@
 import { Circle } from "../engine/object/circle";
 import { Rectangle } from "../engine/object/rectangle";
-import Stage from "../engine/Stage";
+import Stage from "../engine/stage";
+import { type DragAndDroppable } from "../engine/stage/eventHandlers";
 import { createCircle, type DrawEntity } from "../engine/vdu/entity";
 
 function main() {
-  const stage = new DragAndDropStage();
+  const stage = new Stage();
+  stage.dragAndDrop = true;
+  stage.panAndZoom = true;
 
   const centerX = stage.canvas.clientWidth / 2;
   const centerY = stage.canvas.clientHeight / 2;
@@ -56,7 +59,7 @@ function main() {
 
     stage.update(elapsed);
     updateFpsPerf();
-    updateDebugInfo({ collisions, isDragging: !!stage.draggingObject });
+    updateDebugInfo({ collisions });
   }
 
   function render() {
@@ -69,82 +72,12 @@ function main() {
   requestAnimationFrame(render);
 }
 
-class DragAndDropStage extends Stage {
-  draggingObject: DragAndDropRectangle | DragAndDropCircle | null = null;
-
-  constructor(params?: ConstructorParameters<typeof Stage>[0]) {
-    super(params);
-
-    this._registerDragAndDrop();
-  }
-
-  mouseWorldPosition(e: MouseEvent) {
-    const screenX = e.clientX - this.canvas.getBoundingClientRect().left;
-    const screenY = e.clientY - this.canvas.getBoundingClientRect().top;
-    const [x, y] = this.screenToWorld(screenX, screenY);
-    return [x, y];
-  }
-
-  private _mouseDown: ((mouseEvent: MouseEvent) => void) | null = null;
-  private _mouseMove: ((mouseEvent: MouseEvent) => void) | null = null;
-  private _mouseUp: (() => void) | null = null;
-  private _registerDragAndDrop() {
-    const mouseDown = (mouseEvent: MouseEvent) => {
-      const [x, y] = this.mouseWorldPosition(mouseEvent);
-      this.draggingObject = this.objects.find((o) => {
-        if (
-          o instanceof DragAndDropRectangle ||
-          o instanceof DragAndDropCircle
-        ) {
-          const [x1, y1] = o.position;
-          const distance = Math.sqrt((x1 - x) ** 2 + (y1 - y) ** 2);
-          return distance < o.grabHandleRadius;
-        }
-      }) as DragAndDropRectangle | DragAndDropCircle | null;
-    };
-
-    const mouseMove = (mouseEvent: MouseEvent) => {
-      if (!this.draggingObject) {
-        return;
-      }
-      const [x, y] = this.mouseWorldPosition(mouseEvent);
-      this.draggingObject.position = [x, y];
-    };
-
-    const mouseUp = () => {
-      this.draggingObject = null;
-    };
-
-    this._mouseDown = mouseDown;
-    this._mouseMove = mouseMove;
-    this._mouseUp = mouseUp;
-    this.canvas.addEventListener("mousedown", mouseDown);
-    this.canvas.addEventListener("mousemove", mouseMove);
-    this.canvas.addEventListener("mouseup", mouseUp);
-  }
-
-  private _unregisterDragAndDrop() {
-    if (this._mouseDown) {
-      this.canvas.removeEventListener("mousedown", this._mouseDown);
-      this._mouseDown = null;
-    }
-    if (this._mouseMove) {
-      this.canvas.removeEventListener("mousemove", this._mouseMove);
-      this._mouseMove = null;
-    }
-    if (this._mouseUp) {
-      this.canvas.removeEventListener("mouseup", this._mouseUp);
-      this._mouseUp = null;
-    }
-  }
-}
-
 type DragAndDropRectangleParams = ConstructorParameters<typeof Rectangle>[0] & {
   handleRadius: number;
   handleColor: [number, number, number, number];
 };
 
-class DragAndDropRectangle extends Rectangle {
+class DragAndDropRectangle extends Rectangle implements DragAndDroppable {
   grabHandleRadius: number;
   grabHandleColor: [number, number, number, number];
   private _grabHandleDrawEntity: DrawEntity | null = null;
@@ -195,7 +128,7 @@ type DragAndDropCircleParams = ConstructorParameters<typeof Circle>[0] & {
   handleColor: [number, number, number, number];
 };
 
-class DragAndDropCircle extends Circle {
+class DragAndDropCircle extends Circle implements DragAndDroppable {
   grabHandleRadius: number;
   grabHandleColor: [number, number, number, number];
   private _grabHandleDrawEntity: DrawEntity | null = null;
