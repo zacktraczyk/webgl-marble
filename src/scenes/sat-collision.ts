@@ -1,3 +1,5 @@
+import { PhysicsEntity, type Physical } from "../engine/physics/entitySAT";
+import Physics from "../engine/physics/physicsSAT";
 import Stage from "../engine/stage";
 import { type DragAndDroppable } from "../engine/stage/eventHandlers";
 import {
@@ -13,6 +15,10 @@ function main() {
   stage.dragAndDrop = true;
   stage.panAndZoom = true;
   stage.drawMode = "TRIANGLES";
+  stage.physicsEnabled = false;
+
+  // SAT Physics
+  const physicsSAT = new Physics();
 
   const centerX = stage.canvas.clientWidth / 2;
   const centerY = stage.canvas.clientHeight / 2;
@@ -26,6 +32,7 @@ function main() {
     handleColor: [0.4, 0.4, 0.4, 1],
   });
   stage.add(circle1);
+  physicsSAT.add(circle1);
 
   const square1 = new DragAndDropRectangle({
     position: [centerX - offset, centerY],
@@ -38,6 +45,7 @@ function main() {
     handleColor: [0.4, 0.4, 0.4, 1],
   });
   stage.add(square1);
+  physicsSAT.add(square1);
 
   const pentagon1 = new DragAndDropPentagon({
     sideLength: 80,
@@ -48,21 +56,26 @@ function main() {
     handleColor: [0.4, 0.4, 0.4, 1],
   });
   stage.add(pentagon1);
-
-  console.log(square1.position);
+  physicsSAT.add(pentagon1);
 
   const collisions: [number, number][] = [];
-  stage.registerPhysicsObserver(({ collisions: newCollisions }) => {
-    for (const collision of newCollisions) {
-      const alreadyCollided = collisions.some(
-        (c) => c[0] === collision[0].id && c[1] === collision[1].id
-      );
-      if (alreadyCollided) {
-        continue;
-      }
+  physicsSAT.register(({ collisions: newCollisions }) => {
+    console.log(newCollisions);
+    // for (const collision of newCollisions) {
+    //   const alreadyCollided = collisions.some(
+    //     (c) =>
+    //       c[0] === collision.entity1.parent.id &&
+    //       c[1] === collision.entity2.parent.id
+    //   );
+    //   if (alreadyCollided) {
+    //     continue;
+    //   }
 
-      collisions.push([collision[0].id, collision[1].id]);
-    }
+    //   collisions.push([
+    //     collision.entity1.parent.id,
+    //     collision.entity2.parent.id,
+    //   ]);
+    // }
   });
 
   let lastTime = performance.now();
@@ -72,6 +85,7 @@ function main() {
     lastTime = time;
 
     stage.update(elapsed);
+    physicsSAT.update(elapsed);
     updateFpsPerf();
     updateDebugInfo({ collisions });
   }
@@ -86,19 +100,21 @@ function main() {
   requestAnimationFrame(render);
 }
 
-class DragAndDropRectangle implements Drawable, DragAndDroppable {
+class DragAndDropRectangle implements Drawable, Physical, DragAndDroppable {
   readonly width: number;
   readonly height: number;
   rotation: number;
   scale: [number, number];
   color: [number, number, number, number];
-  position: [number, number];
+  private _position: [number, number];
   markedForDeletion: boolean = false;
   grabHandleRadius: number;
   grabHandleColor: [number, number, number, number];
 
   private _rectangleDrawEntity: DrawEntity | null = null;
   private _grabHandleDrawEntity: DrawEntity | null = null;
+
+  private _physicsEntity: PhysicsEntity | null = null;
 
   constructor({
     width,
@@ -125,9 +141,43 @@ class DragAndDropRectangle implements Drawable, DragAndDroppable {
     this.rotation = rotation;
     this.scale = scale ?? [1, 1];
     this.color = color ?? [1, 1, 1, 1];
-    this.position = position;
+    this._position = position;
     this.grabHandleRadius = handleRadius;
     this.grabHandleColor = handleColor;
+  }
+
+  get position() {
+    return this._position;
+  }
+
+  set position(value: [number, number]) {
+    if (this._physicsEntity) {
+      this._physicsEntity.position = value;
+    }
+    this._position = value;
+  }
+
+  get physicsEntity(): PhysicsEntity {
+    if (!this._physicsEntity) {
+      this._physicsEntity = new PhysicsEntity({
+        parent: this,
+        type: "kinematic",
+        position: this._position,
+        rotation: this.rotation,
+        boundingShape: {
+          type: "BoundingConvexPolygon",
+          position: this._position,
+          vertices: [
+            [-this.width / 2, -this.height / 2],
+            [this.width / 2, -this.height / 2],
+            [this.width / 2, this.height / 2],
+            [-this.width / 2, this.height / 2],
+          ],
+        },
+      });
+    }
+
+    return this._physicsEntity;
   }
 
   get drawEntities() {
@@ -158,6 +208,11 @@ class DragAndDropRectangle implements Drawable, DragAndDroppable {
   }
 
   sync() {
+    if (this._physicsEntity) {
+      this.position = this._physicsEntity.position;
+      this.rotation = this._physicsEntity.rotation;
+    }
+
     if (this._rectangleDrawEntity) {
       this._rectangleDrawEntity.position = this.position;
       this._rectangleDrawEntity.rotation = this.rotation;
@@ -171,16 +226,18 @@ class DragAndDropRectangle implements Drawable, DragAndDroppable {
   }
 }
 
-class DragAndDropCircle implements Drawable, DragAndDroppable {
+class DragAndDropCircle implements Drawable, Physical, DragAndDroppable {
   readonly radius: number;
   scale: [number, number];
   color: [number, number, number, number];
-  position: [number, number];
+  private _position: [number, number];
   private _circleDrawEntity: DrawEntity | null = null;
 
   readonly grabHandleRadius: number;
   grabHandleColor: [number, number, number, number];
   private _grabHandleDrawEntity: DrawEntity | null = null;
+
+  private _physicsEntity: PhysicsEntity | null = null;
 
   markedForDeletion: boolean = false;
 
@@ -202,12 +259,40 @@ class DragAndDropCircle implements Drawable, DragAndDroppable {
     handleColor: [number, number, number, number];
   }) {
     this.radius = radius;
-    this.position = position;
+    this._position = position;
     this.scale = scale ?? [1, 1];
     this.color = color ?? [1, 1, 1, 1];
 
     this.grabHandleRadius = handleRadius;
     this.grabHandleColor = handleColor;
+  }
+
+  get position() {
+    return this._position;
+  }
+
+  set position(value: [number, number]) {
+    if (this._physicsEntity) {
+      this._physicsEntity.position = value;
+    }
+    this._position = value;
+  }
+
+  get physicsEntity(): PhysicsEntity {
+    if (!this._physicsEntity) {
+      this._physicsEntity = new PhysicsEntity({
+        parent: this,
+        type: "kinematic",
+        position: this._position,
+        boundingShape: {
+          type: "BoundingCircle",
+          position: this._position,
+          radius: this.radius,
+        },
+      });
+    }
+
+    return this._physicsEntity;
   }
 
   get drawEntities() {
@@ -247,16 +332,18 @@ class DragAndDropCircle implements Drawable, DragAndDroppable {
   }
 }
 
-class DragAndDropPentagon implements Drawable, DragAndDroppable {
+class DragAndDropPentagon implements Drawable, Physical, DragAndDroppable {
   readonly sideLength: number;
   scale: [number, number];
   color: [number, number, number, number];
-  position: [number, number];
+  private _position: [number, number];
   private _pentagonDrawEntity: DrawEntity | null = null;
 
   private _grabHandleDrawEntity: DrawEntity | null = null;
   readonly grabHandleRadius: number;
   grabHandleColor: [number, number, number, number];
+
+  private _physicsEntity: PhysicsEntity | null = null;
 
   markedForDeletion: boolean = false;
 
@@ -277,11 +364,45 @@ class DragAndDropPentagon implements Drawable, DragAndDroppable {
     handleColor: [number, number, number, number];
   }) {
     this.sideLength = sideLength;
-    this.position = position;
+    this._position = position;
     this.scale = scale ?? [1, 1];
     this.color = color ?? [1, 1, 1, 1];
     this.grabHandleRadius = handleRadius;
     this.grabHandleColor = handleColor;
+  }
+
+  get position() {
+    return this._position;
+  }
+
+  set position(value: [number, number]) {
+    if (this._physicsEntity) {
+      this._physicsEntity.position = value;
+    }
+    this._position = value;
+  }
+
+  get physicsEntity(): PhysicsEntity {
+    if (!this._physicsEntity) {
+      this._physicsEntity = new PhysicsEntity({
+        parent: this,
+        type: "kinematic",
+        position: this._position,
+        boundingShape: {
+          type: "BoundingConvexPolygon",
+          position: this._position,
+          // TODO: Fix
+          vertices: [
+            [-this.sideLength / 2, -this.sideLength / 2],
+            [this.sideLength / 2, -this.sideLength / 2],
+            [this.sideLength / 2, this.sideLength / 2],
+            [-this.sideLength / 2, this.sideLength / 2],
+          ],
+        },
+      });
+    }
+
+    return this._physicsEntity;
   }
 
   get drawEntities() {

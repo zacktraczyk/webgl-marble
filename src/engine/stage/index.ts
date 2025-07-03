@@ -17,8 +17,10 @@ export type StageObject = {
   delete(): void;
 } & (Drawable | Physical | DragAndDroppable);
 
-class Stage {
+export class Stage {
   private readonly _vdu: VDU;
+
+  physicsEnabled: boolean = true;
   private readonly _physics: Physics;
 
   readonly height: number;
@@ -91,7 +93,9 @@ class Stage {
 
   update(elapsed: number) {
     this._cleanup();
-    this._physics.update(elapsed);
+    if (this.physicsEnabled) {
+      this._physics.update(elapsed);
+    }
     this._sync();
   }
 
