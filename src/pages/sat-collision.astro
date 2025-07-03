@@ -1,0 +1,40 @@
+---
+import HomeLink from "../components/HomeLink.astro";
+import Layout from "../layouts/Layout.astro";
+import "../styles/global.css";
+---
+
+<Layout>
+  <HomeLink />
+  <p
+    class="absolute text-rose-500 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 text-lg"
+    id="#error"
+  >
+  </p>
+  <div class="relative size-full z-0">
+    <canvas id="gl-canvas" class="size-full drop-shadow-xl">
+      Canvas Not supported
+    </canvas>
+  </div>
+  <div
+    class="absolute z-10 bottom-0 flex flex-col gap-4 bg-zinc-800/40 w-full px-12 py-8 h-40 items-start backdrop-blur"
+  >
+    <h1 class="font-semibold underline text-lg">Debug Info</h1>
+    <p id="#debug-info" class="text-mono"></p>
+    <p id="#fps" class="">FPS: 0</p>
+  </div>
+</Layout>
+
+<script>
+  import main from "../scenes/sat-collision.ts";
+
+  // Display errors on page
+  try {
+    main();
+  } catch (error) {
+    const errorElem = document.getElementById("#error");
+    if (errorElem) {
+      errorElem.textContent = `${error}`;
+    }
+  }
+</script>
