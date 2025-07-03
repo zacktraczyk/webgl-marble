@@ -1,7 +1,16 @@
 import { BoundingBox, BoundingCircle } from "./boundingShape";
-import { PhysicsEntity } from "./entity";
+import { PhysicsEntity } from "./entitySAT";
 
-export type Collision = [PhysicsEntity, PhysicsEntity];
+export type Collision = {
+  entity1: PhysicsEntity;
+  entity2: PhysicsEntity;
+  normal: [number, number];
+  penetration: number;
+  restitution: number;
+  magAlongNormal: number;
+};
+
+// TODO: Separating Axis Theorem Collision Detection
 
 export class CollisionDetector {
   detectCollisions(entities: PhysicsEntity[]): Collision[] | null {
@@ -18,8 +27,20 @@ export class CollisionDetector {
           continue;
         }
 
-        if (entity.boundingShape.intersects(otherEntity.boundingShape)) {
-          collisions.push([entity, otherEntity]);
+        // AABB Collision Detection
+
+        // SAT Collision Detection
+        const isColliding = false; // TODO: Implement
+        if (isColliding) {
+          const collision: Collision = {
+            entity1: entity,
+            entity2: otherEntity,
+            normal: [0, 0],
+            penetration: 0,
+            restitution: 0,
+            magAlongNormal: 0,
+          };
+          collisions.push(collision);
         }
       }
     }
@@ -34,9 +55,7 @@ export class CollisionResolver {
 
   resolveCollisions(collisions: Collision[]) {
     for (let i = 0; i < collisions.length; i++) {
-      const [entity1, entity2] = collisions[i];
-
-      this._resolveCollision(entity1, entity2);
+      this._resolveCollision(collisions[i]);
     }
   }
 
@@ -252,7 +271,9 @@ export class CollisionResolver {
     }
   }
 
-  private _resolveCollision(entity1: PhysicsEntity, entity2: PhysicsEntity) {
+  private _resolveCollision(collision: Collision) {
+    const { entity1, entity2 } = collision;
+
     // Correct penetration and calculate collision normal
     const normal = this._correctPenetration(entity1, entity2);
 

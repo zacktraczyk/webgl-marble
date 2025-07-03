@@ -3,14 +3,18 @@
 
 import { Observer } from "../utils/Observer";
 import { BoundingBox, BoundingCircle } from "./boundingShape";
-import { CollisionDetector, CollisionResolver } from "./collision";
+import {
+  CollisionDetector,
+  CollisionResolver,
+  type Collision,
+} from "./collision";
 import { type Physical, PhysicsEntity } from "./entity";
 
 const GRAVITY_X = 0;
 const GRAVITY_Y = 9.8;
 
 export type CollisionEvents = {
-  collisions: [PhysicsEntity, PhysicsEntity][];
+  collisions: Collision[];
 };
 
 class Physics {

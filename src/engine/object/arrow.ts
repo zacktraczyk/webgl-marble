@@ -1,6 +1,5 @@
 import * as id from "../utils/id";
 import {
-  createRectangle,
   createRectangleOriginLeftCenter,
   type Drawable,
   DrawEntity,

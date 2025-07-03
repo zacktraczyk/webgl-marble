@@ -8,23 +8,23 @@ function main() {
 
   const finishedBalls: number[] = [];
   stage.registerPhysicsObserver(({ collisions }) => {
-    for (const [a, b] of collisions) {
-      // TODO: Simplify
-      if (
-        (a.type === "dynamic" &&
+    for (const collision of collisions) {
+      const [entity1, entity2] = collision;
+      const collisionPemutations = [
+        [entity1, entity2],
+        [entity2, entity1],
+      ];
+
+      for (const [a, b] of collisionPemutations) {
+        if (
+          a.type === "dynamic" &&
           a.boundingShape instanceof BoundingCircle &&
-          b.parent === finishLine) ||
-        (b.type === "dynamic" &&
-          b.boundingShape instanceof BoundingCircle &&
-          a.parent === finishLine)
-      ) {
-        if (!a.markedForDeletion && a.parent && a.parent !== finishLine) {
-          a.parent.delete();
-          finishedBalls.push(a.id);
-        }
-        if (!b.markedForDeletion && b.parent && b.parent !== finishLine) {
-          b.parent.delete();
-          finishedBalls.push(b.id);
+          b.parent === finishLine
+        ) {
+          if (!a.markedForDeletion && a.parent && a.parent !== finishLine) {
+            a.parent.delete();
+            finishedBalls.push(a.id);
+          }
         }
       }
     }
