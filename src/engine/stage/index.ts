@@ -283,6 +283,14 @@ class Stage {
     return this._vdu.canvas;
   }
 
+  set drawMode(mode: "TRIANGLES" | "LINES") {
+    this._vdu.drawMode = mode;
+  }
+
+  get drawMode() {
+    return this._vdu.drawMode;
+  }
+
   registerPhysicsObserver(observer: (data: CollisionEvents) => void) {
     this._physics.register(observer);
   }

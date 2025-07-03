@@ -1,22 +1,26 @@
-import { Circle } from "../engine/object/circle";
-import { Rectangle } from "../engine/object/rectangle";
 import Stage from "../engine/stage";
 import { type DragAndDroppable } from "../engine/stage/eventHandlers";
-import { createCircle, type DrawEntity } from "../engine/vdu/entity";
+import {
+  createCircle,
+  createHexagon,
+  createRectangle,
+  type Drawable,
+  type DrawEntity,
+} from "../engine/vdu/entity";
 
 function main() {
   const stage = new Stage();
   stage.dragAndDrop = true;
   stage.panAndZoom = true;
+  stage.drawMode = "TRIANGLES";
 
   const centerX = stage.canvas.clientWidth / 2;
   const centerY = stage.canvas.clientHeight / 2;
-  const offsetX = 200;
+  const offset = 200;
 
   const circle1 = new DragAndDropCircle({
-    position: [centerX + offsetX, centerY],
+    position: [centerX + offset, centerY],
     radius: 50,
-    physicsType: "kinematic",
     color: [34 / 255, 197 / 255, 94 / 255, 1],
     handleRadius: 15,
     handleColor: [0.4, 0.4, 0.4, 1],
@@ -24,16 +28,26 @@ function main() {
   stage.add(circle1);
 
   const square1 = new DragAndDropRectangle({
-    position: [centerX - offsetX, centerY],
+    position: [centerX - offset, centerY],
     width: 100,
     height: 100,
+    scale: [1, 1],
     rotation: Math.PI / 8,
-    physicsType: "kinematic",
     color: [239 / 255, 68 / 255, 68 / 255, 1],
     handleRadius: 15,
     handleColor: [0.4, 0.4, 0.4, 1],
   });
   stage.add(square1);
+
+  const pentagon1 = new DragAndDropPentagon({
+    sideLength: 80,
+    position: [centerX, centerY - offset],
+    scale: [1, 1],
+    color: [56 / 255, 189 / 255, 248 / 255, 1],
+    handleRadius: 15,
+    handleColor: [0.4, 0.4, 0.4, 1],
+  });
+  stage.add(pentagon1);
 
   console.log(square1.position);
 
@@ -72,45 +86,84 @@ function main() {
   requestAnimationFrame(render);
 }
 
-type DragAndDropRectangleParams = ConstructorParameters<typeof Rectangle>[0] & {
-  handleRadius: number;
-  handleColor: [number, number, number, number];
-};
-
-class DragAndDropRectangle extends Rectangle implements DragAndDroppable {
+class DragAndDropRectangle implements Drawable, DragAndDroppable {
+  readonly width: number;
+  readonly height: number;
+  rotation: number;
+  scale: [number, number];
+  color: [number, number, number, number];
+  position: [number, number];
+  markedForDeletion: boolean = false;
   grabHandleRadius: number;
   grabHandleColor: [number, number, number, number];
+
+  private _rectangleDrawEntity: DrawEntity | null = null;
   private _grabHandleDrawEntity: DrawEntity | null = null;
 
   constructor({
+    width,
+    height,
+    position,
+    rotation,
+    scale,
+    color,
+
     handleRadius,
     handleColor,
-    ...rest
-  }: DragAndDropRectangleParams) {
-    super(rest);
+  }: {
+    width: number;
+    height: number;
+    position: [number, number];
+    rotation: number;
+    scale?: [number, number];
+    color?: [number, number, number, number];
+    handleRadius: number;
+    handleColor: [number, number, number, number];
+  }) {
+    this.width = width;
+    this.height = height;
+    this.rotation = rotation;
+    this.scale = scale ?? [1, 1];
+    this.color = color ?? [1, 1, 1, 1];
+    this.position = position;
     this.grabHandleRadius = handleRadius;
     this.grabHandleColor = handleColor;
   }
 
   get drawEntities() {
-    const entities = super.drawEntities;
+    if (!this._rectangleDrawEntity) {
+      const entity = createRectangle({
+        parent: this,
+        width: this.width,
+        height: this.height,
+      });
+      this._rectangleDrawEntity = entity;
+    }
+
     if (!this._grabHandleDrawEntity) {
       const entity = createCircle(this, this.grabHandleRadius);
       this._grabHandleDrawEntity = entity;
     }
 
-    return [...entities, this._grabHandleDrawEntity];
+    return [this._rectangleDrawEntity, this._grabHandleDrawEntity];
   }
 
   delete() {
-    super.delete();
+    if (this._rectangleDrawEntity) {
+      this._rectangleDrawEntity.delete();
+    }
     if (this._grabHandleDrawEntity) {
       this._grabHandleDrawEntity.delete();
     }
   }
 
   sync() {
-    super.sync();
+    if (this._rectangleDrawEntity) {
+      this._rectangleDrawEntity.position = this.position;
+      this._rectangleDrawEntity.rotation = this.rotation;
+      this._rectangleDrawEntity.scale = this.scale;
+      this._rectangleDrawEntity.color = this.color;
+    }
     if (this._grabHandleDrawEntity) {
       this._grabHandleDrawEntity.position = this.position;
       this._grabHandleDrawEntity.color = this.grabHandleColor;
@@ -118,41 +171,149 @@ class DragAndDropRectangle extends Rectangle implements DragAndDroppable {
   }
 }
 
-type DragAndDropCircleParams = ConstructorParameters<typeof Circle>[0] & {
-  handleRadius: number;
-  handleColor: [number, number, number, number];
-};
+class DragAndDropCircle implements Drawable, DragAndDroppable {
+  readonly radius: number;
+  scale: [number, number];
+  color: [number, number, number, number];
+  position: [number, number];
+  private _circleDrawEntity: DrawEntity | null = null;
 
-class DragAndDropCircle extends Circle implements DragAndDroppable {
-  grabHandleRadius: number;
+  readonly grabHandleRadius: number;
   grabHandleColor: [number, number, number, number];
   private _grabHandleDrawEntity: DrawEntity | null = null;
 
-  constructor({ handleRadius, handleColor, ...rest }: DragAndDropCircleParams) {
-    super(rest);
+  markedForDeletion: boolean = false;
+
+  constructor({
+    radius,
+    position,
+    scale,
+    color,
+
+    handleRadius,
+    handleColor,
+  }: {
+    radius: number;
+    position: [number, number];
+    scale?: [number, number];
+    color?: [number, number, number, number];
+
+    handleRadius: number;
+    handleColor: [number, number, number, number];
+  }) {
+    this.radius = radius;
+    this.position = position;
+    this.scale = scale ?? [1, 1];
+    this.color = color ?? [1, 1, 1, 1];
+
     this.grabHandleRadius = handleRadius;
     this.grabHandleColor = handleColor;
   }
 
   get drawEntities() {
-    const entities = super.drawEntities;
+    if (!this._circleDrawEntity) {
+      const entity = createCircle(this, this.radius);
+      this._circleDrawEntity = entity;
+    }
+
     if (!this._grabHandleDrawEntity) {
       const entity = createCircle(this, this.grabHandleRadius);
       this._grabHandleDrawEntity = entity;
     }
 
-    return [...entities, this._grabHandleDrawEntity];
+    return [this._circleDrawEntity, this._grabHandleDrawEntity];
   }
 
   delete() {
-    super.delete();
+    if (this._circleDrawEntity) {
+      this._circleDrawEntity.delete();
+    }
     if (this._grabHandleDrawEntity) {
       this._grabHandleDrawEntity.delete();
     }
   }
 
   sync() {
-    super.sync();
+    if (this._circleDrawEntity) {
+      this._circleDrawEntity.position = this.position;
+      this._circleDrawEntity.scale = this.scale;
+      this._circleDrawEntity.color = this.color;
+    }
+
+    if (this._grabHandleDrawEntity) {
+      this._grabHandleDrawEntity.position = this.position;
+      this._grabHandleDrawEntity.color = this.grabHandleColor;
+    }
+  }
+}
+
+class DragAndDropPentagon implements Drawable, DragAndDroppable {
+  readonly sideLength: number;
+  scale: [number, number];
+  color: [number, number, number, number];
+  position: [number, number];
+  private _pentagonDrawEntity: DrawEntity | null = null;
+
+  private _grabHandleDrawEntity: DrawEntity | null = null;
+  readonly grabHandleRadius: number;
+  grabHandleColor: [number, number, number, number];
+
+  markedForDeletion: boolean = false;
+
+  constructor({
+    sideLength,
+    position,
+    scale,
+    color,
+
+    handleRadius,
+    handleColor,
+  }: {
+    sideLength: number;
+    position: [number, number];
+    scale?: [number, number];
+    color?: [number, number, number, number];
+    handleRadius: number;
+    handleColor: [number, number, number, number];
+  }) {
+    this.sideLength = sideLength;
+    this.position = position;
+    this.scale = scale ?? [1, 1];
+    this.color = color ?? [1, 1, 1, 1];
+    this.grabHandleRadius = handleRadius;
+    this.grabHandleColor = handleColor;
+  }
+
+  get drawEntities() {
+    if (!this._pentagonDrawEntity) {
+      const entity = createHexagon(this, this.sideLength);
+      this._pentagonDrawEntity = entity;
+    }
+
+    if (!this._grabHandleDrawEntity) {
+      const entity = createCircle(this, this.grabHandleRadius);
+      this._grabHandleDrawEntity = entity;
+    }
+
+    return [this._pentagonDrawEntity, this._grabHandleDrawEntity];
+  }
+
+  delete() {
+    if (this._pentagonDrawEntity) {
+      this._pentagonDrawEntity.delete();
+    }
+    if (this._grabHandleDrawEntity) {
+      this._grabHandleDrawEntity.delete();
+    }
+  }
+
+  sync() {
+    if (this._pentagonDrawEntity) {
+      this._pentagonDrawEntity.position = this.position;
+      this._pentagonDrawEntity.scale = this.scale;
+      this._pentagonDrawEntity.color = this.color;
+    }
+
     if (this._grabHandleDrawEntity) {
       this._grabHandleDrawEntity.position = this.position;
       this._grabHandleDrawEntity.color = this.grabHandleColor;
