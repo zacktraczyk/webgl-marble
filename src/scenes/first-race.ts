@@ -1,30 +1,29 @@
 import { Circle } from "../engine/object/circle";
 import { Rectangle } from "../engine/object/rectangle";
-import { BoundingCircle } from "../engine/physics/boundingShape";
-import Stage from "../engine/Stage";
+import Stage from "../engine/stage";
 
 function main() {
   const { stage, finishLine } = init();
 
   const finishedBalls: number[] = [];
   stage.registerPhysicsObserver(({ collisions }) => {
-    for (const [a, b] of collisions) {
-      // TODO: Simplify
-      if (
-        (a.type === "dynamic" &&
-          a.boundingShape instanceof BoundingCircle &&
-          b.parent === finishLine) ||
-        (b.type === "dynamic" &&
-          b.boundingShape instanceof BoundingCircle &&
-          a.parent === finishLine)
-      ) {
-        if (!a.markedForDeletion && a.parent && a.parent !== finishLine) {
-          a.parent.delete();
-          finishedBalls.push(a.id);
-        }
-        if (!b.markedForDeletion && b.parent && b.parent !== finishLine) {
-          b.parent.delete();
-          finishedBalls.push(b.id);
+    for (const collision of collisions) {
+      const { entity1, entity2 } = collision;
+      const collisionPemutations = [
+        [entity1, entity2],
+        [entity2, entity1],
+      ];
+
+      for (const [a, b] of collisionPemutations) {
+        if (
+          a.type === "dynamic" &&
+          a.boundingShape?.type === "BoundingCircle" &&
+          b.parent === finishLine
+        ) {
+          if (!a.markedForDeletion && a.parent && a.parent !== finishLine) {
+            a.parent.delete();
+            finishedBalls.push(a.id);
+          }
         }
       }
     }

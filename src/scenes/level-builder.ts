@@ -1,7 +1,6 @@
 import { Ball } from "../engine/object/ball";
 import { Rectangle } from "../engine/object/rectangle";
-import { BoundingCircle } from "../engine/physics/boundingShape";
-import Stage from "../engine/Stage";
+import Stage from "../engine/stage";
 
 type ToolSelectors = {
   pan: HTMLElement | null;
@@ -26,7 +25,7 @@ function main(toolSelectors: ToolSelectors) {
 
   const finishedBalls: number[] = [];
   stage.registerPhysicsObserver(({ collisions }) => {
-    for (const [a, b] of collisions) {
+    for (const { entity1: a, entity2: b } of collisions) {
       const collisionPermutations = [
         [a, b],
         [b, a],
@@ -34,7 +33,7 @@ function main(toolSelectors: ToolSelectors) {
       for (const [c, d] of collisionPermutations) {
         if (
           c.type === "dynamic" &&
-          c.boundingShape instanceof BoundingCircle &&
+          c.boundingShape?.type === "BoundingCircle" &&
           d.parent instanceof FinishLine
         ) {
           c.parent.delete();

@@ -1,25 +1,31 @@
 import * as id from "../utils/id";
-import { BoundingBox, BoundingCircle, BoundingShape } from "./boundingShape";
+
 export type PhysicsEntityType = "kinematic" | "dynamic";
 
-// TODO: Simplify type?
-type BoundingShapeParams =
-  | Omit<
-      ConstructorParameters<typeof BoundingBox>[0] & { type: "BoundingBox" },
-      "position"
-    >
-  | Omit<
-      ConstructorParameters<typeof BoundingCircle>[0] & {
-        type: "BoundingCircle";
-      },
-      "position"
-    >;
+export type BoundingConvexPolygon = {
+  type: "BoundingConvexPolygon";
+  position: [number, number];
+  vertices: [number, number][];
+};
+
+export type BoundingCircle = {
+  type: "BoundingCircle";
+  position: [number, number];
+  radius: number;
+};
+
+export type BoundingShape = BoundingConvexPolygon | BoundingCircle;
 
 export interface Physical {
+  id: number;
   physicsEntity: PhysicsEntity;
 
   delete(): void;
 }
+
+export const isPhysical = (object: any): object is Physical => {
+  return object && typeof object.physicsEntity === "object";
+};
 
 export class PhysicsEntity {
   readonly parent: Physical;
@@ -29,6 +35,10 @@ export class PhysicsEntity {
 
   position: [number, number];
   velocity: [number, number];
+
+  rotation: number;
+  angularVelocity: number;
+
   acceleration: [number, number];
 
   markedForDeletion: boolean = false;
@@ -36,38 +46,34 @@ export class PhysicsEntity {
   constructor({
     parent,
     type,
+    boundingShape,
     position,
-    boundingShapeParams,
     velocity,
+    rotation,
+    angularVelocity,
     acceleration,
   }: {
     parent: Physical;
     type: PhysicsEntityType;
-    boundingShapeParams: BoundingShapeParams;
+    boundingShape: BoundingShape;
     position: [number, number];
     velocity?: [number, number];
+    rotation?: number;
+    angularVelocity?: number;
     acceleration?: [number, number];
   }) {
     this.parent = parent;
     this.id = id.getNext();
     this.type = type;
 
-    if (boundingShapeParams.type === "BoundingCircle") {
-      this.boundingShape = new BoundingCircle({
-        ...boundingShapeParams,
-        position,
-      });
-    } else if (boundingShapeParams.type === "BoundingBox") {
-      this.boundingShape = new BoundingBox({
-        ...boundingShapeParams,
-        position,
-      });
-    } else {
-      this.boundingShape = undefined;
-    }
+    this.boundingShape = boundingShape;
 
     this.position = position;
     this.velocity = velocity ?? [0, 0];
+
+    this.rotation = rotation ?? 0;
+    this.angularVelocity = angularVelocity ?? 0;
+
     this.acceleration = acceleration ?? [0, 0];
   }
 

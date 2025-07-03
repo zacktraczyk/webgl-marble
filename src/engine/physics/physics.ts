@@ -2,23 +2,37 @@
 // Collision Resolution reference: https://spicyyoghurt.com/tutorials/html5-javascript-game-development/collision-detection-physics
 
 import { Observer } from "../utils/Observer";
-import { BoundingBox, BoundingCircle } from "./boundingShape";
-import { CollisionDetector, CollisionResolver } from "./collision";
+import {
+  type CollisionDetector,
+  type CollisionResolver,
+  type Collision,
+} from "./collision";
+import { SATCollisionDetector, SATCollisionResolver } from "./collision/SAT";
 import { type Physical, PhysicsEntity } from "./entity";
 
 const GRAVITY_X = 0;
 const GRAVITY_Y = 9.8;
 
 export type CollisionEvents = {
-  collisions: [PhysicsEntity, PhysicsEntity][];
+  collisions: Collision[];
 };
 
 class Physics {
   private _entities: PhysicsEntity[] = [];
-  private _collider: CollisionDetector = new CollisionDetector();
-  private _resolver: CollisionResolver = new CollisionResolver();
+  private readonly _collider: CollisionDetector;
+  private readonly _resolver: CollisionResolver;
   private _observer: Observer<CollisionEvents> =
     new Observer<CollisionEvents>();
+
+  constructor(params?: {
+    collisionDetector?: CollisionDetector;
+    collisionResolver?: CollisionResolver;
+  }) {
+    const { collisionDetector, collisionResolver } = params ?? {};
+
+    this._collider = collisionDetector ?? new SATCollisionDetector();
+    this._resolver = collisionResolver ?? new SATCollisionResolver();
+  }
 
   private _gravity_enabled: boolean = true;
 
@@ -48,14 +62,6 @@ class Physics {
 
   add({ physicsEntity }: Physical) {
     this._entities.push(physicsEntity);
-
-    // TODO: FIXME Why does sim break if if circle is added first?
-    this._entities.sort((a, b) =>
-      a.boundingShape instanceof BoundingBox &&
-      b.boundingShape instanceof BoundingCircle
-        ? -1
-        : 1
-    );
   }
 
   // Simulation

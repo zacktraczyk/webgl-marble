@@ -1,5 +1,32 @@
 ---
 import Layout from "../layouts/Layout.astro";
+
+const pages = [
+  {
+    name: "Random Balls",
+    href: "/random-balls",
+  },
+  {
+    name: "Level Builder",
+    href: "/level-builder",
+  },
+  {
+    name: "First Race",
+    href: "/first-race",
+  },
+  {
+    name: "Arrow",
+    href: "/arrow",
+  },
+  {
+    name: "Angular Collisions",
+    href: "/angular-collisions",
+  },
+  {
+    name: "SAT Collision",
+    href: "/sat-collision",
+  },
+];
 ---
 
 <Layout>
@@ -7,16 +34,13 @@ import Layout from "../layouts/Layout.astro";
     <div class="flex flex-col gap-16 text-2xl">
       <h1 class="font-bold text-3xl">Debug Pages</h1>
       <div class="flex flex-col gap-8">
-        <a href="/random-balls" class="hover:underline text-sky-300">
-          Random Balls
-        </a>
-        <a href="/level-builder" class="hover:underline text-sky-300">
-          Level Builder
-        </a>
-        <a href="/first-race" class="hover:underline text-sky-300">
-          First Race
-        </a>
-        <a href="/arrow" class="hover:underline text-sky-300">Arrow</a>
+        {
+          pages.map((page) => (
+            <a href={page.href} class="hover:underline text-sky-300">
+              {page.name}
+            </a>
+          ))
+        }
       </div>
     </div>
   </main>

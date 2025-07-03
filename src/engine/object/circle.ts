@@ -75,8 +75,9 @@ export class Circle implements Drawable, Physical {
         parent: this,
         type: this.physicsType,
         position: this._position,
-        boundingShapeParams: {
+        boundingShape: {
           type: "BoundingCircle",
+          position: this._position,
           radius: this.radius,
         },
         velocity: this.velocity,

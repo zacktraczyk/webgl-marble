@@ -1,7 +1,7 @@
 import { Circle } from "../src/engine/object/circle";
 import { Rectangle } from "../src/engine/object/rectangle";
 import { BoundingCircle } from "../src/engine/physics/boundingShape";
-import Stage from "../src/engine/Stage";
+import Stage from "../src/engine/stage";
 
 type ToolSelectors = {
   pan: HTMLElement | null;

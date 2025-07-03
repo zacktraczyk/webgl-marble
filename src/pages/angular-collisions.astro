@@ -1,0 +1,42 @@
+---
+import HomeLink from "../components/HomeLink.astro";
+import Layout from "../layouts/Layout.astro";
+import "../styles/global.css";
+---
+
+<Layout>
+  <HomeLink />
+  <p
+    class="absolute text-rose-500 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 text-lg"
+    id="#error"
+  >
+  </p>
+  <div class="relative size-full z-0">
+    <canvas id="gl-canvas" class="size-full drop-shadow-xl">
+      Canvas Not supported
+    </canvas>
+  </div>
+  <div
+    class="absolute right-10 top-1/2 -translate-y-1/2 w-full max-w-sm h-full max-h-[40rem] flex-1 px-10 py-8 bg-zinc-800/60 backdrop-blur rounded-2xl overflow-scroll"
+  >
+    <div class="flex justify-between items-center w-full">
+      <h1 class="text-2xl font-bold">Debug</h1>
+      <p class="font-mono z-10 bg-black/80 py-1 px-4" id="#fps">FPS: 0.00</p>
+    </div>
+    <p id="#debug-info" class="mt-6 text-sm leading-10"></p>
+  </div>
+</Layout>
+
+<script>
+  import main from "../scenes/angular-collisions.ts";
+
+  // Display errors on page
+  try {
+    main();
+  } catch (error) {
+    const errorElem = document.getElementById("#error");
+    if (errorElem) {
+      errorElem.textContent = `${error}`;
+    }
+  }
+</script>

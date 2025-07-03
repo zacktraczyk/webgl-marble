@@ -8,7 +8,13 @@ export type Uniform = WebglUtils.Uniform;
 
 export interface Drawable {
   drawEntities: DrawEntity[];
+
+  delete(): void;
 }
+
+export const isDrawable = (object: any): object is Drawable => {
+  return "drawEntities" in object;
+};
 
 export class DrawEntity {
   readonly id;
@@ -184,6 +190,57 @@ export const createCircle = (parent: Drawable, radius: number): DrawEntity => {
       radius * Math.sin(nextSegment)
     );
   }
+
+  const drawEntity = new DrawEntity({
+    parent,
+    position: [0, 0],
+    rotation: 0,
+    scale: [1, 1],
+    color: [1, 1, 1, 1],
+    indicies,
+  });
+
+  return drawEntity;
+};
+
+export const createHexagon = (
+  parent: Drawable,
+  sideLength: number
+): DrawEntity => {
+  const indicies: number[] = [];
+
+  const vertices = [
+    [sideLength, 0],
+    [sideLength * (1 / 2), sideLength * (Math.sqrt(3) / 2)],
+    [sideLength * -(1 / 2), sideLength * (Math.sqrt(3) / 2)],
+    [-sideLength, 0],
+    [sideLength * -(1 / 2), -sideLength * (Math.sqrt(3) / 2)],
+    [sideLength * (1 / 2), -sideLength * (Math.sqrt(3) / 2)],
+  ];
+
+  indicies.push(0, 0);
+  indicies.push(vertices[0][0], vertices[0][1]);
+  indicies.push(vertices[1][0], vertices[1][1]);
+
+  indicies.push(0, 0);
+  indicies.push(vertices[1][0], vertices[1][1]);
+  indicies.push(vertices[2][0], vertices[2][1]);
+
+  indicies.push(0, 0);
+  indicies.push(vertices[2][0], vertices[2][1]);
+  indicies.push(vertices[3][0], vertices[3][1]);
+
+  indicies.push(0, 0);
+  indicies.push(vertices[3][0], vertices[3][1]);
+  indicies.push(vertices[4][0], vertices[4][1]);
+
+  indicies.push(0, 0);
+  indicies.push(vertices[4][0], vertices[4][1]);
+  indicies.push(vertices[5][0], vertices[5][1]);
+
+  indicies.push(0, 0);
+  indicies.push(vertices[5][0], vertices[5][1]);
+  indicies.push(vertices[0][0], vertices[0][1]);
 
   const drawEntity = new DrawEntity({
     parent,
