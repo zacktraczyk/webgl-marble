@@ -4,32 +4,52 @@ import {
   CollisionDetector,
   CollisionResolver,
   type Collision,
+  type Line,
 } from "./collisionSAT";
 import type { Physical, PhysicsEntity } from "./entitySAT";
 
 const GRAVITY_X = 0;
 const GRAVITY_Y = 9.8;
 
-export type CollisionEvents = {
+export type CollisionEvent = {
+  type: "collision";
   collisions: Collision[];
 };
+
+export type DebugSATData = {
+  slope: number;
+  edge: Line;
+  proj1: [number, number];
+  proj2: [number, number];
+};
+
+export type DebugSlopeEvent = {
+  type: "debug-sat";
+  data: DebugSATData;
+};
+
+export type DebugLinesEvent = {
+  type: "debug-lines";
+  lines: [[number, number], [number, number]][];
+};
+
+export type ObserverEvents = CollisionEvent | DebugLinesEvent | DebugSlopeEvent;
 
 class Physics {
   private _entities: PhysicsEntity[] = [];
   private _collider: CollisionDetector = new CollisionDetector();
   private _resolver: CollisionResolver = new CollisionResolver();
-  private _observer: Observer<CollisionEvents> =
-    new Observer<CollisionEvents>();
+  private _observer: Observer<ObserverEvents> = new Observer<ObserverEvents>();
 
   private _gravity_enabled: boolean = true;
 
   // Observer
 
-  register(observer: (data: CollisionEvents) => void) {
+  register(observer: (data: ObserverEvents) => void) {
     this._observer.register(observer);
   }
 
-  unregister(observer: (data: CollisionEvents) => void) {
+  unregister(observer: (data: ObserverEvents) => void) {
     this._observer.unregister(observer);
   }
 
@@ -97,11 +117,31 @@ class Physics {
       }
     }
 
+    // this._observer.notify();
+    const notifyDebugLines = (
+      lines: [[number, number], [number, number]][]
+    ) => {
+      this._observer.notify({
+        type: "debug-lines",
+        lines,
+      });
+    };
+
+    const notifyDebugSAT = (data: DebugSATData) => {
+      this._observer.notify({
+        type: "debug-sat",
+        data,
+      });
+    };
+
     const collisions = this._collider.detectCollisions(this._entities);
 
     if (collisions) {
-      this._observer.notify({ collisions });
-      this._resolver.resolveCollisions(collisions);
+      this._observer.notify({
+        type: "collision",
+        collisions,
+      });
+      // this._resolver.resolveCollisions(collisions);
     }
   }
 }

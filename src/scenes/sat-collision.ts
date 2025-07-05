@@ -1,7 +1,9 @@
+import { Line } from "../engine/object/line";
 import { PhysicsEntity, type Physical } from "../engine/physics/entitySAT";
 import Physics from "../engine/physics/physicsSAT";
 import Stage from "../engine/stage";
 import { type DragAndDroppable } from "../engine/stage/eventHandlers";
+import { getNext } from "../engine/utils/id";
 import {
   createCircle,
   createHexagon,
@@ -47,7 +49,7 @@ function main() {
   stage.add(square1);
   physicsSAT.add(square1);
 
-  const pentagon1 = new DragAndDropPentagon({
+  const hexagon1 = new DragAndDropHexagon({
     sideLength: 80,
     position: [centerX, centerY - offset],
     scale: [1, 1],
@@ -55,27 +57,116 @@ function main() {
     handleRadius: 15,
     handleColor: [0.4, 0.4, 0.4, 1],
   });
-  stage.add(pentagon1);
-  physicsSAT.add(pentagon1);
+  stage.add(hexagon1);
+  physicsSAT.add(hexagon1);
 
-  const collisions: [number, number][] = [];
-  physicsSAT.register(({ collisions: newCollisions }) => {
-    console.log(newCollisions);
-    // for (const collision of newCollisions) {
-    //   const alreadyCollided = collisions.some(
-    //     (c) =>
-    //       c[0] === collision.entity1.parent.id &&
-    //       c[1] === collision.entity2.parent.id
-    //   );
-    //   if (alreadyCollided) {
-    //     continue;
-    //   }
+  let debugSlope: Line | null = null;
+  let debugEdge: Line | null = null;
 
-    //   collisions.push([
-    //     collision.entity1.parent.id,
-    //     collision.entity2.parent.id,
-    //   ]);
-    // }
+  let debugAxis: Line | null = null;
+  let debugAxisProj1: Line | null = null;
+  let debugAxisProj2: Line | null = null;
+  physicsSAT.register(({ type, ...data }) => {
+    if (type !== "debug-sat" || !("data" in data)) {
+      return;
+    }
+
+    const { slope, edge, proj1, proj2 } = data.data;
+    if (!debugSlope) {
+      // Draw a line through the center of the canvas with slope
+      const centerX = stage.canvas.clientWidth / 2;
+      const centerY = stage.canvas.clientHeight / 2;
+
+      const startX = centerX - 100;
+      const startY = slope * (startX - centerX) + centerY;
+
+      const endX = centerX + 100;
+      const endY = slope * (endX - centerX) + centerY;
+
+      const lineDrawEntity = new Line({
+        startPosition: [startX, startY],
+        endPosition: [endX, endY],
+        stroke: 2,
+        color: [1, 1, 1, 1],
+      });
+      stage.add(lineDrawEntity);
+      debugSlope = lineDrawEntity;
+    }
+
+    if (!debugAxis) {
+      const posY = centerY + 300;
+      const axisLength = 300;
+
+      const startPosition: [number, number] = [centerX - axisLength / 2, posY];
+      const endPosition: [number, number] = [centerX + axisLength / 2, posY];
+
+      const lineDrawEntity = new Line({
+        startPosition: startPosition,
+        endPosition: endPosition,
+        stroke: 2,
+        color: [1, 1, 1, 1],
+      });
+      stage.add(lineDrawEntity);
+      debugAxis = lineDrawEntity;
+
+      const proj1OffsetY = posY - 50;
+      const proj1StartPosition: [number, number] = [
+        startPosition[0] + proj1[0] * axisLength,
+        proj1OffsetY,
+      ];
+      const proj1EndPosition: [number, number] = [
+        startPosition[0] + proj1[1] * axisLength,
+        proj1OffsetY,
+      ];
+      const proj1LineDrawEntity = new Line({
+        startPosition: proj1StartPosition,
+        endPosition: proj1EndPosition,
+        stroke: 2,
+        color: [0, 0.2, 0.2, 1],
+      });
+      stage.add(proj1LineDrawEntity);
+
+      const proj2OffsetY = posY - 100;
+      const proj2StartPosition: [number, number] = [
+        startPosition[0] + proj2[0] * axisLength,
+        proj2OffsetY,
+      ];
+      const proj2EndPosition: [number, number] = [
+        startPosition[0] + proj2[1] * axisLength,
+        proj2OffsetY,
+      ];
+
+      const proj2LineDrawEntity = new Line({
+        startPosition: proj2StartPosition,
+        endPosition: proj2EndPosition,
+        stroke: 2,
+        color: [0, 0.2, 0.2, 1],
+      });
+      stage.add(proj2LineDrawEntity);
+    }
+
+    if (!debugEdge) {
+      const lineDrawEntity = new Line({
+        startPosition: edge[0],
+        endPosition: edge[1],
+        stroke: 2,
+        color: [187 / 255, 27 / 255, 219 / 255, 0.8],
+      });
+      stage.add(lineDrawEntity);
+      debugEdge = lineDrawEntity;
+    }
+  });
+
+  let collisions: [string, string][] = [];
+  physicsSAT.register(({ type, ...data }) => {
+    if (type !== "collision" || !("collisions" in data)) {
+      return;
+    }
+    const newCollisions = data.collisions;
+    collisions = newCollisions.map((collision) => [
+      collision.entity1.parent.name,
+      collision.entity2.parent.name,
+    ]);
   });
 
   let lastTime = performance.now();
@@ -87,7 +178,10 @@ function main() {
     stage.update(elapsed);
     physicsSAT.update(elapsed);
     updateFpsPerf();
-    updateDebugInfo({ collisions });
+    updateDebugInfo({
+      collisions,
+    });
+    collisions = [];
   }
 
   function render() {
@@ -101,6 +195,7 @@ function main() {
 }
 
 class DragAndDropRectangle implements Drawable, Physical, DragAndDroppable {
+  readonly name: string;
   readonly width: number;
   readonly height: number;
   rotation: number;
@@ -136,6 +231,7 @@ class DragAndDropRectangle implements Drawable, Physical, DragAndDroppable {
     handleRadius: number;
     handleColor: [number, number, number, number];
   }) {
+    this.name = "rectangle";
     this.width = width;
     this.height = height;
     this.rotation = rotation;
@@ -227,6 +323,7 @@ class DragAndDropRectangle implements Drawable, Physical, DragAndDroppable {
 }
 
 class DragAndDropCircle implements Drawable, Physical, DragAndDroppable {
+  readonly name: string;
   readonly radius: number;
   scale: [number, number];
   color: [number, number, number, number];
@@ -258,6 +355,7 @@ class DragAndDropCircle implements Drawable, Physical, DragAndDroppable {
     handleRadius: number;
     handleColor: [number, number, number, number];
   }) {
+    this.name = "circle";
     this.radius = radius;
     this._position = position;
     this.scale = scale ?? [1, 1];
@@ -332,7 +430,8 @@ class DragAndDropCircle implements Drawable, Physical, DragAndDroppable {
   }
 }
 
-class DragAndDropPentagon implements Drawable, Physical, DragAndDroppable {
+class DragAndDropHexagon implements Drawable, Physical, DragAndDroppable {
+  readonly name: string;
   readonly sideLength: number;
   scale: [number, number];
   color: [number, number, number, number];
@@ -363,6 +462,7 @@ class DragAndDropPentagon implements Drawable, Physical, DragAndDroppable {
     handleRadius: number;
     handleColor: [number, number, number, number];
   }) {
+    this.name = "hexagon";
     this.sideLength = sideLength;
     this._position = position;
     this.scale = scale ?? [1, 1];
@@ -383,6 +483,14 @@ class DragAndDropPentagon implements Drawable, Physical, DragAndDroppable {
   }
 
   get physicsEntity(): PhysicsEntity {
+    const vertices: [number, number][] = [
+      [this.sideLength, 0],
+      [this.sideLength * (1 / 2), this.sideLength * (Math.sqrt(3) / 2)],
+      [this.sideLength * -(1 / 2), this.sideLength * (Math.sqrt(3) / 2)],
+      [-this.sideLength, 0],
+      [this.sideLength * -(1 / 2), -this.sideLength * (Math.sqrt(3) / 2)],
+      [this.sideLength * (1 / 2), -this.sideLength * (Math.sqrt(3) / 2)],
+    ];
     if (!this._physicsEntity) {
       this._physicsEntity = new PhysicsEntity({
         parent: this,
@@ -391,13 +499,7 @@ class DragAndDropPentagon implements Drawable, Physical, DragAndDroppable {
         boundingShape: {
           type: "BoundingConvexPolygon",
           position: this._position,
-          // TODO: Fix
-          vertices: [
-            [-this.sideLength / 2, -this.sideLength / 2],
-            [this.sideLength / 2, -this.sideLength / 2],
-            [this.sideLength / 2, this.sideLength / 2],
-            [-this.sideLength / 2, this.sideLength / 2],
-          ],
+          vertices,
         },
       });
     }

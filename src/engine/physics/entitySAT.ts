@@ -17,6 +17,7 @@ export type BoundingCircle = {
 export type BoundingShape = BoundingConvexPolygon | BoundingCircle;
 
 export interface Physical {
+  name: string;
   physicsEntity: PhysicsEntity;
 
   delete(): void;
