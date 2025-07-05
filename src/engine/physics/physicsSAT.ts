@@ -4,8 +4,7 @@ import {
   CollisionDetector,
   CollisionResolver,
   type Collision,
-  type Line,
-} from "./collisionSAT";
+} from "./collision/collisionSAT";
 import type { Physical, PhysicsEntity } from "./entitySAT";
 
 const GRAVITY_X = 0;
@@ -16,24 +15,7 @@ export type CollisionEvent = {
   collisions: Collision[];
 };
 
-export type DebugSATData = {
-  slope: number;
-  edge: Line;
-  proj1: [number, number];
-  proj2: [number, number];
-};
-
-export type DebugSlopeEvent = {
-  type: "debug-sat";
-  data: DebugSATData;
-};
-
-export type DebugLinesEvent = {
-  type: "debug-lines";
-  lines: [[number, number], [number, number]][];
-};
-
-export type ObserverEvents = CollisionEvent | DebugLinesEvent | DebugSlopeEvent;
+export type ObserverEvents = CollisionEvent;
 
 class Physics {
   private _entities: PhysicsEntity[] = [];
@@ -116,23 +98,6 @@ class Physics {
           break;
       }
     }
-
-    // this._observer.notify();
-    const notifyDebugLines = (
-      lines: [[number, number], [number, number]][]
-    ) => {
-      this._observer.notify({
-        type: "debug-lines",
-        lines,
-      });
-    };
-
-    const notifyDebugSAT = (data: DebugSATData) => {
-      this._observer.notify({
-        type: "debug-sat",
-        data,
-      });
-    };
 
     const collisions = this._collider.detectCollisions(this._entities);
 
