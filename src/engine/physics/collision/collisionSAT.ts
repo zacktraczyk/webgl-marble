@@ -4,8 +4,10 @@ import { SeparatingAxisTheorem } from "./SeparatingAxisTheorem";
 export type Collision = {
   entity1: PhysicsEntity;
   entity2: PhysicsEntity;
-  normal: [number, number];
-  penetration: number;
+  minimumTranslationVector: {
+    normal: [number, number];
+    magnitude: number;
+  };
   // restitution: number;
   // magAlongNormal: number;
 };
@@ -16,36 +18,13 @@ export class CollisionDetector {
   private readonly _satDetectCollisions =
     SeparatingAxisTheorem.detectCollisions;
 
-  private _generateCollisionEvent(collisionPair: CollisionPair): Collision {
-    const [entity1, entity2] = collisionPair;
-    const normal: [number, number] = [0, 0];
-    const penetration = 0;
-
-    const collisionEvent: Collision = {
-      entity1,
-      entity2,
-      normal,
-      penetration,
-    };
-
-    return collisionEvent;
-  }
-
   detectCollisions(entities: PhysicsEntity[]): Collision[] | null {
     // TODO: Broad Phase (Sort and Sweep ? AABB ?)
 
     // Narrow Phase (SAT)
+    // TODO: Generate contact manifold
     const collisions = this._satDetectCollisions(entities);
-    if (!collisions) {
-      return null;
-    }
-
-    const collisionEvents: Collision[] = [];
-    for (const collisionPair of collisions) {
-      collisionEvents.push(this._generateCollisionEvent(collisionPair));
-    }
-
-    return collisionEvents;
+    return collisions;
   }
 }
 
@@ -272,36 +251,55 @@ export class CollisionResolver {
   // }
 
   private _resolveCollision(collision: Collision) {
-    const { entity1, entity2 } = collision;
+    const { entity1, entity2, minimumTranslationVector } = collision;
 
-    // Correct penetration and calculate collision normal
-    // const normal = this._correctPenetration(entity1, entity2);
+    // Correct penetration
+    const { normal, magnitude } = minimumTranslationVector;
+    let penX = normal[0] * magnitude;
+    let penY = normal[1] * magnitude;
+
+    // NOTE: Only dynamic entities should be corrected (or else dynamic entities
+    // get stuck in kinematic entities)
+    if (entity1.type === "dynamic" && entity2.type === "dynamic") {
+      penX = Math.max(penX - this._penetrationSlop, 0);
+      penY = Math.max(penY - this._penetrationSlop, 0);
+    }
+
+    if (entity1.type === "dynamic") {
+      entity1.position[0] += normal[0] * penX;
+      entity1.position[1] += normal[1] * penY;
+    }
+
+    if (entity2.type === "dynamic") {
+      entity2.position[0] -= normal[0] * penX;
+      entity2.position[1] -= normal[1] * penY;
+    }
 
     // Calculate relative velocity
-    // const relativeVelocity = [
-    //   entity1.velocity[0] - entity2.velocity[0],
-    //   entity1.velocity[1] - entity2.velocity[1],
-    // ];
+    const relativeVelocity = [
+      entity1.velocity[0] - entity2.velocity[0],
+      entity1.velocity[1] - entity2.velocity[1],
+    ];
 
     // Calculate relative velocity in terms of the normal direction
-    // const magAlongNormal =
-    //   relativeVelocity[0] * normal[0] + relativeVelocity[1] * normal[1];
+    const magAlongNormal =
+      relativeVelocity[0] * normal[0] + relativeVelocity[1] * normal[1];
 
     // Calculate impulse magnitude
-    // if (entity1.type === "dynamic") {
-    //   entity1.velocity[0] -= normal[0] * magAlongNormal * this._restitution;
-    //   entity1.velocity[1] -= normal[1] * magAlongNormal * this._restitution;
-    // } else {
-    //   entity2.velocity[0] += normal[0] * magAlongNormal * this._restitution;
-    //   entity2.velocity[1] += normal[1] * magAlongNormal * this._restitution;
-    // }
+    if (entity1.type === "dynamic") {
+      entity1.velocity[0] -= normal[0] * magAlongNormal * this._restitution;
+      entity1.velocity[1] -= normal[1] * magAlongNormal * this._restitution;
+    } else {
+      entity2.velocity[0] += normal[0] * magAlongNormal * this._restitution;
+      entity2.velocity[1] += normal[1] * magAlongNormal * this._restitution;
+    }
 
-    // if (entity2.type === "dynamic") {
-    //   entity2.velocity[0] += normal[0] * magAlongNormal * this._restitution;
-    //   entity2.velocity[1] += normal[1] * magAlongNormal * this._restitution;
-    // } else {
-    //   entity1.velocity[0] -= normal[0] * magAlongNormal * this._restitution;
-    //   entity1.velocity[1] -= normal[1] * magAlongNormal * this._restitution;
-    // }
+    if (entity2.type === "dynamic") {
+      entity2.velocity[0] += normal[0] * magAlongNormal * this._restitution;
+      entity2.velocity[1] += normal[1] * magAlongNormal * this._restitution;
+    } else {
+      entity1.velocity[0] -= normal[0] * magAlongNormal * this._restitution;
+      entity1.velocity[1] -= normal[1] * magAlongNormal * this._restitution;
+    }
   }
 }

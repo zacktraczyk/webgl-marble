@@ -3,7 +3,7 @@ import {
   type BoundingCircle,
   PhysicsEntity,
 } from "../entitySAT";
-import type { CollisionPair } from "./collisionSAT";
+import type { Collision, CollisionPair } from "./collisionSAT";
 
 export type Line = [[number, number], [number, number]];
 
@@ -93,11 +93,24 @@ namespace SATUtils {
   }
 }
 
+export type SATResult =
+  | {
+      isColliding: false;
+      minimumTranslationVector: null;
+    }
+  | {
+      isColliding: true;
+      minimumTranslationVector: {
+        normal: [number, number];
+        magnitude: number;
+      } | null;
+    };
+
 export namespace SeparatingAxisTheorem {
   export function polygonPolygonSAT(
     entity1: PhysicsEntity,
     entity2: PhysicsEntity
-  ): boolean {
+  ): SATResult {
     if (!entity1.boundingShape || !entity2.boundingShape) {
       throw new Error("Sanity check failed: Bounding shape is undefined");
     }
@@ -124,6 +137,8 @@ export namespace SeparatingAxisTheorem {
     );
     const edges = [...edges1, ...edges2];
 
+    let smallestOverlap = Infinity;
+    let smallestOverlapAxis: [number, number] | null = null;
     for (let i = 0; i < edges.length; i++) {
       if (i < 1) {
         continue;
@@ -158,17 +173,38 @@ export namespace SeparatingAxisTheorem {
 
       // // Check if 2 lines are overlapping
       if (p1min > p2max || p2min > p1max) {
-        return false;
+        return {
+          isColliding: false,
+          minimumTranslationVector: null,
+        };
+      }
+
+      const overlap = p1max - p2min;
+      if (overlap < smallestOverlap) {
+        smallestOverlap = overlap;
+        smallestOverlapAxis = normal;
       }
     }
 
-    return true;
+    if (!smallestOverlapAxis) {
+      throw new Error(
+        "Sanity check failed: polygon polygon overlap but no smallest overlap axis found"
+      );
+    }
+
+    return {
+      isColliding: true,
+      minimumTranslationVector: {
+        normal: smallestOverlapAxis,
+        magnitude: smallestOverlap,
+      },
+    };
   }
 
   export function polygonCircleSAT(
     polygon: PhysicsEntity,
     circle: PhysicsEntity
-  ): boolean {
+  ): SATResult {
     if (!polygon.boundingShape || !circle.boundingShape) {
       throw new Error("Sanity check failed: Bounding shape is undefined");
     }
@@ -181,6 +217,8 @@ export namespace SeparatingAxisTheorem {
     ) {
       throw new Error("Sanity check failed: Invalid bounding shape type");
     }
+    let smallestOverlap = Infinity;
+    let smallestOverlapAxis: [number, number] | null = null;
 
     // Find closeset point on polygon to circle
     const entity1Vertices = polygon.boundingShape.vertices;
@@ -232,7 +270,16 @@ export namespace SeparatingAxisTheorem {
     const [p2min, p2max] = proj2;
 
     if (p1min > p2max || p2min > p1max) {
-      return false;
+      return {
+        isColliding: false,
+        minimumTranslationVector: null,
+      };
+    }
+
+    const overlap = p1max - p2min;
+    if (overlap < smallestOverlap) {
+      smallestOverlap = overlap;
+      smallestOverlapAxis = axis;
     }
 
     const edges = SATUtils.getPolygonEdges(
@@ -271,17 +318,38 @@ export namespace SeparatingAxisTheorem {
       const [p2min, p2max] = proj2;
 
       if (p1min > p2max || p2min > p1max) {
-        return false;
+        return {
+          isColliding: false,
+          minimumTranslationVector: null,
+        };
+      }
+
+      const overlap = p1max - p2min;
+      if (overlap < smallestOverlap) {
+        smallestOverlap = overlap;
+        smallestOverlapAxis = normal;
       }
     }
 
-    return true;
+    if (!smallestOverlapAxis) {
+      throw new Error(
+        "Sanity check failed: polygon circle overlap but no smallest overlap axis found"
+      );
+    }
+
+    return {
+      isColliding: true,
+      minimumTranslationVector: {
+        normal: smallestOverlapAxis,
+        magnitude: smallestOverlap,
+      },
+    };
   }
 
   export function circleCircleSAT(
     entity1: PhysicsEntity,
     entity2: PhysicsEntity
-  ): boolean {
+  ): SATResult {
     if (
       !(
         entity1.boundingShape?.type === "BoundingCircle" &&
@@ -303,17 +371,29 @@ export namespace SeparatingAxisTheorem {
     const distance = Math.sqrt(dx * dx + dy * dy);
     const sumOfRadii = r1 + r2;
 
+    // Calculate normal (direction from entity2 to entity1)
+    const normal: [number, number] = [dx / distance, dy / distance];
+
     if (distance <= sumOfRadii) {
-      return true;
+      return {
+        isColliding: true,
+        minimumTranslationVector: {
+          normal: normal,
+          magnitude: sumOfRadii - distance,
+        },
+      };
     }
 
-    return false;
+    return {
+      isColliding: false,
+      minimumTranslationVector: null,
+    };
   }
 
   export function detectCollisions(
     entities: PhysicsEntity[]
-  ): CollisionPair[] | null {
-    const collisions: CollisionPair[] = [];
+  ): Collision[] | null {
+    const collisions: Collision[] = [];
     const activeEntities = entities;
     for (let i = 0; i < activeEntities.length; i++) {
       const entity = activeEntities[i];
@@ -332,9 +412,22 @@ export namespace SeparatingAxisTheorem {
           entity.boundingShape.type === "BoundingConvexPolygon" &&
           otherEntity.boundingShape.type === "BoundingConvexPolygon"
         ) {
-          const isColliding = polygonPolygonSAT(entity, otherEntity);
+          const { isColliding, minimumTranslationVector } = polygonPolygonSAT(
+            entity,
+            otherEntity
+          );
           if (isColliding) {
-            collisions.push([entity, otherEntity]);
+            if (!minimumTranslationVector) {
+              throw new Error(
+                "Sanity check failed: polygon polygon overlap but no minimum translation vector found"
+              );
+            }
+
+            collisions.push({
+              entity1: entity,
+              entity2: otherEntity,
+              minimumTranslationVector,
+            });
           }
         }
 
@@ -342,9 +435,22 @@ export namespace SeparatingAxisTheorem {
           entity.boundingShape.type === "BoundingCircle" &&
           otherEntity.boundingShape.type === "BoundingCircle"
         ) {
-          const isColliding = circleCircleSAT(entity, otherEntity);
+          const { isColliding, minimumTranslationVector } = circleCircleSAT(
+            entity,
+            otherEntity
+          );
           if (isColliding) {
-            collisions.push([entity, otherEntity]);
+            if (!minimumTranslationVector) {
+              throw new Error(
+                "Sanity check failed: circle circle overlap but no minimum translation vector found"
+              );
+            }
+
+            collisions.push({
+              entity1: entity,
+              entity2: otherEntity,
+              minimumTranslationVector,
+            });
           }
         }
 
@@ -367,9 +473,22 @@ export namespace SeparatingAxisTheorem {
             entityHet.boundingShape.type === "BoundingConvexPolygon" &&
             otherEntityHet.boundingShape.type === "BoundingCircle"
           ) {
-            const isColliding = polygonCircleSAT(entityHet, otherEntityHet);
+            const { isColliding, minimumTranslationVector } = polygonCircleSAT(
+              entityHet,
+              otherEntityHet
+            );
             if (isColliding) {
-              collisions.push([entityHet, otherEntityHet]);
+              if (!minimumTranslationVector) {
+                throw new Error(
+                  "Sanity check failed: polygon circle overlap but no minimum translation vector found"
+                );
+              }
+
+              collisions.push({
+                entity1: entityHet,
+                entity2: otherEntityHet,
+                minimumTranslationVector,
+              });
             }
           }
         }

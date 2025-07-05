@@ -68,16 +68,28 @@ function main() {
   stage.add(hexagon1);
   physicsSAT.add(hexagon1);
 
-  let collisions: [string, string][] = [];
+  let collisions: {
+    entity1: string;
+    entity2: string;
+    minimumTranslationVector: {
+      normal: [number, number];
+      magnitude: number;
+    };
+  }[] = [];
   physicsSAT.register(({ type, ...data }) => {
     if (type !== "collision" || !("collisions" in data)) {
       return;
     }
     const newCollisions = data.collisions;
-    collisions = newCollisions.map((collision) => [
-      collision.entity1.parent.name,
-      collision.entity2.parent.name,
-    ]);
+    collisions = newCollisions.map((collision) => {
+      const collisionDebug = {
+        entity1: collision.entity1.parent.name,
+        entity2: collision.entity2.parent.name,
+        minimumTranslationVector: collision.minimumTranslationVector,
+      };
+
+      return collisionDebug;
+    });
   });
 
   let lastTime = performance.now();

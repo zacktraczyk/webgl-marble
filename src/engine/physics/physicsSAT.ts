@@ -106,7 +106,7 @@ class Physics {
         type: "collision",
         collisions,
       });
-      // this._resolver.resolveCollisions(collisions);
+      this._resolver.resolveCollisions(collisions);
     }
   }
 }

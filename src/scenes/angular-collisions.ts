@@ -1,9 +1,21 @@
-import { Circle } from "../engine/object/circle";
-import { Rectangle } from "../engine/object/rectangle";
+import Physics from "../engine/physics/physicsSAT";
 import Stage from "../engine/stage";
+import {
+  createCircle,
+  createRectangle,
+  type DrawEntity,
+} from "../engine/vdu/entity";
+import type { Drawable } from "../engine/vdu/entity";
+import {
+  type Physical,
+  PhysicsEntity,
+  type PhysicsEntityType,
+} from "../engine/physics/entitySAT";
 
 function main() {
   const stage = new Stage();
+  const physicsSAT = new Physics();
+  stage.physicsEnabled = false;
   stage.panAndZoom = true;
 
   const spawnX = stage.canvas.clientWidth / 2 - 250;
@@ -13,8 +25,10 @@ function main() {
     position: [spawnX, spawnY],
     radius: 40,
     color: [1, 0, 0, 1],
+    physicsType: "dynamic",
   });
   stage.add(circle1);
+  physicsSAT.add(circle1);
 
   const square1 = new Rectangle({
     position: [spawnX, stage.canvas.clientHeight / 2],
@@ -25,6 +39,7 @@ function main() {
     color: [0, 1, 0, 1],
   });
   stage.add(square1);
+  physicsSAT.add(square1);
 
   const collisions: [number, number][] = [];
   stage.registerPhysicsObserver(({ collisions: newCollisions }) => {
@@ -54,6 +69,7 @@ function main() {
     }
 
     stage.update(elapsed);
+    physicsSAT.update(elapsed);
     updateFpsPerf();
     updateDebugInfo({ collisions });
   }
@@ -66,6 +82,219 @@ function main() {
   }
 
   requestAnimationFrame(render);
+}
+
+class Rectangle implements Drawable, Physical {
+  readonly name: string;
+  readonly width: number;
+  readonly height: number;
+  rotation: number;
+  scale: [number, number];
+  color: [number, number, number, number];
+  private _position: [number, number];
+  velocity: [number, number];
+  markedForDeletion: boolean = false;
+
+  private _physicsType: PhysicsEntityType;
+  private _rectangleDrawEntity: DrawEntity | null = null;
+
+  private _physicsEntity: PhysicsEntity | null = null;
+
+  constructor({
+    width,
+    height,
+    position,
+    rotation,
+    scale,
+    color,
+    physicsType,
+    velocity,
+  }: {
+    width: number;
+    height: number;
+    position: [number, number];
+    rotation: number;
+    scale?: [number, number];
+    color?: [number, number, number, number];
+    physicsType?: PhysicsEntityType;
+    velocity?: [number, number];
+  }) {
+    this.name = "rectangle";
+    this.width = width;
+    this.height = height;
+    this.rotation = rotation;
+    this.scale = scale ?? [1, 1];
+    this.color = color ?? [1, 1, 1, 1];
+    this._position = position;
+    this._physicsType = physicsType ?? "dynamic";
+    this.velocity = velocity ?? [0, 0];
+  }
+
+  get position() {
+    return this._position;
+  }
+
+  set position(value: [number, number]) {
+    if (this._physicsEntity) {
+      this._physicsEntity.position = value;
+    }
+    this._position = value;
+  }
+
+  get physicsEntity(): PhysicsEntity {
+    if (!this._physicsEntity) {
+      this._physicsEntity = new PhysicsEntity({
+        parent: this,
+        type: this._physicsType,
+        position: this._position,
+        rotation: this.rotation,
+        boundingShape: {
+          type: "BoundingConvexPolygon",
+          position: this._position,
+          vertices: [
+            [-this.width / 2, -this.height / 2],
+            [this.width / 2, -this.height / 2],
+            [this.width / 2, this.height / 2],
+            [-this.width / 2, this.height / 2],
+          ],
+        },
+        velocity: this.velocity,
+      });
+    }
+
+    return this._physicsEntity;
+  }
+
+  get drawEntities() {
+    if (!this._rectangleDrawEntity) {
+      const entity = createRectangle({
+        parent: this,
+        width: this.width,
+        height: this.height,
+      });
+      this._rectangleDrawEntity = entity;
+    }
+
+    return [this._rectangleDrawEntity];
+  }
+
+  delete() {
+    if (this._rectangleDrawEntity) {
+      this._rectangleDrawEntity.delete();
+    }
+  }
+
+  sync() {
+    if (this._physicsEntity) {
+      this.position = this._physicsEntity.position;
+      this.rotation = this._physicsEntity.rotation;
+      this.velocity = this._physicsEntity.velocity;
+    }
+
+    if (this._rectangleDrawEntity) {
+      this._rectangleDrawEntity.position = this.position;
+      this._rectangleDrawEntity.rotation = this.rotation;
+      this._rectangleDrawEntity.scale = this.scale;
+      this._rectangleDrawEntity.color = this.color;
+    }
+  }
+}
+
+class Circle implements Drawable, Physical {
+  readonly name: string;
+  readonly radius: number;
+  scale: [number, number];
+  color: [number, number, number, number];
+  private _position: [number, number];
+  velocity: [number, number];
+
+  private _circleDrawEntity: DrawEntity | null = null;
+
+  private _physicsType: PhysicsEntityType;
+  private _physicsEntity: PhysicsEntity | null = null;
+
+  markedForDeletion: boolean = false;
+
+  constructor({
+    radius,
+    position,
+    scale,
+    color,
+    physicsType,
+    velocity,
+  }: {
+    radius: number;
+    position: [number, number];
+    scale?: [number, number];
+    color?: [number, number, number, number];
+    physicsType?: PhysicsEntityType;
+    velocity?: [number, number];
+  }) {
+    this.name = "circle";
+    this.radius = radius;
+    this._position = position;
+    this.scale = scale ?? [1, 1];
+    this.color = color ?? [1, 1, 1, 1];
+    this._physicsType = physicsType ?? "dynamic";
+    this.velocity = velocity ?? [0, 0];
+  }
+
+  get position() {
+    return this._position;
+  }
+
+  set position(value: [number, number]) {
+    if (this._physicsEntity) {
+      this._physicsEntity.position = value;
+    }
+    this._position = value;
+  }
+
+  get physicsEntity(): PhysicsEntity {
+    if (!this._physicsEntity) {
+      this._physicsEntity = new PhysicsEntity({
+        parent: this,
+        type: this._physicsType,
+        position: this._position,
+        boundingShape: {
+          type: "BoundingCircle",
+          position: this._position,
+          radius: this.radius,
+        },
+        velocity: this.velocity,
+      });
+    }
+
+    return this._physicsEntity;
+  }
+
+  get drawEntities() {
+    if (!this._circleDrawEntity) {
+      const entity = createCircle(this, this.radius);
+      this._circleDrawEntity = entity;
+    }
+
+    return [this._circleDrawEntity];
+  }
+
+  delete() {
+    if (this._circleDrawEntity) {
+      this._circleDrawEntity.delete();
+    }
+  }
+
+  sync() {
+    if (this._physicsEntity) {
+      this.position = this._physicsEntity.position;
+      this.velocity = this._physicsEntity.velocity;
+    }
+
+    if (this._circleDrawEntity) {
+      this._circleDrawEntity.position = this.position;
+      this._circleDrawEntity.scale = this.scale;
+      this._circleDrawEntity.color = this.color;
+    }
+  }
 }
 
 // Debug info
