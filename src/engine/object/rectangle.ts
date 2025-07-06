@@ -2,10 +2,12 @@ import {
   type Physical,
   type PhysicsEntityType,
   PhysicsEntity,
-} from "../physics/entity";
+} from "../physics/entitySAT";
+import { getNext } from "../utils/id";
 import { createRectangle, type Drawable, type DrawEntity } from "../vdu/entity";
 
 export class Rectangle implements Drawable, Physical {
+  readonly id;
   readonly width: number;
   readonly height: number;
   private _position: [number, number];
@@ -37,6 +39,7 @@ export class Rectangle implements Drawable, Physical {
     physicsType?: PhysicsEntityType;
     velocity?: [number, number];
   }) {
+    this.id = getNext();
     this.width = width;
     this.height = height;
     this._position = position;
@@ -80,10 +83,15 @@ export class Rectangle implements Drawable, Physical {
         parent: this,
         type: this.physicsType,
         position: this._position,
-        boundingShapeParams: {
-          type: "BoundingBox",
-          width: this.width,
-          height: this.height,
+        boundingShape: {
+          type: "BoundingConvexPolygon",
+          position: this._position,
+          vertices: [
+            [-this.width / 2, -this.height / 2],
+            [this.width / 2, -this.height / 2],
+            [this.width / 2, this.height / 2],
+            [-this.width / 2, this.height / 2],
+          ],
         },
         velocity: this.velocity,
       });

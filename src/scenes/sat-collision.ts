@@ -2,6 +2,7 @@ import { PhysicsEntity, type Physical } from "../engine/physics/entitySAT";
 import Physics from "../engine/physics/physicsSAT";
 import Stage from "../engine/stage";
 import { type DragAndDroppable } from "../engine/stage/eventHandlers";
+import { getNext } from "../engine/utils/id";
 import {
   createCircle,
   createHexagon,
@@ -69,8 +70,8 @@ function main() {
   physicsSAT.add(hexagon1);
 
   let collisions: {
-    entity1: string;
-    entity2: string;
+    entity1: number;
+    entity2: number;
     minimumTranslationVector: {
       normal: [number, number];
       magnitude: number;
@@ -83,8 +84,8 @@ function main() {
     const newCollisions = data.collisions;
     collisions = newCollisions.map((collision) => {
       const collisionDebug = {
-        entity1: collision.entity1.parent.name,
-        entity2: collision.entity2.parent.name,
+        entity1: collision.entity1.parent.id,
+        entity2: collision.entity2.parent.id,
         minimumTranslationVector: collision.minimumTranslationVector,
       };
 
@@ -118,7 +119,7 @@ function main() {
 }
 
 class DragAndDropRectangle implements Drawable, Physical, DragAndDroppable {
-  readonly name: string;
+  readonly id;
   readonly width: number;
   readonly height: number;
   rotation: number;
@@ -154,7 +155,7 @@ class DragAndDropRectangle implements Drawable, Physical, DragAndDroppable {
     handleRadius: number;
     handleColor: [number, number, number, number];
   }) {
-    this.name = "rectangle";
+    this.id = getNext();
     this.width = width;
     this.height = height;
     this.rotation = rotation;
@@ -246,7 +247,7 @@ class DragAndDropRectangle implements Drawable, Physical, DragAndDroppable {
 }
 
 class DragAndDropCircle implements Drawable, Physical, DragAndDroppable {
-  readonly name: string;
+  readonly id;
   readonly radius: number;
   scale: [number, number];
   color: [number, number, number, number];
@@ -278,7 +279,7 @@ class DragAndDropCircle implements Drawable, Physical, DragAndDroppable {
     handleRadius: number;
     handleColor: [number, number, number, number];
   }) {
-    this.name = "circle";
+    this.id = getNext();
     this.radius = radius;
     this._position = position;
     this.scale = scale ?? [1, 1];
@@ -354,7 +355,7 @@ class DragAndDropCircle implements Drawable, Physical, DragAndDroppable {
 }
 
 class DragAndDropHexagon implements Drawable, Physical, DragAndDroppable {
-  readonly name: string;
+  readonly id;
   readonly sideLength: number;
   scale: [number, number];
   color: [number, number, number, number];
@@ -385,7 +386,7 @@ class DragAndDropHexagon implements Drawable, Physical, DragAndDroppable {
     handleRadius: number;
     handleColor: [number, number, number, number];
   }) {
-    this.name = "hexagon";
+    this.id = getNext();
     this.sideLength = sideLength;
     this._position = position;
     this.scale = scale ?? [1, 1];

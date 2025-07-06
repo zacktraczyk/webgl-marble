@@ -17,11 +17,15 @@ export type BoundingCircle = {
 export type BoundingShape = BoundingConvexPolygon | BoundingCircle;
 
 export interface Physical {
-  name: string;
+  id: number;
   physicsEntity: PhysicsEntity;
 
   delete(): void;
 }
+
+export const isPhysical = (object: any): object is Physical => {
+  return object && typeof object.physicsEntity === "object";
+};
 
 export class PhysicsEntity {
   readonly parent: Physical;

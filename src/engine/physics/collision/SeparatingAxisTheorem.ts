@@ -465,7 +465,7 @@ export namespace SeparatingAxisTheorem {
           otherEntityHet,
         ] of heterogenousEntityPermutations) {
           if (!entityHet.boundingShape || !otherEntityHet.boundingShape) {
-            // Sanity check / typescript validatio
+            // Sanity check / typescript validation
             continue;
           }
 

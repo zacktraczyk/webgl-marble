@@ -26,7 +26,7 @@ function main(toolSelectors: ToolSelectors) {
 
   const finishedBalls: number[] = [];
   stage.registerPhysicsObserver(({ collisions }) => {
-    for (const [a, b] of collisions) {
+    for (const { entity1: a, entity2: b } of collisions) {
       const collisionPermutations = [
         [a, b],
         [b, a],

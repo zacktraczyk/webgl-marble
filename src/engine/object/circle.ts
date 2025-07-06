@@ -3,7 +3,7 @@ import {
   type Physical,
   type PhysicsEntityType,
   PhysicsEntity,
-} from "../physics/entity";
+} from "../physics/entitySAT";
 import { createCircle, type Drawable, type DrawEntity } from "../vdu/entity";
 
 export class Circle implements Drawable, Physical {
@@ -75,8 +75,9 @@ export class Circle implements Drawable, Physical {
         parent: this,
         type: this.physicsType,
         position: this._position,
-        boundingShapeParams: {
+        boundingShape: {
           type: "BoundingCircle",
+          position: this._position,
           radius: this.radius,
         },
         velocity: this.velocity,

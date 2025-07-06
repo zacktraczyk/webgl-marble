@@ -9,7 +9,7 @@ function main() {
   const finishedBalls: number[] = [];
   stage.registerPhysicsObserver(({ collisions }) => {
     for (const collision of collisions) {
-      const [entity1, entity2] = collision;
+      const { entity1, entity2 } = collision;
       const collisionPemutations = [
         [entity1, entity2],
         [entity2, entity1],

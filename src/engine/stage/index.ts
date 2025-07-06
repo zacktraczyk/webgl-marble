@@ -1,5 +1,5 @@
-import { isPhysical, type Physical } from "../physics/entity";
-import Physics, { type CollisionEvents } from "../physics/physics";
+import { isPhysical, type Physical } from "../physics/entitySAT";
+import Physics, { type CollisionEvent } from "../physics/physicsSAT";
 import { isDrawable, type Drawable } from "../vdu/entity";
 import { VDU } from "../vdu/vdu";
 import {
@@ -295,11 +295,11 @@ export class Stage {
     return this._vdu.drawMode;
   }
 
-  registerPhysicsObserver(observer: (data: CollisionEvents) => void) {
+  registerPhysicsObserver(observer: (data: CollisionEvent) => void) {
     this._physics.register(observer);
   }
 
-  unregisterPhysicsObserver(observer: (data: CollisionEvents) => void) {
+  unregisterPhysicsObserver(observer: (data: CollisionEvent) => void) {
     this._physics.unregister(observer);
   }
 }

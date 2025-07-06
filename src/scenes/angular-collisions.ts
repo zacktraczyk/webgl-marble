@@ -11,11 +11,10 @@ import {
   PhysicsEntity,
   type PhysicsEntityType,
 } from "../engine/physics/entitySAT";
+import { getNext } from "../engine/utils/id";
 
 function main() {
   const stage = new Stage();
-  const physicsSAT = new Physics();
-  stage.physicsEnabled = false;
   stage.panAndZoom = true;
 
   const spawnX = stage.canvas.clientWidth / 2 - 250;
@@ -28,10 +27,9 @@ function main() {
     physicsType: "dynamic",
   });
   stage.add(circle1);
-  physicsSAT.add(circle1);
 
   const square1 = new Rectangle({
-    position: [spawnX, stage.canvas.clientHeight / 2],
+    position: [spawnX - 40, stage.canvas.clientHeight / 2],
     width: 100,
     height: 100,
     rotation: Math.PI / 8,
@@ -39,19 +37,24 @@ function main() {
     color: [0, 1, 0, 1],
   });
   stage.add(square1);
-  physicsSAT.add(square1);
 
   const collisions: [number, number][] = [];
   stage.registerPhysicsObserver(({ collisions: newCollisions }) => {
     for (const collision of newCollisions) {
+      const { entity1, entity2 } = collision;
       const alreadyCollided = collisions.some(
-        (c) => c[0] === collision[0].id && c[1] === collision[1].id
+        (c) =>
+          c[0] === entity1.parent.physicsEntity.id &&
+          c[1] === entity2.parent.physicsEntity.id
       );
       if (alreadyCollided) {
         continue;
       }
 
-      collisions.push([collision[0].id, collision[1].id]);
+      collisions.push([
+        entity1.parent.physicsEntity.id,
+        entity2.parent.physicsEntity.id,
+      ]);
     }
   });
 
@@ -69,7 +72,6 @@ function main() {
     }
 
     stage.update(elapsed);
-    physicsSAT.update(elapsed);
     updateFpsPerf();
     updateDebugInfo({ collisions });
   }
@@ -85,7 +87,7 @@ function main() {
 }
 
 class Rectangle implements Drawable, Physical {
-  readonly name: string;
+  readonly id;
   readonly width: number;
   readonly height: number;
   rotation: number;
@@ -119,7 +121,7 @@ class Rectangle implements Drawable, Physical {
     physicsType?: PhysicsEntityType;
     velocity?: [number, number];
   }) {
-    this.name = "rectangle";
+    this.id = getNext();
     this.width = width;
     this.height = height;
     this.rotation = rotation;
@@ -201,7 +203,7 @@ class Rectangle implements Drawable, Physical {
 }
 
 class Circle implements Drawable, Physical {
-  readonly name: string;
+  readonly id;
   readonly radius: number;
   scale: [number, number];
   color: [number, number, number, number];
@@ -230,7 +232,7 @@ class Circle implements Drawable, Physical {
     physicsType?: PhysicsEntityType;
     velocity?: [number, number];
   }) {
-    this.name = "circle";
+    this.id = getNext();
     this.radius = radius;
     this._position = position;
     this.scale = scale ?? [1, 1];
