@@ -81,23 +81,22 @@ function main() {
     };
   }[] = [];
 
-  const collisionEdges: Record<string, Line> = {};
-  const collisionNormalArrows: Record<string, Arrow> = {};
+  let collisionEdges: Record<string, Line> = {};
+  let minimumTranslationVectorArrows: Record<string, [Arrow, Arrow]> = {};
   physicsSAT.register(async ({ type, ...data }) => {
     if (type !== "collision" || !("collisions" in data)) {
       return;
     }
 
     for (const collision of data.collisions) {
-      if (collision.edge) {
-        const {
-          entity1,
-          entity2,
-          edge,
-          minimumTranslationVector: { normal, magnitude },
-        } = collision;
-        const collisionKey = [entity1, entity2].sort().join("-");
-
+      const {
+        entity1,
+        entity2,
+        edge,
+        minimumTranslationVector: { normal, magnitude },
+      } = collision;
+      const collisionKey = [entity1, entity2].sort().join("-");
+      if (edge) {
         if (!collisionEdges[collisionKey]) {
           const line = new Line({
             startPosition: edge[0],
@@ -107,12 +106,14 @@ function main() {
           stage.add(line);
 
           collisionEdges[collisionKey] = line;
-        } else {
-          collisionEdges[collisionKey].startPosition = edge[0];
-          collisionEdges[collisionKey].endPosition = edge[1];
         }
 
-        if (!collisionNormalArrows[collisionKey]) {
+        collisionEdges[collisionKey].startPosition = edge[0];
+        collisionEdges[collisionKey].endPosition = edge[1];
+      }
+
+      if (normal && magnitude) {
+        if (!minimumTranslationVectorArrows[collisionKey]) {
           const arrow = new Arrow({
             basePosition: [0, 0],
             tipPosition: [1, 0],
@@ -122,26 +123,40 @@ function main() {
           });
           stage.add(arrow);
 
-          collisionNormalArrows[collisionKey] = arrow;
+          const arrow2 = new Arrow({
+            basePosition: [0, 0],
+            tipPosition: [1, 0],
+            tipLength: 10,
+            stroke: 4,
+            color: [1, 1, 1, 1],
+          });
+          stage.add(arrow2);
+          minimumTranslationVectorArrows[collisionKey] = [arrow, arrow2];
         }
 
-        const basePosition = [
-          (edge[0][0] + edge[1][0]) / 2,
-          (edge[0][1] + edge[1][1]) / 2,
+        // const mtvBasePosition = entity2.position;
+
+        // const mtvTipPosition = [
+        //   mtvBasePosition[0] + normal[0] * magnitude,
+        //   mtvBasePosition[1] + normal[1] * magnitude,
+        // ];
+
+        minimumTranslationVectorArrows[collisionKey][0].basePosition = [
+          entity2.position[0],
+          entity2.position[1],
+        ];
+        minimumTranslationVectorArrows[collisionKey][0].tipPosition = [
+          entity2.position[0] + normal[0] * magnitude,
+          entity2.position[1] + normal[1] * magnitude,
         ];
 
-        const tipPosition = [
-          basePosition[0] + normal[0] * magnitude,
-          basePosition[1] + normal[1] * magnitude,
+        minimumTranslationVectorArrows[collisionKey][1].basePosition = [
+          entity1.position[0],
+          entity1.position[1],
         ];
-
-        collisionNormalArrows[collisionKey].basePosition = [
-          basePosition[0],
-          basePosition[1],
-        ];
-        collisionNormalArrows[collisionKey].tipPosition = [
-          tipPosition[0],
-          tipPosition[1],
+        minimumTranslationVectorArrows[collisionKey][1].tipPosition = [
+          entity1.position[0] - normal[0] * magnitude,
+          entity1.position[1] - normal[1] * magnitude,
         ];
       }
     }
@@ -167,6 +182,20 @@ function main() {
 
     stage.update(elapsed);
     physicsSAT.update(elapsed);
+
+    if (!collisions.length) {
+      for (const collisionKey in collisionEdges) {
+        collisionEdges[collisionKey].delete();
+      }
+
+      for (const collisionKey in minimumTranslationVectorArrows) {
+        minimumTranslationVectorArrows[collisionKey][0].delete();
+        minimumTranslationVectorArrows[collisionKey][1].delete();
+      }
+
+      collisionEdges = {};
+      minimumTranslationVectorArrows = {};
+    }
 
     updateFpsPerf();
     updateDebugInfo({

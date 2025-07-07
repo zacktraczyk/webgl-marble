@@ -378,8 +378,8 @@ export namespace SeparatingAxisTheorem {
     const [x2, y2] = entity2.position;
     const r2 = entity2.boundingShape.radius;
 
-    const dx = x1 - x2;
-    const dy = y1 - y2;
+    const dx = x2 - x1;
+    const dy = y2 - y1;
 
     const distance = Math.sqrt(dx * dx + dy * dy);
     const sumOfRadii = r1 + r2;
