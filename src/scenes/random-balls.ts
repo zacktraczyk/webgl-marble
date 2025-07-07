@@ -1,4 +1,5 @@
 import { Ball } from "../engine/object/ball";
+import { Circle } from "../engine/object/circle";
 import { Rectangle } from "../engine/object/rectangle";
 import Stage from "../engine/stage";
 
@@ -62,6 +63,29 @@ function init() {
     }
   }
 
+  function randomRectanglesSpawn() {
+    const circleSharedProps = {
+      radius: 15,
+      type: "dynamic" as const,
+    };
+
+    // Spawn circles
+    for (let i = 0; i < numSpawnEntities; i++) {
+      const x = spawnOriginx + Math.random() * spawnw - spawnw / 2;
+      const y = spawnOriginy + Math.random() * spawnh - spawnh / 2;
+      const vx = Math.random() * 200 - 100;
+      const vy = Math.random() * 200 - 100;
+
+      const circle = new Ball({
+        position: [x, y],
+        velocity: [vx, vy],
+        color: [0, 0, Math.random() * 0.5 + 0.5, 1],
+        ...circleSharedProps,
+      });
+      stage.add(circle);
+    }
+  }
+
   function spawnWalls() {
     const ground = new Rectangle({
       position: [stage.width / 2, stage.height - 25],
@@ -98,7 +122,8 @@ function init() {
 
   // Init
   spawnWalls();
-  randomCirclesSpawn();
+  // randomCirclesSpawn();
+  randomRectanglesSpawn();
 
   return {
     stage,

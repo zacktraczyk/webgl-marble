@@ -1,3 +1,6 @@
+import { Arrow } from "../engine/object/arrow";
+import { Line } from "../engine/object/line";
+// import type { Line } from "../engine/physics/collision/SeparatingAxisTheorem";
 import { PhysicsEntity, type Physical } from "../engine/physics/entitySAT";
 import Physics from "../engine/physics/physicsSAT";
 import Stage from "../engine/stage";
@@ -45,6 +48,17 @@ function main() {
   stage.add(circle2);
   physicsSAT.add(circle2);
 
+  const hexagon1 = new DragAndDropHexagon({
+    sideLength: 80,
+    position: [centerX, centerY - offset],
+    scale: [1, 1],
+    color: [56 / 255, 189 / 255, 248 / 255, 1],
+    handleRadius: 15,
+    handleColor: [0.4, 0.4, 0.4, 1],
+  });
+  stage.add(hexagon1);
+  physicsSAT.add(hexagon1);
+
   const square1 = new DragAndDropRectangle({
     position: [centerX - offset, centerY],
     width: 100,
@@ -58,17 +72,6 @@ function main() {
   stage.add(square1);
   physicsSAT.add(square1);
 
-  const hexagon1 = new DragAndDropHexagon({
-    sideLength: 80,
-    position: [centerX, centerY - offset],
-    scale: [1, 1],
-    color: [56 / 255, 189 / 255, 248 / 255, 1],
-    handleRadius: 15,
-    handleColor: [0.4, 0.4, 0.4, 1],
-  });
-  stage.add(hexagon1);
-  physicsSAT.add(hexagon1);
-
   let collisions: {
     entity1: number;
     entity2: number;
@@ -77,15 +80,78 @@ function main() {
       magnitude: number;
     };
   }[] = [];
-  physicsSAT.register(({ type, ...data }) => {
+
+  const collisionEdges: Record<string, Line> = {};
+  const collisionNormalArrows: Record<string, Arrow> = {};
+  physicsSAT.register(async ({ type, ...data }) => {
     if (type !== "collision" || !("collisions" in data)) {
       return;
     }
+
+    for (const collision of data.collisions) {
+      if (collision.edge) {
+        const {
+          entity1,
+          entity2,
+          edge,
+          minimumTranslationVector: { normal, magnitude },
+        } = collision;
+        const collisionKey = [entity1, entity2].sort().join("-");
+
+        if (!collisionEdges[collisionKey]) {
+          const line = new Line({
+            startPosition: edge[0],
+            endPosition: edge[1],
+            color: [252 / 255, 0 / 255, 147 / 255, 1],
+          });
+          stage.add(line);
+
+          collisionEdges[collisionKey] = line;
+        } else {
+          collisionEdges[collisionKey].startPosition = edge[0];
+          collisionEdges[collisionKey].endPosition = edge[1];
+        }
+
+        if (!collisionNormalArrows[collisionKey]) {
+          const arrow = new Arrow({
+            basePosition: [0, 0],
+            tipPosition: [1, 0],
+            tipLength: 10,
+            stroke: 4,
+            color: [1, 1, 1, 1],
+          });
+          stage.add(arrow);
+
+          collisionNormalArrows[collisionKey] = arrow;
+        }
+
+        const basePosition = [
+          (edge[0][0] + edge[1][0]) / 2,
+          (edge[0][1] + edge[1][1]) / 2,
+        ];
+
+        const tipPosition = [
+          basePosition[0] + normal[0] * magnitude,
+          basePosition[1] + normal[1] * magnitude,
+        ];
+
+        collisionNormalArrows[collisionKey].basePosition = [
+          basePosition[0],
+          basePosition[1],
+        ];
+        collisionNormalArrows[collisionKey].tipPosition = [
+          tipPosition[0],
+          tipPosition[1],
+        ];
+      }
+    }
+
     const newCollisions = data.collisions;
     collisions = newCollisions.map((collision) => {
       const collisionDebug = {
         entity1: collision.entity1.parent.id,
         entity2: collision.entity2.parent.id,
+        edge: collision.edge,
         minimumTranslationVector: collision.minimumTranslationVector,
       };
 
@@ -101,6 +167,7 @@ function main() {
 
     stage.update(elapsed);
     physicsSAT.update(elapsed);
+
     updateFpsPerf();
     updateDebugInfo({
       collisions,

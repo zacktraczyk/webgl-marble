@@ -96,10 +96,12 @@ namespace SATUtils {
 export type SATResult =
   | {
       isColliding: false;
+      edge: null;
       minimumTranslationVector: null;
     }
   | {
       isColliding: true;
+      edge: Line | null; // NOTE: Only for debugging
       minimumTranslationVector: {
         normal: [number, number];
         magnitude: number;
@@ -138,6 +140,7 @@ export namespace SeparatingAxisTheorem {
     const edges = [...edges1, ...edges2];
 
     let smallestOverlap = Infinity;
+    let smallestOverlapEdge: Line | null = null; // NOTE: Only for debugging
     let smallestOverlapAxis: [number, number] | null = null;
     for (let i = 0; i < edges.length; i++) {
       if (i < 1) {
@@ -175,12 +178,14 @@ export namespace SeparatingAxisTheorem {
       if (p1min > p2max || p2min > p1max) {
         return {
           isColliding: false,
+          edge: null,
           minimumTranslationVector: null,
         };
       }
 
       const overlap = p1max - p2min;
       if (overlap < smallestOverlap) {
+        smallestOverlapEdge = edge;
         smallestOverlap = overlap;
         smallestOverlapAxis = normal;
       }
@@ -194,6 +199,7 @@ export namespace SeparatingAxisTheorem {
 
     return {
       isColliding: true,
+      edge: smallestOverlapEdge,
       minimumTranslationVector: {
         normal: smallestOverlapAxis,
         magnitude: smallestOverlap,
@@ -217,23 +223,25 @@ export namespace SeparatingAxisTheorem {
     ) {
       throw new Error("Sanity check failed: Invalid bounding shape type");
     }
+
     let smallestOverlap = Infinity;
+    let smallestOverlapEdge: Line | null = null; // NOTE: Only for debugging
     let smallestOverlapAxis: [number, number] | null = null;
 
     // Find closeset point on polygon to circle
     const entity1Vertices = polygon.boundingShape.vertices;
-    let closestPoint = [0, 0];
+    let closestPoint: [number, number] = [0, 0];
     let minDistance = Infinity;
     for (let i = 0; i < entity1Vertices.length; i++) {
       const vertex = entity1Vertices[i];
-      const rotatedVertex = [
+      const rotatedVertex: [number, number] = [
         vertex[0] * Math.cos(polygon.rotation) -
           vertex[1] * Math.sin(polygon.rotation),
         vertex[0] * Math.sin(polygon.rotation) +
           vertex[1] * Math.cos(polygon.rotation),
       ];
 
-      const worldVertex = [
+      const worldVertex: [number, number] = [
         rotatedVertex[0] + polygon.position[0],
         rotatedVertex[1] + polygon.position[1],
       ];
@@ -272,6 +280,7 @@ export namespace SeparatingAxisTheorem {
     if (p1min > p2max || p2min > p1max) {
       return {
         isColliding: false,
+        edge: null,
         minimumTranslationVector: null,
       };
     }
@@ -279,6 +288,7 @@ export namespace SeparatingAxisTheorem {
     const overlap = p1max - p2min;
     if (overlap < smallestOverlap) {
       smallestOverlap = overlap;
+      smallestOverlapEdge = [closestPoint, closestPoint];
       smallestOverlapAxis = axis;
     }
 
@@ -320,6 +330,7 @@ export namespace SeparatingAxisTheorem {
       if (p1min > p2max || p2min > p1max) {
         return {
           isColliding: false,
+          edge: null,
           minimumTranslationVector: null,
         };
       }
@@ -327,6 +338,7 @@ export namespace SeparatingAxisTheorem {
       const overlap = p1max - p2min;
       if (overlap < smallestOverlap) {
         smallestOverlap = overlap;
+        smallestOverlapEdge = edge;
         smallestOverlapAxis = normal;
       }
     }
@@ -339,6 +351,7 @@ export namespace SeparatingAxisTheorem {
 
     return {
       isColliding: true,
+      edge: smallestOverlapEdge,
       minimumTranslationVector: {
         normal: smallestOverlapAxis,
         magnitude: smallestOverlap,
@@ -377,6 +390,7 @@ export namespace SeparatingAxisTheorem {
     if (distance <= sumOfRadii) {
       return {
         isColliding: true,
+        edge: null,
         minimumTranslationVector: {
           normal: normal,
           magnitude: sumOfRadii - distance,
@@ -386,6 +400,7 @@ export namespace SeparatingAxisTheorem {
 
     return {
       isColliding: false,
+      edge: null,
       minimumTranslationVector: null,
     };
   }
@@ -412,10 +427,8 @@ export namespace SeparatingAxisTheorem {
           entity.boundingShape.type === "BoundingConvexPolygon" &&
           otherEntity.boundingShape.type === "BoundingConvexPolygon"
         ) {
-          const { isColliding, minimumTranslationVector } = polygonPolygonSAT(
-            entity,
-            otherEntity
-          );
+          const { isColliding, minimumTranslationVector, edge } =
+            polygonPolygonSAT(entity, otherEntity);
           if (isColliding) {
             if (!minimumTranslationVector) {
               throw new Error(
@@ -426,6 +439,7 @@ export namespace SeparatingAxisTheorem {
             collisions.push({
               entity1: entity,
               entity2: otherEntity,
+              edge,
               minimumTranslationVector,
             });
           }
@@ -435,10 +449,8 @@ export namespace SeparatingAxisTheorem {
           entity.boundingShape.type === "BoundingCircle" &&
           otherEntity.boundingShape.type === "BoundingCircle"
         ) {
-          const { isColliding, minimumTranslationVector } = circleCircleSAT(
-            entity,
-            otherEntity
-          );
+          const { isColliding, minimumTranslationVector, edge } =
+            circleCircleSAT(entity, otherEntity);
           if (isColliding) {
             if (!minimumTranslationVector) {
               throw new Error(
@@ -449,6 +461,7 @@ export namespace SeparatingAxisTheorem {
             collisions.push({
               entity1: entity,
               entity2: otherEntity,
+              edge,
               minimumTranslationVector,
             });
           }
@@ -473,10 +486,8 @@ export namespace SeparatingAxisTheorem {
             entityHet.boundingShape.type === "BoundingConvexPolygon" &&
             otherEntityHet.boundingShape.type === "BoundingCircle"
           ) {
-            const { isColliding, minimumTranslationVector } = polygonCircleSAT(
-              entityHet,
-              otherEntityHet
-            );
+            const { isColliding, minimumTranslationVector, edge } =
+              polygonCircleSAT(entityHet, otherEntityHet);
             if (isColliding) {
               if (!minimumTranslationVector) {
                 throw new Error(
@@ -487,6 +498,7 @@ export namespace SeparatingAxisTheorem {
               collisions.push({
                 entity1: entityHet,
                 entity2: otherEntityHet,
+                edge,
                 minimumTranslationVector,
               });
             }

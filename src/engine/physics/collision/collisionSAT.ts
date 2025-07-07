@@ -1,9 +1,11 @@
+import { Observer } from "../../utils/Observer";
 import { PhysicsEntity } from "../entitySAT";
-import { SeparatingAxisTheorem } from "./SeparatingAxisTheorem";
+import { SeparatingAxisTheorem, type Line } from "./SeparatingAxisTheorem";
 
 export type Collision = {
   entity1: PhysicsEntity;
   entity2: PhysicsEntity;
+  edge: Line | null; // NOTE: Only for debugging
   minimumTranslationVector: {
     normal: [number, number];
     magnitude: number;
@@ -29,7 +31,7 @@ export class CollisionDetector {
 }
 
 export class CollisionResolver {
-  private _restitution = 0.6;
+  private _restitution = 0.9;
   private _penetrationSlop = 0.8;
 
   resolveCollisions(collisions: Collision[]) {
@@ -254,6 +256,7 @@ export class CollisionResolver {
     const { entity1, entity2, minimumTranslationVector } = collision;
 
     // Correct penetration
+    // NOTE: SAT doesn't necessarily give the correct collision normal
     const { normal, magnitude } = minimumTranslationVector;
     let penX = normal[0] * magnitude;
     let penY = normal[1] * magnitude;
@@ -282,24 +285,32 @@ export class CollisionResolver {
     ];
 
     // Calculate relative velocity in terms of the normal direction
-    const magAlongNormal =
+    const relativeNormalVelocity =
       relativeVelocity[0] * normal[0] + relativeVelocity[1] * normal[1];
 
     // Calculate impulse magnitude
     if (entity1.type === "dynamic") {
-      entity1.velocity[0] -= normal[0] * magAlongNormal * this._restitution;
-      entity1.velocity[1] -= normal[1] * magAlongNormal * this._restitution;
+      entity1.velocity[0] -=
+        normal[0] * relativeNormalVelocity * this._restitution;
+      entity1.velocity[1] -=
+        normal[1] * relativeNormalVelocity * this._restitution;
     } else {
-      entity2.velocity[0] += normal[0] * magAlongNormal * this._restitution;
-      entity2.velocity[1] += normal[1] * magAlongNormal * this._restitution;
+      entity2.velocity[0] +=
+        normal[0] * relativeNormalVelocity * this._restitution;
+      entity2.velocity[1] +=
+        normal[1] * relativeNormalVelocity * this._restitution;
     }
 
     if (entity2.type === "dynamic") {
-      entity2.velocity[0] += normal[0] * magAlongNormal * this._restitution;
-      entity2.velocity[1] += normal[1] * magAlongNormal * this._restitution;
+      entity2.velocity[0] +=
+        normal[0] * relativeNormalVelocity * this._restitution;
+      entity2.velocity[1] +=
+        normal[1] * relativeNormalVelocity * this._restitution;
     } else {
-      entity1.velocity[0] -= normal[0] * magAlongNormal * this._restitution;
-      entity1.velocity[1] -= normal[1] * magAlongNormal * this._restitution;
+      entity1.velocity[0] -=
+        normal[0] * relativeNormalVelocity * this._restitution;
+      entity1.velocity[1] -=
+        normal[1] * relativeNormalVelocity * this._restitution;
     }
   }
 }
