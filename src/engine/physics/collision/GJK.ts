@@ -57,7 +57,7 @@ export class GJKCollisionDetector implements CollisionDetector {
     let dir2: [number, number] = [-dir1[0], -dir1[1]];
     const supportPoint2 = this._supportFunction(entity2, dir2);
 
-    let dir3: [number, number] = [dir1[1], -dir1[0]];
+    let dir3: [number, number] = [dir2[1], -dir2[0]];
 
     const supportPoint3 = this._supportFunction(entity1, dir3);
 
@@ -67,10 +67,36 @@ export class GJKCollisionDetector implements CollisionDetector {
       supportPoint3,
     ];
 
-    throw new Error("Not implemented");
+    // throw new Error("Not implemented");
   }
 
   detectCollisions(entities: PhysicsEntity[]): Collision[] | null {
-    return null;
+    const collisions: Collision[] = [];
+    const activeEntities = entities;
+    for (let i = 0; i < activeEntities.length; i++) {
+      const entity = activeEntities[i];
+      if (!entity.boundingShape) {
+        continue;
+      }
+
+      for (let j = i + 1; j < activeEntities.length; j++) {
+        const otherEntity = activeEntities[j];
+        if (!otherEntity.boundingShape) {
+          continue;
+        }
+
+        const isColliding = this._detectCollision(entity, otherEntity);
+        // if (isColliding) {
+        // collisions.push({
+        //   entity1: entity,
+        //   entity2: otherEntity,
+        //   edge: null,
+        //   minimumTranslationVector: null,
+        // });
+        // }
+        return null;
+      }
+    }
+    return collisions;
   }
 }
