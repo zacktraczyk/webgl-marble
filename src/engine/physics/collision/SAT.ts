@@ -1,14 +1,27 @@
+import type { Collision, CollisionDetector, CollisionResolver, Line } from ".";
 import {
-  type BoundingConvexPolygon,
-  type BoundingCircle,
   PhysicsEntity,
-} from "../entitySAT";
-import type { Collision, CollisionPair } from "./collisionSAT";
+  type BoundingCircle,
+  type BoundingConvexPolygon,
+} from "../entity";
 
-export type Line = [[number, number], [number, number]];
+export type SATResult =
+  | {
+      isColliding: false;
+      edge: null;
+      minimumTranslationVector: null;
+    }
+  | {
+      isColliding: true;
+      edge: Line | null; // NOTE: Only for debugging
+      minimumTranslationVector: {
+        normal: [number, number];
+        magnitude: number;
+      } | null;
+    };
 
-namespace SATUtils {
-  export function getPolygonEdges(
+export class SATCollisionDetector implements CollisionDetector {
+  private _getPolygonEdges(
     polygon: BoundingConvexPolygon,
     position: [number, number],
     // TODO: Add scale
@@ -51,7 +64,7 @@ namespace SATUtils {
     return edges;
   }
 
-  export function projectPolygonOnAxis(
+  private _projectPolygonOnAxis(
     polygon: BoundingConvexPolygon,
     position: [number, number],
     rotation: number,
@@ -79,7 +92,7 @@ namespace SATUtils {
     return [min, max];
   }
 
-  export function projectCircleOnAxis(
+  private _projectCircleOnAxis(
     circle: BoundingCircle,
     position: [number, number],
     axis: [number, number]
@@ -91,25 +104,8 @@ namespace SATUtils {
 
     return [projection - r, projection + r];
   }
-}
 
-export type SATResult =
-  | {
-      isColliding: false;
-      edge: null;
-      minimumTranslationVector: null;
-    }
-  | {
-      isColliding: true;
-      edge: Line | null; // NOTE: Only for debugging
-      minimumTranslationVector: {
-        normal: [number, number];
-        magnitude: number;
-      } | null;
-    };
-
-export namespace SeparatingAxisTheorem {
-  export function polygonPolygonSAT(
+  private _polygonPolygonSAT(
     entity1: PhysicsEntity,
     entity2: PhysicsEntity
   ): SATResult {
@@ -127,12 +123,12 @@ export namespace SeparatingAxisTheorem {
     }
 
     // Collect all edges of both polygons
-    const edges1 = SATUtils.getPolygonEdges(
+    const edges1 = this._getPolygonEdges(
       entity1.boundingShape,
       entity1.position,
       entity1.rotation
     );
-    const edges2 = SATUtils.getPolygonEdges(
+    const edges2 = this._getPolygonEdges(
       entity2.boundingShape,
       entity2.position,
       entity2.rotation
@@ -158,13 +154,13 @@ export namespace SeparatingAxisTheorem {
 
       const normal: [number, number] = [-dy / mag, dx / mag];
 
-      const proj1 = SATUtils.projectPolygonOnAxis(
+      const proj1 = this._projectPolygonOnAxis(
         entity1.boundingShape,
         entity1.position,
         entity1.rotation,
         normal
       );
-      const proj2 = SATUtils.projectPolygonOnAxis(
+      const proj2 = this._projectPolygonOnAxis(
         entity2.boundingShape,
         entity2.position,
         entity2.rotation,
@@ -207,7 +203,7 @@ export namespace SeparatingAxisTheorem {
     };
   }
 
-  export function polygonCircleSAT(
+  private _polygonCircleSAT(
     polygon: PhysicsEntity,
     circle: PhysicsEntity
   ): SATResult {
@@ -262,13 +258,13 @@ export namespace SeparatingAxisTheorem {
       closestPoint[1] / magnitude,
     ];
 
-    const proj1 = SATUtils.projectPolygonOnAxis(
+    const proj1 = this._projectPolygonOnAxis(
       polygon.boundingShape,
       polygon.position,
       polygon.rotation,
       axis
     );
-    const proj2 = SATUtils.projectCircleOnAxis(
+    const proj2 = this._projectCircleOnAxis(
       circle.boundingShape,
       circle.position,
       axis
@@ -292,7 +288,7 @@ export namespace SeparatingAxisTheorem {
       smallestOverlapAxis = axis;
     }
 
-    const edges = SATUtils.getPolygonEdges(
+    const edges = this._getPolygonEdges(
       polygon.boundingShape,
       polygon.position,
       polygon.rotation
@@ -312,13 +308,13 @@ export namespace SeparatingAxisTheorem {
       }
 
       const normal: [number, number] = [-dy / mag, dx / mag];
-      const proj1 = SATUtils.projectPolygonOnAxis(
+      const proj1 = this._projectPolygonOnAxis(
         polygon.boundingShape,
         polygon.position,
         polygon.rotation,
         normal
       );
-      const proj2 = SATUtils.projectCircleOnAxis(
+      const proj2 = this._projectCircleOnAxis(
         circle.boundingShape,
         circle.position,
         normal
@@ -359,7 +355,7 @@ export namespace SeparatingAxisTheorem {
     };
   }
 
-  export function circleCircleSAT(
+  private _circleCircleSAT(
     entity1: PhysicsEntity,
     entity2: PhysicsEntity
   ): SATResult {
@@ -405,9 +401,7 @@ export namespace SeparatingAxisTheorem {
     };
   }
 
-  export function detectCollisions(
-    entities: PhysicsEntity[]
-  ): Collision[] | null {
+  private _detectCollisions(entities: PhysicsEntity[]): Collision[] | null {
     const collisions: Collision[] = [];
     const activeEntities = entities;
     for (let i = 0; i < activeEntities.length; i++) {
@@ -428,7 +422,7 @@ export namespace SeparatingAxisTheorem {
           otherEntity.boundingShape.type === "BoundingConvexPolygon"
         ) {
           const { isColliding, minimumTranslationVector, edge } =
-            polygonPolygonSAT(entity, otherEntity);
+            this._polygonPolygonSAT(entity, otherEntity);
           if (isColliding) {
             if (!minimumTranslationVector) {
               throw new Error(
@@ -450,7 +444,7 @@ export namespace SeparatingAxisTheorem {
           otherEntity.boundingShape.type === "BoundingCircle"
         ) {
           const { isColliding, minimumTranslationVector, edge } =
-            circleCircleSAT(entity, otherEntity);
+            this._circleCircleSAT(entity, otherEntity);
           if (isColliding) {
             if (!minimumTranslationVector) {
               throw new Error(
@@ -487,7 +481,7 @@ export namespace SeparatingAxisTheorem {
             otherEntityHet.boundingShape.type === "BoundingCircle"
           ) {
             const { isColliding, minimumTranslationVector, edge } =
-              polygonCircleSAT(entityHet, otherEntityHet);
+              this._polygonCircleSAT(entityHet, otherEntityHet);
             if (isColliding) {
               if (!minimumTranslationVector) {
                 throw new Error(
@@ -508,5 +502,87 @@ export namespace SeparatingAxisTheorem {
     }
 
     return collisions.length > 0 ? collisions : null;
+  }
+
+  detectCollisions(entities: PhysicsEntity[]): Collision[] | null {
+    // TODO: Broad Phase (Sort and Sweep ? AABB ?)
+
+    // Narrow Phase (SAT)
+    // TODO: Generate contact manifold
+    const collisions = this._detectCollisions(entities);
+    return collisions;
+  }
+}
+
+export class SATCollisionResolver implements CollisionResolver {
+  private _restitution = 0.9;
+  private _penetrationSlop = 0.8;
+
+  resolveCollisions(collisions: Collision[]) {
+    for (let i = 0; i < collisions.length; i++) {
+      this._resolveCollision(collisions[i]);
+    }
+  }
+
+  private _resolveCollision(collision: Collision) {
+    const { entity1, entity2, minimumTranslationVector } = collision;
+
+    // Correct penetration
+    // NOTE: SAT doesn't necessarily give the correct collision normal
+    const { normal, magnitude } = minimumTranslationVector;
+    let penX = normal[0] * magnitude;
+    let penY = normal[1] * magnitude;
+
+    // NOTE: Only dynamic entities should be corrected (or else dynamic entities
+    // get stuck in kinematic entities)
+    if (entity1.type === "dynamic" && entity2.type === "dynamic") {
+      penX = Math.max(penX - this._penetrationSlop, 0);
+      penY = Math.max(penY - this._penetrationSlop, 0);
+    }
+
+    if (entity1.type === "dynamic") {
+      entity1.position[0] += normal[0] * penX;
+      entity1.position[1] += normal[1] * penY;
+    }
+
+    if (entity2.type === "dynamic") {
+      entity2.position[0] -= normal[0] * penX;
+      entity2.position[1] -= normal[1] * penY;
+    }
+
+    // Calculate relative velocity
+    const relativeVelocity = [
+      entity1.velocity[0] - entity2.velocity[0],
+      entity1.velocity[1] - entity2.velocity[1],
+    ];
+
+    // Calculate relative velocity in terms of the normal direction
+    const relativeNormalVelocity =
+      relativeVelocity[0] * normal[0] + relativeVelocity[1] * normal[1];
+
+    // Calculate impulse magnitude
+    if (entity1.type === "dynamic") {
+      entity1.velocity[0] -=
+        normal[0] * relativeNormalVelocity * this._restitution;
+      entity1.velocity[1] -=
+        normal[1] * relativeNormalVelocity * this._restitution;
+    } else {
+      entity2.velocity[0] +=
+        normal[0] * relativeNormalVelocity * this._restitution;
+      entity2.velocity[1] +=
+        normal[1] * relativeNormalVelocity * this._restitution;
+    }
+
+    if (entity2.type === "dynamic") {
+      entity2.velocity[0] +=
+        normal[0] * relativeNormalVelocity * this._restitution;
+      entity2.velocity[1] +=
+        normal[1] * relativeNormalVelocity * this._restitution;
+    } else {
+      entity1.velocity[0] -=
+        normal[0] * relativeNormalVelocity * this._restitution;
+      entity1.velocity[1] -=
+        normal[1] * relativeNormalVelocity * this._restitution;
+    }
   }
 }

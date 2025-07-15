@@ -2,7 +2,7 @@ import {
   type Physical,
   type PhysicsEntityType,
   PhysicsEntity,
-} from "../physics/entitySAT";
+} from "../physics/entity";
 import { getNext } from "../utils/id";
 import { createRectangle, type Drawable, type DrawEntity } from "../vdu/entity";
 

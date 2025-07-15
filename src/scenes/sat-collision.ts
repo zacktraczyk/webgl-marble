@@ -1,8 +1,11 @@
 import { Arrow } from "../engine/object/arrow";
 import { Line } from "../engine/object/line";
-// import type { Line } from "../engine/physics/collision/SeparatingAxisTheorem";
-import { PhysicsEntity, type Physical } from "../engine/physics/entitySAT";
-import Physics from "../engine/physics/physicsSAT";
+import {
+  SATCollisionDetector,
+  SATCollisionResolver,
+} from "../engine/physics/collision/SAT";
+import { PhysicsEntity, type Physical } from "../engine/physics/entity";
+import Physics from "../engine/physics/physics";
 import Stage from "../engine/stage";
 import { type DragAndDroppable } from "../engine/stage/eventHandlers";
 import { getNext } from "../engine/utils/id";
@@ -15,14 +18,14 @@ import {
 } from "../engine/vdu/entity";
 
 function main() {
-  const stage = new Stage();
+  const physics = new Physics({
+    collisionDetector: new SATCollisionDetector(),
+    collisionResolver: new SATCollisionResolver(),
+  });
+  const stage = new Stage({ physics: physics });
   stage.dragAndDrop = true;
   stage.panAndZoom = true;
   stage.drawMode = "TRIANGLES";
-  stage.physicsEnabled = false;
-
-  // SAT Physics
-  const physicsSAT = new Physics();
 
   const centerX = stage.canvas.clientWidth / 2;
   const centerY = stage.canvas.clientHeight / 2;
@@ -36,7 +39,6 @@ function main() {
     handleColor: [0.4, 0.4, 0.4, 1],
   });
   stage.add(circle1);
-  physicsSAT.add(circle1);
 
   const circle2 = new DragAndDropCircle({
     position: [centerX, centerY + offset],
@@ -46,7 +48,6 @@ function main() {
     handleColor: [0.4, 0.4, 0.4, 1],
   });
   stage.add(circle2);
-  physicsSAT.add(circle2);
 
   const hexagon1 = new DragAndDropHexagon({
     sideLength: 80,
@@ -57,7 +58,6 @@ function main() {
     handleColor: [0.4, 0.4, 0.4, 1],
   });
   stage.add(hexagon1);
-  physicsSAT.add(hexagon1);
 
   const square1 = new DragAndDropRectangle({
     position: [centerX - offset, centerY],
@@ -70,9 +70,8 @@ function main() {
     handleColor: [0.4, 0.4, 0.4, 1],
   });
   stage.add(square1);
-  physicsSAT.add(square1);
 
-  let collisions: {
+  let currentCollisions: {
     entity1: number;
     entity2: number;
     minimumTranslationVector: {
@@ -83,12 +82,8 @@ function main() {
 
   let collisionEdges: Record<string, Line> = {};
   let minimumTranslationVectorArrows: Record<string, [Arrow, Arrow]> = {};
-  physicsSAT.register(async ({ type, ...data }) => {
-    if (type !== "collision" || !("collisions" in data)) {
-      return;
-    }
-
-    for (const collision of data.collisions) {
+  stage.registerPhysicsObserver(async ({ collisions }) => {
+    for (const collision of collisions) {
       const {
         entity1,
         entity2,
@@ -161,8 +156,7 @@ function main() {
       }
     }
 
-    const newCollisions = data.collisions;
-    collisions = newCollisions.map((collision) => {
+    currentCollisions = collisions.map((collision) => {
       const collisionDebug = {
         entity1: collision.entity1.parent.id,
         entity2: collision.entity2.parent.id,
@@ -181,9 +175,8 @@ function main() {
     lastTime = time;
 
     stage.update(elapsed);
-    physicsSAT.update(elapsed);
 
-    if (!collisions.length) {
+    if (!currentCollisions.length) {
       for (const collisionKey in collisionEdges) {
         collisionEdges[collisionKey].delete();
       }
@@ -199,9 +192,9 @@ function main() {
 
     updateFpsPerf();
     updateDebugInfo({
-      collisions,
+      collisions: currentCollisions,
     });
-    collisions = [];
+    currentCollisions = [];
   }
 
   function render() {

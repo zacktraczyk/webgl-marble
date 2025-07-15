@@ -1,6 +1,5 @@
 import { Circle } from "../engine/object/circle";
 import { Rectangle } from "../engine/object/rectangle";
-import { BoundingCircle } from "../engine/physics/boundingShape";
 import Stage from "../engine/stage";
 
 function main() {
@@ -18,7 +17,7 @@ function main() {
       for (const [a, b] of collisionPemutations) {
         if (
           a.type === "dynamic" &&
-          a.boundingShape instanceof BoundingCircle &&
+          a.boundingShape?.type === "BoundingCircle" &&
           b.parent === finishLine
         ) {
           if (!a.markedForDeletion && a.parent && a.parent !== finishLine) {

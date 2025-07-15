@@ -1,4 +1,3 @@
-import Physics from "../engine/physics/physicsSAT";
 import Stage from "../engine/stage";
 import {
   createCircle,
@@ -10,7 +9,7 @@ import {
   type Physical,
   PhysicsEntity,
   type PhysicsEntityType,
-} from "../engine/physics/entitySAT";
+} from "../engine/physics/entity";
 import { getNext } from "../engine/utils/id";
 
 function main() {

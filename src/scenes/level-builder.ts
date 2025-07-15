@@ -1,6 +1,5 @@
 import { Ball } from "../engine/object/ball";
 import { Rectangle } from "../engine/object/rectangle";
-import { BoundingCircle } from "../engine/physics/boundingShape";
 import Stage from "../engine/stage";
 
 type ToolSelectors = {
@@ -34,7 +33,7 @@ function main(toolSelectors: ToolSelectors) {
       for (const [c, d] of collisionPermutations) {
         if (
           c.type === "dynamic" &&
-          c.boundingShape instanceof BoundingCircle &&
+          c.boundingShape?.type === "BoundingCircle" &&
           d.parent instanceof FinishLine
         ) {
           c.parent.delete();

@@ -3,7 +3,7 @@ import {
   type Physical,
   type PhysicsEntityType,
   PhysicsEntity,
-} from "../physics/entitySAT";
+} from "../physics/entity";
 import { createCircle, type Drawable, type DrawEntity } from "../vdu/entity";
 
 export class Circle implements Drawable, Physical {
