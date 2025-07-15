@@ -1,5 +1,4 @@
 import { Ball } from "../engine/object/ball";
-import { Circle } from "../engine/object/circle";
 import { Rectangle } from "../engine/object/rectangle";
 import Stage from "../engine/stage";
 
@@ -31,8 +30,8 @@ function init() {
   stage.panAndZoom = true;
 
   // Spawn area
-  const spawnOriginx = stage.width / 2;
-  const spawnOriginy = stage.height / 2;
+  const spawnOriginx = 0;
+  const spawnOriginy = 0;
   const spawnPadding = 50;
   const spawnw = stage.width - spawnPadding * 2;
   const spawnh = stage.height - spawnPadding * 2;
@@ -88,7 +87,7 @@ function init() {
 
   function spawnWalls() {
     const ground = new Rectangle({
-      position: [stage.width / 2, stage.height - 25],
+      position: [0, stage.height / 2 - 25],
       width: stage.width,
       height: 50,
       color: [0, 1, 0, 1],
@@ -96,7 +95,7 @@ function init() {
     stage.add(ground);
 
     const leftWall = new Rectangle({
-      position: [25, stage.height / 2],
+      position: [25 - stage.width / 2, 0],
       width: 50,
       height: stage.height - 100,
       color: [0, 1, 0, 1],
@@ -104,7 +103,7 @@ function init() {
     stage.add(leftWall);
 
     const rightWall = new Rectangle({
-      position: [stage.width - 25, stage.height / 2],
+      position: [stage.width / 2 - 25, 0],
       width: 50,
       height: stage.height - 100,
       color: [0, 1, 0, 1],
@@ -112,7 +111,7 @@ function init() {
     stage.add(rightWall);
 
     const ceiling = new Rectangle({
-      position: [stage.width / 2, 25],
+      position: [0, 25 - stage.height / 2],
       width: stage.width,
       height: 50,
       color: [0, 1, 0, 1],

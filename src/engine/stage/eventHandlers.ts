@@ -8,6 +8,7 @@ export interface EventHandlers {
   pointerup?: (event: PointerEvent) => void;
   wheel?: (event: WheelEvent) => void;
   pointerleave?: (event: PointerEvent) => void;
+  resize?: (event: Event) => void;
   //TODO: More
 }
 
@@ -113,5 +114,18 @@ export class PanAndZoomHandlers implements EventHandlers {
   mouseleave(event: PointerEvent) {
     this._lastPos = null;
     this._isPanning = false;
+  }
+}
+
+export class CenterCameraOnResizeHandlers implements EventHandlers {
+  private _vdu: VDU;
+
+  constructor(vdu: VDU) {
+    this._vdu = vdu;
+  }
+
+  resize(event: Event) {
+    this._vdu.camera.position[0] = this._vdu.canvas.clientWidth / 2;
+    this._vdu.camera.position[1] = this._vdu.canvas.clientHeight / 2;
   }
 }

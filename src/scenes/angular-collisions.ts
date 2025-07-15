@@ -16,8 +16,8 @@ function main() {
   const stage = new Stage();
   stage.panAndZoom = true;
 
-  const spawnX = stage.canvas.clientWidth / 2 - 250;
-  const spawnY = 100;
+  const spawnX = -250;
+  const spawnY = -stage.canvas.clientHeight / 2 + 100;
 
   const circle1 = new Circle({
     position: [spawnX, spawnY],
@@ -28,7 +28,7 @@ function main() {
   stage.add(circle1);
 
   const square1 = new Rectangle({
-    position: [spawnX - 40, stage.canvas.clientHeight / 2],
+    position: [spawnX - 40, 0],
     width: 100,
     height: 100,
     rotation: Math.PI / 8,

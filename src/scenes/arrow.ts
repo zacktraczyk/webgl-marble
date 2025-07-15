@@ -5,7 +5,7 @@ import Stage from "../engine/stage";
 function main() {
   const stage = new Stage();
 
-  const pinWheelCenter: [number, number] = [800, 450];
+  const pinWheelCenter: [number, number] = [0, 0];
   const arrowLength = 150;
   const arrowParams: Partial<ConstructorParameters<typeof Arrow>[0]> = {
     tipLength: 40,
@@ -40,7 +40,7 @@ function main() {
     }
 
     // random angle
-    arrows.push([1200, 100, 1450, 200]);
+    arrows.push([-50, -100, 100, 230]);
 
     for (const [baseX, baseY, tipX, tipY] of arrows) {
       const baseRect = new Rectangle({
@@ -69,7 +69,7 @@ function main() {
   };
   constructArrows();
 
-  const rotatingArrowCenter: [number, number] = [200, 200];
+  const rotatingArrowCenter: [number, number] = [-300, -300];
   const baseSquareRotating = new Rectangle({
     width: 40,
     height: 40,

@@ -25,10 +25,11 @@ function main() {
   const stage = new Stage({ physics: physics });
   stage.dragAndDrop = true;
   stage.panAndZoom = true;
+  stage.centerCameraOnResize = false;
   stage.drawMode = "TRIANGLES";
 
-  const centerX = stage.canvas.clientWidth / 2;
-  const centerY = stage.canvas.clientHeight / 2;
+  const centerX = 0;
+  const centerY = 0;
   const offset = 200;
 
   const circle1 = new DragAndDropCircle({

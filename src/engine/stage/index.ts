@@ -1,8 +1,10 @@
 import { isPhysical, type Physical } from "../physics/entity";
 import Physics, { type CollisionEvents } from "../physics/physics";
+import { debounce } from "../utils/utils";
 import { isDrawable, type Drawable } from "../vdu/entity";
 import { VDU } from "../vdu/vdu";
 import {
+  CenterCameraOnResizeHandlers,
   DragAndDropHandlers,
   type DragAndDroppable,
   type EventHandlers,
@@ -31,10 +33,13 @@ export class Stage {
   // event handlers
   private readonly _panAndZoomHandlers: PanAndZoomHandlers;
   private readonly _dragAndDropHandlers: DragAndDropHandlers;
+  private readonly _centerCameraOnResizeHandlers: CenterCameraOnResizeHandlers;
 
-  private _registeredEventHandlers: EventHandlers = {};
+  private _canvasRegisteredEventHandlers: EventHandlers = {};
+  private _windowRegisteredEventHandlers: EventHandlers = {};
   private _isPanAndZoomEnabled = false;
   private _isDragAndDropEnabled = false;
+  private _isCenterCameraOnResizeEnabled = false;
 
   constructor({
     width = 600,
@@ -66,6 +71,9 @@ export class Stage {
     this._objects = [];
     this._panAndZoomHandlers = new PanAndZoomHandlers(vdu);
     this._dragAndDropHandlers = new DragAndDropHandlers(this);
+    this._centerCameraOnResizeHandlers = new CenterCameraOnResizeHandlers(vdu);
+
+    this.centerStage();
   }
 
   add(object: StageObject) {
@@ -175,18 +183,28 @@ export class Stage {
     this.canvas.addEventListener("wheel", wheel);
     this.canvas.addEventListener("pointerleave", pointerleave);
 
-    this._registeredEventHandlers = {
+    const resize = (event: Event) => {
+      if (this._isCenterCameraOnResizeEnabled) {
+        this._centerCameraOnResizeHandlers.resize(event);
+      }
+    };
+    const debouncedResize = debounce(resize, 300);
+
+    window.addEventListener("resize", debouncedResize);
+
+    this._canvasRegisteredEventHandlers = {
       pointerdown,
       pointermove,
       pointerup,
       wheel,
       pointerleave,
+      resize,
     };
     // TODO: Touch pan & zoom
   }
 
   private get isEventHandlersRegistered() {
-    return Object.keys(this._registeredEventHandlers).length > 0;
+    return Object.keys(this._canvasRegisteredEventHandlers).length > 0;
   }
 
   // TODO: Unregister handlers when VDU is destroyed
@@ -197,9 +215,15 @@ export class Stage {
     }
 
     for (const [name, handler] of Object.entries(
-      this._registeredEventHandlers
+      this._canvasRegisteredEventHandlers
     )) {
       this.canvas.removeEventListener(name, handler);
+    }
+
+    for (const [name, handler] of Object.entries(
+      this._windowRegisteredEventHandlers
+    )) {
+      window.removeEventListener(name, handler);
     }
   }
 
@@ -239,6 +263,29 @@ export class Stage {
 
   get dragAndDrop() {
     return this._isDragAndDropEnabled;
+  }
+
+  set centerCameraOnResize(value: boolean) {
+    if (this._isCenterCameraOnResizeEnabled === value) {
+      return;
+    }
+
+    if (value) {
+      if (!this.isEventHandlersRegistered) {
+        this._registerEventHandlers();
+      }
+      this._isCenterCameraOnResizeEnabled = true;
+    } else {
+      this._isCenterCameraOnResizeEnabled = false;
+    }
+  }
+
+  centerStage() {
+    const width = this.canvas.clientWidth;
+    const height = this.canvas.clientHeight;
+
+    this._vdu.camera.position[0] = width / 2;
+    this._vdu.camera.position[1] = height / 2;
   }
 
   mouseWorldPosition(event: PointerEvent) {

@@ -58,8 +58,8 @@ function init() {
   stage.panAndZoom = true;
 
   // Spawn area
-  const spawnOriginx = stage.width / 2;
-  const spawnOriginy = 110;
+  const spawnOriginx = 0;
+  const spawnOriginy = 110 - stage.height / 2;
   const spawnPadding = 50;
   const spawnw = stage.width - spawnPadding * 2;
   const spawnh = 180 - spawnPadding * 2;
@@ -135,7 +135,7 @@ function init() {
     // physics.add(ground);
 
     const leftWall = new Rectangle({
-      position: [25, stage.height / 2 + 25],
+      position: [25 - stage.width / 2, 25],
       width: 50,
       height: stage.height - 50,
       color: [0, 1, 0, 1],
@@ -143,7 +143,7 @@ function init() {
     stage.add(leftWall);
 
     const rightWall = new Rectangle({
-      position: [stage.width - 25, stage.height / 2 + 25],
+      position: [stage.width / 2 - 25, 25],
       width: 50,
       height: stage.height - 50,
       color: [0, 1, 0, 1],
@@ -151,7 +151,7 @@ function init() {
     stage.add(rightWall);
 
     const ceiling = new Rectangle({
-      position: [stage.width / 2, 25],
+      position: [0, 25 - stage.height / 2],
       width: stage.width,
       height: 50,
       color: [0, 1, 0, 1],
@@ -165,9 +165,13 @@ function init() {
     for (let j = 0; j < numObstacles / 2; j++) {
       for (let i = 0; i < numObstacles / 2; i++) {
         const x =
+          -stage.width / 2 +
           ((stage.width - 100) / (numObstacles / 2)) *
-          (i + (j % 2) * 0.5 + 0.5);
-        const y = 100 + ((stage.height - 200) / (numObstacles / 2)) * (j + 0.5);
+            (i + (j % 2) * 0.5 + 0.5);
+        const y =
+          100 -
+          stage.height / 2 +
+          ((stage.height - 200) / (numObstacles / 2)) * (j + 0.5);
 
         const obstacleSquare = new Rectangle({
           position: [x, y],
@@ -182,7 +186,7 @@ function init() {
   }
 
   const finishLine = new Rectangle({
-    position: [stage.width / 2, stage.height - 25],
+    position: [0, stage.height - 25 - stage.height / 2],
     width: stage.width - 100,
     height: 50,
     color: [1, 0, 0, 1],
