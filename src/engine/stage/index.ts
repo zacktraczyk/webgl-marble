@@ -12,7 +12,7 @@ import {
 } from "./eventHandlers";
 
 export type StageObject = {
-  // id: string;
+  id: number;
   position: [number, number];
   markedForDeletion: boolean;
   sync(): void;

@@ -209,8 +209,8 @@ class Camera {
 
   matrix(): mat3 {
     const matrix = mat3.identity(this._matrix);
-    mat3.scale(matrix, matrix, [this.zoom, this.zoom]);
     mat3.translate(matrix, matrix, [this.position[0], this.position[1]]);
+    mat3.scale(matrix, matrix, [this.zoom, this.zoom]);
 
     return matrix;
   }

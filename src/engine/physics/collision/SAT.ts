@@ -1,4 +1,5 @@
 import type { Collision, CollisionDetector, CollisionResolver, Line } from ".";
+import { Observer } from "../../utils/Observer";
 import {
   PhysicsEntity,
   type BoundingCircle,
@@ -401,7 +402,7 @@ export class SATCollisionDetector implements CollisionDetector {
     };
   }
 
-  private _detectCollisions(entities: PhysicsEntity[]): Collision[] | null {
+  detectCollisions(entities: PhysicsEntity[]): Collision[] | null {
     const collisions: Collision[] = [];
     const activeEntities = entities;
     for (let i = 0; i < activeEntities.length; i++) {
@@ -502,15 +503,6 @@ export class SATCollisionDetector implements CollisionDetector {
     }
 
     return collisions.length > 0 ? collisions : null;
-  }
-
-  detectCollisions(entities: PhysicsEntity[]): Collision[] | null {
-    // TODO: Broad Phase (Sort and Sweep ? AABB ?)
-
-    // Narrow Phase (SAT)
-    // TODO: Generate contact manifold
-    const collisions = this._detectCollisions(entities);
-    return collisions;
   }
 }
 
