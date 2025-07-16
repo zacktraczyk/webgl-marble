@@ -2,7 +2,7 @@ import type { Collision, CollisionDetector } from ".";
 import type { PhysicsEntity } from "../entity";
 
 export class GJKCollisionDetector implements CollisionDetector {
-  private _supportFunction(
+  private _findFartherstPoint(
     entity: PhysicsEntity,
     directionNormal: [number, number]
   ): [number, number] {
@@ -37,37 +37,172 @@ export class GJKCollisionDetector implements CollisionDetector {
     throw new Error("Entity has unsupported bounding shape");
   }
 
+  private _supportPoint(
+    entity1: PhysicsEntity,
+    entity2: PhysicsEntity,
+    directionNormal: [number, number]
+  ): [number, number] {
+    const supportPoint1 = this._findFartherstPoint(entity1, directionNormal);
+    const supportPoint2 = this._findFartherstPoint(entity2, [
+      -directionNormal[0],
+      -directionNormal[1],
+    ]);
+
+    return [
+      supportPoint1[0] - supportPoint2[0],
+      supportPoint1[1] - supportPoint2[1],
+    ];
+  }
+
+  private _sameDirection(
+    direction1: [number, number],
+    direction2: [number, number]
+  ): boolean {
+    return direction1[0] * direction2[0] + direction1[1] * direction2[1] > 0;
+  }
+
+  private _tripleProduct(
+    a: [number, number],
+    b: [number, number],
+    c: [number, number]
+  ): [number, number] {
+    return [
+      a[0] * b[1] * c[0] - a[1] * b[0] * c[1],
+      a[0] * b[1] * c[1] - a[1] * b[0] * c[0],
+    ];
+  }
+
+  private _getDirectionUnitVector(
+    point1: [number, number],
+    point2: [number, number]
+  ): [number, number] {
+    const direction = [point2[0] - point1[0], point2[1] - point1[1]];
+    const magnitude = Math.sqrt(direction[0] ** 2 + direction[1] ** 2);
+    return [direction[0] / magnitude, direction[1] / magnitude];
+  }
+
+  private _lineSimplex(
+    simplex: [[number, number], [number, number]],
+    direction: [number, number]
+  ): boolean {
+    // TODO: Origin is on line
+    const B = simplex[0];
+    const A = simplex[1];
+
+    const OB = this._getDirectionUnitVector([0, 0], B);
+    const AB = this._getDirectionUnitVector(A, B);
+
+    // NOTE: This is the direction perpendicular to the plane of the simplex
+    // pointing in the direction of the origin
+    const ABPerp = this._tripleProduct(AB, OB, AB);
+
+    // Update direction to the next direction
+    direction[0] = ABPerp[0];
+    direction[1] = ABPerp[1];
+
+    return false;
+  }
+
+  private _triangleSimplex(
+    simplex: [[number, number], [number, number], [number, number]],
+    direction: [number, number]
+  ): boolean {
+    // TODO: Origin is on triangle
+
+    const C = simplex[0];
+    const B = simplex[1];
+    const A = simplex[2];
+
+    const AB = this._getDirectionUnitVector(A, B);
+    const AC = this._getDirectionUnitVector(A, C);
+    const AO = this._getDirectionUnitVector([0, 0], A);
+
+    const ABperp = this._tripleProduct(AC, AB, AB);
+    const ACperp = this._tripleProduct(AB, AC, AC);
+
+    if (this._sameDirection(ABperp, AO)) {
+      simplex.splice(0, 1);
+
+      direction[0] = ABperp[0];
+      direction[1] = ABperp[1];
+
+      return false;
+    } else if (this._sameDirection(ACperp, AO)) {
+      simplex.splice(1, 1);
+
+      direction[0] = ACperp[0];
+      direction[1] = ACperp[1];
+
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Given a simplex and a direction, find the next point in the simplex
+   * and update the direction to the next direction.
+   *
+   * @param simplex The simplex to check (updated in place)
+   * @param direction The direction to check (updated in place)
+   * @returns True if the simplex is colliding, false otherwise
+   */
+  private _handleSimplex(
+    simplex: [number, number][],
+    direction: [number, number]
+  ): boolean {
+    switch (simplex.length) {
+      case 2:
+        const lineSimplex = simplex as [[number, number], [number, number]];
+        return this._lineSimplex(lineSimplex, direction);
+      case 3:
+        const triangleSimplex = simplex as [
+          [number, number],
+          [number, number],
+          [number, number],
+        ];
+        return this._triangleSimplex(triangleSimplex, direction);
+      default:
+        throw new Error("Simplex has too many points");
+    }
+  }
+
   private _detectCollision(
     entity1: PhysicsEntity,
     entity2: PhysicsEntity
   ): boolean {
-    const unnormalizedDirection1: [number, number] = [
-      entity2.position[0] - entity1.position[0],
-      entity2.position[1] - entity1.position[1],
-    ];
-    const magnitude = Math.sqrt(
-      unnormalizedDirection1[0] ** 2 + unnormalizedDirection1[1] ** 2
+    // Support point 1
+    const initialDirection = this._getDirectionUnitVector(
+      entity1.position,
+      entity2.position
     );
-    const dir1: [number, number] = [
-      unnormalizedDirection1[0] / magnitude,
-      unnormalizedDirection1[1] / magnitude,
-    ];
-    const supportPoint1 = this._supportFunction(entity1, dir1);
+    const supportPoint1 = this._supportPoint(
+      entity1,
+      entity2,
+      initialDirection
+    );
 
-    let dir2: [number, number] = [-dir1[0], -dir1[1]];
-    const supportPoint2 = this._supportFunction(entity2, dir2);
+    // Create initial simplex
+    let simplex: [number, number][] = [];
+    simplex.push(supportPoint1);
 
-    let dir3: [number, number] = [dir2[1], -dir2[0]];
+    // Support point 2
+    let direction = this._getDirectionUnitVector([0, 0], supportPoint1);
 
-    const supportPoint3 = this._supportFunction(entity1, dir3);
+    while (true) {
+      const supportPoint = this._supportPoint(entity1, entity2, direction);
 
-    const simplex: [number, number][] = [
-      supportPoint1,
-      supportPoint2,
-      supportPoint3,
-    ];
+      if (!this._sameDirection(direction, supportPoint)) {
+        return false; // No collision
+      }
 
-    // throw new Error("Not implemented");
+      simplex.push(supportPoint);
+
+      const isColliding = this._handleSimplex(simplex, direction);
+      if (isColliding) {
+        return true;
+      }
+    }
   }
 
   detectCollisions(entities: PhysicsEntity[]): Collision[] | null {
