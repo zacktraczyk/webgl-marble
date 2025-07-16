@@ -16,8 +16,10 @@ import {
 } from "../engine/vdu/entity";
 
 function main() {
+  // Initialize
+  const gjkCollisionDetector = new GJKCollisionDetector();
   const physics = new Physics({
-    collisionDetector: new GJKCollisionDetector(),
+    collisionDetector: gjkCollisionDetector,
     collisionResolver: new SATCollisionResolver(),
   });
   const stage = new Stage({ physics: physics });
@@ -30,23 +32,23 @@ function main() {
   const centerY = 0;
   const offset = 200;
 
-  const circle1 = new DragAndDropCircle({
-    position: [centerX + offset, centerY],
-    radius: 50,
-    color: [34 / 255, 197 / 255, 94 / 255, 1],
-    handleRadius: 15,
-    handleColor: [0.4, 0.4, 0.4, 1],
-  });
-  stage.add(circle1);
+  // const circle1 = new DragAndDropCircle({
+  //   position: [centerX + offset, centerY],
+  //   radius: 50,
+  //   color: [34 / 255, 197 / 255, 94 / 255, 1],
+  //   handleRadius: 15,
+  //   handleColor: [0.4, 0.4, 0.4, 1],
+  // });
+  // stage.add(circle1);
 
-  const circle2 = new DragAndDropCircle({
-    position: [centerX, centerY + offset],
-    radius: 70,
-    color: [167 / 255, 139 / 255, 250 / 255, 1],
-    handleRadius: 15,
-    handleColor: [0.4, 0.4, 0.4, 1],
-  });
-  stage.add(circle2);
+  // const circle2 = new DragAndDropCircle({
+  //   position: [centerX, centerY + offset],
+  //   radius: 70,
+  //   color: [167 / 255, 139 / 255, 250 / 255, 1],
+  //   handleRadius: 15,
+  //   handleColor: [0.4, 0.4, 0.4, 1],
+  // });
+  // stage.add(circle2);
 
   const hexagon1 = new DragAndDropHexagon({
     sideLength: 80,
@@ -158,6 +160,10 @@ function main() {
 
       return collisionDebug;
     });
+  });
+
+  gjkCollisionDetector.addDebugObserver((data) => {
+    console.log(data);
   });
 
   let lastTime = performance.now();

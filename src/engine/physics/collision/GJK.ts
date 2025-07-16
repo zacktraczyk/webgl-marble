@@ -1,4 +1,5 @@
 import type { Collision, CollisionDetector } from ".";
+import { Observer } from "../../utils/Observer";
 import type { PhysicsEntity } from "../entity";
 
 export class GJKCollisionDetector implements CollisionDetector {
@@ -16,8 +17,23 @@ export class GJKCollisionDetector implements CollisionDetector {
       let maxDot = -Infinity;
       let maxVertex: [number, number] = vertices[0];
       for (const vertex of vertices) {
+        const [bodyX, bodyY] = vertex;
+
+        const rotation = entity.rotation;
+        const rotatedBodyVertex = [
+          bodyX * Math.cos(rotation) - bodyY * Math.sin(rotation),
+          bodyX * Math.sin(rotation) + bodyY * Math.cos(rotation),
+        ];
+
+        const position = entity.position;
+        const worldVertex = [
+          rotatedBodyVertex[0] + position[0],
+          rotatedBodyVertex[1] + position[1],
+        ];
+
         const dot =
-          vertex[0] * directionNormal[0] + vertex[1] * directionNormal[1];
+          worldVertex[0] * directionNormal[0] +
+          worldVertex[1] * directionNormal[1];
         if (dot > maxDot) {
           maxDot = dot;
           maxVertex = vertex;
@@ -47,6 +63,11 @@ export class GJKCollisionDetector implements CollisionDetector {
       -directionNormal[0],
       -directionNormal[1],
     ]);
+
+    this._debug({
+      supportPoint1,
+      supportPoint2,
+    });
 
     return [
       supportPoint1[0] - supportPoint2[0],
@@ -84,7 +105,7 @@ export class GJKCollisionDetector implements CollisionDetector {
   private _lineSimplex(
     simplex: [[number, number], [number, number]],
     direction: [number, number]
-  ): boolean {
+  ): { direction?: [number, number]; isColliding: boolean } {
     // TODO: Origin is on line
     const B = simplex[0];
     const A = simplex[1];
@@ -100,13 +121,17 @@ export class GJKCollisionDetector implements CollisionDetector {
     direction[0] = ABPerp[0];
     direction[1] = ABPerp[1];
 
-    return false;
+    return { direction, isColliding: false };
   }
 
   private _triangleSimplex(
     simplex: [[number, number], [number, number], [number, number]],
     direction: [number, number]
-  ): boolean {
+  ): {
+    simplex?: [number, number][];
+    direction?: [number, number];
+    isColliding: boolean;
+  } {
     // TODO: Origin is on triangle
 
     const C = simplex[0];
@@ -126,17 +151,17 @@ export class GJKCollisionDetector implements CollisionDetector {
       direction[0] = ABperp[0];
       direction[1] = ABperp[1];
 
-      return false;
+      return { simplex, direction, isColliding: false };
     } else if (this._sameDirection(ACperp, AO)) {
       simplex.splice(1, 1);
 
       direction[0] = ACperp[0];
       direction[1] = ACperp[1];
 
-      return false;
+      return { simplex, direction, isColliding: false };
     }
 
-    return true;
+    return { simplex, direction, isColliding: true };
   }
 
   /**
@@ -150,11 +175,17 @@ export class GJKCollisionDetector implements CollisionDetector {
   private _handleSimplex(
     simplex: [number, number][],
     direction: [number, number]
-  ): boolean {
+  ): {
+    simplex?: [number, number][];
+    direction?: [number, number];
+    isColliding: boolean;
+  } {
     switch (simplex.length) {
       case 2:
-        const lineSimplex = simplex as [[number, number], [number, number]];
-        return this._lineSimplex(lineSimplex, direction);
+        return this._lineSimplex(
+          simplex as [[number, number], [number, number]],
+          direction
+        );
       case 3:
         const triangleSimplex = simplex as [
           [number, number],
@@ -173,8 +204,8 @@ export class GJKCollisionDetector implements CollisionDetector {
   ): boolean {
     // Support point 1
     const initialDirection = this._getDirectionUnitVector(
-      entity1.position,
-      entity2.position
+      entity2.position,
+      entity1.position
     );
     const supportPoint1 = this._supportPoint(
       entity1,
@@ -187,7 +218,7 @@ export class GJKCollisionDetector implements CollisionDetector {
     simplex.push(supportPoint1);
 
     // Support point 2
-    let direction = this._getDirectionUnitVector([0, 0], supportPoint1);
+    let direction = this._getDirectionUnitVector(supportPoint1, [0, 0]);
 
     while (true) {
       const supportPoint = this._supportPoint(entity1, entity2, direction);
@@ -198,10 +229,17 @@ export class GJKCollisionDetector implements CollisionDetector {
 
       simplex.push(supportPoint);
 
-      const isColliding = this._handleSimplex(simplex, direction);
+      const {
+        isColliding,
+        simplex: newSimplex,
+        direction: newDirection,
+      } = this._handleSimplex(simplex, direction);
       if (isColliding) {
         return true;
       }
+
+      simplex = newSimplex ?? simplex;
+      direction = newDirection ?? direction;
     }
   }
 
@@ -221,17 +259,39 @@ export class GJKCollisionDetector implements CollisionDetector {
         }
 
         const isColliding = this._detectCollision(entity, otherEntity);
-        // if (isColliding) {
-        // collisions.push({
-        //   entity1: entity,
-        //   entity2: otherEntity,
-        //   edge: null,
-        //   minimumTranslationVector: null,
-        // });
-        // }
+        if (isColliding) {
+          collisions.push({
+            entity1: entity,
+            entity2: otherEntity,
+            // TODO: Edge
+            edge: null,
+            // TODO: MTV
+            minimumTranslationVector: {
+              normal: [0, 0],
+              magnitude: 0,
+            },
+          });
+        }
         return null;
       }
     }
     return collisions;
+  }
+
+  addDebugObserver(observer: (data: any) => void) {
+    this._debug_observer.register(observer);
+  }
+
+  removeDebugObserver(observer: (data: any) => void) {
+    this._debug_observer.unregister(observer);
+  }
+
+  clearDebugObservers() {
+    this._debug_observer.clear();
+  }
+
+  private _debug_observer: Observer<any> = new Observer<any>();
+  private _debug(data: any) {
+    this._debug_observer.notify(data);
   }
 }

@@ -1,4 +1,5 @@
 import type { Collision, CollisionDetector, CollisionResolver, Line } from ".";
+import { Observer } from "../../utils/Observer";
 import {
   PhysicsEntity,
   type BoundingCircle,
