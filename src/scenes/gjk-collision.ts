@@ -1,4 +1,5 @@
 import { Arrow } from "../engine/object/arrow";
+import { Circle } from "../engine/object/circle";
 import { Line } from "../engine/object/line";
 import { GJKCollisionDetector } from "../engine/physics/collision/GJK";
 import { SATCollisionResolver } from "../engine/physics/collision/SAT";
@@ -27,6 +28,55 @@ function main() {
   stage.panAndZoom = true;
   stage.centerCameraOnResize = false;
   stage.drawMode = "TRIANGLES";
+
+  const numMajorGridColumns = 8;
+  const numMajorGridRows = 8;
+  const gridLines: Record<string, Line> = {};
+  const createGridLines = () => {
+    const gridSizeY = stage.canvas.clientHeight / numMajorGridRows;
+    for (let i = 1; i < numMajorGridRows; i++) {
+      const id = "row-" + i;
+      if (!gridLines[id]) {
+        const line = new Line({
+          startPosition: [
+            0 - stage.canvas.clientWidth / 2,
+            i * gridSizeY - stage.canvas.clientHeight / 2,
+          ],
+          endPosition: [
+            stage.canvas.clientWidth / 2,
+            i * gridSizeY - stage.canvas.clientHeight / 2,
+          ],
+          color: [0.1, 0.1, 0.1, 0.5],
+          stroke: 2,
+        });
+        stage.add(line);
+        gridLines[id] = line;
+      }
+    }
+
+    const gridSizeX = stage.canvas.clientWidth / numMajorGridColumns;
+    for (let i = 1; i < numMajorGridColumns; i++) {
+      const id = "column-" + i;
+      if (!gridLines[id]) {
+        const line = new Line({
+          startPosition: [
+            i * gridSizeX - stage.canvas.clientWidth / 2,
+            0 - stage.canvas.clientHeight / 2,
+          ],
+          endPosition: [
+            i * gridSizeX - stage.canvas.clientWidth / 2,
+            stage.canvas.clientHeight / 2,
+          ],
+          color: [0.1, 0.1, 0.1, 0.5],
+          stroke: 2,
+        });
+        stage.add(line);
+        gridLines[id] = line;
+      }
+    }
+  };
+
+  createGridLines();
 
   const centerX = 0;
   const centerY = 0;
@@ -162,8 +212,37 @@ function main() {
     });
   });
 
+  let currentFarthestPoints: Record<string, Circle> = {};
   gjkCollisionDetector.addDebugObserver((data) => {
-    console.log(data);
+    const furthestPoint1 = data.furthestPoint1;
+    if (furthestPoint1) {
+      const id = furthestPoint1[0] + "-" + furthestPoint1[1];
+      if (!currentFarthestPoints[id]) {
+        const entity = new Circle({
+          radius: 5,
+          position: furthestPoint1,
+          physicsType: "kinematic",
+          color: [1, 1, 1, 1],
+        });
+        stage.add(entity);
+        currentFarthestPoints[id] = entity;
+      }
+    }
+
+    const furthestPoint2 = data.furthestPoint2;
+    if (furthestPoint2) {
+      const id = furthestPoint2[0] + "-" + furthestPoint2[1];
+      if (!currentFarthestPoints[id]) {
+        const entity = new Circle({
+          radius: 5,
+          position: furthestPoint2,
+          physicsType: "kinematic",
+          color: [1, 1, 1, 1],
+        });
+        stage.add(entity);
+        currentFarthestPoints[id] = entity;
+      }
+    }
   });
 
   let lastTime = performance.now();
@@ -171,6 +250,14 @@ function main() {
     const time = performance.now();
     const elapsed = time - lastTime;
     lastTime = time;
+
+    if (!currentFarthestPoints.length) {
+      for (const id in currentFarthestPoints) {
+        currentFarthestPoints[id].delete();
+      }
+    }
+
+    currentFarthestPoints = {};
 
     stage.update(elapsed);
 
@@ -191,6 +278,7 @@ function main() {
     updateFpsPerf();
     updateDebugInfo({
       collisions: currentCollisions,
+      numObjects: stage.objects.length,
     });
     currentCollisions = [];
   }

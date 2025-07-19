@@ -26,7 +26,7 @@ export class GJKCollisionDetector implements CollisionDetector {
         ];
 
         const position = entity.position;
-        const worldVertex = [
+        const worldVertex: [number, number] = [
           rotatedBodyVertex[0] + position[0],
           rotatedBodyVertex[1] + position[1],
         ];
@@ -36,7 +36,7 @@ export class GJKCollisionDetector implements CollisionDetector {
           worldVertex[1] * directionNormal[1];
         if (dot > maxDot) {
           maxDot = dot;
-          maxVertex = vertex;
+          maxVertex = worldVertex;
         }
       }
       return maxVertex;
@@ -58,20 +58,20 @@ export class GJKCollisionDetector implements CollisionDetector {
     entity2: PhysicsEntity,
     directionNormal: [number, number]
   ): [number, number] {
-    const supportPoint1 = this._findFartherstPoint(entity1, directionNormal);
-    const supportPoint2 = this._findFartherstPoint(entity2, [
+    const furthestPoint1 = this._findFartherstPoint(entity1, directionNormal);
+    const furthestPoint2 = this._findFartherstPoint(entity2, [
       -directionNormal[0],
       -directionNormal[1],
     ]);
 
     this._debug({
-      supportPoint1,
-      supportPoint2,
+      furthestPoint1,
+      furthestPoint2,
     });
 
     return [
-      supportPoint1[0] - supportPoint2[0],
-      supportPoint1[1] - supportPoint2[1],
+      furthestPoint1[0] - furthestPoint2[0],
+      furthestPoint1[1] - furthestPoint2[1],
     ];
   }
 
