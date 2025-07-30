@@ -44,18 +44,13 @@ export class GJKCollisionDetector implements CollisionDetector {
 
     if (entity.boundingShape.type === "BoundingCircle") {
       const circle = entity.boundingShape;
-      const [bodyX, bodyY] = entity.position;
-
       const position = entity.position;
       const worldPosition: [number, number] = [
-        bodyX + position[0],
-        bodyY + position[1],
+        position[0] + circle.radius * directionNormal[0],
+        position[1] + circle.radius * directionNormal[1],
       ];
 
-      return [
-        worldPosition[0] + circle.radius * directionNormal[0],
-        worldPosition[1] + circle.radius * directionNormal[1],
-      ];
+      return worldPosition;
     }
 
     throw new Error("Entity has unsupported bounding shape");
@@ -120,12 +115,10 @@ export class GJKCollisionDetector implements CollisionDetector {
     return [direction[0] / magnitude, direction[1] / magnitude];
   }
 
-  private _lineSimplex(simplex: [[number, number], [number, number]]): {
-    direction: [number, number];
-    simplex: [[number, number], [number, number]] | [[number, number]];
-    isColliding: boolean;
-  } {
-    // TODO: Origin is on line
+  private _lineSimplex(
+    simplex: [[number, number], [number, number]],
+    direction: [number, number]
+  ): boolean {
     const A = simplex[0];
     const B = simplex[1];
 
@@ -133,46 +126,27 @@ export class GJKCollisionDetector implements CollisionDetector {
     const AB = this._getDirectionUnitVector(A, B);
 
     if (this._sameDirection(AB, AO)) {
-      // NOTE: This is the direction perpendicular to the plane of the simplex
-      // pointing in the direction of the origin
       const ABPerp = this._tripleProduct(AB, AO, AB);
 
-      const newDirectionMagnitude = Math.sqrt(ABPerp[0] ** 2 + ABPerp[1] ** 2);
-      const newDirectionUnitVector: [number, number] = [
-        ABPerp[0] / newDirectionMagnitude,
-        ABPerp[1] / newDirectionMagnitude,
-      ];
+      const magnitude = Math.sqrt(ABPerp[0] ** 2 + ABPerp[1] ** 2);
+      direction[0] = ABPerp[0] / magnitude;
+      direction[1] = ABPerp[1] / magnitude;
 
-      const newSimplex: [[number, number], [number, number]] = [A, B];
-
-      return {
-        direction: newDirectionUnitVector,
-        simplex: newSimplex,
-        isColliding: false,
-      };
+      return false;
     } else {
-      const newSimplex: [[number, number]] = [A];
+      direction[0] = AO[0];
+      direction[1] = AO[1];
 
-      return {
-        direction: AO,
-        simplex: newSimplex,
-        isColliding: false,
-      };
+      simplex.pop();
+
+      return false;
     }
   }
 
   private _triangleSimplex(
     simplex: [[number, number], [number, number], [number, number]],
     direction: [number, number]
-  ): {
-    simplex: [number, number][];
-    direction: [number, number];
-    isColliding: boolean;
-  } {
-    // TODO: Origin is on triangle
-
-    // TODO: Fix this. Triangles come out as lines (repeated 1st and 3rd vertices)
-
+  ): boolean {
     const C = simplex[0];
     const B = simplex[1];
     const A = simplex[2];
@@ -185,36 +159,24 @@ export class GJKCollisionDetector implements CollisionDetector {
     const ACperp = this._tripleProduct(AB, AC, AC);
 
     if (this._sameDirection(ABperp, AO)) {
-      const newSimplex = [B, A];
+      simplex.shift();
 
-      const newDirectionMagnitude = Math.sqrt(ABperp[0] ** 2 + ABperp[1] ** 2);
-      const newDirectionUnitVector: [number, number] = [
-        ABperp[0] / newDirectionMagnitude,
-        ABperp[1] / newDirectionMagnitude,
-      ];
+      const magnitude = Math.sqrt(ABperp[0] ** 2 + ABperp[1] ** 2);
+      direction[0] = ABperp[0] / magnitude;
+      direction[1] = ABperp[1] / magnitude;
 
-      return {
-        simplex: newSimplex,
-        direction: newDirectionUnitVector,
-        isColliding: false,
-      };
+      return false;
     } else if (this._sameDirection(ACperp, AO)) {
-      const newSimplex = [B, C];
+      simplex.pop();
 
-      const newDirectionMagnitude = Math.sqrt(ACperp[0] ** 2 + ACperp[1] ** 2);
-      const newDirectionUnitVector: [number, number] = [
-        ACperp[0] / newDirectionMagnitude,
-        ACperp[1] / newDirectionMagnitude,
-      ];
+      const magnitude = Math.sqrt(ACperp[0] ** 2 + ACperp[1] ** 2);
+      direction[0] = ACperp[0] / magnitude;
+      direction[1] = ACperp[1] / magnitude;
 
-      return {
-        simplex: newSimplex,
-        direction: newDirectionUnitVector,
-        isColliding: false,
-      };
+      return false;
     }
 
-    return { simplex, direction, isColliding: true };
+    return true;
   }
 
   /**
@@ -228,15 +190,12 @@ export class GJKCollisionDetector implements CollisionDetector {
   private _handleSimplex(
     simplex: [number, number][],
     direction: [number, number]
-  ): {
-    simplex: [number, number][];
-    direction: [number, number];
-    isColliding: boolean;
-  } {
+  ): boolean {
     switch (simplex.length) {
       case 2:
         return this._lineSimplex(
-          simplex as [[number, number], [number, number]]
+          simplex as [[number, number], [number, number]],
+          direction
         );
       case 3:
         const triangleSimplex = simplex as [
@@ -250,11 +209,106 @@ export class GJKCollisionDetector implements CollisionDetector {
     }
   }
 
+  private _findClosestEdgeToOrigin(polygon: [number, number][]): {
+    edgeIndex: number;
+    normal: [number, number];
+    magnitude: number;
+  } {
+    if (polygon.length < 2) {
+      // TODO: graceful error handling
+      throw new Error(
+        "Cannot find closest edge to origin: polygon has too few points"
+      );
+    }
+
+    let minDistance = Infinity;
+    let closestNormal: [number, number] | null = null;
+    let closestEdgeIndex: number | null = null;
+
+    // NOTE: Start at 1 to avoid the first edge (0, 1)
+    for (let i = 1; i < polygon.length; i++) {
+      const j = i + 1 === polygon.length ? 0 : i + 1;
+
+      const A = polygon[i];
+      const B = polygon[j];
+
+      const edgeVector: [number, number] = [B[0] - A[0], B[1] - A[1]];
+
+      const OA = this._getDirectionUnitVector([0, 0], A);
+
+      const unnormalizedNormal = this._tripleProduct(
+        edgeVector,
+        OA,
+        edgeVector
+      );
+      const magnitude = Math.sqrt(
+        unnormalizedNormal[0] ** 2 + unnormalizedNormal[1] ** 2
+      );
+      const normal: [number, number] = [
+        unnormalizedNormal[0] / magnitude,
+        unnormalizedNormal[1] / magnitude,
+      ];
+
+      const distance = normal[0] * A[0] + normal[1] * A[1];
+
+      if (distance < minDistance) {
+        minDistance = distance;
+        closestNormal = normal;
+        closestEdgeIndex = j;
+      }
+    }
+
+    return {
+      edgeIndex: closestEdgeIndex!,
+      normal: closestNormal!,
+      magnitude: minDistance!,
+    };
+  }
+
+  private readonly _proximityThreshold = 0.0001;
+
+  /**
+   * Generate collision information from a simplex using EPA.
+   *
+   * @param simplex The simplex to expand
+   * @param entity1 The first entity
+   * @param entity2 The second entity
+   * @returns The collision information
+   */
+  private _expandSimplex(
+    simplex: [number, number][],
+    entity1: PhysicsEntity,
+    entity2: PhysicsEntity
+  ): { normal: [number, number]; magnitude: number } {
+    const polygon = [...simplex];
+    while (true) {
+      const {
+        edgeIndex,
+        normal: edgeNormal,
+        magnitude: edgeDistance,
+      } = this._findClosestEdgeToOrigin(polygon);
+
+      const supportPoint = this._supportPoint(entity1, entity2, edgeNormal);
+
+      const supportPointDistance: number =
+        supportPoint[0] * edgeNormal[0] + supportPoint[1] * edgeNormal[1];
+
+      const isSupportPointOnEdge =
+        Math.abs(supportPointDistance - edgeDistance) <
+        this._proximityThreshold;
+
+      if (isSupportPointOnEdge) {
+        return { normal: edgeNormal, magnitude: supportPointDistance };
+      }
+
+      polygon.splice(edgeIndex, 0, supportPoint);
+    }
+  }
+
   private _detectCollision(
     entity1: PhysicsEntity,
     entity2: PhysicsEntity
-  ): boolean {
-    // Support point 1
+  ): [number, number][] | null {
     const initialDirection = this._getDirectionUnitVector(
       entity2.position,
       entity1.position
@@ -265,11 +319,9 @@ export class GJKCollisionDetector implements CollisionDetector {
       initialDirection
     );
 
-    // Create initial simplex
     let simplex: [number, number][] = [];
     simplex.push(supportPoint1);
 
-    // Support point 2
     let direction = this._getDirectionUnitVector(supportPoint1, [0, 0]);
 
     while (true) {
@@ -281,7 +333,7 @@ export class GJKCollisionDetector implements CollisionDetector {
           direction,
           supportPoint,
         });
-        return false; // No collision
+        return null;
       }
 
       simplex.push(supportPoint);
@@ -292,38 +344,14 @@ export class GJKCollisionDetector implements CollisionDetector {
         direction,
       });
 
-      const {
-        isColliding,
-        simplex: newSimplex,
-        direction: newDirection,
-      } = this._handleSimplex(simplex, direction);
+      const isColliding = this._handleSimplex(simplex, direction);
       if (isColliding) {
-        // console.log("isColliding", newSimplex, newDirection);
         this._debug({
           isColliding: true,
           simplex,
           direction,
         });
-        return true;
-      }
-
-      // TODO: Remove this; sanity check
-      if (
-        direction[0] === newDirection?.[0] &&
-        direction[1] === newDirection?.[1]
-      ) {
-        console.error("Direction is not updated", {
-          direction,
-          newDirection,
-        });
-        debugger;
-      }
-
-      if (newSimplex) {
-        simplex = newSimplex;
-      }
-      if (newDirection) {
-        direction = newDirection;
+        return simplex;
       }
     }
   }
@@ -343,8 +371,11 @@ export class GJKCollisionDetector implements CollisionDetector {
           continue;
         }
 
-        const isColliding = this._detectCollision(entity, otherEntity);
-        if (isColliding) {
+        const simplex = this._detectCollision(entity, otherEntity);
+        if (simplex) {
+          const { normal: edgeNormal, magnitude: edgeDistance } =
+            this._expandSimplex(simplex, entity, otherEntity);
+
           collisions.push({
             entity1: entity,
             entity2: otherEntity,
@@ -352,8 +383,8 @@ export class GJKCollisionDetector implements CollisionDetector {
             edge: null,
             // TODO: MTV
             minimumTranslationVector: {
-              normal: [0, 0],
-              magnitude: 0,
+              normal: edgeNormal,
+              magnitude: edgeDistance,
             },
           });
         }

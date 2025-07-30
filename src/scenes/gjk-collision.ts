@@ -82,14 +82,14 @@ function main() {
   const centerY = 0;
   const offset = 200;
 
-  // const circle1 = new DragAndDropCircle({
-  //   position: [centerX + offset, centerY],
-  //   radius: 50,
-  //   color: [34 / 255, 197 / 255, 94 / 255, 1],
-  //   handleRadius: 15,
-  //   handleColor: [0.4, 0.4, 0.4, 1],
-  // });
-  // stage.add(circle1);
+  const circle1 = new DragAndDropCircle({
+    position: [centerX + offset, centerY],
+    radius: 50,
+    color: [34 / 255, 197 / 255, 94 / 255, 1],
+    handleRadius: 15,
+    handleColor: [0.4, 0.4, 0.4, 1],
+  });
+  stage.add(circle1);
 
   // const circle2 = new DragAndDropCircle({
   //   position: [centerX, centerY + offset],
@@ -142,7 +142,8 @@ function main() {
         minimumTranslationVector: { normal, magnitude },
       } = collision;
       const collisionKey = [entity1, entity2].sort().join("-");
-      if (edge) {
+
+      if (edge && edge.length === 2) {
         if (!collisionEdges[collisionKey]) {
           const line = new Line({
             startPosition: edge[0],
@@ -1192,7 +1193,7 @@ export class Point implements Drawable {
 
 class Triangle implements Drawable {
   readonly id;
-  readonly vertices: [number, number][];
+  readonly vertices: [[number, number], [number, number], [number, number]];
   readonly color: [number, number, number, number];
   private _rotation: number; // radians
   private _scale: [number, number];
@@ -1212,7 +1213,7 @@ class Triangle implements Drawable {
   }) {
     this.id = getNext();
     // NOTE: Vertices must be in counter-clockwise order
-    this.vertices = vertices;
+    this.vertices = [...vertices];
     this.color = color;
     this._rotation = 0;
     this._scale = [1, 1];
