@@ -125,6 +125,8 @@ export class GJKCollisionDetector implements CollisionDetector {
     const AO = this._getDirectionUnitVector(A, [0, 0]);
     const AB = this._getDirectionUnitVector(A, B);
 
+    // TOOD: Handle case where origin is on line
+
     if (this._sameDirection(AB, AO)) {
       const ABPerp = this._tripleProduct(AB, AO, AB);
 
@@ -356,6 +358,68 @@ export class GJKCollisionDetector implements CollisionDetector {
     }
   }
 
+  private _circleCircleCollision(
+    entity1: PhysicsEntity,
+    entity2: PhysicsEntity
+  ):
+    | {
+        isColliding: true;
+        normal: [number, number];
+        magnitude: number;
+      }
+    | {
+        isColliding: false;
+        normal: null;
+        magnitude: null;
+      } {
+    if (!entity1.boundingShape || !entity2.boundingShape) {
+      console.error(
+        "Cannot check circle circle collision: Entity has no bounding shape",
+        { entity1, entity2 }
+      );
+      return { isColliding: false, normal: null, magnitude: null };
+    }
+
+    if (
+      entity1.boundingShape.type !== "BoundingCircle" ||
+      entity2.boundingShape.type !== "BoundingCircle"
+    ) {
+      console.error(
+        "Cannot check circle circle collision: Entity has unsupported bounding shape",
+        { entity1, entity2 }
+      );
+      return { isColliding: false, normal: null, magnitude: null };
+    }
+    const distance = Math.sqrt(
+      (entity1.position[0] - entity2.position[0]) ** 2 +
+        (entity1.position[1] - entity2.position[1]) ** 2
+    );
+
+    const isColliding =
+      distance <= entity1.boundingShape.radius + entity2.boundingShape.radius;
+
+    if (!isColliding) {
+      return { isColliding: false, normal: null, magnitude: null };
+    }
+
+    const normal = this._getDirectionUnitVector(
+      entity1.position,
+      entity2.position
+    );
+
+    const magnitude =
+      entity1.boundingShape.radius + entity2.boundingShape.radius - distance;
+
+    this._debug({
+      type: "circleCircleCollision",
+      isColliding,
+      normal,
+      magnitude,
+    });
+
+    return { isColliding, normal, magnitude };
+  }
+
   detectCollisions(entities: PhysicsEntity[]): Collision[] | null {
     const collisions: Collision[] = [];
     const activeEntities = entities;
@@ -368,6 +432,29 @@ export class GJKCollisionDetector implements CollisionDetector {
       for (let j = i + 1; j < activeEntities.length; j++) {
         const otherEntity = activeEntities[j];
         if (!otherEntity.boundingShape) {
+          continue;
+        }
+
+        // Circle Circle Special Case
+        if (
+          entity.boundingShape.type === "BoundingCircle" &&
+          otherEntity.boundingShape.type === "BoundingCircle"
+        ) {
+          const {
+            isColliding,
+            normal: edgeNormal,
+            magnitude: edgeDistance,
+          } = this._circleCircleCollision(entity, otherEntity);
+          if (isColliding) {
+            collisions.push({
+              entity1: entity,
+              entity2: otherEntity,
+              minimumTranslationVector: {
+                normal: edgeNormal,
+                magnitude: edgeDistance,
+              },
+            });
+          }
           continue;
         }
 
