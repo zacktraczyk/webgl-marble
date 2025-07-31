@@ -7,7 +7,7 @@ export type CollisionPair = [PhysicsEntity, PhysicsEntity];
 export type Collision = {
   entity1: PhysicsEntity;
   entity2: PhysicsEntity;
-  edge: Line | null; // NOTE: Only for debugging
+  edge?: Line | null; // NOTE: Only for debugging
   minimumTranslationVector: {
     normal: [number, number];
     magnitude: number;

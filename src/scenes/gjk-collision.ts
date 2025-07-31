@@ -17,66 +17,7 @@ import {
 } from "../engine/vdu/entity";
 
 function main() {
-  // Initialize
-  const gjkCollisionDetector = new GJKCollisionDetector();
-  const physics = new Physics({
-    collisionDetector: gjkCollisionDetector,
-    collisionResolver: new SATCollisionResolver(),
-  });
-  const stage = new Stage({ physics: physics });
-  stage.dragAndDrop = true;
-  stage.panAndZoom = true;
-  stage.centerCameraOnResize = false;
-  stage.drawMode = "TRIANGLES";
-
-  const numMajorGridColumns = 8;
-  const numMajorGridRows = 8;
-  const gridLines: Record<string, Line> = {};
-  const createGridLines = () => {
-    const gridSizeY = stage.canvas.clientHeight / numMajorGridRows;
-    for (let i = 1; i < numMajorGridRows; i++) {
-      const id = "row-" + i;
-      if (!gridLines[id]) {
-        const line = new Line({
-          startPosition: [
-            0 - stage.canvas.clientWidth / 2,
-            i * gridSizeY - stage.canvas.clientHeight / 2,
-          ],
-          endPosition: [
-            stage.canvas.clientWidth / 2,
-            i * gridSizeY - stage.canvas.clientHeight / 2,
-          ],
-          color: [0.1, 0.1, 0.1, 0.5],
-          stroke: 2,
-        });
-        stage.add(line);
-        gridLines[id] = line;
-      }
-    }
-
-    const gridSizeX = stage.canvas.clientWidth / numMajorGridColumns;
-    for (let i = 1; i < numMajorGridColumns; i++) {
-      const id = "column-" + i;
-      if (!gridLines[id]) {
-        const line = new Line({
-          startPosition: [
-            i * gridSizeX - stage.canvas.clientWidth / 2,
-            0 - stage.canvas.clientHeight / 2,
-          ],
-          endPosition: [
-            i * gridSizeX - stage.canvas.clientWidth / 2,
-            stage.canvas.clientHeight / 2,
-          ],
-          color: [0.1, 0.1, 0.1, 0.5],
-          stroke: 2,
-        });
-        stage.add(line);
-        gridLines[id] = line;
-      }
-    }
-  };
-
-  createGridLines();
+  const { stage, debugCleanup } = init();
 
   const centerX = 0;
   const centerY = 0;
@@ -91,14 +32,14 @@ function main() {
   });
   stage.add(circle1);
 
-  // const circle2 = new DragAndDropCircle({
-  //   position: [centerX, centerY + offset],
-  //   radius: 70,
-  //   color: [167 / 255, 139 / 255, 250 / 255, 1],
-  //   handleRadius: 15,
-  //   handleColor: [0.4, 0.4, 0.4, 1],
-  // });
-  // stage.add(circle2);
+  const circle2 = new DragAndDropCircle({
+    position: [centerX, centerY + offset],
+    radius: 70,
+    color: [167 / 255, 139 / 255, 250 / 255, 1],
+    handleRadius: 15,
+    handleColor: [0.4, 0.4, 0.4, 1],
+  });
+  stage.add(circle2);
 
   const hexagon1 = new DragAndDropHexagon({
     sideLength: 80,
@@ -213,21 +154,136 @@ function main() {
     });
   });
 
-  const MIN_PADDING = 20;
-  const GRAPH_WIDTH = 200;
-  const GRAPH_HEIGHT = 200;
-  const NUM_COLS = Math.floor(
-    (stage.canvas.clientWidth - MIN_PADDING) / (GRAPH_WIDTH + MIN_PADDING)
-  );
-  const COL_SPACING = stage.canvas.clientWidth / NUM_COLS;
-  const START_X = -stage.canvas.clientWidth / 2 + COL_SPACING / 2;
-  const START_Y =
-    stage.canvas.clientHeight / 2 -
-    GRAPH_HEIGHT / 2 -
-    (COL_SPACING - GRAPH_WIDTH);
+  const cleanupCollision = () => {
+    if (currentCollisions.length > 0) {
+      for (const collisionKey in collisionEdges) {
+        collisionEdges[collisionKey].delete();
+      }
 
+      for (const collisionKey in minimumTranslationVectorArrows) {
+        minimumTranslationVectorArrows[collisionKey][0].delete();
+        minimumTranslationVectorArrows[collisionKey][1].delete();
+      }
+
+      collisionEdges = {};
+      minimumTranslationVectorArrows = {};
+      currentCollisions = [];
+    }
+  };
+
+  const centerPoint = new Point({
+    radius: 5,
+    position: [0, 0],
+    color: [0, 1, 0, 1],
+  });
+  stage.add(centerPoint);
+
+  let lastTime = performance.now();
+  function updateScene() {
+    const time = performance.now();
+    const elapsed = time - lastTime;
+    lastTime = time;
+
+    debugCleanup();
+    cleanupCollision();
+
+    stage.update(elapsed);
+
+    updateFpsPerf();
+    updateDebugInfo({
+      collisions: currentCollisions,
+    });
+  }
+
+  function render() {
+    updateScene();
+
+    stage.render();
+    requestAnimationFrame(render);
+  }
+
+  requestAnimationFrame(render);
+}
+
+function init() {
+  // Stage
+  const gjkCollisionDetector = new GJKCollisionDetector();
+  const physics = new Physics({
+    collisionDetector: gjkCollisionDetector,
+    collisionResolver: new SATCollisionResolver(),
+  });
+  const stage = new Stage({ physics: physics });
+  stage.dragAndDrop = true;
+  stage.panAndZoom = true;
+  stage.centerCameraOnResize = false;
+  stage.drawMode = "TRIANGLES";
+
+  // Grid
+  const numMajorGridColumns = 8;
+  const numMajorGridRows = 8;
+  const gridLines: Record<string, Line> = {};
+  const createGridLines = () => {
+    const gridSizeY = stage.canvas.clientHeight / numMajorGridRows;
+    for (let i = 1; i < numMajorGridRows; i++) {
+      const id = "row-" + i;
+      if (!gridLines[id]) {
+        const line = new Line({
+          startPosition: [
+            0 - stage.canvas.clientWidth / 2,
+            i * gridSizeY - stage.canvas.clientHeight / 2,
+          ],
+          endPosition: [
+            stage.canvas.clientWidth / 2,
+            i * gridSizeY - stage.canvas.clientHeight / 2,
+          ],
+          color: [0.1, 0.1, 0.1, 0.5],
+          stroke: 2,
+        });
+        stage.add(line);
+        gridLines[id] = line;
+      }
+    }
+
+    const gridSizeX = stage.canvas.clientWidth / numMajorGridColumns;
+    for (let i = 1; i < numMajorGridColumns; i++) {
+      const id = "column-" + i;
+      if (!gridLines[id]) {
+        const line = new Line({
+          startPosition: [
+            i * gridSizeX - stage.canvas.clientWidth / 2,
+            0 - stage.canvas.clientHeight / 2,
+          ],
+          endPosition: [
+            i * gridSizeX - stage.canvas.clientWidth / 2,
+            stage.canvas.clientHeight / 2,
+          ],
+          color: [0.1, 0.1, 0.1, 0.5],
+          stroke: 2,
+        });
+        stage.add(line);
+        gridLines[id] = line;
+      }
+    }
+  };
+
+  createGridLines();
+
+  // Debug Graphs
   let debugGraphs: Graph[] = [];
   const addDebugGraph = (objects: (StageObject & Drawable)[]) => {
+    const MIN_PADDING = 20;
+    const GRAPH_WIDTH = 200;
+    const GRAPH_HEIGHT = 200;
+    const NUM_COLS = Math.floor(
+      (stage.canvas.clientWidth - MIN_PADDING) / (GRAPH_WIDTH + MIN_PADDING)
+    );
+    const COL_SPACING = stage.canvas.clientWidth / NUM_COLS;
+    const START_X = -stage.canvas.clientWidth / 2 + COL_SPACING / 2;
+    const START_Y =
+      stage.canvas.clientHeight / 2 -
+      GRAPH_HEIGHT / 2 -
+      (COL_SPACING - GRAPH_WIDTH);
+
     const i = debugGraphs.length;
     const x = START_X + (i % NUM_COLS) * COL_SPACING;
     const y = START_Y + Math.floor(i / NUM_COLS) * COL_SPACING;
@@ -249,13 +305,12 @@ function main() {
     debugGraphs = [];
   };
 
+  // Debug data
   let currentFarthestPoints: Record<string, Point> = {};
   let currentSupportPoints: Record<string, Point> = {};
-  // let currentSupportPointDirectionArrows: Record<string, Arrow> = {};
   let currentIsCollidingDebug: Record<string, any> = {};
   let inconclusiveSimplexes: Record<string, StageObject> = {};
   let inconclusiveSimplexesDirections: Record<string, Arrow> = {};
-  let showInconclusiveSimplexes = false;
   let isCollidingSimplex: (StageObject & Drawable) | null = null;
 
   gjkCollisionDetector.addDebugObserver((data) => {
@@ -413,22 +468,7 @@ function main() {
       currentSupportPoints = {};
     }
 
-    if (!currentCollisions.length) {
-      for (const collisionKey in collisionEdges) {
-        collisionEdges[collisionKey].delete();
-      }
-
-      for (const collisionKey in minimumTranslationVectorArrows) {
-        minimumTranslationVectorArrows[collisionKey][0].delete();
-        minimumTranslationVectorArrows[collisionKey][1].delete();
-      }
-
-      collisionEdges = {};
-      minimumTranslationVectorArrows = {};
-      currentCollisions = [];
-    }
-
-    if (!showInconclusiveSimplexes) {
+    if (Object.keys(inconclusiveSimplexes).length > 0) {
       for (const id in inconclusiveSimplexes) {
         inconclusiveSimplexes[id].delete();
       }
@@ -452,42 +492,7 @@ function main() {
     clearDebugGraphs();
   };
 
-  const centerPoint = new Point({
-    radius: 5,
-    position: [0, 0],
-    color: [0, 1, 0, 1],
-  });
-  stage.add(centerPoint);
-
-  let lastTime = performance.now();
-  function updateScene() {
-    const time = performance.now();
-    const elapsed = time - lastTime;
-    lastTime = time;
-
-    debugCleanup();
-
-    stage.update(elapsed);
-
-    updateFpsPerf();
-    updateDebugInfo({
-      // collisions: currentCollisions,
-      // numObjects: stage.objects.length,
-      // simplexes: constructInconclusiveSimplexes(inconclusiveSimplexes),
-      // isCollidingDebug: currentIsCollidingDebug,
-      isColliding:
-        Object.keys(currentIsCollidingDebug).length > 0 ? true : undefined,
-    });
-  }
-
-  function render() {
-    updateScene();
-
-    stage.render();
-    requestAnimationFrame(render);
-  }
-
-  requestAnimationFrame(render);
+  return { stage, debugCleanup };
 }
 
 const constructInconclusiveSimplexes = (
