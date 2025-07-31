@@ -379,9 +379,6 @@ export class GJKCollisionDetector implements CollisionDetector {
           collisions.push({
             entity1: entity,
             entity2: otherEntity,
-            // TODO: Edge
-            edge: null,
-            // TODO: MTV
             minimumTranslationVector: {
               normal: edgeNormal,
               magnitude: edgeDistance,
