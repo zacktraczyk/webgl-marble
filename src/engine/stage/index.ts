@@ -297,12 +297,13 @@ export class Stage {
 
   screenToWorld(screenX: number, screenY: number) {
     return [
-      screenX / this.zoom - this._vdu.camera.position[0],
-      screenY / this.zoom - this._vdu.camera.position[1],
+      (screenX - this._vdu.camera.position[0]) / this.zoom,
+      (screenY - this._vdu.camera.position[1]) / this.zoom,
     ];
   }
 
   worldToScreen(worldX: number, worldY: number) {
+    // TODO: Verify this is correct... should be the inverse of screenToWorld ?
     return [
       worldX * this.zoom + this._vdu.camera.position[0],
       worldY * this.zoom + this._vdu.camera.position[1],
