@@ -21,11 +21,12 @@ function main() {
   const CENTER_X = 0;
   const CENTER_Y = -stage.canvas.clientHeight / 4;
   const OFFSET = 100;
-  const INITIAL_VELOCITY = 70;
+  const INITIAL_VELOCITY_1 = 70;
+  const INITIAL_VELOCITY_2 = -70 + 50;
 
   const circle1 = new Ball({
     position: [CENTER_X - OFFSET, CENTER_Y],
-    velocity: [INITIAL_VELOCITY, 0],
+    velocity: [INITIAL_VELOCITY_1, 0],
     radius: 40,
     color: [1, 0, 0, 1],
     physicsType: "dynamic",
@@ -34,7 +35,7 @@ function main() {
 
   const circle2 = new Ball({
     position: [CENTER_X + OFFSET, CENTER_Y],
-    velocity: [-INITIAL_VELOCITY, 0],
+    velocity: [INITIAL_VELOCITY_2, 0],
     radius: 40,
     color: [1, 0, 0, 1],
     physicsType: "dynamic",
@@ -69,12 +70,12 @@ function main() {
   const resetObjects = () => {
     circle1.position[0] = CENTER_X - OFFSET;
     circle1.position[1] = CENTER_Y;
-    circle1.velocity[0] = INITIAL_VELOCITY;
+    circle1.velocity[0] = INITIAL_VELOCITY_1;
     circle1.velocity[1] = 0;
 
     circle2.position[0] = CENTER_X + OFFSET;
     circle2.position[1] = CENTER_Y;
-    circle2.velocity[0] = -INITIAL_VELOCITY;
+    circle2.velocity[0] = INITIAL_VELOCITY_2;
     circle2.velocity[1] = 0;
   };
 

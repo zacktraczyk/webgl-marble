@@ -46,13 +46,12 @@ function init() {
   const spawnw = stage.width - spawnPadding * 2;
   const spawnh = stage.height - spawnPadding * 2;
 
-  const numSpawnEntities = 50;
+  const numSpawnEntities = 80;
 
   function randomCirclesSpawn() {
     const circleSharedProps = {
       radius: 15,
       type: "dynamic" as const,
-      arrowMagnitude: 70,
     };
 
     // Spawn circles
