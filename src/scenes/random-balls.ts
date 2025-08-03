@@ -1,5 +1,8 @@
 import { Ball } from "../engine/object/ball";
 import { Rectangle } from "../engine/object/rectangle";
+import { GeneralCollisionResolver } from "../engine/physics/collision/general";
+import { GJKCollisionDetector } from "../engine/physics/collision/GJK";
+import Physics from "../engine/physics/physics";
 import Stage from "../engine/stage";
 
 function main() {
@@ -26,7 +29,14 @@ function main() {
 }
 
 function init() {
-  const stage = new Stage({ width: 1000, height: 1000 });
+  const gjk = new GJKCollisionDetector();
+  const resolver = new GeneralCollisionResolver();
+  const physics = new Physics({
+    collisionDetector: gjk,
+    collisionResolver: resolver,
+  });
+
+  const stage = new Stage({ width: 1000, height: 1000, physics });
   stage.panAndZoom = true;
 
   // Spawn area

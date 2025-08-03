@@ -83,6 +83,7 @@ export class Rectangle implements Drawable, Physical {
         parent: this,
         type: this.physicsType,
         position: this._position,
+        rotation: this.rotation,
         boundingShape: {
           type: "BoundingConvexPolygon",
           position: this._position,
@@ -118,6 +119,7 @@ export class Rectangle implements Drawable, Physical {
   sync() {
     if (this._physicsEntity) {
       this._position = this._physicsEntity.position;
+      this.rotation = this._physicsEntity.rotation;
       this.velocity = this._physicsEntity.velocity;
     }
 

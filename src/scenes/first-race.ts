@@ -1,5 +1,9 @@
 import { Circle } from "../engine/object/circle";
 import { Rectangle } from "../engine/object/rectangle";
+import { GeneralCollisionResolver } from "../engine/physics/collision/general";
+import { GJKCollisionDetector } from "../engine/physics/collision/GJK";
+import { SATCollisionDetector } from "../engine/physics/collision/SAT";
+import Physics from "../engine/physics/physics";
 import Stage from "../engine/stage";
 
 function main() {
@@ -51,9 +55,17 @@ function main() {
 }
 
 function init() {
+  const gjk = new GJKCollisionDetector();
+  const sat = new SATCollisionDetector();
+  const resolver = new GeneralCollisionResolver();
+  const physics = new Physics({
+    collisionDetector: gjk,
+    collisionResolver: resolver,
+  });
   const stage = new Stage({
     height: 1000,
     width: 1000,
+    physics,
   });
   stage.panAndZoom = true;
 
