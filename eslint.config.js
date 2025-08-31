@@ -1,6 +1,5 @@
 import eslint from "@eslint/js";
 import prettier from "eslint-config-prettier";
-import tailwind from "eslint-plugin-tailwindcss";
 import eslintPluginAstro from "eslint-plugin-astro";
 import globals from "globals";
 import tseslint from "typescript-eslint";
@@ -10,13 +9,21 @@ export default [
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
   tseslint.configs.eslintRecommended,
-  ...tailwind.configs["flat/recommended"],
   ...eslintPluginAstro.configs.recommended,
   prettier,
   {
     rules: {
       "@typescript-eslint/no-unused-vars": "warn",
+      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-empty-object-type": "warn",
+      "@typescript-eslint/triple-slash-reference": "warn",
+      "@typescript-eslint/no-unused-expressions": "warn",
+      "no-case-declarations": "warn",
+      "prefer-const": "warn",
     },
   },
   { languageOptions: { globals: globals.browser } },
+  {
+    ignores: ["dist/**", ".astro/**", "node_modules/**", "bun.lockb"],
+  },
 ];

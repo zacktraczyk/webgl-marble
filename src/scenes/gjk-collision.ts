@@ -312,7 +312,7 @@ function init() {
   let isCollidingSimplex: (StageObject & Drawable) | null = null;
 
   gjkCollisionDetector.addDebugObserver((data) => {
-    let debugGraphObjects: (StageObject & Drawable)[] = [];
+    const debugGraphObjects: (StageObject & Drawable)[] = [];
 
     const furthestPoint1 = data.furthestPoint1;
     if (furthestPoint1) {

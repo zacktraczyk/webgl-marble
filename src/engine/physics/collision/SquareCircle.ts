@@ -30,16 +30,16 @@ export class SquareCircleCollisionDetector implements CollisionDetector {
    * i.e. [[minX, minY], [maxX, maxY]]
    */
   _constructBoundingSquare(polygon: BoundingConvexPolygon): BoundingSquare {
-    let boundingSquare: BoundingSquare = [
+    const boundingSquare: BoundingSquare = [
       [-Infinity, -Infinity],
       [Infinity, Infinity],
     ];
     for (let i = 0; i < polygon.vertices.length; i++) {
       const vert = polygon.vertices[i];
-      let [bodyX, bodyY] = vert;
+      const [bodyX, bodyY] = vert;
 
-      let worldX = polygon.position[0] + bodyX;
-      let worldY = polygon.position[1] + bodyY;
+      const worldX = polygon.position[0] + bodyX;
+      const worldY = polygon.position[1] + bodyY;
 
       boundingSquare[0][0] = Math.min(worldX, boundingSquare[0][0]);
       boundingSquare[0][1] = Math.min(worldY, boundingSquare[0][1]);
@@ -174,7 +174,7 @@ export class SquareCircleCollisionDetector implements CollisionDetector {
     }
 
     // Calculate collision normal
-    let penetration = radiusSum - distance;
+    const penetration = radiusSum - distance;
     const normal: [number, number] = [dx / distance, dy / distance];
 
     const collision: SquareCircleCollisionResult = {

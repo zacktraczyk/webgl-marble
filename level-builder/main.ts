@@ -8,7 +8,7 @@ try {
   const toolSelectSquare = document.getElementById("#tool-select-square");
   const toolSelectCircle = document.getElementById("#tool-select-circle");
   const toolSelectFinishLine = document.getElementById(
-    "#tool-select-finish-line",
+    "#tool-select-finish-line"
   );
 
   levelBuilder({

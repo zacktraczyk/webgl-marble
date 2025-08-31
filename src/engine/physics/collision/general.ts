@@ -15,8 +15,8 @@ export class GeneralCollisionResolver implements CollisionResolver {
 
     // Correct penetration
     const { normal, magnitude } = minimumTranslationVector;
-    let penX = normal[0] * magnitude;
-    let penY = normal[1] * magnitude;
+    const penX = normal[0] * magnitude;
+    const penY = normal[1] * magnitude;
 
     // NOTE: Only dynamic entities should be corrected (or else dynamic entities
     // get stuck in kinematic entities)

@@ -321,10 +321,10 @@ export class GJKCollisionDetector implements CollisionDetector {
       initialDirection
     );
 
-    let simplex: [number, number][] = [];
+    const simplex: [number, number][] = [];
     simplex.push(supportPoint1);
 
-    let direction = this._getDirectionUnitVector(supportPoint1, [0, 0]);
+    const direction = this._getDirectionUnitVector(supportPoint1, [0, 0]);
 
     while (true) {
       const supportPoint = this._supportPoint(entity1, entity2, direction);

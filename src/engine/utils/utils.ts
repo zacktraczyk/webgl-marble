@@ -6,7 +6,7 @@
  */
 export const debounce = <F extends (...args: Parameters<F>) => ReturnType<F>>(
   func: F,
-  waitFor: number = 300,
+  waitFor: number = 300
 ) => {
   let timeout: NodeJS.Timeout;
 
@@ -27,7 +27,7 @@ export const debounce = <F extends (...args: Parameters<F>) => ReturnType<F>>(
  */
 export const throttle = <R, A extends unknown[]>(
   fn: (...args: A) => R,
-  delay: number = 500,
+  delay: number = 500
 ): [(...args: A) => R | undefined, () => void, () => void] => {
   let wait = false;
   let timeout: undefined | number;
