@@ -51,7 +51,7 @@ export class GeneralCollisionResolver implements CollisionResolver {
         normal[0] * relativeNormalVelocity * this._restitution;
       entity1.velocity[1] -=
         normal[1] * relativeNormalVelocity * this._restitution;
-    } else {
+    } else if (entity2.type === "dynamic") {
       entity2.velocity[0] +=
         normal[0] * relativeNormalVelocity * this._restitution;
       entity2.velocity[1] +=
@@ -63,7 +63,7 @@ export class GeneralCollisionResolver implements CollisionResolver {
         normal[0] * relativeNormalVelocity * this._restitution;
       entity2.velocity[1] +=
         normal[1] * relativeNormalVelocity * this._restitution;
-    } else {
+    } else if (entity1.type === "dynamic") {
       entity1.velocity[0] -=
         normal[0] * relativeNormalVelocity * this._restitution;
       entity1.velocity[1] -=
