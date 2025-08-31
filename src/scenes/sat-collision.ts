@@ -1,9 +1,7 @@
 import { Arrow } from "../engine/object/arrow";
 import { Line } from "../engine/object/line";
-import {
-  SATCollisionDetector,
-  SATCollisionResolver,
-} from "../engine/physics/collision/SAT";
+import { GeneralCollisionResolver } from "../engine/physics/collision/general";
+import { SATCollisionDetector } from "../engine/physics/collision/SAT";
 import { PhysicsEntity, type Physical } from "../engine/physics/entity";
 import Physics from "../engine/physics/physics";
 import Stage from "../engine/stage";
@@ -20,7 +18,7 @@ import {
 function main() {
   const physics = new Physics({
     collisionDetector: new SATCollisionDetector(),
-    collisionResolver: new SATCollisionResolver(),
+    collisionResolver: new GeneralCollisionResolver(),
   });
   const stage = new Stage({ physics: physics });
   stage.dragAndDrop = true;

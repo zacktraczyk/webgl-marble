@@ -154,7 +154,7 @@ export class Stage {
     const pointerup = (event: PointerEvent) => {
       event.preventDefault();
       if (this._isDragAndDropEnabled) {
-        this._dragAndDropHandlers.pointerup(event);
+        this._dragAndDropHandlers.pointerup();
       }
       if (this._isPanAndZoomEnabled) {
         this._panAndZoomHandlers.pointerup(event);
@@ -170,10 +170,10 @@ export class Stage {
 
     const pointerleave = (event: PointerEvent) => {
       if (this._isDragAndDropEnabled) {
-        this._dragAndDropHandlers.mouseleave(event);
+        this._dragAndDropHandlers.mouseleave();
       }
       if (this._isPanAndZoomEnabled) {
-        this._panAndZoomHandlers.mouseleave(event);
+        this._panAndZoomHandlers.mouseleave();
       }
     };
 
@@ -185,7 +185,7 @@ export class Stage {
 
     const resize = (event: Event) => {
       if (this._isCenterCameraOnResizeEnabled) {
-        this._centerCameraOnResizeHandlers.resize(event);
+        this._centerCameraOnResizeHandlers.resize();
       }
     };
     const debouncedResize = debounce(resize, 300);
