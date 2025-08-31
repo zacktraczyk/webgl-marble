@@ -4,7 +4,6 @@ import { Line } from "../engine/object/line";
 import { Point } from "../engine/object/point";
 import { Triangle } from "../engine/object/triangle";
 import { GJKCollisionDetector } from "../engine/physics/collision/GJK";
-import { SATCollisionResolver } from "../engine/physics/collision/SAT";
 import Physics from "../engine/physics/physics";
 import Stage, { type StageObject } from "../engine/stage";
 import { type Drawable } from "../engine/vdu/entity";
@@ -13,6 +12,7 @@ import {
   DragAndDropHexagon,
   DragAndDropRectangle,
 } from "../engine/object/dragAndDrop";
+import { GeneralCollisionResolver } from "../engine/physics/collision/general";
 
 function main() {
   const { stage, debugCleanup } = init();
@@ -206,9 +206,10 @@ function main() {
 function init() {
   // Stage
   const gjkCollisionDetector = new GJKCollisionDetector();
+  const resolver = new GeneralCollisionResolver();
   const physics = new Physics({
     collisionDetector: gjkCollisionDetector,
-    collisionResolver: new SATCollisionResolver(),
+    collisionResolver: resolver,
   });
   const stage = new Stage({ physics: physics });
   stage.dragAndDrop = true;
@@ -306,6 +307,7 @@ function init() {
   // Debug data
   let currentFarthestPoints: Record<string, Point> = {};
   let currentSupportPoints: Record<string, Point> = {};
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let currentIsCollidingDebug: Record<string, any> = {};
   let inconclusiveSimplexes: Record<string, StageObject> = {};
   let inconclusiveSimplexesDirections: Record<string, Arrow> = {};
@@ -492,33 +494,6 @@ function init() {
 
   return { stage, debugCleanup };
 }
-
-const constructInconclusiveSimplexes = (
-  inconclusiveSimplexes: Record<string, StageObject>
-) => {
-  return Object.keys(inconclusiveSimplexes).map((key, i) => {
-    if (inconclusiveSimplexes[key] instanceof Line) {
-      const vert = [
-        inconclusiveSimplexes[key].startPosition,
-        inconclusiveSimplexes[key].endPosition,
-      ];
-      return {
-        simplex: i + 1,
-        type: "line",
-        vertices: vert,
-      };
-    } else if (inconclusiveSimplexes[key] instanceof Triangle) {
-      const vert = inconclusiveSimplexes[key].vertices;
-      return {
-        simplex: i + 1,
-        type: "triangle",
-        vertices: vert,
-      };
-    }
-
-    throw new Error("Inconclusive simplex is not a line or triangle");
-  });
-};
 
 // Debug info
 const debugInfoElem = document.getElementById("#debug-info");

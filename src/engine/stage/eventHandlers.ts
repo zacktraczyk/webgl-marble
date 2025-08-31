@@ -1,4 +1,3 @@
-import type { StageObject } from ".";
 import type Stage from ".";
 import { VDU } from "../vdu/vdu";
 
@@ -18,6 +17,7 @@ export interface DragAndDroppable {
   grabHandleColor: [number, number, number, number];
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const isDragAndDroppable = (object: any): object is DragAndDroppable => {
   return "grabHandleRadius" in object;
 };
@@ -58,11 +58,11 @@ export class DragAndDropHandlers implements EventHandlers {
     this._draggingObject.position = [x, y];
   }
 
-  pointerup(event: PointerEvent) {
+  pointerup() {
     this._draggingObject = null;
   }
 
-  mouseleave(event: PointerEvent) {
+  mouseleave() {
     this._draggingObject = null;
   }
 }
@@ -111,7 +111,7 @@ export class PanAndZoomHandlers implements EventHandlers {
     this._lastZoom = this._vdu.zoom;
   }
 
-  mouseleave(event: PointerEvent) {
+  mouseleave() {
     this._lastPos = null;
     this._isPanning = false;
   }
@@ -124,7 +124,7 @@ export class CenterCameraOnResizeHandlers implements EventHandlers {
     this._vdu = vdu;
   }
 
-  resize(event: Event) {
+  resize() {
     this._vdu.camera.position[0] = this._vdu.canvas.clientWidth / 2;
     this._vdu.camera.position[1] = this._vdu.canvas.clientHeight / 2;
   }

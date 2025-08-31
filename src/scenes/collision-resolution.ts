@@ -1,5 +1,4 @@
 import Stage from "../engine/stage";
-import { Rectangle } from "../engine/object/rectangle";
 import { Ball } from "../engine/object/ball";
 import { GJKCollisionDetector } from "../engine/physics/collision/GJK";
 import Physics from "../engine/physics/physics";

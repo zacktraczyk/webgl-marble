@@ -12,6 +12,7 @@ export interface Drawable {
   delete(): void;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const isDrawable = (object: any): object is Drawable => {
   return "drawEntities" in object;
 };

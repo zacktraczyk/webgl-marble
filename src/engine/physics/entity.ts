@@ -23,6 +23,7 @@ export interface Physical {
   delete(): void;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const isPhysical = (object: any): object is Physical => {
   return object && typeof object.physicsEntity === "object";
 };

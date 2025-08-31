@@ -199,13 +199,14 @@ export class GJKCollisionDetector implements CollisionDetector {
           simplex as [[number, number], [number, number]],
           direction
         );
-      case 3:
+      case 3: {
         const triangleSimplex = simplex as [
           [number, number],
           [number, number],
           [number, number],
         ];
         return this._triangleSimplex(triangleSimplex, direction);
+      }
       default:
         throw new Error("Simplex has too many points");
     }
@@ -478,10 +479,12 @@ export class GJKCollisionDetector implements CollisionDetector {
     return collisions.length > 0 ? collisions : null;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   addDebugObserver(observer: (data: any) => void) {
     this._debug_observer.register(observer);
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   removeDebugObserver(observer: (data: any) => void) {
     this._debug_observer.unregister(observer);
   }
@@ -490,7 +493,9 @@ export class GJKCollisionDetector implements CollisionDetector {
     this._debug_observer.clear();
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private _debug_observer: Observer<any> = new Observer<any>();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private _debug(data: any) {
     this._debug_observer.notify(data);
   }

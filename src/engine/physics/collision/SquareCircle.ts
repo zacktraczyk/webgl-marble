@@ -1,6 +1,6 @@
 // NOTE: Square Circle Collision Detection is completely broken in refactor :/
 
-import type { Collision, CollisionDetector, CollisionResolver } from "./";
+import type { Collision, CollisionDetector } from "./";
 import {
   PhysicsEntity,
   type BoundingCircle,
@@ -269,80 +269,5 @@ export class SquareCircleCollisionDetector implements CollisionDetector {
     }
 
     return collisions.length > 0 ? collisions : null;
-  }
-}
-
-export class SquareCircleCollisionResolver implements CollisionResolver {
-  private _restitution = 0.6;
-  private _penetrationSlop = 0.8;
-
-  resolveCollisions(collisions: Collision[]) {
-    for (let i = 0; i < collisions.length; i++) {
-      const collision = collisions[i];
-
-      this._resolveCollision(collision);
-    }
-  }
-
-  private _correctPenetration(collision: Collision): [number, number] {
-    const {
-      entity1,
-      entity2,
-      minimumTranslationVector: { normal, magnitude },
-    } = collision;
-
-    const penetration = magnitude - this._penetrationSlop;
-
-    if (entity1.type === "dynamic") {
-      entity1.position[0] += normal[0] * penetration;
-      entity1.position[1] += normal[1] * penetration;
-    } else if (entity2.type === "dynamic") {
-      entity2.position[0] -= normal[0] * penetration;
-      entity2.position[1] -= normal[1] * penetration;
-    }
-
-    if (entity2.type === "dynamic") {
-      entity2.position[0] -= normal[0] * penetration;
-      entity2.position[1] -= normal[1] * penetration;
-    } else if (entity1.type === "dynamic") {
-      entity1.position[0] += normal[0] * penetration;
-      entity1.position[1] += normal[1] * penetration;
-    }
-
-    return normal;
-  }
-
-  private _resolveCollision(collision: Collision) {
-    const { entity1, entity2 } = collision;
-
-    // Correct penetration and calculate collision normal
-    const normal = this._correctPenetration(collision);
-
-    // Calculate relative velocity
-    const relativeVelocity = [
-      entity1.velocity[0] - entity2.velocity[0],
-      entity1.velocity[1] - entity2.velocity[1],
-    ];
-
-    // Calculate relative velocity in terms of the normal direction
-    const magAlongNormal =
-      relativeVelocity[0] * normal[0] + relativeVelocity[1] * normal[1];
-
-    // Calculate impulse magnitude
-    if (entity1.type === "dynamic") {
-      entity1.velocity[0] -= normal[0] * magAlongNormal * this._restitution;
-      entity1.velocity[1] -= normal[1] * magAlongNormal * this._restitution;
-    } else {
-      entity2.velocity[0] += normal[0] * magAlongNormal * this._restitution;
-      entity2.velocity[1] += normal[1] * magAlongNormal * this._restitution;
-    }
-
-    if (entity2.type === "dynamic") {
-      entity2.velocity[0] += normal[0] * magAlongNormal * this._restitution;
-      entity2.velocity[1] += normal[1] * magAlongNormal * this._restitution;
-    } else {
-      entity1.velocity[0] -= normal[0] * magAlongNormal * this._restitution;
-      entity1.velocity[1] -= normal[1] * magAlongNormal * this._restitution;
-    }
   }
 }
