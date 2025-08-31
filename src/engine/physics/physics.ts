@@ -8,7 +8,7 @@ import {
   type Collision,
 } from "./collision";
 import { GeneralCollisionResolver } from "./collision/general";
-import { SATCollisionDetector } from "./collision/SAT";
+import { GJKCollisionDetector } from "./collision/GJK";
 import { type Physical, PhysicsEntity } from "./entity";
 
 const GRAVITY_X = 0;
@@ -31,7 +31,7 @@ class Physics {
   }) {
     const { collisionDetector, collisionResolver } = params ?? {};
 
-    this._collider = collisionDetector ?? new SATCollisionDetector();
+    this._collider = collisionDetector ?? new GJKCollisionDetector();
     this._resolver = collisionResolver ?? new GeneralCollisionResolver();
   }
 
