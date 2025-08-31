@@ -48,7 +48,7 @@ function init() {
 
   const numSpawnEntities = 80;
 
-  function randomRectanglesSpawn() {
+  function randomCircleSpawn() {
     const circleSharedProps = {
       radius: 15,
       type: "dynamic" as const,
@@ -107,7 +107,7 @@ function init() {
 
   // Init
   spawnWalls();
-  randomRectanglesSpawn();
+  randomCircleSpawn();
 
   return {
     stage,
