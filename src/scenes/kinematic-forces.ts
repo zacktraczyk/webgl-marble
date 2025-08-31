@@ -5,7 +5,7 @@ import type { Ball } from "../engine/object/ball";
 
 const NUM_SPAWN_ENTITIES = 40;
 const SPAWN_BUFFER = 10;
-const BALL_RADIUS = 40;
+const BALL_RADIUS = 30;
 
 type Color = [number, number, number, number];
 
@@ -50,7 +50,7 @@ const getSafeSpawnBallPosition = ({
 
 const getOscillationMagnitude = (desiredWidth: number, period: number) => {
   // TODO: Correct translation from position to velocity magnitude
-  const velocityMagnitude = desiredWidth / 4;
+  const velocityMagnitude = desiredWidth / 8;
   return velocityMagnitude;
 };
 
@@ -60,7 +60,7 @@ function main() {
 
   const balls: Circle[] = [];
   for (let i = 0; i < NUM_SPAWN_ENTITIES; i++) {
-    const width = stage.canvas.clientWidth / 2;
+    const width = stage.canvas.clientWidth / 2 - 100;
     const [x, y] = getSafeSpawnBallPosition({
       balls,
       xRange: [-width, width],
@@ -83,8 +83,8 @@ function main() {
 
   const square1 = new Rectangle({
     position: [0, -thirdHeight],
-    width: 100,
-    height: 300,
+    width: 50,
+    height: 200,
     rotation: 0,
     physicsType: "kinematic",
     color: SQUARE_COLOR,
@@ -93,8 +93,8 @@ function main() {
 
   const square2 = new Rectangle({
     position: [0, thirdHeight],
-    width: 100,
-    height: 300,
+    width: 50,
+    height: 200,
     rotation: Math.PI / 8,
     physicsType: "kinematic",
     color: SQUARE_COLOR,
@@ -140,9 +140,10 @@ function main() {
         ball.velocity[0] = 0;
         ball.velocity[1] = 0;
 
+        const width = stage.canvas.clientWidth / 2 - 100;
         const [x, y] = getSafeSpawnBallPosition({
           balls,
-          xRange: [-stage.canvas.clientWidth / 2, stage.canvas.clientWidth / 2],
+          xRange: [-width, width],
           yRange: [
             -stage.canvas.clientHeight / 2 - 200,
             -stage.canvas.clientHeight / 2 - 100,

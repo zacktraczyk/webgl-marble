@@ -77,7 +77,7 @@ class Physics {
 
     this._cleanup();
 
-    elapsed *= 0.005;
+    elapsed *= 0.008;
 
     const gx = GRAVITY_X * elapsed;
     const gy = GRAVITY_Y * elapsed;
