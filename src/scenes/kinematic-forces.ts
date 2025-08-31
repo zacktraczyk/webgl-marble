@@ -1,17 +1,25 @@
 import Stage from "../engine/stage";
-import { Ball } from "../engine/object/ball";
 import { Rectangle } from "../engine/object/rectangle";
+import { Circle } from "../engine/object/circle";
+import type { Ball } from "../engine/object/ball";
 
 const NUM_SPAWN_ENTITIES = 40;
 const SPAWN_BUFFER = 10;
 const BALL_RADIUS = 40;
+
+type Color = [number, number, number, number];
+
+const BALL_COLOR: Color = [239 / 255, 68 / 255, 68 / 255, 1];
+
+const WALL_COLOR: Color = [34 / 255, 197 / 255, 94 / 255, 1];
+const SQUARE_COLOR: Color = [56 / 255, 189 / 255, 248 / 255, 1];
 
 const getSafeSpawnBallPosition = ({
   balls,
   xRange: [xMin, xMax],
   yRange: [yMin, yMax],
 }: {
-  balls: Ball[];
+  balls: (Circle | Ball)[];
   xRange: [number, number];
   yRange: [number, number];
 }) => {
@@ -41,9 +49,8 @@ const getSafeSpawnBallPosition = ({
 };
 
 const getOscillationMagnitude = (desiredWidth: number, period: number) => {
-  // convert desired with to velocity magnitude
+  // TODO: Correct translation from position to velocity magnitude
   const velocityMagnitude = desiredWidth / 4;
-
   return velocityMagnitude;
 };
 
@@ -51,7 +58,7 @@ function main() {
   const stage = new Stage();
   stage.panAndZoom = true;
 
-  const balls: Ball[] = [];
+  const balls: Circle[] = [];
   for (let i = 0; i < NUM_SPAWN_ENTITIES; i++) {
     const width = stage.canvas.clientWidth / 2;
     const [x, y] = getSafeSpawnBallPosition({
@@ -63,10 +70,10 @@ function main() {
       ],
     });
 
-    const ball = new Ball({
+    const ball = new Circle({
       position: [x, y],
       radius: BALL_RADIUS,
-      color: [1, 0, 0, 1],
+      color: BALL_COLOR,
     });
     balls.push(ball);
     stage.add(ball);
@@ -80,7 +87,7 @@ function main() {
     height: 300,
     rotation: 0,
     physicsType: "kinematic",
-    color: [0, 1, 0, 1],
+    color: SQUARE_COLOR,
   });
   stage.add(square1);
 
@@ -90,9 +97,42 @@ function main() {
     height: 300,
     rotation: Math.PI / 8,
     physicsType: "kinematic",
-    color: [0, 1, 0, 1],
+    color: SQUARE_COLOR,
   });
   stage.add(square2);
+
+  const spinnerArm1 = new Rectangle({
+    position: [0, 0],
+    width: 300,
+    height: 10,
+    color: SQUARE_COLOR,
+  });
+  stage.add(spinnerArm1);
+
+  const spinnerArm2 = new Rectangle({
+    position: [0, 0],
+    width: 300,
+    height: 10,
+    rotation: Math.PI / 2,
+    color: SQUARE_COLOR,
+  });
+  stage.add(spinnerArm2);
+
+  const leftWall = new Rectangle({
+    position: [-stage.canvas.clientWidth / 2, 0],
+    width: 50,
+    height: stage.canvas.clientHeight,
+    color: WALL_COLOR,
+  });
+  stage.add(leftWall);
+
+  const rightWall = new Rectangle({
+    position: [stage.canvas.clientWidth / 2, 0],
+    width: 50,
+    height: stage.canvas.clientHeight,
+    color: WALL_COLOR,
+  });
+  stage.add(rightWall);
 
   const resetOutOfBoundsCircles = () => {
     for (const ball of balls) {
@@ -128,6 +168,11 @@ function main() {
     square1.velocity[0] =
       (Math.sin(time / 1000 + Math.PI / 2) * oscillationMagnitude) / 2;
     square2.velocity[0] = (Math.sin(time / 1000) * oscillationMagnitude) / 2;
+
+    // Rotate spinner arms
+    // TODO: Angular velocity
+    spinnerArm1.rotation += 0.01;
+    spinnerArm2.rotation += 0.01;
 
     stage.update(elapsed);
     resetOutOfBoundsCircles();

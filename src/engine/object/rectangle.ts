@@ -11,7 +11,7 @@ export class Rectangle implements Drawable, Physical {
   readonly width: number;
   readonly height: number;
   private _position: [number, number];
-  rotation: number; // radians
+  private _rotation: number; // radians
   scale: [number, number];
   color: [number, number, number, number];
   private _drawEntity: DrawEntity | null = null;
@@ -43,7 +43,7 @@ export class Rectangle implements Drawable, Physical {
     this.width = width;
     this.height = height;
     this._position = position;
-    this.rotation = rotation ?? 0;
+    this._rotation = rotation ?? 0;
     this.scale = scale ?? [1, 1];
     this.color = color ?? [1, 1, 1, 1];
     this.physicsType = physicsType;
@@ -113,6 +113,20 @@ export class Rectangle implements Drawable, Physical {
     }
     if (this._drawEntity) {
       this._drawEntity.position = position;
+    }
+  }
+
+  get rotation() {
+    return this._rotation;
+  }
+
+  set rotation(rotation: number) {
+    this._rotation = rotation;
+    if (this._physicsEntity) {
+      this._physicsEntity.rotation = rotation;
+    }
+    if (this._drawEntity) {
+      this._drawEntity.rotation = rotation;
     }
   }
 
