@@ -4,7 +4,7 @@ import { createRectangle, type Drawable, type DrawEntity } from "../vdu/entity";
 import { Arrow } from "./arrow";
 import { Line } from "./line";
 import { Point } from "./point";
-import { Triangle } from "./triangle";
+import { TriangleOutline } from "./triangle";
 
 // TODO: Optimize!!
 export class Graph implements Drawable {
@@ -46,12 +46,12 @@ export class Graph implements Drawable {
     const newObjects: (StageObject & Drawable)[] = [];
     for (let i = 0; i < objects.length; i++) {
       const object = objects[i];
-      if (object instanceof Triangle) {
+      if (object instanceof TriangleOutline) {
         const verts = object.vertices.map((vert) => [
           vert[0] * this.scale,
           vert[1] * this.scale,
         ]);
-        const newObject = new Triangle({
+        const newObject = new TriangleOutline({
           vertices: [
             [verts[0][0] + this._position[0], verts[0][1] + this._position[1]],
             [verts[1][0] + this._position[0], verts[1][1] + this._position[1]],

@@ -1,23 +1,32 @@
 import { Circle } from "../engine/object/circle";
 import { Rectangle } from "../engine/object/rectangle";
-import { Triangle } from "../engine/object/triangle";
+import { RightTriangle } from "../engine/object/triangle";
 import Stage from "../engine/stage";
 
 type Color = [number, number, number, number];
+
+const WINDOW_PADDING = 50;
 
 const MARBEL_COLOR: Color = [56 / 255, 189 / 255, 248 / 255, 1];
 const MARBEL_RADIUS = 15;
 
 const WALL_THICKNESS = 50;
+const TRIANGLE_THICKNESS = WALL_THICKNESS * 2;
 const WALL_COLOR: Color = [113 / 255, 113 / 255, 122 / 255, 1];
 
+const NUM_PUSHERS = 6;
+const PUSHER_SIZE = TRIANGLE_THICKNESS;
+const PUSHER_OVERFLOW_DISTANCE = WALL_THICKNESS + PUSHER_SIZE / 2;
 const PUSHER_COLOR: Color = [1, 1, 1, 1];
+
+const OUT_OF_BOUNDS_THICKNESS = WINDOW_PADDING + PUSHER_OVERFLOW_DISTANCE;
+const OUT_OF_BOUNDS_COLOR: Color = [24 / 255, 24 / 255, 27 / 255, 1];
 
 const FINISH_LINE_THICKNESS = 25;
 const FINISH_LINE_COLOR: Color = [239 / 255, 68 / 255, 68 / 255, 1];
 
 function main() {
-  const { stage, finishLine } = init();
+  const { stage, finishLine, constrainPushers } = init();
 
   const finishedBalls: number[] = [];
   stage.registerPhysicsObserver(({ collisions }) => {
@@ -43,7 +52,7 @@ function main() {
     }
   });
 
-  const numMarbles = 100;
+  const numMarbles = 500;
   const marbels: Circle[] = [];
   const spawnBuffer = 5;
   const spawnBall = () => {
@@ -82,6 +91,8 @@ function main() {
       spawnBall();
     }
 
+    constrainPushers();
+
     stage.update(elapsed);
   }
 
@@ -102,10 +113,12 @@ function init() {
   });
   stage.panAndZoom = true;
   stage.centerCameraOnResize = true;
-  stage.fitStageToWindowOnResizePadding = 50;
+  stage.fitStageToWindowOnResizePadding = WINDOW_PADDING;
   stage.fitStageToWindowOnResize = true;
 
   const gapWidth = stage.width / 6;
+  const thirdHeight = stage.height / 6;
+
   function spawnWalls() {
     const leftWall = new Rectangle({
       position: [WALL_THICKNESS / 2 - stage.width / 2, WALL_THICKNESS / 2],
@@ -131,8 +144,6 @@ function init() {
     });
     stage.add(ceiling);
 
-    const thirdHeight = stage.height / 6;
-
     const secondFloor = new Rectangle({
       position: [-gapWidth / 2, -thirdHeight],
       width: stage.width - gapWidth,
@@ -140,6 +151,17 @@ function init() {
       color: WALL_COLOR,
     });
     stage.add(secondFloor);
+
+    const t1 = new RightTriangle({
+      position: [
+        -stage.width / 2 + WALL_THICKNESS + TRIANGLE_THICKNESS / 2,
+        -thirdHeight - WALL_THICKNESS / 2 - TRIANGLE_THICKNESS / 2,
+      ],
+      width: TRIANGLE_THICKNESS,
+      height: TRIANGLE_THICKNESS,
+      color: WALL_COLOR,
+    });
+    stage.add(t1);
 
     const firstFloor = new Rectangle({
       position: [gapWidth / 2, thirdHeight],
@@ -149,6 +171,18 @@ function init() {
     });
     stage.add(firstFloor);
 
+    const t2 = new RightTriangle({
+      rotation: -Math.PI / 2,
+      position: [
+        stage.width / 2 - WALL_THICKNESS - TRIANGLE_THICKNESS / 2,
+        thirdHeight - WALL_THICKNESS / 2 - TRIANGLE_THICKNESS / 2,
+      ],
+      width: TRIANGLE_THICKNESS,
+      height: TRIANGLE_THICKNESS,
+      color: WALL_COLOR,
+    });
+    stage.add(t2);
+
     const bottomFloor = new Rectangle({
       position: [-gapWidth / 2, stage.height - 25 - stage.height / 2],
       width: stage.width - gapWidth,
@@ -156,6 +190,49 @@ function init() {
       color: WALL_COLOR,
     });
     stage.add(bottomFloor);
+
+    const t3 = new RightTriangle({
+      position: [
+        -stage.width / 2 + WALL_THICKNESS + TRIANGLE_THICKNESS / 2,
+        stage.height / 2 - WALL_THICKNESS - TRIANGLE_THICKNESS / 2,
+      ],
+      width: TRIANGLE_THICKNESS,
+      height: TRIANGLE_THICKNESS,
+      color: WALL_COLOR,
+    });
+    stage.add(t3);
+
+    const outOfBoundsLeft = new Rectangle({
+      position: [-stage.width / 2 - OUT_OF_BOUNDS_THICKNESS / 2, 0],
+      width: OUT_OF_BOUNDS_THICKNESS,
+      height: stage.height + OUT_OF_BOUNDS_THICKNESS * 2,
+      color: OUT_OF_BOUNDS_COLOR,
+    });
+    stage.add(outOfBoundsLeft);
+
+    const outOfBoundsRight = new Rectangle({
+      position: [stage.width / 2 + OUT_OF_BOUNDS_THICKNESS / 2, 0],
+      width: OUT_OF_BOUNDS_THICKNESS,
+      height: stage.height + OUT_OF_BOUNDS_THICKNESS * 2,
+      color: OUT_OF_BOUNDS_COLOR,
+    });
+    stage.add(outOfBoundsRight);
+
+    const outOfBoundsTop = new Rectangle({
+      position: [0, -stage.height / 2 - OUT_OF_BOUNDS_THICKNESS / 2],
+      width: stage.width,
+      height: OUT_OF_BOUNDS_THICKNESS,
+      color: OUT_OF_BOUNDS_COLOR,
+    });
+    stage.add(outOfBoundsTop);
+
+    const outOfBoundsBottom = new Rectangle({
+      position: [0, stage.height / 2 + OUT_OF_BOUNDS_THICKNESS / 2],
+      width: stage.width,
+      height: OUT_OF_BOUNDS_THICKNESS,
+      color: OUT_OF_BOUNDS_COLOR,
+    });
+    stage.add(outOfBoundsBottom);
   }
 
   const finishLine = new Rectangle({
@@ -169,11 +246,67 @@ function init() {
   });
   stage.add(finishLine);
 
+  const offset = (stage.width + PUSHER_OVERFLOW_DISTANCE / 2) / NUM_PUSHERS;
+  const minTopPusherX =
+    -stage.width / 2 + PUSHER_SIZE - PUSHER_OVERFLOW_DISTANCE;
+  const maxTopPusherX =
+    stage.width / 2 - PUSHER_SIZE + PUSHER_OVERFLOW_DISTANCE;
+  const topPushers: RightTriangle[] = [];
+  for (let i = 0; i < NUM_PUSHERS; i++) {
+    const x = minTopPusherX + offset * i;
+    const y = -thirdHeight - WALL_THICKNESS / 2 - PUSHER_SIZE / 2;
+
+    const pusher = new RightTriangle({
+      position: [x, y],
+      width: PUSHER_SIZE,
+      height: PUSHER_SIZE,
+      color: PUSHER_COLOR,
+      velocity: [40, 0],
+    });
+    stage.add(pusher);
+    topPushers.push(pusher);
+  }
+
+  const bottomPushers: RightTriangle[] = [];
+  const minBottomPusherX =
+    stage.width / 2 - PUSHER_SIZE + PUSHER_OVERFLOW_DISTANCE;
+  const maxBottomPusherX =
+    -stage.width / 2 + PUSHER_SIZE / 2 - PUSHER_OVERFLOW_DISTANCE;
+  for (let i = 0; i < NUM_PUSHERS; i++) {
+    const x = minBottomPusherX - offset * i;
+    const y = thirdHeight - WALL_THICKNESS / 2 - PUSHER_SIZE / 2;
+
+    const pusher = new RightTriangle({
+      position: [x, y],
+      rotation: -Math.PI / 2,
+      width: PUSHER_SIZE,
+      height: PUSHER_SIZE,
+      color: PUSHER_COLOR,
+      velocity: [-40, 0],
+    });
+    stage.add(pusher);
+    bottomPushers.push(pusher);
+  }
+
+  const constrainPushers = () => {
+    for (const pusher of topPushers) {
+      if (pusher.position[0] > maxTopPusherX) {
+        pusher.position[0] = minTopPusherX;
+      }
+    }
+    for (const pusher of bottomPushers) {
+      if (pusher.position[0] < maxBottomPusherX) {
+        pusher.position[0] = minBottomPusherX;
+      }
+    }
+  };
+
   // Init
   spawnWalls();
 
   return {
     stage,
+    constrainPushers,
     finishLine,
   };
 }

@@ -2,7 +2,7 @@ import { Arrow } from "../engine/object/arrow";
 import { Graph } from "../engine/object/graph";
 import { Line } from "../engine/object/line";
 import { Point } from "../engine/object/point";
-import { Triangle } from "../engine/object/triangle";
+import { TriangleOutline } from "../engine/object/triangle";
 import { GJKCollisionDetector } from "../engine/physics/collision/GJK";
 import Physics from "../engine/physics/physics";
 import Stage, { type StageObject } from "../engine/stage";
@@ -364,7 +364,7 @@ function init() {
             color: [0.8, 0.0, 0.6, 1],
           });
         } else if (simplex.length === 3) {
-          isCollidingSimplex = new Triangle({
+          isCollidingSimplex = new TriangleOutline({
             vertices: simplex,
             color: [0.0, 0.8, 0.6, 1],
           });
@@ -394,7 +394,7 @@ function init() {
             color: [0.0, 0.3, 0.3, 1],
           });
         } else if (data.simplex.length === 3) {
-          inconclusiveSimplex = new Triangle({
+          inconclusiveSimplex = new TriangleOutline({
             vertices: data.simplex,
             color: [0.0, 0.3, 0.3, 1],
           });

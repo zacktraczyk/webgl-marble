@@ -318,3 +318,27 @@ export const createRectangleOriginLeftCenter = ({
 
   return drawEntity;
 };
+
+export const createRightTriangle = (
+  parent: Drawable,
+  width: number,
+  height: number
+): DrawEntity => {
+  // Center of triangle is at (0, 0)
+  const indicies2: number[] = [];
+
+  indicies2.push(width * (-1 / 2), height * -(1 / 2));
+  indicies2.push(width * (1 / 2), height * (1 / 2));
+  indicies2.push(width * (-1 / 2), height * (1 / 2));
+
+  const drawEntity = new DrawEntity({
+    parent,
+    position: [0, 0],
+    rotation: 0,
+    scale: [1, 1],
+    color: [1, 1, 1, 1],
+    indicies: indicies2,
+  });
+
+  return drawEntity;
+};
