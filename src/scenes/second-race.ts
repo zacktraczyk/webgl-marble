@@ -7,8 +7,27 @@ type Color = [number, number, number, number];
 
 const WINDOW_PADDING = 50;
 
-const MARBEL_COLOR: Color = [56 / 255, 189 / 255, 248 / 255, 1];
-const MARBEL_RADIUS = 15;
+const BLUE_COLOR: Color = [56 / 255, 189 / 255, 248 / 255, 1];
+const GREEN_COLOR: Color = [16 / 255, 255 / 255, 129 / 255, 1];
+const RED_COLOR: Color = [239 / 255, 68 / 255, 68 / 255, 1];
+const YELLOW_COLOR: Color = [255 / 255, 215 / 255, 0 / 255, 1];
+const PURPLE_COLOR: Color = [168 / 255, 85 / 255, 247 / 255, 1];
+const ORANGE_COLOR: Color = [255 / 255, 159 / 255, 67 / 255, 1];
+const PINK_COLOR: Color = [255 / 255, 186 / 255, 186 / 255, 1];
+const BROWN_COLOR: Color = [156 / 255, 102 / 255, 31 / 255, 1];
+const GRAY_COLOR: Color = [113 / 255, 113 / 255, 122 / 255, 1];
+const MARBEL_COLOR: Color[] = [
+  BLUE_COLOR,
+  GREEN_COLOR,
+  RED_COLOR,
+  YELLOW_COLOR,
+  PURPLE_COLOR,
+  ORANGE_COLOR,
+  PINK_COLOR,
+  BROWN_COLOR,
+  GRAY_COLOR,
+];
+const MARBEL_RADIUS = 20;
 
 const WALL_THICKNESS = 50;
 const TRIANGLE_THICKNESS = WALL_THICKNESS * 2;
@@ -55,6 +74,7 @@ function main() {
   const numMarbles = 500;
   const marbels: Circle[] = [];
   const spawnBuffer = 5;
+  let colorIndex = 0;
   const spawnBall = () => {
     const x = -stage.width / 2 + MARBEL_RADIUS + WALL_THICKNESS + spawnBuffer;
     const y = -stage.height / 2 + MARBEL_RADIUS + WALL_THICKNESS + spawnBuffer;
@@ -68,17 +88,19 @@ function main() {
       }
     }
 
-    const vx = Math.random() * 70;
+    const vx = Math.random() * 50 + 30;
     const vy = Math.random() * -50 - 60;
 
     const newMarble = new Circle({
       position: [x, y],
       velocity: [vx, vy],
       radius: MARBEL_RADIUS,
-      color: MARBEL_COLOR,
+      color: MARBEL_COLOR[colorIndex],
     });
     marbels.push(newMarble);
     stage.add(newMarble);
+
+    colorIndex = (colorIndex + 1) % MARBEL_COLOR.length;
   };
 
   let lastTime = performance.now();
@@ -261,19 +283,19 @@ function init() {
       width: PUSHER_SIZE,
       height: PUSHER_SIZE,
       color: PUSHER_COLOR,
-      velocity: [40, 0],
+      velocity: [60, 0],
     });
     stage.add(pusher);
     topPushers.push(pusher);
   }
 
-  const bottomPushers: RightTriangle[] = [];
-  const minBottomPusherX =
+  const middlePushers: RightTriangle[] = [];
+  const minMiddlePusherX =
     stage.width / 2 - PUSHER_SIZE + PUSHER_OVERFLOW_DISTANCE;
-  const maxBottomPusherX =
+  const maxMiddlePusherX =
     -stage.width / 2 + PUSHER_SIZE / 2 - PUSHER_OVERFLOW_DISTANCE;
   for (let i = 0; i < NUM_PUSHERS; i++) {
-    const x = minBottomPusherX - offset * i;
+    const x = minMiddlePusherX - offset * i;
     const y = thirdHeight - WALL_THICKNESS / 2 - PUSHER_SIZE / 2;
 
     const pusher = new RightTriangle({
@@ -282,7 +304,27 @@ function init() {
       width: PUSHER_SIZE,
       height: PUSHER_SIZE,
       color: PUSHER_COLOR,
-      velocity: [-40, 0],
+      velocity: [-60, 0],
+    });
+    stage.add(pusher);
+    middlePushers.push(pusher);
+  }
+
+  const bottomPushers: RightTriangle[] = [];
+  const minBottomPusherX =
+    -stage.width / 2 + PUSHER_SIZE - PUSHER_OVERFLOW_DISTANCE;
+  const maxBottomPusherX =
+    stage.width / 2 - PUSHER_SIZE + PUSHER_OVERFLOW_DISTANCE;
+  for (let i = 0; i < NUM_PUSHERS; i++) {
+    const x = minTopPusherX + offset * i;
+    const y = stage.height / 2 - WALL_THICKNESS - PUSHER_SIZE / 2;
+
+    const pusher = new RightTriangle({
+      position: [x, y],
+      width: PUSHER_SIZE,
+      height: PUSHER_SIZE,
+      color: PUSHER_COLOR,
+      velocity: [60, 0],
     });
     stage.add(pusher);
     bottomPushers.push(pusher);
@@ -294,8 +336,13 @@ function init() {
         pusher.position[0] = minTopPusherX;
       }
     }
+    for (const pusher of middlePushers) {
+      if (pusher.position[0] < maxMiddlePusherX) {
+        pusher.position[0] = minMiddlePusherX;
+      }
+    }
     for (const pusher of bottomPushers) {
-      if (pusher.position[0] < maxBottomPusherX) {
+      if (pusher.position[0] > maxBottomPusherX) {
         pusher.position[0] = minBottomPusherX;
       }
     }
