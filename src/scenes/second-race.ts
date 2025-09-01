@@ -26,6 +26,7 @@ const MARBEL_COLOR: Color[] = [
   BROWN_COLOR,
 ];
 const MARBEL_RADIUS = 20;
+const MARBEL_SPAWN_BUFFER = 10;
 
 const WALL_THICKNESS = 50;
 const TRIANGLE_THICKNESS = WALL_THICKNESS * 2;
@@ -71,11 +72,12 @@ function main() {
 
   const numMarbles = 500;
   const marbels: Circle[] = [];
-  const spawnBuffer = 5;
   let colorIndex = 0;
   const spawnBall = () => {
-    const x = -stage.width / 2 + MARBEL_RADIUS + WALL_THICKNESS + spawnBuffer;
-    const y = -stage.height / 2 + MARBEL_RADIUS + WALL_THICKNESS + spawnBuffer;
+    const x =
+      -stage.width / 2 + MARBEL_RADIUS + WALL_THICKNESS + MARBEL_SPAWN_BUFFER;
+    const y =
+      -stage.height / 2 + MARBEL_RADIUS + WALL_THICKNESS + MARBEL_SPAWN_BUFFER;
 
     for (const marble of marbels) {
       if (
@@ -86,8 +88,10 @@ function main() {
       }
     }
 
-    const vx = Math.random() * 50 + 30;
-    const vy = Math.random() * -50 - 60;
+    const speed = Math.random() * 30 + 70;
+
+    const vx = Math.random() * speed;
+    const vy = vx - speed - 10;
 
     const newMarble = new Circle({
       position: [x, y],
