@@ -15,7 +15,6 @@ const PURPLE_COLOR: Color = [168 / 255, 85 / 255, 247 / 255, 1];
 const ORANGE_COLOR: Color = [255 / 255, 159 / 255, 67 / 255, 1];
 const PINK_COLOR: Color = [255 / 255, 186 / 255, 186 / 255, 1];
 const BROWN_COLOR: Color = [156 / 255, 102 / 255, 31 / 255, 1];
-const GRAY_COLOR: Color = [113 / 255, 113 / 255, 122 / 255, 1];
 const MARBEL_COLOR: Color[] = [
   BLUE_COLOR,
   GREEN_COLOR,
@@ -25,7 +24,6 @@ const MARBEL_COLOR: Color[] = [
   ORANGE_COLOR,
   PINK_COLOR,
   BROWN_COLOR,
-  GRAY_COLOR,
 ];
 const MARBEL_RADIUS = 20;
 
@@ -103,6 +101,19 @@ function main() {
     colorIndex = (colorIndex + 1) % MARBEL_COLOR.length;
   };
 
+  const destroyOutOfBoundsObjects = () => {
+    for (const marble of marbels) {
+      if (
+        marble.position[0] < -stage.width / 2 - OUT_OF_BOUNDS_THICKNESS ||
+        marble.position[0] > stage.width / 2 + OUT_OF_BOUNDS_THICKNESS ||
+        marble.position[1] < -stage.height / 2 - OUT_OF_BOUNDS_THICKNESS ||
+        marble.position[1] > stage.height / 2 + OUT_OF_BOUNDS_THICKNESS
+      ) {
+        marble.delete();
+      }
+    }
+  };
+
   let lastTime = performance.now();
   function updateScene() {
     const time = performance.now();
@@ -114,6 +125,7 @@ function main() {
     }
 
     constrainPushers();
+    destroyOutOfBoundsObjects();
 
     stage.update(elapsed);
   }
