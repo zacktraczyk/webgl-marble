@@ -129,3 +129,26 @@ export class CenterCameraOnResizeHandlers implements EventHandlers {
     this._vdu.camera.position[1] = this._vdu.canvas.clientHeight / 2;
   }
 }
+
+export class FitStageToWindowOnResizeHandlers implements EventHandlers {
+  private _vdu: VDU;
+  private _stage: Stage;
+  padding: number = 0;
+
+  constructor(vdu: VDU, stage: Stage) {
+    this._vdu = vdu;
+    this._stage = stage;
+  }
+
+  resize() {
+    const clientWidth = this._vdu.canvas.clientWidth;
+    const clientHeight = this._vdu.canvas.clientHeight;
+    const stageWidth = this._stage.width;
+    const stageHeight = this._stage.height;
+
+    this._vdu.zoom = Math.min(
+      (clientWidth - this.padding * 2) / stageWidth,
+      (clientHeight - this.padding * 2) / stageHeight
+    );
+  }
+}

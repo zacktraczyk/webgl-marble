@@ -8,6 +8,7 @@ import {
   DragAndDropHandlers,
   type DragAndDroppable,
   type EventHandlers,
+  FitStageToWindowOnResizeHandlers,
   PanAndZoomHandlers,
 } from "./eventHandlers";
 
@@ -34,12 +35,14 @@ export class Stage {
   private readonly _panAndZoomHandlers: PanAndZoomHandlers;
   private readonly _dragAndDropHandlers: DragAndDropHandlers;
   private readonly _centerCameraOnResizeHandlers: CenterCameraOnResizeHandlers;
+  private readonly _fitStageToWindowOnResizeHandlers: FitStageToWindowOnResizeHandlers;
 
   private _canvasRegisteredEventHandlers: EventHandlers = {};
   private _windowRegisteredEventHandlers: EventHandlers = {};
   private _isPanAndZoomEnabled = false;
   private _isDragAndDropEnabled = false;
   private _isCenterCameraOnResizeEnabled = false;
+  private _isFitStageToWindowOnResizeEnabled = false;
 
   constructor({
     width = 600,
@@ -72,7 +75,8 @@ export class Stage {
     this._panAndZoomHandlers = new PanAndZoomHandlers(vdu);
     this._dragAndDropHandlers = new DragAndDropHandlers(this);
     this._centerCameraOnResizeHandlers = new CenterCameraOnResizeHandlers(vdu);
-
+    this._fitStageToWindowOnResizeHandlers =
+      new FitStageToWindowOnResizeHandlers(vdu, this);
     this.centerStage();
   }
 
@@ -187,6 +191,9 @@ export class Stage {
       if (this._isCenterCameraOnResizeEnabled) {
         this._centerCameraOnResizeHandlers.resize();
       }
+      if (this._isFitStageToWindowOnResizeEnabled) {
+        this._fitStageToWindowOnResizeHandlers.resize();
+      }
     };
     const debouncedResize = debounce(resize, 300);
 
@@ -274,10 +281,34 @@ export class Stage {
       if (!this.isEventHandlersRegistered) {
         this._registerEventHandlers();
       }
+      this._centerCameraOnResizeHandlers.resize();
       this._isCenterCameraOnResizeEnabled = true;
     } else {
       this._isCenterCameraOnResizeEnabled = false;
     }
+  }
+
+  set fitStageToWindowOnResize(value: boolean) {
+    if (this._isFitStageToWindowOnResizeEnabled === value) {
+      return;
+    }
+    if (value) {
+      if (!this.isEventHandlersRegistered) {
+        this._registerEventHandlers();
+      }
+      this._fitStageToWindowOnResizeHandlers.resize();
+      this._isFitStageToWindowOnResizeEnabled = true;
+    } else {
+      this._isFitStageToWindowOnResizeEnabled = false;
+    }
+  }
+
+  set fitStageToWindowOnResizePadding(value: number) {
+    this._fitStageToWindowOnResizeHandlers.padding = value;
+  }
+
+  get fitStageToWindowOnResizePadding() {
+    return this._fitStageToWindowOnResizeHandlers.padding;
   }
 
   centerStage() {

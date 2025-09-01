@@ -1,5 +1,6 @@
 import { Circle } from "../engine/object/circle";
 import { Rectangle } from "../engine/object/rectangle";
+import { Triangle } from "../engine/object/triangle";
 import Stage from "../engine/stage";
 
 type Color = [number, number, number, number];
@@ -8,8 +9,9 @@ const MARBEL_COLOR: Color = [56 / 255, 189 / 255, 248 / 255, 1];
 const MARBEL_RADIUS = 15;
 
 const WALL_THICKNESS = 50;
-const WALL_COLOR: Color = [34 / 255, 197 / 255, 94 / 255, 1];
-const SQUARE_COLOR: Color = [1, 1, 1, 1];
+const WALL_COLOR: Color = [113 / 255, 113 / 255, 122 / 255, 1];
+
+const PUSHER_COLOR: Color = [1, 1, 1, 1];
 
 const FINISH_LINE_THICKNESS = 25;
 const FINISH_LINE_COLOR: Color = [239 / 255, 68 / 255, 68 / 255, 1];
@@ -99,7 +101,9 @@ function init() {
     width: 2000,
   });
   stage.panAndZoom = true;
-  stage.fitStageToWindow(50);
+  stage.centerCameraOnResize = true;
+  stage.fitStageToWindowOnResizePadding = 50;
+  stage.fitStageToWindowOnResize = true;
 
   const gapWidth = stage.width / 6;
   function spawnWalls() {
