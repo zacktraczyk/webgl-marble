@@ -288,6 +288,17 @@ export class Stage {
     this._vdu.camera.position[1] = height / 2;
   }
 
+  fitStageToWindow(padding: number = 0) {
+    const width = this.canvas.clientWidth;
+    const height = this.canvas.clientHeight;
+    this._vdu.zoom = Math.min(
+      (width - padding * 2) / this.width,
+      (height - padding * 2) / this.height
+    );
+
+    this.centerStage();
+  }
+
   mouseWorldPosition(event: PointerEvent) {
     const screenX = event.clientX - this.canvas.getBoundingClientRect().left;
     const screenY = event.clientY - this.canvas.getBoundingClientRect().top;
