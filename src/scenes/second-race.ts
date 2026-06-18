@@ -1,9 +1,12 @@
+import { Ball } from "../engine/object/ball";
 import { Circle } from "../engine/object/circle";
 import { Rectangle } from "../engine/object/rectangle";
 import { RightTriangle } from "../engine/object/triangle";
-import Stage from "../engine/stage";
+import Stage, { type StageObject } from "../engine/stage";
 
 type Color = [number, number, number, number];
+
+const START_BOX_COLOR: Color = [0, 0, 1, 1];
 
 const WINDOW_PADDING = 50;
 
@@ -156,6 +159,83 @@ function init() {
 
   const gapWidth = stage.width / 6;
   const thirdHeight = stage.height / 6;
+
+  function spawnStartBoxes() {
+    const START_BOX_HEIGHT = 500;
+    const NUM_START_BOXES = 8;
+
+    const startBoxWidth = (stage.width - WALL_THICKNESS) / NUM_START_BOXES;
+
+    // const startBoxes: Rectangle[] = [];
+    for (let i = 0; i < NUM_START_BOXES; i++) {
+      const y = -stage.height / 2 - START_BOX_HEIGHT / 2;
+      const x =
+        -stage.width / 2 +
+        startBoxWidth / 2 +
+        startBoxWidth * i +
+        WALL_THICKNESS / 2;
+
+      const startBoxWalls = createStartBoxWalls(
+        x,
+        y,
+        startBoxWidth + WALL_THICKNESS,
+        START_BOX_HEIGHT,
+        START_BOX_COLOR,
+        WALL_THICKNESS
+      );
+      startBoxWalls.forEach((wall) => stage.add(wall));
+    }
+
+    const finalWall = new Rectangle({
+      position: [
+        stage.width / 2 - WALL_THICKNESS / 2,
+        -stage.height / 2 - START_BOX_HEIGHT / 2,
+      ],
+      width: WALL_THICKNESS,
+      height: START_BOX_HEIGHT,
+      color: START_BOX_COLOR,
+      physicsType: "kinematic",
+    });
+    stage.add(finalWall);
+  }
+
+  function fillSpawnStartBoxes() {
+    const NUM_BALLS = 10;
+    const NUM_START_BOXES = 8;
+    const START_BOX_HEIGHT = 500;
+
+    const startBoxWidth = (stage.width - WALL_THICKNESS) / NUM_START_BOXES;
+
+    for (let i = 0; i < NUM_START_BOXES; i++) {
+      const bound_x = [
+        -stage.width / 2 + startBoxWidth * i + WALL_THICKNESS,
+        -stage.width / 2 + startBoxWidth * (i + 1) - WALL_THICKNESS,
+      ];
+
+      const bound_y = [
+        -stage.height / 2 - START_BOX_HEIGHT + WALL_THICKNESS,
+        -stage.height / 2 - WALL_THICKNESS,
+      ];
+
+      let currentBoxBalls = 0;
+      let spawnCollisionCount = 0;
+      while (currentBoxBalls < NUM_BALLS && spawnCollisionCount < 10) {
+        const position_x =
+          bound_x[0] + Math.random() * (bound_x[1] - bound_x[0]);
+        const position_y =
+          bound_y[0] + Math.random() * (bound_y[1] - bound_y[0]);
+
+        const newBall = new Ball({
+          position: [position_x, position_y],
+          radius: MARBEL_RADIUS,
+          color: MARBEL_COLOR[i],
+        });
+
+        stage.add(newBall);
+        currentBoxBalls++;
+      }
+    }
+  }
 
   function spawnWalls() {
     const leftWall = new Rectangle({
@@ -366,12 +446,57 @@ function init() {
 
   // Init
   spawnWalls();
+  // spawnStartBoxes();
+  // fillSpawnStartBoxes();
 
   return {
     stage,
     constrainPushers,
     finishLine,
   };
+}
+
+function createStartBoxWalls(
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  color: Color,
+  strokeWidth: number
+): StageObject[] {
+  const topWall = new Rectangle({
+    position: [x, y - height / 2 + strokeWidth / 2],
+    width: width - strokeWidth * 2,
+    height: strokeWidth,
+    color: color,
+    physicsType: "kinematic",
+  });
+
+  const bottomWall = new Rectangle({
+    position: [x, y + height / 2 - strokeWidth / 2],
+    width: width - strokeWidth * 2,
+    height: strokeWidth,
+    color: color,
+    physicsType: "kinematic",
+  });
+
+  const leftWall = new Rectangle({
+    position: [x - width / 2 + strokeWidth / 2, y],
+    width: strokeWidth,
+    height: height,
+    color: color,
+    physicsType: "kinematic",
+  });
+
+  // const rightWall = new Rectangle({
+  //   position: [x + width / 2 - strokeWidth / 2, y],
+  //   width: strokeWidth,
+  //   height: height,
+  //   color: color,
+  //   physicsType: "kinematic",
+  // });
+
+  return [topWall, bottomWall, leftWall];
 }
 
 export default main;
