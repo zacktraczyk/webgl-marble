@@ -1,7 +1,10 @@
 export * from "./types";
-export { SATCollisionDetector } from "./detection/sat";
-export { GJKCollisionDetector } from "./detection/gjk";
+export { BruteForceBroadPhase } from "./broadphase/bruteForce";
+export { NaiveAabbBroadPhase } from "./broadphase/naiveAabb";
+export { computeWorldAabb, aabbsOverlap, type Aabb } from "./broadphase/aabb";
+export { SATNarrowPhase } from "./narrowphase/sat";
+export { GJKNarrowPhase } from "./narrowphase/gjk";
 export {
   SequentialImpulseSolver,
   type SequentialImpulseSolverOptions,
-} from "./resolution/sequentialImpulse";
+} from "./solver/sequentialImpulse";

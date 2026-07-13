@@ -4,7 +4,7 @@ import { Line } from "../engine/object/line";
 import { Point } from "../engine/object/point";
 import { TriangleOutline } from "../engine/object/triangle";
 import {
-  GJKCollisionDetector,
+  GJKNarrowPhase,
   SequentialImpulseSolver,
 } from "../engine/physics/collision";
 import Physics from "../engine/physics/physics";
@@ -196,11 +196,11 @@ function createScene(): Scene {
 
 function init() {
   // Stage
-  const gjkCollisionDetector = new GJKCollisionDetector();
-  const resolver = new SequentialImpulseSolver();
+  const gjkNarrowPhase = new GJKNarrowPhase();
+  const contactSolver = new SequentialImpulseSolver();
   const physics = new Physics({
-    collisionDetector: gjkCollisionDetector,
-    collisionResolver: resolver,
+    narrowPhase: gjkNarrowPhase,
+    contactSolver,
   });
   const stage = new Stage({ physics: physics });
   stage.dragAndDrop = true;
@@ -304,7 +304,7 @@ function init() {
   let inconclusiveSimplexesDirections: Record<string, Arrow> = {};
   let isCollidingSimplex: (StageObject & Drawable) | null = null;
 
-  gjkCollisionDetector.addDebugObserver((data) => {
+  gjkNarrowPhase.addDebugObserver((data) => {
     const debugGraphObjects: (StageObject & Drawable)[] = [];
 
     const furthestPoint1 = data.furthestPoint1;

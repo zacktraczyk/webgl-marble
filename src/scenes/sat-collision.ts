@@ -6,7 +6,7 @@ import {
 } from "../engine/object/dragAndDrop";
 import { Line } from "../engine/object/line";
 import {
-  SATCollisionDetector,
+  SATNarrowPhase,
   SequentialImpulseSolver,
 } from "../engine/physics/collision";
 import Physics from "../engine/physics/physics";
@@ -15,8 +15,8 @@ import Stage from "../engine/stage";
 
 function createScene(): Scene {
   const physics = new Physics({
-    collisionDetector: new SATCollisionDetector(),
-    collisionResolver: new SequentialImpulseSolver(),
+    narrowPhase: new SATNarrowPhase(),
+    contactSolver: new SequentialImpulseSolver(),
   });
   const stage = new Stage({ physics: physics });
   stage.dragAndDrop = true;

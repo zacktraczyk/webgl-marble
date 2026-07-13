@@ -5,10 +5,12 @@ import { Observer } from "../utils/Observer";
 import type { EntityId } from "../core/entity";
 import type { Transform } from "../core/transform";
 import {
-  type CollisionDetector,
-  type CollisionResolver,
+  type BroadPhase,
   type Collision,
-  SATCollisionDetector,
+  type ContactSolver,
+  type NarrowPhase,
+  NaiveAabbBroadPhase,
+  SATNarrowPhase,
   SequentialImpulseSolver,
 } from "./collision";
 import { assertValidConvexPolygon } from "./collision/geometry";
@@ -35,19 +37,22 @@ export type EntityCollision = {
 
 class Physics {
   private _entities: PhysicsEntity[] = [];
-  private readonly _collider: CollisionDetector;
-  private readonly _resolver: CollisionResolver;
+  private readonly _broadPhase: BroadPhase;
+  private readonly _narrowPhase: NarrowPhase;
+  private readonly _contactSolver: ContactSolver;
   private _observer: Observer<CollisionEvents> =
     new Observer<CollisionEvents>();
 
   constructor(params?: {
-    collisionDetector?: CollisionDetector;
-    collisionResolver?: CollisionResolver;
+    broadPhase?: BroadPhase;
+    narrowPhase?: NarrowPhase;
+    contactSolver?: ContactSolver;
   }) {
-    const { collisionDetector, collisionResolver } = params ?? {};
+    const { broadPhase, narrowPhase, contactSolver } = params ?? {};
 
-    this._collider = collisionDetector ?? new SATCollisionDetector();
-    this._resolver = collisionResolver ?? new SequentialImpulseSolver();
+    this._broadPhase = broadPhase ?? new NaiveAabbBroadPhase();
+    this._narrowPhase = narrowPhase ?? new SATNarrowPhase();
+    this._contactSolver = contactSolver ?? new SequentialImpulseSolver();
   }
 
   private _gravity_enabled: boolean = true;
@@ -69,7 +74,7 @@ class Physics {
   dispose() {
     this._entities = [];
     this._observer.clear();
-    this._resolver.clear?.();
+    this._contactSolver.clear?.();
   }
 
   // Entity
@@ -151,6 +156,18 @@ class Physics {
     }
   }
 
+  private _detectCollisions() {
+    const collisions: Collision[] = [];
+    const pairs = this._broadPhase.findPairs(this._entities);
+    for (const [entity1, entity2] of pairs) {
+      const collision = this._narrowPhase.detectCollision(entity1, entity2);
+      if (collision) {
+        collisions.push(collision);
+      }
+    }
+    return collisions;
+  }
+
   // Simulation
 
   update(elapsed: number) {
@@ -201,7 +218,7 @@ class Physics {
       }
     }
 
-    const collisions = this._collider.detectCollisions(this._entities);
+    const collisions = this._detectCollisions();
 
     if (collisions.length > 0) {
       this._observer.notify({
@@ -214,7 +231,7 @@ class Physics {
         })),
       });
     }
-    this._resolver.resolveCollisions(collisions, deltaSeconds);
+    this._contactSolver.solve(collisions, deltaSeconds);
   }
 }
 

@@ -2,6 +2,8 @@ import type { PhysicsEntity } from "../entity";
 
 export type Line = [[number, number], [number, number]];
 
+export type CollisionPair = readonly [PhysicsEntity, PhysicsEntity];
+
 export type ContactPoint = {
   /** A representative world-space point between the two shape surfaces. */
   position: [number, number];
@@ -28,12 +30,19 @@ export type Collision = {
   };
 };
 
-export interface CollisionDetector {
-  detectCollisions(entities: PhysicsEntity[]): Collision[];
+export interface BroadPhase {
+  findPairs(entities: readonly PhysicsEntity[]): CollisionPair[];
 }
 
-export interface CollisionResolver {
-  resolveCollisions(collisions: Collision[], deltaSeconds: number): void;
+export interface NarrowPhase {
+  detectCollision(
+    entity1: PhysicsEntity,
+    entity2: PhysicsEntity
+  ): Collision | null;
+}
+
+export interface ContactSolver {
+  solve(collisions: readonly Collision[], deltaSeconds: number): void;
   clear?(): void;
 }
 

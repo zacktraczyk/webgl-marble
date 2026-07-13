@@ -2,13 +2,13 @@ import {
   createCollision,
   createApproximateManifold,
   type Collision,
-  type CollisionDetector,
+  type NarrowPhase,
 } from "../types";
 import { Observer } from "../../../utils/Observer";
 import type { PhysicsEntity } from "../../entity";
 
 /** Diagnostic GJK/EPA implementation. Production contacts use SAT manifolds. */
-export class GJKCollisionDetector implements CollisionDetector {
+export class GJKNarrowPhase implements NarrowPhase {
   private _findFartherstPoint(
     entity: PhysicsEntity,
     directionNormal: [number, number]
@@ -427,72 +427,54 @@ export class GJKCollisionDetector implements CollisionDetector {
     return { isColliding, normal, magnitude };
   }
 
-  detectCollisions(entities: PhysicsEntity[]): Collision[] {
-    const collisions: Collision[] = [];
-    const activeEntities = entities;
-    for (let i = 0; i < activeEntities.length; i++) {
-      const entity = activeEntities[i];
-      if (!entity.boundingShape) {
-        continue;
-      }
-
-      for (let j = i + 1; j < activeEntities.length; j++) {
-        const otherEntity = activeEntities[j];
-        if (!otherEntity.boundingShape) {
-          continue;
-        }
-
-        // Circle Circle Special Case
-        if (
-          entity.boundingShape.type === "BoundingCircle" &&
-          otherEntity.boundingShape.type === "BoundingCircle"
-        ) {
-          const {
-            isColliding,
-            normal: edgeNormal,
-            magnitude: edgeDistance,
-          } = this._circleCircleCollision(entity, otherEntity);
-          if (isColliding) {
-            collisions.push(
-              createCollision({
-                entity1: entity,
-                entity2: otherEntity,
-                manifold: createApproximateManifold({
-                  entity1: entity,
-                  entity2: otherEntity,
-                  normal: edgeNormal,
-                  penetrationDepth: edgeDistance,
-                  featureId: "gjk:circle-circle",
-                }),
-              })
-            );
-          }
-          continue;
-        }
-
-        const simplex = this._detectCollision(entity, otherEntity);
-        if (simplex) {
-          const { normal: edgeNormal, magnitude: edgeDistance } =
-            this._expandSimplex(simplex, entity, otherEntity);
-
-          collisions.push(
-            createCollision({
-              entity1: entity,
-              entity2: otherEntity,
-              manifold: createApproximateManifold({
-                entity1: entity,
-                entity2: otherEntity,
-                normal: edgeNormal,
-                penetrationDepth: edgeDistance,
-                featureId: "gjk:epa",
-              }),
-            })
-          );
-        }
-      }
+  detectCollision(
+    entity1: PhysicsEntity,
+    entity2: PhysicsEntity
+  ): Collision | null {
+    if (!entity1.boundingShape || !entity2.boundingShape) {
+      return null;
     }
 
-    return collisions;
+    if (
+      entity1.boundingShape.type === "BoundingCircle" &&
+      entity2.boundingShape.type === "BoundingCircle"
+    ) {
+      const result = this._circleCircleCollision(entity1, entity2);
+      return result.isColliding
+        ? createCollision({
+            entity1,
+            entity2,
+            manifold: createApproximateManifold({
+              entity1,
+              entity2,
+              normal: result.normal,
+              penetrationDepth: result.magnitude,
+              featureId: "gjk:circle-circle",
+            }),
+          })
+        : null;
+    }
+
+    const simplex = this._detectCollision(entity1, entity2);
+    if (!simplex) {
+      return null;
+    }
+    const { normal, magnitude } = this._expandSimplex(
+      simplex,
+      entity1,
+      entity2
+    );
+    return createCollision({
+      entity1,
+      entity2,
+      manifold: createApproximateManifold({
+        entity1,
+        entity2,
+        normal,
+        penetrationDepth: magnitude,
+        featureId: "gjk:epa",
+      }),
+    });
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

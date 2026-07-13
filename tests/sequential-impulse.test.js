@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
-  SATCollisionDetector,
+  SATNarrowPhase,
   SequentialImpulseSolver,
 } from "../src/engine/physics/collision";
 import { PhysicsEntity } from "../src/engine/physics/entity";
@@ -41,10 +41,7 @@ const createBody = ({
   });
 
 const collide = (entity1, entity2) => {
-  const collision = new SATCollisionDetector().detectCollision(
-    entity1,
-    entity2
-  );
+  const collision = new SATNarrowPhase().detectCollision(entity1, entity2);
   if (!collision) {
     throw new Error("Test bodies did not collide");
   }
@@ -58,7 +55,7 @@ const solve = (collision, options = {}) => {
     positionCorrectionPercent: 0,
     ...options,
   });
-  solver.resolveCollisions([collision], 1 / 60);
+  solver.solve([collision], 1 / 60);
 };
 
 describe("SequentialImpulseSolver", () => {
@@ -180,7 +177,7 @@ describe("SequentialImpulseSolver", () => {
       positionCorrectionPercent: 1,
     });
 
-    solver.resolveCollisions([collide(bodyA, bodyB)], 1 / 60);
+    solver.solve([collide(bodyA, bodyB)], 1 / 60);
 
     expect(bodyA.position[0]).toBeCloseTo(-0.25);
     expect(bodyB.position[0]).toBeCloseTo(1.75);
@@ -223,8 +220,8 @@ describe("SequentialImpulseSolver", () => {
     });
     const collision = collide(moving, wall);
 
-    solver.resolveCollisions([collision], 1 / 60);
-    solver.resolveCollisions([collision], 1 / 60);
+    solver.solve([collision], 1 / 60);
+    solver.solve([collision], 1 / 60);
 
     expect(moving.velocity[0]).toBeCloseTo(0);
   });

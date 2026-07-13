@@ -1,10 +1,10 @@
 import {
   createCollision,
   type Collision,
-  type CollisionDetector,
   type ContactManifold,
   type ContactPoint,
   type Line,
+  type NarrowPhase,
 } from "../types";
 import type {
   BoundingCircle,
@@ -46,7 +46,7 @@ type ClipVertex = {
  * Polygon pairs use SAT to select a reference face, then clip the incident
  * edge to produce a stable one- or two-point contact manifold.
  */
-export class SATCollisionDetector implements CollisionDetector {
+export class SATNarrowPhase implements NarrowPhase {
   private readonly _validatedPolygons = new WeakSet<BoundingConvexPolygon>();
 
   detectCollision(
@@ -110,19 +110,6 @@ export class SATCollisionDetector implements CollisionDetector {
           diagnostics: { referenceEdge: result.edge ?? undefined },
         })
       : null;
-  }
-
-  detectCollisions(entities: PhysicsEntity[]): Collision[] {
-    const collisions: Collision[] = [];
-    for (let i = 0; i < entities.length; i++) {
-      for (let j = i + 1; j < entities.length; j++) {
-        const collision = this.detectCollision(entities[i], entities[j]);
-        if (collision) {
-          collisions.push(collision);
-        }
-      }
-    }
-    return collisions;
   }
 
   private _circleCircle(

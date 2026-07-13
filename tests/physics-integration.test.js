@@ -9,12 +9,11 @@ describe("Physics integration", () => {
     const steps = [];
     let resolverCleared = false;
     const physics = new Physics({
-      collisionDetector: {
-        detectCollision: () => null,
-        detectCollisions: () => [],
+      broadPhase: {
+        findPairs: () => [],
       },
-      collisionResolver: {
-        resolveCollisions: (collisions, deltaSeconds) => {
+      contactSolver: {
+        solve: (collisions, deltaSeconds) => {
           expect(collisions).toEqual([]);
           steps.push(deltaSeconds);
         },
@@ -66,12 +65,11 @@ describe("Physics integration", () => {
   test("rejects non-finite frame durations and ignores zero-duration updates", () => {
     let solveCount = 0;
     const physics = new Physics({
-      collisionDetector: {
-        detectCollision: () => null,
-        detectCollisions: () => [],
+      broadPhase: {
+        findPairs: () => [],
       },
-      collisionResolver: {
-        resolveCollisions: () => {
+      contactSolver: {
+        solve: () => {
           solveCount++;
         },
       },

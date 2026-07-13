@@ -1,4 +1,4 @@
-import type { Collision, CollisionResolver, ContactPoint } from "../types";
+import type { Collision, ContactPoint, ContactSolver } from "../types";
 import type { PhysicsEntity } from "../../entity";
 
 type Vec2 = [number, number];
@@ -34,7 +34,7 @@ export interface SequentialImpulseSolverOptions {
 }
 
 /** Iterative projected Gauss-Seidel contact solver with warm starting. */
-export class SequentialImpulseSolver implements CollisionResolver {
+export class SequentialImpulseSolver implements ContactSolver {
   private readonly _velocityIterations: number;
   private readonly _restitutionThreshold: number;
   private readonly _penetrationSlop: number;
@@ -75,7 +75,7 @@ export class SequentialImpulseSolver implements CollisionResolver {
     this._warmStart = warmStart;
   }
 
-  resolveCollisions(collisions: Collision[], deltaSeconds: number) {
+  solve(collisions: readonly Collision[], deltaSeconds: number) {
     if (!Number.isFinite(deltaSeconds) || deltaSeconds <= 0) {
       throw new Error("Collision resolution requires a positive time step");
     }
@@ -276,7 +276,7 @@ export class SequentialImpulseSolver implements CollisionResolver {
     );
   }
 
-  private _correctPositions(collisions: Collision[]) {
+  private _correctPositions(collisions: readonly Collision[]) {
     for (const { entity1, entity2, manifold } of collisions) {
       const inverseMass = entity1.inverseMass + entity2.inverseMass;
       if (inverseMass <= Number.EPSILON) {

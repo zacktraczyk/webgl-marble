@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { SATCollisionDetector } from "../src/engine/physics/collision";
+import { SATNarrowPhase } from "../src/engine/physics/collision";
 import { PhysicsEntity } from "../src/engine/physics/entity";
 
 let nextOwnerId = 1;
@@ -47,7 +47,7 @@ const expectFiniteManifold = (manifold) => {
 
 describe("SAT contact manifold generation", () => {
   test("generates a finite circle manifold when centers coincide", () => {
-    const detector = new SATCollisionDetector();
+    const detector = new SATNarrowPhase();
     const bodyA = createBody({ shape: circle(2), velocity: [-1, 0] });
     const bodyB = createBody({ shape: circle(3), velocity: [1, 0] });
 
@@ -61,7 +61,7 @@ describe("SAT contact manifold generation", () => {
   });
 
   test("uses translated circle-to-polygon geometry instead of the world origin", () => {
-    const detector = new SATCollisionDetector();
+    const detector = new SATNarrowPhase();
     const wall = createBody({ position: [1000, 1000], shape: box(50, 50) });
     const marble = createBody({ position: [1060, 1000], shape: circle(15) });
 
@@ -82,7 +82,7 @@ describe("SAT contact manifold generation", () => {
   });
 
   test("pushes a circle contained by a polygon toward its nearest face", () => {
-    const detector = new SATCollisionDetector();
+    const detector = new SATNarrowPhase();
     const wall = createBody({ position: [20, 30], shape: box(5, 5) });
     const marble = createBody({ position: [20, 30], shape: circle(1) });
 
@@ -95,7 +95,7 @@ describe("SAT contact manifold generation", () => {
   });
 
   test("clips overlapping polygon faces into a two-point manifold", () => {
-    const detector = new SATCollisionDetector();
+    const detector = new SATNarrowPhase();
     const bodyA = createBody({ position: [0, 0], shape: box(5, 5) });
     const bodyB = createBody({ position: [9, 0], shape: box(5, 5) });
 
@@ -113,7 +113,7 @@ describe("SAT contact manifold generation", () => {
   });
 
   test("returns mirrored normals when the pair order is reversed", () => {
-    const detector = new SATCollisionDetector();
+    const detector = new SATNarrowPhase();
     const bodyA = createBody({ position: [0, 0], shape: box(5, 5) });
     const bodyB = createBody({ position: [9, 0], shape: box(5, 5) });
 
@@ -130,7 +130,7 @@ describe("SAT contact manifold generation", () => {
   });
 
   test("does not report separated rotated polygons", () => {
-    const detector = new SATCollisionDetector();
+    const detector = new SATNarrowPhase();
     const bodyA = createBody({
       position: [0, 0],
       rotation: Math.PI / 4,
@@ -146,7 +146,7 @@ describe("SAT contact manifold generation", () => {
   });
 
   test("supports clockwise convex polygon input", () => {
-    const detector = new SATCollisionDetector();
+    const detector = new SATNarrowPhase();
     const clockwiseWall = createBody({
       shape: {
         type: "BoundingConvexPolygon",
@@ -164,7 +164,7 @@ describe("SAT contact manifold generation", () => {
   });
 
   test("rejects concave and degenerate polygon input", () => {
-    const detector = new SATCollisionDetector();
+    const detector = new SATNarrowPhase();
     const concave = createBody({
       shape: {
         type: "BoundingConvexPolygon",
@@ -185,7 +185,7 @@ describe("SAT contact manifold generation", () => {
   });
 
   test("preserves finite, mirrored manifolds across seeded pair permutations", () => {
-    const detector = new SATCollisionDetector();
+    const detector = new SATNarrowPhase();
     let seed = 0x5eed1234;
     const random = () => {
       seed = (1664525 * seed + 1013904223) >>> 0;
