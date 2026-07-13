@@ -1,6 +1,3 @@
-import { GeneralCollisionResolver } from "../engine/physics/collision/general";
-import { GJKCollisionDetector } from "../engine/physics/collision/GJK";
-import Physics from "../engine/physics/physics";
 import type { Scene } from "../engine/runtime/scene";
 import Stage from "../engine/stage";
 import { marbleDefinition } from "../game/prefabs/marble";
@@ -17,14 +14,7 @@ function createScene(): Scene {
 }
 
 function init() {
-  const gjk = new GJKCollisionDetector();
-  const resolver = new GeneralCollisionResolver();
-  const physics = new Physics({
-    collisionDetector: gjk,
-    collisionResolver: resolver,
-  });
-
-  const stage = new Stage({ width: 1000, height: 1000, physics });
+  const stage = new Stage({ width: 1000, height: 1000 });
   stage.panAndZoom = true;
 
   // Spawn area

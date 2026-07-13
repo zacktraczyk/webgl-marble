@@ -1,18 +1,9 @@
 import Stage from "../engine/stage";
 import { Ball } from "../engine/object/ball";
-import { GJKCollisionDetector } from "../engine/physics/collision/GJK";
-import Physics from "../engine/physics/physics";
-import { GeneralCollisionResolver } from "../engine/physics/collision/general";
 import type { Scene } from "../engine/runtime/scene";
 
 function createScene(): Scene {
-  const gjk = new GJKCollisionDetector();
-  const resolver = new GeneralCollisionResolver();
-  const physics = new Physics({
-    collisionDetector: gjk,
-    collisionResolver: resolver,
-  });
-  const stage = new Stage({ physics });
+  const stage = new Stage();
   stage.panAndZoom = true;
 
   // const spawnX = -250;

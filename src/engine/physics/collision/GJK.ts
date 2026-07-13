@@ -1,7 +1,13 @@
-import type { Collision, CollisionDetector } from ".";
+import {
+  createCollision,
+  createFallbackManifold,
+  type Collision,
+  type CollisionDetector,
+} from ".";
 import { Observer } from "../../utils/Observer";
 import type { PhysicsEntity } from "../entity";
 
+/** Diagnostic GJK/EPA implementation. Production contacts use SAT manifolds. */
 export class GJKCollisionDetector implements CollisionDetector {
   private _findFartherstPoint(
     entity: PhysicsEntity,
@@ -447,14 +453,19 @@ export class GJKCollisionDetector implements CollisionDetector {
             magnitude: edgeDistance,
           } = this._circleCircleCollision(entity, otherEntity);
           if (isColliding) {
-            collisions.push({
-              entity1: entity,
-              entity2: otherEntity,
-              minimumTranslationVector: {
-                normal: edgeNormal,
-                magnitude: edgeDistance,
-              },
-            });
+            collisions.push(
+              createCollision({
+                entity1: entity,
+                entity2: otherEntity,
+                manifold: createFallbackManifold({
+                  entity1: entity,
+                  entity2: otherEntity,
+                  normal: edgeNormal,
+                  penetrationDepth: edgeDistance,
+                  featureId: "gjk:circle-circle",
+                }),
+              })
+            );
           }
           continue;
         }
@@ -464,14 +475,19 @@ export class GJKCollisionDetector implements CollisionDetector {
           const { normal: edgeNormal, magnitude: edgeDistance } =
             this._expandSimplex(simplex, entity, otherEntity);
 
-          collisions.push({
-            entity1: entity,
-            entity2: otherEntity,
-            minimumTranslationVector: {
-              normal: edgeNormal,
-              magnitude: edgeDistance,
-            },
-          });
+          collisions.push(
+            createCollision({
+              entity1: entity,
+              entity2: otherEntity,
+              manifold: createFallbackManifold({
+                entity1: entity,
+                entity2: otherEntity,
+                normal: edgeNormal,
+                penetrationDepth: edgeDistance,
+                featureId: "gjk:epa",
+              }),
+            })
+          );
         }
       }
     }

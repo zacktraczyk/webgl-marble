@@ -1,506 +1,453 @@
-import type { Collision, CollisionDetector, Line } from ".";
 import {
+  createCollision,
+  type Collision,
+  type CollisionDetector,
+  type ContactManifold,
+  type ContactPoint,
+  type Line,
+} from ".";
+import type {
+  BoundingCircle,
+  BoundingConvexPolygon,
   PhysicsEntity,
-  type BoundingCircle,
-  type BoundingConvexPolygon,
 } from "../entity";
+import {
+  GEOMETRY_EPSILON,
+  add,
+  assertValidConvexPolygon,
+  closestPointOnSegment,
+  dot,
+  lengthSquared,
+  normalize,
+  scale,
+  signedArea,
+  subtract,
+  type Vec2,
+} from "./geometry";
 
-export type SATResult =
-  | {
-      isColliding: false;
-      edge: null;
-      minimumTranslationVector: null;
-    }
-  | {
-      isColliding: true;
-      edge: Line | null; // NOTE: Only for debugging
-      minimumTranslationVector: {
-        normal: [number, number];
-        magnitude: number;
-      } | null;
-    };
+type WorldPolygon = {
+  vertices: Vec2[];
+  outwardNormals: Vec2[];
+};
 
+type PolygonContact = {
+  manifold: ContactManifold;
+  edge: Line | null;
+};
+
+type ClipVertex = {
+  point: Vec2;
+  feature: string;
+};
+
+/**
+ * Production narrow phase for circles and convex polygons.
+ *
+ * Polygon pairs use SAT to select a reference face, then clip the incident
+ * edge to produce a stable one- or two-point contact manifold.
+ */
 export class SATCollisionDetector implements CollisionDetector {
-  private _getPolygonEdges(
-    polygon: BoundingConvexPolygon,
-    position: [number, number],
-    // TODO: Add scale
-    rotation: number
-  ): Line[] {
-    const edges: Line[] = [];
-    for (let i = 0; i < polygon.vertices.length; i++) {
-      // Transform body vertices to world space
-      const bodyVertex1 = polygon.vertices[i];
-      const bodyVertex2 = polygon.vertices[(i + 1) % polygon.vertices.length];
+  private readonly _validatedPolygons = new WeakSet<BoundingConvexPolygon>();
 
-      const rotatedBodyVertex1 = [
-        bodyVertex1[0] * Math.cos(rotation) -
-          bodyVertex1[1] * Math.sin(rotation),
-        bodyVertex1[0] * Math.sin(rotation) +
-          bodyVertex1[1] * Math.cos(rotation),
-      ];
-
-      const rotatedBodyVertex2 = [
-        bodyVertex2[0] * Math.cos(rotation) -
-          bodyVertex2[1] * Math.sin(rotation),
-        bodyVertex2[0] * Math.sin(rotation) +
-          bodyVertex2[1] * Math.cos(rotation),
-      ];
-
-      const worldVertex1 = [
-        rotatedBodyVertex1[0] + position[0],
-        rotatedBodyVertex1[1] + position[1],
-      ];
-      const worldVertex2 = [
-        rotatedBodyVertex2[0] + position[0],
-        rotatedBodyVertex2[1] + position[1],
-      ];
-
-      edges.push([
-        [worldVertex1[0], worldVertex1[1]],
-        [worldVertex2[0], worldVertex2[1]],
-      ]);
-    }
-    return edges;
-  }
-
-  private _projectPolygonOnAxis(
-    polygon: BoundingConvexPolygon,
-    position: [number, number],
-    rotation: number,
-    axis: [number, number]
-  ): [number, number] {
-    let min = Infinity;
-    let max = -Infinity;
-
-    for (const vertex of polygon.vertices) {
-      const rotatedBodyVertex = [
-        vertex[0] * Math.cos(rotation) - vertex[1] * Math.sin(rotation),
-        vertex[0] * Math.sin(rotation) + vertex[1] * Math.cos(rotation),
-      ];
-
-      const worldVertex = [
-        rotatedBodyVertex[0] + position[0],
-        rotatedBodyVertex[1] + position[1],
-      ];
-
-      const projection = worldVertex[0] * axis[0] + worldVertex[1] * axis[1];
-      min = Math.min(min, projection);
-      max = Math.max(max, projection);
-    }
-
-    return [min, max];
-  }
-
-  private _projectCircleOnAxis(
-    circle: BoundingCircle,
-    position: [number, number],
-    axis: [number, number]
-  ): [number, number] {
-    const [x, y] = position;
-
-    const projection = x * axis[0] + y * axis[1];
-    const r = circle.radius;
-
-    return [projection - r, projection + r];
-  }
-
-  private _polygonPolygonSAT(
+  detectCollision(
     entity1: PhysicsEntity,
     entity2: PhysicsEntity
-  ): SATResult {
-    if (!entity1.boundingShape || !entity2.boundingShape) {
-      throw new Error("Sanity check failed: Bounding shape is undefined");
+  ): Collision | null {
+    const shape1 = entity1.boundingShape;
+    const shape2 = entity2.boundingShape;
+    if (!shape1 || !shape2) {
+      return null;
     }
 
-    if (
-      entity1.boundingShape.type !== "BoundingConvexPolygon" ||
-      entity2.boundingShape.type !== "BoundingConvexPolygon"
-    ) {
-      throw new Error(
-        "Sanity check failed: Invalid bounding shape type, both physics entities should be BoundingConvexPolygon"
-      );
-    }
-
-    // Collect all edges of both polygons
-    const edges1 = this._getPolygonEdges(
-      entity1.boundingShape,
-      entity1.position,
-      entity1.rotation
-    );
-    const edges2 = this._getPolygonEdges(
-      entity2.boundingShape,
-      entity2.position,
-      entity2.rotation
-    );
-    const edges = [...edges1, ...edges2];
-
-    let smallestOverlap = Infinity;
-    let smallestOverlapEdge: Line | null = null; // NOTE: Only for debugging
-    let smallestOverlapAxis: [number, number] | null = null;
-    for (let i = 0; i < edges.length; i++) {
-      if (i < 1) {
-        continue;
+    if (shape1.type === "BoundingCircle") {
+      this._assertValidCircle(shape1);
+      if (shape2.type === "BoundingCircle") {
+        this._assertValidCircle(shape2);
+        const manifold = this._circleCircle(entity1, shape1, entity2, shape2);
+        return manifold
+          ? createCollision({ entity1, entity2, manifold })
+          : null;
       }
 
-      const edge = edges[i];
-      const [p1, p2] = edge;
-      const dx = p2[0] - p1[0];
-      const dy = p2[1] - p1[1];
-      const mag = Math.sqrt(dx * dx + dy * dy);
-      if (mag === 0) {
-        continue;
+      const polygon2 = this._worldPolygon(entity2, shape2);
+      const result = this._polygonCircle(polygon2, shape1, entity1);
+      if (!result) {
+        return null;
       }
-
-      const normal: [number, number] = [-dy / mag, dx / mag];
-
-      const proj1 = this._projectPolygonOnAxis(
-        entity1.boundingShape,
-        entity1.position,
-        entity1.rotation,
-        normal
-      );
-      const proj2 = this._projectPolygonOnAxis(
-        entity2.boundingShape,
-        entity2.position,
-        entity2.rotation,
-        normal
-      );
-
-      const [p1min, p1max] = proj1;
-      const [p2min, p2max] = proj2;
-
-      // // Check if 2 lines are overlapping
-      if (p1min > p2max || p2min > p1max) {
-        return {
-          isColliding: false,
-          edge: null,
-          minimumTranslationVector: null,
-        };
-      }
-
-      const overlap = p1max - p2min;
-      if (overlap < smallestOverlap) {
-        smallestOverlapEdge = edge;
-        smallestOverlap = overlap;
-        smallestOverlapAxis = normal;
-      }
-    }
-
-    if (!smallestOverlapAxis) {
-      throw new Error(
-        "Sanity check failed: polygon polygon overlap but no smallest overlap axis found"
-      );
-    }
-
-    return {
-      isColliding: true,
-      edge: smallestOverlapEdge,
-      minimumTranslationVector: {
-        normal: smallestOverlapAxis,
-        magnitude: smallestOverlap,
-      },
-    };
-  }
-
-  private _polygonCircleSAT(
-    polygon: PhysicsEntity,
-    circle: PhysicsEntity
-  ): SATResult {
-    if (!polygon.boundingShape || !circle.boundingShape) {
-      throw new Error("Sanity check failed: Bounding shape is undefined");
-    }
-
-    if (
-      !(
-        polygon.boundingShape?.type === "BoundingConvexPolygon" &&
-        circle.boundingShape?.type === "BoundingCircle"
-      )
-    ) {
-      throw new Error("Sanity check failed: Invalid bounding shape type");
-    }
-
-    let smallestOverlap = Infinity;
-    let smallestOverlapEdge: Line | null = null; // NOTE: Only for debugging
-    let smallestOverlapAxis: [number, number] | null = null;
-
-    // Find closeset point on polygon to circle
-    const entity1Vertices = polygon.boundingShape.vertices;
-    let closestPoint: [number, number] = [0, 0];
-    let minDistance = Infinity;
-    for (let i = 0; i < entity1Vertices.length; i++) {
-      const vertex = entity1Vertices[i];
-      const rotatedVertex: [number, number] = [
-        vertex[0] * Math.cos(polygon.rotation) -
-          vertex[1] * Math.sin(polygon.rotation),
-        vertex[0] * Math.sin(polygon.rotation) +
-          vertex[1] * Math.cos(polygon.rotation),
-      ];
-
-      const worldVertex: [number, number] = [
-        rotatedVertex[0] + polygon.position[0],
-        rotatedVertex[1] + polygon.position[1],
-      ];
-
-      const distance = Math.sqrt(
-        (worldVertex[0] - circle.position[0]) ** 2 +
-          (worldVertex[1] - circle.position[1]) ** 2
-      );
-      if (distance < minDistance) {
-        minDistance = distance;
-        closestPoint = worldVertex;
-      }
-    }
-
-    const magnitude = Math.sqrt(closestPoint[0] ** 2 + closestPoint[1] ** 2);
-    const axis: [number, number] = [
-      closestPoint[0] / magnitude,
-      closestPoint[1] / magnitude,
-    ];
-
-    const proj1 = this._projectPolygonOnAxis(
-      polygon.boundingShape,
-      polygon.position,
-      polygon.rotation,
-      axis
-    );
-    const proj2 = this._projectCircleOnAxis(
-      circle.boundingShape,
-      circle.position,
-      axis
-    );
-
-    const [p1min, p1max] = proj1;
-    const [p2min, p2max] = proj2;
-
-    if (p1min > p2max || p2min > p1max) {
-      return {
-        isColliding: false,
-        edge: null,
-        minimumTranslationVector: null,
+      const manifold: ContactManifold = {
+        ...result.manifold,
+        normal: scale(result.manifold.normal, -1),
       };
+      return createCollision({
+        entity1,
+        entity2,
+        manifold,
+        edge: result.edge,
+      });
     }
 
-    const overlap = p1max - p2min;
-    if (overlap < smallestOverlap) {
-      smallestOverlap = overlap;
-      smallestOverlapEdge = [closestPoint, closestPoint];
-      smallestOverlapAxis = axis;
+    const polygon1 = this._worldPolygon(entity1, shape1);
+    if (shape2.type === "BoundingCircle") {
+      this._assertValidCircle(shape2);
+      const result = this._polygonCircle(polygon1, shape2, entity2);
+      return result
+        ? createCollision({
+            entity1,
+            entity2,
+            manifold: result.manifold,
+            edge: result.edge,
+          })
+        : null;
     }
 
-    const edges = this._getPolygonEdges(
-      polygon.boundingShape,
-      polygon.position,
-      polygon.rotation
-    );
-    for (let i = 0; i < edges.length; i++) {
-      if (i < 1) {
-        continue;
-      }
-
-      const edge = edges[i];
-      const [p1, p2] = edge;
-      const dx = p2[0] - p1[0];
-      const dy = p2[1] - p1[1];
-      const mag = Math.sqrt(dx * dx + dy * dy);
-      if (mag === 0) {
-        continue;
-      }
-
-      const normal: [number, number] = [-dy / mag, dx / mag];
-      const proj1 = this._projectPolygonOnAxis(
-        polygon.boundingShape,
-        polygon.position,
-        polygon.rotation,
-        normal
-      );
-      const proj2 = this._projectCircleOnAxis(
-        circle.boundingShape,
-        circle.position,
-        normal
-      );
-
-      const [p1min, p1max] = proj1;
-      const [p2min, p2max] = proj2;
-
-      if (p1min > p2max || p2min > p1max) {
-        return {
-          isColliding: false,
-          edge: null,
-          minimumTranslationVector: null,
-        };
-      }
-
-      const overlap = p1max - p2min;
-      if (overlap < smallestOverlap) {
-        smallestOverlap = overlap;
-        smallestOverlapEdge = edge;
-        smallestOverlapAxis = normal;
-      }
-    }
-
-    if (!smallestOverlapAxis) {
-      throw new Error(
-        "Sanity check failed: polygon circle overlap but no smallest overlap axis found"
-      );
-    }
-
-    return {
-      isColliding: true,
-      edge: smallestOverlapEdge,
-      minimumTranslationVector: {
-        normal: smallestOverlapAxis,
-        magnitude: smallestOverlap,
-      },
-    };
-  }
-
-  private _circleCircleSAT(
-    entity1: PhysicsEntity,
-    entity2: PhysicsEntity
-  ): SATResult {
-    if (
-      !(
-        entity1.boundingShape?.type === "BoundingCircle" &&
-        entity2.boundingShape?.type === "BoundingCircle"
-      )
-    ) {
-      throw new Error("Sanity check failed: Invalid bounding shape type");
-    }
-
-    const [x1, y1] = entity1.position;
-    const r1 = entity1.boundingShape.radius;
-
-    const [x2, y2] = entity2.position;
-    const r2 = entity2.boundingShape.radius;
-
-    const dx = x2 - x1;
-    const dy = y2 - y1;
-
-    const distance = Math.sqrt(dx * dx + dy * dy);
-    const sumOfRadii = r1 + r2;
-
-    // Calculate normal (direction from entity2 to entity1)
-    const normal: [number, number] = [dx / distance, dy / distance];
-
-    if (distance <= sumOfRadii) {
-      return {
-        isColliding: true,
-        edge: null,
-        minimumTranslationVector: {
-          normal: normal,
-          magnitude: sumOfRadii - distance,
-        },
-      };
-    }
-
-    return {
-      isColliding: false,
-      edge: null,
-      minimumTranslationVector: null,
-    };
+    const polygon2 = this._worldPolygon(entity2, shape2);
+    const result = this._polygonPolygon(polygon1, polygon2);
+    return result
+      ? createCollision({
+          entity1,
+          entity2,
+          manifold: result.manifold,
+          edge: result.edge,
+        })
+      : null;
   }
 
   detectCollisions(entities: PhysicsEntity[]): Collision[] | null {
     const collisions: Collision[] = [];
-    const activeEntities = entities;
-    for (let i = 0; i < activeEntities.length; i++) {
-      const entity = activeEntities[i];
-      if (!entity.boundingShape) {
-        continue;
-      }
-
-      for (let j = i + 1; j < activeEntities.length; j++) {
-        const otherEntity = activeEntities[j];
-        if (!otherEntity.boundingShape) {
-          continue;
-        }
-
-        // Homogenous entity collision checks
-        if (
-          entity.boundingShape.type === "BoundingConvexPolygon" &&
-          otherEntity.boundingShape.type === "BoundingConvexPolygon"
-        ) {
-          const { isColliding, minimumTranslationVector, edge } =
-            this._polygonPolygonSAT(entity, otherEntity);
-          if (isColliding) {
-            if (!minimumTranslationVector) {
-              throw new Error(
-                "Sanity check failed: polygon polygon overlap but no minimum translation vector found"
-              );
-            }
-
-            collisions.push({
-              entity1: entity,
-              entity2: otherEntity,
-              edge,
-              minimumTranslationVector,
-            });
-          }
-        }
-
-        if (
-          entity.boundingShape.type === "BoundingCircle" &&
-          otherEntity.boundingShape.type === "BoundingCircle"
-        ) {
-          const { isColliding, minimumTranslationVector, edge } =
-            this._circleCircleSAT(entity, otherEntity);
-          if (isColliding) {
-            if (!minimumTranslationVector) {
-              throw new Error(
-                "Sanity check failed: circle circle overlap but no minimum translation vector found"
-              );
-            }
-
-            collisions.push({
-              entity1: entity,
-              entity2: otherEntity,
-              edge,
-              minimumTranslationVector,
-            });
-          }
-        }
-
-        // Heterogenous entity collision checks
-        const heterogenousEntityPermutations = [
-          [entity, otherEntity],
-          [otherEntity, entity],
-        ];
-
-        for (const [
-          entityHet,
-          otherEntityHet,
-        ] of heterogenousEntityPermutations) {
-          if (!entityHet.boundingShape || !otherEntityHet.boundingShape) {
-            // Sanity check / typescript validation
-            continue;
-          }
-
-          if (
-            entityHet.boundingShape.type === "BoundingConvexPolygon" &&
-            otherEntityHet.boundingShape.type === "BoundingCircle"
-          ) {
-            const { isColliding, minimumTranslationVector, edge } =
-              this._polygonCircleSAT(entityHet, otherEntityHet);
-            if (isColliding) {
-              if (!minimumTranslationVector) {
-                throw new Error(
-                  "Sanity check failed: polygon circle overlap but no minimum translation vector found"
-                );
-              }
-
-              collisions.push({
-                entity1: entityHet,
-                entity2: otherEntityHet,
-                edge,
-                minimumTranslationVector,
-              });
-            }
-          }
+    for (let i = 0; i < entities.length; i++) {
+      for (let j = i + 1; j < entities.length; j++) {
+        const collision = this.detectCollision(entities[i], entities[j]);
+        if (collision) {
+          collisions.push(collision);
         }
       }
     }
-
     return collisions.length > 0 ? collisions : null;
+  }
+
+  private _circleCircle(
+    entity1: PhysicsEntity,
+    circle1: BoundingCircle,
+    entity2: PhysicsEntity,
+    circle2: BoundingCircle
+  ): ContactManifold | null {
+    const delta = subtract(entity2.position, entity1.position);
+    const distanceSquared = lengthSquared(delta);
+    const combinedRadius = circle1.radius + circle2.radius;
+    if (
+      distanceSquared >
+      (combinedRadius + GEOMETRY_EPSILON) * (combinedRadius + GEOMETRY_EPSILON)
+    ) {
+      return null;
+    }
+
+    const distance = Math.sqrt(distanceSquared);
+    const fallback = normalize(
+      subtract(entity2.velocity, entity1.velocity),
+      [1, 0]
+    );
+    const normal = normalize(delta, fallback);
+    const pointOn1 = add(entity1.position, scale(normal, circle1.radius));
+    const pointOn2 = subtract(entity2.position, scale(normal, circle2.radius));
+    const separation = distance - combinedRadius;
+
+    return {
+      normal,
+      penetrationDepth: Math.max(0, -separation),
+      points: [
+        {
+          position: scale(add(pointOn1, pointOn2), 0.5),
+          separation,
+          featureId: "circle-circle",
+        },
+      ],
+    };
+  }
+
+  /** Returns a manifold whose normal points from polygon toward circle. */
+  private _polygonCircle(
+    polygon: WorldPolygon,
+    circle: BoundingCircle,
+    circleEntity: PhysicsEntity
+  ): PolygonContact | null {
+    const center = circleEntity.position;
+    let inside = true;
+    let closestPoint: Vec2 = polygon.vertices[0];
+    let closestEdgeIndex = 0;
+    let closestDistanceSquared = Infinity;
+
+    for (let i = 0; i < polygon.vertices.length; i++) {
+      const start = polygon.vertices[i];
+      const end = polygon.vertices[(i + 1) % polygon.vertices.length];
+      if (
+        dot(polygon.outwardNormals[i], subtract(center, start)) >
+        GEOMETRY_EPSILON
+      ) {
+        inside = false;
+      }
+
+      const candidate = closestPointOnSegment(center, start, end);
+      const distanceSquared = lengthSquared(subtract(center, candidate));
+      if (distanceSquared < closestDistanceSquared) {
+        closestDistanceSquared = distanceSquared;
+        closestPoint = candidate;
+        closestEdgeIndex = i;
+      }
+    }
+
+    const radiusWithTolerance = circle.radius + GEOMETRY_EPSILON;
+    if (!inside && closestDistanceSquared > radiusWithTolerance ** 2) {
+      return null;
+    }
+
+    const distance = Math.sqrt(closestDistanceSquared);
+    let normal: Vec2;
+    if (distance <= GEOMETRY_EPSILON) {
+      normal = polygon.outwardNormals[closestEdgeIndex];
+    } else if (inside) {
+      normal = scale(subtract(closestPoint, center), 1 / distance);
+    } else {
+      normal = scale(subtract(center, closestPoint), 1 / distance);
+    }
+
+    const separation = inside
+      ? -(distance + circle.radius)
+      : distance - circle.radius;
+    const pointOnCircle = inside
+      ? add(center, scale(normal, circle.radius))
+      : subtract(center, scale(normal, circle.radius));
+    const contactPoint: ContactPoint = {
+      position: scale(add(closestPoint, pointOnCircle), 0.5),
+      separation,
+      featureId: `polygon-circle:${closestEdgeIndex}:${inside ? "inside" : "outside"}`,
+    };
+
+    return {
+      edge: [
+        polygon.vertices[closestEdgeIndex],
+        polygon.vertices[(closestEdgeIndex + 1) % polygon.vertices.length],
+      ],
+      manifold: {
+        normal,
+        penetrationDepth: Math.max(0, -separation),
+        points: [contactPoint],
+      },
+    };
+  }
+
+  private _polygonPolygon(
+    polygon1: WorldPolygon,
+    polygon2: WorldPolygon
+  ): PolygonContact | null {
+    const separation1 = this._findMaximumSeparation(polygon1, polygon2);
+    if (separation1.separation > GEOMETRY_EPSILON) {
+      return null;
+    }
+    const separation2 = this._findMaximumSeparation(polygon2, polygon1);
+    if (separation2.separation > GEOMETRY_EPSILON) {
+      return null;
+    }
+
+    const referenceIsPolygon2 =
+      separation2.separation > separation1.separation + GEOMETRY_EPSILON;
+    const reference = referenceIsPolygon2 ? polygon2 : polygon1;
+    const incident = referenceIsPolygon2 ? polygon1 : polygon2;
+    const referenceEdgeIndex = referenceIsPolygon2
+      ? separation2.edgeIndex
+      : separation1.edgeIndex;
+    const referenceNormal = reference.outwardNormals[referenceEdgeIndex];
+    const referenceStart = reference.vertices[referenceEdgeIndex];
+    const referenceEnd =
+      reference.vertices[(referenceEdgeIndex + 1) % reference.vertices.length];
+    const incidentEdgeIndex = this._findIncidentEdge(incident, referenceNormal);
+    const incidentStart = incident.vertices[incidentEdgeIndex];
+    const incidentEnd =
+      incident.vertices[(incidentEdgeIndex + 1) % incident.vertices.length];
+
+    const tangent = normalize(subtract(referenceEnd, referenceStart));
+    let clipped: ClipVertex[] = [
+      { point: incidentStart, feature: `${incidentEdgeIndex}:0` },
+      { point: incidentEnd, feature: `${incidentEdgeIndex}:1` },
+    ];
+    clipped = this._clipSegment(
+      clipped,
+      scale(tangent, -1),
+      dot(scale(tangent, -1), referenceStart),
+      "start"
+    );
+    clipped = this._clipSegment(
+      clipped,
+      tangent,
+      dot(tangent, referenceEnd),
+      "end"
+    );
+
+    const points: ContactPoint[] = [];
+    for (const clippedVertex of clipped) {
+      const separation = dot(
+        referenceNormal,
+        subtract(clippedVertex.point, referenceStart)
+      );
+      if (separation <= GEOMETRY_EPSILON) {
+        points.push({
+          position: subtract(
+            clippedVertex.point,
+            scale(referenceNormal, separation * 0.5)
+          ),
+          separation,
+          featureId: `${referenceIsPolygon2 ? "B" : "A"}:${referenceEdgeIndex}:${clippedVertex.feature}`,
+        });
+      }
+    }
+
+    if (points.length === 0) {
+      const incidentPoint = this._supportPoint(
+        incident.vertices,
+        scale(referenceNormal, -1)
+      );
+      const separation = dot(
+        referenceNormal,
+        subtract(incidentPoint, referenceStart)
+      );
+      points.push({
+        position: subtract(
+          incidentPoint,
+          scale(referenceNormal, separation * 0.5)
+        ),
+        separation,
+        featureId: `${referenceIsPolygon2 ? "B" : "A"}:${referenceEdgeIndex}:fallback`,
+      });
+    }
+
+    const deepestSeparation = Math.min(
+      ...points.map((point) => point.separation)
+    );
+    const normal = referenceIsPolygon2
+      ? scale(referenceNormal, -1)
+      : referenceNormal;
+
+    return {
+      edge: [referenceStart, referenceEnd],
+      manifold: {
+        normal,
+        penetrationDepth: Math.max(0, -deepestSeparation),
+        points,
+      },
+    };
+  }
+
+  private _findMaximumSeparation(
+    reference: WorldPolygon,
+    incident: WorldPolygon
+  ) {
+    let maximumSeparation = -Infinity;
+    let edgeIndex = 0;
+    for (let i = 0; i < reference.vertices.length; i++) {
+      const normal = reference.outwardNormals[i];
+      const origin = reference.vertices[i];
+      let minimumIncidentSeparation = Infinity;
+      for (const vertex of incident.vertices) {
+        minimumIncidentSeparation = Math.min(
+          minimumIncidentSeparation,
+          dot(normal, subtract(vertex, origin))
+        );
+      }
+      if (minimumIncidentSeparation > maximumSeparation) {
+        maximumSeparation = minimumIncidentSeparation;
+        edgeIndex = i;
+      }
+    }
+    return { separation: maximumSeparation, edgeIndex };
+  }
+
+  private _findIncidentEdge(polygon: WorldPolygon, normal: Vec2) {
+    let edgeIndex = 0;
+    let minimumDot = Infinity;
+    for (let i = 0; i < polygon.outwardNormals.length; i++) {
+      const alignment = dot(normal, polygon.outwardNormals[i]);
+      if (alignment < minimumDot) {
+        minimumDot = alignment;
+        edgeIndex = i;
+      }
+    }
+    return edgeIndex;
+  }
+
+  private _clipSegment(
+    vertices: ClipVertex[],
+    normal: Vec2,
+    offset: number,
+    planeFeature: string
+  ): ClipVertex[] {
+    if (vertices.length < 2) {
+      return vertices;
+    }
+    const distance1 = dot(normal, vertices[0].point) - offset;
+    const distance2 = dot(normal, vertices[1].point) - offset;
+    const output: ClipVertex[] = [];
+    if (distance1 <= GEOMETRY_EPSILON) {
+      output.push(vertices[0]);
+    }
+    if (distance2 <= GEOMETRY_EPSILON) {
+      output.push(vertices[1]);
+    }
+    if (distance1 * distance2 < -(GEOMETRY_EPSILON ** 2)) {
+      const parameter = distance1 / (distance1 - distance2);
+      output.push({
+        point: add(
+          vertices[0].point,
+          scale(subtract(vertices[1].point, vertices[0].point), parameter)
+        ),
+        feature: `${planeFeature}:${distance1 > 0 ? vertices[0].feature : vertices[1].feature}`,
+      });
+    }
+    return output.slice(0, 2);
+  }
+
+  private _supportPoint(vertices: Vec2[], direction: Vec2) {
+    let result = vertices[0];
+    let maximumProjection = dot(result, direction);
+    for (let i = 1; i < vertices.length; i++) {
+      const projection = dot(vertices[i], direction);
+      if (projection > maximumProjection) {
+        maximumProjection = projection;
+        result = vertices[i];
+      }
+    }
+    return result;
+  }
+
+  private _worldPolygon(
+    entity: PhysicsEntity,
+    polygon: BoundingConvexPolygon
+  ): WorldPolygon {
+    if (!this._validatedPolygons.has(polygon)) {
+      assertValidConvexPolygon(polygon);
+      this._validatedPolygons.add(polygon);
+    }
+
+    const cosine = Math.cos(entity.rotation);
+    const sine = Math.sin(entity.rotation);
+    const vertices = polygon.vertices.map(
+      ([x, y]): Vec2 => [
+        x * cosine - y * sine + entity.position[0],
+        x * sine + y * cosine + entity.position[1],
+      ]
+    );
+    const winding = Math.sign(signedArea(vertices));
+    const outwardNormals = vertices.map((vertex, index): Vec2 => {
+      const next = vertices[(index + 1) % vertices.length];
+      const edge = subtract(next, vertex);
+      return winding > 0
+        ? normalize([edge[1], -edge[0]])
+        : normalize([-edge[1], edge[0]]);
+    });
+    return { vertices, outwardNormals };
+  }
+
+  private _assertValidCircle(circle: BoundingCircle) {
+    if (!Number.isFinite(circle.radius) || circle.radius <= 0) {
+      throw new Error("A circle collider requires a finite positive radius");
+    }
   }
 }

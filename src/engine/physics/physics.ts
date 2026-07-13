@@ -10,7 +10,8 @@ import {
   type Collision,
 } from "./collision";
 import { GeneralCollisionResolver } from "./collision/general";
-import { GJKCollisionDetector } from "./collision/GJK";
+import { assertValidConvexPolygon } from "./collision/geometry";
+import { SATCollisionDetector } from "./collision/SAT";
 import { type Physical, PhysicsEntity } from "./entity";
 import type {
   ColliderDefinition,
@@ -45,7 +46,7 @@ class Physics {
   }) {
     const { collisionDetector, collisionResolver } = params ?? {};
 
-    this._collider = collisionDetector ?? new GJKCollisionDetector();
+    this._collider = collisionDetector ?? new SATCollisionDetector();
     this._resolver = collisionResolver ?? new GeneralCollisionResolver();
   }
 
@@ -122,17 +123,25 @@ class Physics {
   ) {
     switch (collider.type) {
       case "circle":
+        if (!Number.isFinite(collider.radius) || collider.radius <= 0) {
+          throw new Error(
+            "A circle collider requires a finite positive radius"
+          );
+        }
         return {
           type: "BoundingCircle" as const,
           position,
           radius: collider.radius,
         };
-      case "polygon":
-        return {
+      case "polygon": {
+        const shape = {
           type: "BoundingConvexPolygon" as const,
           position,
-          vertices: collider.vertices,
+          vertices: collider.vertices.map(([x, y]): [number, number] => [x, y]),
         };
+        assertValidConvexPolygon(shape);
+        return shape;
+      }
     }
   }
 
@@ -179,14 +188,12 @@ class Physics {
     if (collisions) {
       this._observer.notify({
         collisions,
-        entityCollisions: collisions.map(
-          ({ entity1, entity2, minimumTranslationVector }) => ({
-            entity1: entity1.ownerId,
-            entity2: entity2.ownerId,
-            normal: minimumTranslationVector.normal,
-            magnitude: minimumTranslationVector.magnitude,
-          })
-        ),
+        entityCollisions: collisions.map(({ entity1, entity2, manifold }) => ({
+          entity1: entity1.ownerId,
+          entity2: entity2.ownerId,
+          normal: manifold.normal,
+          magnitude: manifold.penetrationDepth,
+        })),
       });
       this._resolver.resolveCollisions(collisions);
     }

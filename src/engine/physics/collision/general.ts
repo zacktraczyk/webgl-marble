@@ -11,10 +11,10 @@ export class GeneralCollisionResolver implements CollisionResolver {
   }
 
   private _resolveCollision(collision: Collision) {
-    const { entity1, entity2, minimumTranslationVector } = collision;
+    const { entity1, entity2, manifold } = collision;
 
     // Correct penetration
-    const { normal, magnitude } = minimumTranslationVector;
+    const { normal, penetrationDepth: magnitude } = manifold;
     const penX = normal[0] * magnitude;
     const penY = normal[1] * magnitude;
 
