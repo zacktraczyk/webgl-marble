@@ -1,4 +1,6 @@
 import * as id from "../utils/id";
+import type { EntityId } from "../core/entity";
+import { createTransform, type Transform } from "../core/transform";
 
 export type PhysicsEntityType = "kinematic" | "dynamic";
 
@@ -25,19 +27,18 @@ export interface Physical {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const isPhysical = (object: any): object is Physical => {
-  return object && typeof object.physicsEntity === "object";
+  return object && "physicsEntity" in object;
 };
 
 export class PhysicsEntity {
   readonly parent: Physical;
+  readonly ownerId: EntityId;
   readonly id: number;
   readonly type: PhysicsEntityType;
   readonly boundingShape: BoundingShape | undefined;
 
-  position: [number, number];
+  private readonly _transform: Transform;
   velocity: [number, number];
-
-  rotation: number;
   angularVelocity: number;
 
   acceleration: [number, number];
@@ -46,6 +47,8 @@ export class PhysicsEntity {
 
   constructor({
     parent,
+    ownerId,
+    transform,
     type,
     boundingShape,
     position,
@@ -54,7 +57,9 @@ export class PhysicsEntity {
     angularVelocity,
     acceleration,
   }: {
-    parent: Physical;
+    parent?: Physical;
+    ownerId?: EntityId;
+    transform?: Transform;
     type: PhysicsEntityType;
     boundingShape: BoundingShape;
     position: [number, number];
@@ -63,26 +68,48 @@ export class PhysicsEntity {
     angularVelocity?: number;
     acceleration?: [number, number];
   }) {
-    this.parent = parent;
+    // parent remains as a compatibility bridge for the collision-debug scenes.
+    // New game code uses ownerId exclusively.
+    this.parent = parent as Physical;
+    this.ownerId = ownerId ?? parent?.id ?? id.getNext();
     this.id = id.getNext();
     this.type = type;
 
     this.boundingShape = boundingShape;
 
-    this.position = position;
+    this._transform =
+      transform ?? createTransform({ position, rotation: rotation ?? 0 });
+    this.boundingShape.position = this._transform.position;
     this.velocity = velocity ?? [0, 0];
-
-    this.rotation = rotation ?? 0;
     this.angularVelocity = angularVelocity ?? 0;
 
     this.acceleration = acceleration ?? [0, 0];
   }
 
+  get transform() {
+    return this._transform;
+  }
+
+  get position() {
+    return this._transform.position;
+  }
+
+  set position(position: [number, number]) {
+    this._transform.position[0] = position[0];
+    this._transform.position[1] = position[1];
+  }
+
+  get rotation() {
+    return this._transform.rotation;
+  }
+
+  set rotation(rotation: number) {
+    this._transform.rotation = rotation;
+  }
+
   delete() {
     if (this.markedForDeletion) {
-      throw new Error(
-        "Could not delete physics entity: already marked for deletion"
-      );
+      return;
     }
     this.markedForDeletion = true;
   }

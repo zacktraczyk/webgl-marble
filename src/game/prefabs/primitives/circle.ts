@@ -1,0 +1,48 @@
+import type { EntityDefinition } from "../../../engine/core/definition";
+import type { Vec2 } from "../../../engine/core/transform";
+import type { PhysicsEntityType } from "../../../engine/physics/entity";
+import type { Color } from "../../../engine/vdu/component";
+
+export interface CircleDefinitionOptions {
+  position: Vec2;
+  radius: number;
+  color: Color;
+  rotation?: number;
+  bodyType?: PhysicsEntityType;
+  velocity?: Vec2;
+  tags?: string[];
+  physical?: boolean;
+}
+
+export const circleDefinition = ({
+  position,
+  radius,
+  color,
+  rotation = 0,
+  bodyType = "dynamic",
+  velocity = [0, 0],
+  tags = [],
+  physical = true,
+}: CircleDefinitionOptions): EntityDefinition => ({
+  transform: { position, rotation },
+  tags,
+  render: {
+    parts: [
+      {
+        primitive: { type: "circle", radius: 1 },
+        color,
+        localTransform: {
+          position: [0, 0],
+          scale: [radius, radius],
+        },
+      },
+    ],
+  },
+  physics: physical
+    ? {
+        type: bodyType,
+        velocity,
+        collider: { type: "circle", radius },
+      }
+    : undefined,
+});

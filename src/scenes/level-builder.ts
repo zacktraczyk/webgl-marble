@@ -1,6 +1,6 @@
-import { Ball } from "../engine/object/ball";
-import { Rectangle } from "../engine/object/rectangle";
 import Stage from "../engine/stage";
+import { LevelDocument } from "../editor/levelDocument";
+import { levelObjectDefinition } from "../game/prefabs/levelObject";
 
 type ToolSelectors = {
   pan: HTMLElement | null;
@@ -21,23 +21,21 @@ enum SelectedTool {
 let selectedTool: SelectedTool = SelectedTool.Select;
 
 function main(toolSelectors: ToolSelectors) {
-  const { stage } = init(toolSelectors);
+  const { stage, levelDocument } = init(toolSelectors);
 
   const finishedBalls: number[] = [];
-  stage.registerPhysicsObserver(({ collisions }) => {
-    for (const { entity1: a, entity2: b } of collisions) {
+  stage.registerPhysicsObserver(({ entityCollisions }) => {
+    for (const { entity1: a, entity2: b } of entityCollisions) {
       const collisionPermutations = [
         [a, b],
         [b, a],
       ];
-      for (const [c, d] of collisionPermutations) {
-        if (
-          c.type === "dynamic" &&
-          c.boundingShape?.type === "BoundingCircle" &&
-          d.parent instanceof FinishLine
-        ) {
-          c.parent.delete();
-          finishedBalls.push(c.id);
+      for (const [marbleId, finishId] of collisionPermutations) {
+        const marble = stage.world.get(marbleId);
+        const finish = stage.world.get(finishId);
+        if (marble?.hasTag("marble") && finish?.hasTag("finish-zone")) {
+          marble.delete();
+          finishedBalls.push(marble.id);
           break;
         }
       }
@@ -54,7 +52,8 @@ function main(toolSelectors: ToolSelectors) {
     stage.clearOutOfBoundsObjects();
 
     updateDebugInfo({
-      numObjects: stage.objects.length,
+      numObjects: stage.objects.length + stage.entities.length,
+      authoredObjects: levelDocument.objects.length,
       finishedBalls,
     });
     updateFpsPerf();
@@ -72,6 +71,14 @@ function main(toolSelectors: ToolSelectors) {
 
 function init({ pan, select, square, circle, finishLine }: ToolSelectors) {
   const stage = new Stage();
+  const levelDocument = new LevelDocument("Untitled level", [
+    stage.width,
+    stage.height,
+  ]);
+  const spawnAuthoredObject = (data: Parameters<LevelDocument["add"]>[0]) => {
+    const levelObject = levelDocument.add(data);
+    return stage.spawn(levelObjectDefinition(levelObject));
+  };
 
   const addToolSelectors = () => {
     if (!pan || !select || !square || !circle || !finishLine) {
@@ -151,13 +158,15 @@ function init({ pan, select, square, circle, finishLine }: ToolSelectors) {
 
           const [x, y] = stage.screenToWorld(screenX, screenY);
 
-          const square = new Rectangle({
-            width: 100,
-            height: 100,
-            position: [x, y],
-            color: [239 / 255, 68 / 255, 68 / 255, 1],
+          spawnAuthoredObject({
+            prefab: "wall",
+            transform: { position: [x, y] },
+            properties: {
+              width: 100,
+              height: 100,
+              color: [239 / 255, 68 / 255, 68 / 255, 1],
+            },
           });
-          stage.add(square);
         }
         return;
       case SelectedTool.Circle:
@@ -166,12 +175,14 @@ function init({ pan, select, square, circle, finishLine }: ToolSelectors) {
           const screenY = e.clientY - stage.canvas.getBoundingClientRect().top;
           const [x, y] = stage.screenToWorld(screenX, screenY);
 
-          const circle = new Ball({
-            radius: 50,
-            position: [x, y],
-            color: [34 / 255, 197 / 255, 94 / 255, 1],
+          spawnAuthoredObject({
+            prefab: "marble",
+            transform: { position: [x, y] },
+            properties: {
+              radius: 50,
+              color: [34 / 255, 197 / 255, 94 / 255, 1],
+            },
           });
-          stage.add(circle);
         }
         return;
       case SelectedTool.FinishLine:
@@ -180,12 +191,15 @@ function init({ pan, select, square, circle, finishLine }: ToolSelectors) {
           const screenY = e.clientY - stage.canvas.getBoundingClientRect().top;
           const [x, y] = stage.screenToWorld(screenX, screenY);
 
-          const finishLine = new FinishLine({
-            width: 200,
-            height: 10,
-            position: [x, y],
+          spawnAuthoredObject({
+            prefab: "finish-zone",
+            transform: { position: [x, y] },
+            properties: {
+              width: 200,
+              height: 10,
+              color: [1, 1, 1, 1],
+            },
           });
-          stage.add(finishLine);
         }
         return;
     }
@@ -195,29 +209,8 @@ function init({ pan, select, square, circle, finishLine }: ToolSelectors) {
 
   return {
     stage,
+    levelDocument,
   };
-}
-
-class FinishLine extends Rectangle {
-  constructor({
-    width,
-    height,
-    position,
-    color = [255 / 255, 255 / 255, 255 / 255, 1],
-  }: {
-    width: number;
-    height: number;
-    position: [number, number];
-    color?: [number, number, number, number];
-  }) {
-    super({
-      width,
-      height,
-      position,
-      physicsType: "kinematic",
-      color,
-    });
-  }
 }
 
 // Debug info

@@ -1,4 +1,6 @@
 import { mat3 } from "gl-matrix";
+import type { EntityId } from "../core/entity";
+import type { Transform } from "../core/transform";
 import * as id from "../utils/id";
 import * as WebglUtils from "./webglUtils";
 
@@ -20,10 +22,13 @@ export const isDrawable = (object: any): object is Drawable => {
 export class DrawEntity {
   readonly id;
   parent: Drawable | null;
+  ownerId?: EntityId;
+  rootTransform?: Transform;
   gl?: WebGLRenderingContext;
   programInfo?: ProgramInfo;
   private readonly _preInitIndicies?: number[] | Float32Array;
   bufferInfo?: BufferInfo;
+  private _ownsBuffer = false;
 
   uniforms?: Record<string, Uniform>;
 
@@ -45,7 +50,7 @@ export class DrawEntity {
     color,
     ...bufferParams
   }: {
-    parent: Drawable;
+    parent: Drawable | null;
     position: [number, number];
     rotation: number;
     scale: [number, number];
@@ -88,7 +93,7 @@ export class DrawEntity {
     this.gl = gl;
     this.programInfo = programInfo;
 
-    if (this._preInitIndicies) {
+    if (this._preInitIndicies && !this.bufferInfo) {
       const indicies = this._preInitIndicies;
 
       const indiciesBuffer = gl.createBuffer();
@@ -116,6 +121,7 @@ export class DrawEntity {
         },
       };
       this.bufferInfo = bufferInfo;
+      this._ownsBuffer = true;
     }
 
     const uniforms = {
@@ -128,15 +134,44 @@ export class DrawEntity {
 
   delete() {
     if (this.markedForDeletion) {
-      throw new Error(
-        "Could not delete drawEntity: already marked for deletion"
-      );
+      return;
     }
     this.markedForDeletion = true;
   }
 
+  attachToEntity(ownerId: EntityId, rootTransform: Transform) {
+    this.ownerId = ownerId;
+    this.rootTransform = rootTransform;
+  }
+
+  useSharedBuffer(bufferInfo: BufferInfo) {
+    this.bufferInfo = bufferInfo;
+    this._ownsBuffer = false;
+  }
+
+  markBufferAsShared() {
+    this._ownsBuffer = false;
+  }
+
+  dispose() {
+    if (!this.gl || !this.bufferInfo || !this._ownsBuffer) {
+      return;
+    }
+    for (const attribute of Object.values(this.bufferInfo.attributes)) {
+      if (attribute.attributeType === "buffer") {
+        this.gl.deleteBuffer(attribute.buffer);
+      }
+    }
+    this.bufferInfo = undefined;
+  }
+
   computeMatrix() {
     mat3.identity(this.matrix);
+    if (this.rootTransform) {
+      mat3.translate(this.matrix, this.matrix, this.rootTransform.position);
+      mat3.rotate(this.matrix, this.matrix, this.rootTransform.rotation);
+      mat3.scale(this.matrix, this.matrix, this.rootTransform.scale);
+    }
     mat3.translate(this.matrix, this.matrix, this.position);
     mat3.rotate(this.matrix, this.matrix, this.rotation);
     mat3.scale(this.matrix, this.matrix, this.scale);
@@ -171,7 +206,10 @@ export class DrawEntity {
 }
 
 // TODO: Use instanced rendering
-export const createCircle = (parent: Drawable, radius: number): DrawEntity => {
+export const createCircle = (
+  parent: Drawable | null,
+  radius: number
+): DrawEntity => {
   const segments = 32;
   const thetaStart = 0;
   const thetaLength = 2 * Math.PI;
@@ -205,7 +243,7 @@ export const createCircle = (parent: Drawable, radius: number): DrawEntity => {
 };
 
 export const createHexagon = (
-  parent: Drawable,
+  parent: Drawable | null,
   sideLength: number
 ): DrawEntity => {
   const indicies: number[] = [];
@@ -261,7 +299,7 @@ export const createRectangle = ({
   width,
   height,
 }: {
-  parent: Drawable;
+  parent: Drawable | null;
   width: number;
   height: number;
 }): DrawEntity => {
@@ -293,7 +331,7 @@ export const createRectangleOriginLeftCenter = ({
   width,
   height,
 }: {
-  parent: Drawable;
+  parent: Drawable | null;
   width: number;
   height: number;
 }): DrawEntity => {
@@ -320,7 +358,7 @@ export const createRectangleOriginLeftCenter = ({
 };
 
 export const createRightTriangle = (
-  parent: Drawable,
+  parent: Drawable | null,
   width: number,
   height: number
 ): DrawEntity => {

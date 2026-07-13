@@ -48,7 +48,7 @@ const getSafeSpawnBallPosition = ({
   }
 };
 
-const getOscillationMagnitude = (desiredWidth: number, period: number) => {
+const getOscillationMagnitude = (desiredWidth: number) => {
   // TODO: Correct translation from position to velocity magnitude
   const velocityMagnitude = desiredWidth / 8;
   return velocityMagnitude;
@@ -162,10 +162,7 @@ function main() {
 
     // Oscillate squares
     const oscillationWidth = stage.canvas.clientWidth / 2;
-    const oscillationMagnitude = getOscillationMagnitude(
-      oscillationWidth,
-      1000
-    );
+    const oscillationMagnitude = getOscillationMagnitude(oscillationWidth);
     square1.velocity[0] =
       (Math.sin(time / 1000 + Math.PI / 2) * oscillationMagnitude) / 2;
     square2.velocity[0] = (Math.sin(time / 1000) * oscillationMagnitude) / 2;
@@ -189,15 +186,6 @@ function main() {
 
   requestAnimationFrame(render);
 }
-// Debug info
-const debugInfoElem = document.getElementById("#debug-info");
-/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-const updateDebugInfo = (obj: any) => {
-  if (debugInfoElem) {
-    debugInfoElem.textContent = JSON.stringify(obj, null, 2);
-  }
-};
-
 // FPS Counter
 const fpsElem = document.getElementById("#fps");
 let lastTime = performance.now();

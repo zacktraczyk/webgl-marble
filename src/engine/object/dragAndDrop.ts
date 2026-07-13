@@ -112,12 +112,19 @@ export class DragAndDropRectangle
   }
 
   delete() {
+    if (this.markedForDeletion) {
+      return;
+    }
     if (this._rectangleDrawEntity) {
       this._rectangleDrawEntity.delete();
     }
     if (this._grabHandleDrawEntity) {
       this._grabHandleDrawEntity.delete();
     }
+    if (this._physicsEntity) {
+      this._physicsEntity.delete();
+    }
+    this.markedForDeletion = true;
   }
 
   sync() {
@@ -225,12 +232,19 @@ export class DragAndDropCircle implements Drawable, Physical, DragAndDroppable {
   }
 
   delete() {
+    if (this.markedForDeletion) {
+      return;
+    }
     if (this._circleDrawEntity) {
       this._circleDrawEntity.delete();
     }
     if (this._grabHandleDrawEntity) {
       this._grabHandleDrawEntity.delete();
     }
+    if (this._physicsEntity) {
+      this._physicsEntity.delete();
+    }
+    this.markedForDeletion = true;
   }
 
   sync() {
@@ -341,12 +355,19 @@ export class DragAndDropHexagon
   }
 
   delete() {
+    if (this.markedForDeletion) {
+      return;
+    }
     if (this._pentagonDrawEntity) {
       this._pentagonDrawEntity.delete();
     }
     if (this._grabHandleDrawEntity) {
       this._grabHandleDrawEntity.delete();
     }
+    if (this._physicsEntity) {
+      this._physicsEntity.delete();
+    }
+    this.markedForDeletion = true;
   }
 
   sync() {

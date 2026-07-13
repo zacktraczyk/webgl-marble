@@ -16,7 +16,7 @@
     "type-check": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "echo \"No tests specified\" && exit 0",
+    "test": "bun test",
     "clean": "rm -rf dist node_modules/.cache"
   },
   "dependencies": {

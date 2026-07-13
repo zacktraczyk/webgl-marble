@@ -1,10 +1,19 @@
 import { mat3 } from "gl-matrix";
+import type { EntityId } from "../core/entity";
+import { createTransform, type Transform } from "../core/transform";
 import {
   type BufferInfo,
   type Drawable,
   type ProgramInfo,
   DrawEntity,
+  createCircle,
+  createRectangle,
+  createRightTriangle,
 } from "./entity";
+import type {
+  RenderComponentDefinition,
+  RenderPartDefinition,
+} from "./component";
 import fragShader from "./glsl/frag.glsl";
 import vertShader from "./glsl/vert.glsl";
 import * as WebglUtils from "./webglUtils";
@@ -19,6 +28,7 @@ export class VDU {
   private readonly _programInfo: ProgramInfo;
   private _drawEntities: DrawEntity[];
   private readonly _camera: Camera;
+  private readonly _meshBuffers = new Map<string, BufferInfo>();
 
   private _drawMode: "TRIANGLES" | "LINES" = "TRIANGLES";
 
@@ -76,9 +86,13 @@ export class VDU {
   }
 
   private _cleanup() {
-    const filteredEntities = this._drawEntities.filter(
-      (entity) => !entity?.markedForDeletion
-    );
+    const filteredEntities = this._drawEntities.filter((entity) => {
+      if (entity.markedForDeletion) {
+        entity.dispose();
+        return false;
+      }
+      return true;
+    });
 
     this._drawEntities = filteredEntities;
   }
@@ -101,6 +115,70 @@ export class VDU {
     }
   }
 
+  addEntity(
+    ownerId: EntityId,
+    transform: Transform,
+    renderable: RenderComponentDefinition
+  ) {
+    for (const part of renderable.parts) {
+      const entity = this._createPart(part);
+      const meshKey = this._meshKey(part);
+      const sharedBuffer = this._meshBuffers.get(meshKey);
+      if (sharedBuffer) {
+        entity.useSharedBuffer(sharedBuffer);
+      }
+      const local = createTransform(
+        part.localTransform ?? { position: [0, 0] }
+      );
+      entity.position = local.position;
+      entity.rotation = local.rotation;
+      entity.scale = local.scale;
+      entity.color = part.color;
+      entity.attachToEntity(ownerId, transform);
+      entity.init({ gl: this._gl, programInfo: this._programInfo });
+      if (!sharedBuffer && entity.bufferInfo) {
+        this._meshBuffers.set(meshKey, entity.bufferInfo);
+        entity.markBufferAsShared();
+      }
+      this._drawEntities.push(entity);
+    }
+  }
+
+  removeEntity(ownerId: EntityId) {
+    for (const entity of this._drawEntities) {
+      if (entity.ownerId === ownerId) {
+        entity.delete();
+      }
+    }
+  }
+
+  private _createPart(part: RenderPartDefinition) {
+    switch (part.primitive.type) {
+      case "circle":
+        return createCircle(null, part.primitive.radius);
+      case "rectangle":
+        return createRectangle({ parent: null, ...part.primitive });
+      case "right-triangle":
+        return createRightTriangle(
+          null,
+          part.primitive.width,
+          part.primitive.height
+        );
+    }
+  }
+
+  private _meshKey(part: RenderPartDefinition) {
+    const primitive = part.primitive;
+    switch (primitive.type) {
+      case "circle":
+        return `circle:${primitive.radius}`;
+      case "rectangle":
+        return `rectangle:${primitive.width}:${primitive.height}`;
+      case "right-triangle":
+        return `right-triangle:${primitive.width}:${primitive.height}`;
+    }
+  }
+
   private _lastUsedProgram: WebGLProgram | undefined = undefined;
   private _initBuffer: boolean = true;
   private _lastUsedBuffer: BufferInfo | undefined = undefined;
@@ -112,9 +190,11 @@ export class VDU {
 
     WebglUtils.resizeCanvasToDisplaySize(gl.canvas);
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-    // TODO: Enable culling ?
-    // gl.enable(gl.CULL_FACE);
-    gl.enable(gl.DEPTH_TEST);
+    // 2D parts are ordered by submission. Alpha blending supports highlights,
+    // shadows, and other local render parts on the same entity.
+    gl.disable(gl.DEPTH_TEST);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     const cameraMatrix = this._camera.matrix();
@@ -138,6 +218,8 @@ export class VDU {
 
       if (this._initBuffer || this._lastUsedBuffer != object.bufferInfo) {
         object.setAttributes();
+        this._lastUsedBuffer = object.bufferInfo;
+        this._initBuffer = false;
       }
 
       if (!object.uniforms) {
@@ -182,6 +264,27 @@ export class VDU {
 
   get camera() {
     return this._camera;
+  }
+
+  dispose() {
+    const deletedBuffers = new Set<WebGLBuffer>();
+    for (const bufferInfo of this._meshBuffers.values()) {
+      for (const attribute of Object.values(bufferInfo.attributes)) {
+        if (
+          attribute.attributeType === "buffer" &&
+          !deletedBuffers.has(attribute.buffer)
+        ) {
+          this._gl.deleteBuffer(attribute.buffer);
+          deletedBuffers.add(attribute.buffer);
+        }
+      }
+    }
+    for (const entity of this._drawEntities) {
+      entity.dispose();
+    }
+    this._drawEntities = [];
+    this._meshBuffers.clear();
+    this._gl.deleteProgram(this._programInfo.program);
   }
 }
 

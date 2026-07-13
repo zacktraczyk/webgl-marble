@@ -1,4 +1,7 @@
 import { isPhysical, type Physical } from "../physics/entity";
+import type { EntityDefinition } from "../core/definition";
+import { Entity, type EntityId } from "../core/entity";
+import { World } from "../core/world";
 import Physics, { type CollisionEvents } from "../physics/physics";
 import { debounce } from "../utils/utils";
 import { isDrawable, type Drawable } from "../vdu/entity";
@@ -30,6 +33,7 @@ export class Stage {
   readonly width: number;
 
   private _objects: StageObject[];
+  readonly world: World;
 
   // event handlers
   private readonly _panAndZoomHandlers: PanAndZoomHandlers;
@@ -72,6 +76,11 @@ export class Stage {
 
     this._physics = physics ?? new Physics();
     this._objects = [];
+    this.world = new World();
+    this.world.onDestroy((entity) => {
+      this._physics.removeEntity(entity.id);
+      this._vdu.removeEntity(entity.id);
+    });
     this._panAndZoomHandlers = new PanAndZoomHandlers(vdu);
     this._dragAndDropHandlers = new DragAndDropHandlers(this);
     this._centerCameraOnResizeHandlers = new CenterCameraOnResizeHandlers(vdu);
@@ -90,6 +99,31 @@ export class Stage {
     this._objects.push(object);
   }
 
+  /**
+   * Preferred creation path. The stage is the composition root that registers
+   * neutral entity data with otherwise independent physics/rendering systems.
+   */
+  spawn(definition: EntityDefinition): Entity {
+    const entity = this.world.create(definition);
+    if (definition.physics) {
+      this._physics.addEntity(entity.id, entity.transform, definition.physics);
+    }
+    if (definition.render) {
+      this._vdu.addEntity(entity.id, entity.transform, definition.render);
+    }
+    return entity;
+  }
+
+  destroy(entity: EntityId | Entity) {
+    this.world.destroy(typeof entity === "number" ? entity : entity.id);
+  }
+
+  getPhysicsEntity(entity: EntityId | Entity) {
+    return this._physics.getEntity(
+      typeof entity === "number" ? entity : entity.id
+    );
+  }
+
   private _cleanup() {
     const filteredObjects = this._objects.filter(
       (object) => !object.markedForDeletion
@@ -105,10 +139,13 @@ export class Stage {
 
   update(elapsed: number) {
     this._cleanup();
+    this.world.updateHierarchy();
     if (this.physicsEnabled) {
       this._physics.update(elapsed);
     }
     this._sync();
+    this.world.updateHierarchy();
+    this.world.flushDestruction();
   }
 
   render() {
@@ -172,7 +209,7 @@ export class Stage {
       }
     };
 
-    const pointerleave = (event: PointerEvent) => {
+    const pointerleave = () => {
       if (this._isDragAndDropEnabled) {
         this._dragAndDropHandlers.mouseleave();
       }
@@ -187,7 +224,7 @@ export class Stage {
     this.canvas.addEventListener("wheel", wheel);
     this.canvas.addEventListener("pointerleave", pointerleave);
 
-    const resize = (event: Event) => {
+    const resize = () => {
       if (this._isCenterCameraOnResizeEnabled) {
         this._centerCameraOnResizeHandlers.resize();
       }
@@ -205,8 +242,8 @@ export class Stage {
       pointerup,
       wheel,
       pointerleave,
-      resize,
     };
+    this._windowRegisteredEventHandlers = { resize: debouncedResize };
     // TODO: Touch pan & zoom
   }
 
@@ -358,19 +395,33 @@ export class Stage {
 
     for (const object of this._objects) {
       if (
-        object.position[0] < -outOfBoundsPadding ||
-        object.position[0] > this._vdu.canvas.width + outOfBoundsPadding ||
-        object.position[1] < -outOfBoundsPadding ||
-        object.position[1] > this._vdu.canvas.height + outOfBoundsPadding
+        object.position[0] < -this.width / 2 - outOfBoundsPadding ||
+        object.position[0] > this.width / 2 + outOfBoundsPadding ||
+        object.position[1] < -this.height / 2 - outOfBoundsPadding ||
+        object.position[1] > this.height / 2 + outOfBoundsPadding
       ) {
         object.delete();
-        this._objects.splice(this._objects.indexOf(object), 1);
+      }
+    }
+
+    for (const entity of this.world.entities) {
+      if (
+        entity.position[0] < -this.width / 2 - outOfBoundsPadding ||
+        entity.position[0] > this.width / 2 + outOfBoundsPadding ||
+        entity.position[1] < -this.height / 2 - outOfBoundsPadding ||
+        entity.position[1] > this.height / 2 + outOfBoundsPadding
+      ) {
+        entity.delete();
       }
     }
   }
 
   get objects() {
     return this._objects;
+  }
+
+  get entities() {
+    return this.world.entities;
   }
 
   get canvas() {
@@ -391,6 +442,22 @@ export class Stage {
 
   unregisterPhysicsObserver(observer: (data: CollisionEvents) => void) {
     this._physics.unregister(observer);
+  }
+
+  dispose() {
+    if (this.isEventHandlersRegistered) {
+      this._unregisterEventHandlers();
+    }
+    for (const entity of this.world.entities) {
+      entity.delete();
+    }
+    this.world.flushDestruction();
+    for (const object of this._objects) {
+      object.delete();
+    }
+    this._objects = [];
+    this._physics.dispose();
+    this._vdu.dispose();
   }
 }
 

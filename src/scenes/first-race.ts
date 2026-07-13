@@ -1,33 +1,29 @@
-import { Circle } from "../engine/object/circle";
-import { Rectangle } from "../engine/object/rectangle";
 import { GeneralCollisionResolver } from "../engine/physics/collision/general";
 import { GJKCollisionDetector } from "../engine/physics/collision/GJK";
-import { SATCollisionDetector } from "../engine/physics/collision/SAT";
 import Physics from "../engine/physics/physics";
 import Stage from "../engine/stage";
+import { finishZoneDefinition } from "../game/prefabs/finishZone";
+import { marbleDefinition } from "../game/prefabs/marble";
+import { rectangleDefinition } from "../game/prefabs/primitives/rectangle";
 
 function main() {
   const { stage, finishLine } = init();
 
   const finishedBalls: number[] = [];
-  stage.registerPhysicsObserver(({ collisions }) => {
-    for (const collision of collisions) {
+  stage.registerPhysicsObserver(({ entityCollisions }) => {
+    for (const collision of entityCollisions) {
       const { entity1, entity2 } = collision;
       const collisionPemutations = [
         [entity1, entity2],
         [entity2, entity1],
       ];
 
-      for (const [a, b] of collisionPemutations) {
-        if (
-          a.type === "dynamic" &&
-          a.boundingShape?.type === "BoundingCircle" &&
-          b.parent === finishLine
-        ) {
-          if (!a.markedForDeletion && a.parent && a.parent !== finishLine) {
-            a.parent.delete();
-            finishedBalls.push(a.id);
-          }
+      for (const [marbleId, finishId] of collisionPemutations) {
+        const marble = stage.world.get(marbleId);
+        const finish = stage.world.get(finishId);
+        if (marble?.hasTag("marble") && finish?.id === finishLine.id) {
+          marble.delete();
+          finishedBalls.push(marble.id);
         }
       }
     }
@@ -56,7 +52,6 @@ function main() {
 
 function init() {
   const gjk = new GJKCollisionDetector();
-  const sat = new SATCollisionDetector();
   const resolver = new GeneralCollisionResolver();
   const physics = new Physics({
     collisionDetector: gjk,
@@ -107,13 +102,15 @@ function init() {
       const vx = Math.random() * 200 - 100;
       const vy = 0;
 
-      const circle = new Circle({
-        position: [x, y],
-        velocity: [vx, vy],
-        color: [0, 0, Math.random() * 0.5 + 0.5, 1],
-        ...circleSharedProps,
-      });
-      stage.add(circle);
+      stage.spawn(
+        marbleDefinition({
+          position: [x, y],
+          velocity: [vx, vy],
+          color: [0, 0, Math.random() * 0.5 + 0.5, 1],
+          radius: circleSharedProps.radius,
+          decorated: false,
+        })
+      );
 
       return true;
     }
@@ -146,29 +143,32 @@ function init() {
     // vdu.add(ground);
     // physics.add(ground);
 
-    const leftWall = new Rectangle({
-      position: [25 - stage.width / 2, 25],
-      width: 50,
-      height: stage.height - 50,
-      color: [0, 1, 0, 1],
-    });
-    stage.add(leftWall);
+    stage.spawn(
+      rectangleDefinition({
+        position: [25 - stage.width / 2, 25],
+        width: 50,
+        height: stage.height - 50,
+        color: [0, 1, 0, 1],
+      })
+    );
 
-    const rightWall = new Rectangle({
-      position: [stage.width / 2 - 25, 25],
-      width: 50,
-      height: stage.height - 50,
-      color: [0, 1, 0, 1],
-    });
-    stage.add(rightWall);
+    stage.spawn(
+      rectangleDefinition({
+        position: [stage.width / 2 - 25, 25],
+        width: 50,
+        height: stage.height - 50,
+        color: [0, 1, 0, 1],
+      })
+    );
 
-    const ceiling = new Rectangle({
-      position: [0, 25 - stage.height / 2],
-      width: stage.width,
-      height: 50,
-      color: [0, 1, 0, 1],
-    });
-    stage.add(ceiling);
+    stage.spawn(
+      rectangleDefinition({
+        position: [0, 25 - stage.height / 2],
+        width: stage.width,
+        height: 50,
+        color: [0, 1, 0, 1],
+      })
+    );
   }
 
   function spawnObstacles() {
@@ -185,25 +185,27 @@ function init() {
           stage.height / 2 +
           ((stage.height - 200) / (numObstacles / 2)) * (j + 0.5);
 
-        const obstacleSquare = new Rectangle({
-          position: [x, y],
-          width: 50,
-          height: 50,
-          color: [1, 1, 1, 1],
-          physicsType: "kinematic",
-        });
-        stage.add(obstacleSquare);
+        stage.spawn(
+          rectangleDefinition({
+            position: [x, y],
+            width: 50,
+            height: 50,
+            color: [1, 1, 1, 1],
+            bodyType: "kinematic",
+          })
+        );
       }
     }
   }
 
-  const finishLine = new Rectangle({
-    position: [0, stage.height - 25 - stage.height / 2],
-    width: stage.width - 100,
-    height: 50,
-    color: [1, 0, 0, 1],
-  });
-  stage.add(finishLine);
+  const finishLine = stage.spawn(
+    finishZoneDefinition({
+      position: [0, stage.height - 25 - stage.height / 2],
+      width: stage.width - 100,
+      height: 50,
+      color: [1, 0, 0, 1],
+    })
+  );
 
   // Init
   spawnWalls();

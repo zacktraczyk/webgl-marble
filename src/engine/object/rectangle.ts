@@ -3,6 +3,7 @@ import {
   type PhysicsEntityType,
   PhysicsEntity,
 } from "../physics/entity";
+import { createTransform, type Transform } from "../core/transform";
 import { getNext } from "../utils/id";
 import { createRectangle, type Drawable, type DrawEntity } from "../vdu/entity";
 
@@ -10,9 +11,7 @@ export class Rectangle implements Drawable, Physical {
   readonly id;
   readonly width: number;
   readonly height: number;
-  private _position: [number, number];
-  private _rotation: number; // radians
-  scale: [number, number];
+  readonly transform: Transform;
   color: [number, number, number, number];
   private _drawEntity: DrawEntity | null = null;
   private _physicsEntity: PhysicsEntity | null = null;
@@ -42,9 +41,7 @@ export class Rectangle implements Drawable, Physical {
     this.id = getNext();
     this.width = width;
     this.height = height;
-    this._position = position;
-    this._rotation = rotation ?? 0;
-    this.scale = scale ?? [1, 1];
+    this.transform = createTransform({ position, rotation, scale });
     this.color = color ?? [1, 1, 1, 1];
     this.physicsType = physicsType;
     this.velocity = velocity ?? [0, 0];
@@ -71,6 +68,7 @@ export class Rectangle implements Drawable, Physical {
         width: this.width,
         height: this.height,
       });
+      entity.attachToEntity(this.id, this.transform);
       this._drawEntity = entity;
     }
 
@@ -82,11 +80,12 @@ export class Rectangle implements Drawable, Physical {
       const entity: PhysicsEntity = new PhysicsEntity({
         parent: this,
         type: this.physicsType,
-        position: this._position,
+        position: this.transform.position,
+        transform: this.transform,
         rotation: this.rotation,
         boundingShape: {
           type: "BoundingConvexPolygon",
-          position: this._position,
+          position: this.transform.position,
           vertices: [
             [-this.width / 2, -this.height / 2],
             [this.width / 2, -this.height / 2],
@@ -103,44 +102,37 @@ export class Rectangle implements Drawable, Physical {
   }
 
   get position() {
-    return this._position;
+    return this.transform.position;
   }
 
   set position(position: [number, number]) {
-    this._position = position;
-    if (this._physicsEntity) {
-      this._physicsEntity.position = position;
-    }
-    if (this._drawEntity) {
-      this._drawEntity.position = position;
-    }
+    this.transform.position[0] = position[0];
+    this.transform.position[1] = position[1];
   }
 
   get rotation() {
-    return this._rotation;
+    return this.transform.rotation;
   }
 
   set rotation(rotation: number) {
-    this._rotation = rotation;
-    if (this._physicsEntity) {
-      this._physicsEntity.rotation = rotation;
-    }
-    if (this._drawEntity) {
-      this._drawEntity.rotation = rotation;
-    }
+    this.transform.rotation = rotation;
+  }
+
+  get scale() {
+    return this.transform.scale;
+  }
+
+  set scale(scale: [number, number]) {
+    this.transform.scale[0] = scale[0];
+    this.transform.scale[1] = scale[1];
   }
 
   sync() {
     if (this._physicsEntity) {
-      this._position = this._physicsEntity.position;
-      this.rotation = this._physicsEntity.rotation;
       this.velocity = this._physicsEntity.velocity;
     }
 
     if (this._drawEntity) {
-      this._drawEntity.position = this._position;
-      this._drawEntity.rotation = this.rotation;
-      this._drawEntity.scale = this.scale;
       this._drawEntity.color = this.color;
     }
   }

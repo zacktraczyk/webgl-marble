@@ -3,10 +3,9 @@ import {
   type Physical,
   type PhysicsEntityType,
 } from "../physics/entity";
-import type { StageObject } from "../stage";
+import { createTransform, type Transform } from "../core/transform";
 import { getNext } from "../utils/id";
 import {
-  createCircle,
   createRightTriangle,
   type Drawable,
   type DrawEntity,
@@ -138,9 +137,7 @@ export class RightTriangle implements Drawable, Physical {
   readonly id;
   readonly width: number;
   readonly height: number;
-  private _position: [number, number];
-  private _rotation: number; // radians
-  scale: [number, number];
+  readonly transform: Transform;
   private _color: [number, number, number, number];
   private _drawEntity: DrawEntity | null = null;
   private _physicsEntity: PhysicsEntity | null = null;
@@ -170,33 +167,42 @@ export class RightTriangle implements Drawable, Physical {
     this.id = getNext();
     this.width = width;
     this.height = height;
-    this._position = position;
-    this._rotation = rotation ?? 0;
-    this.scale = scale ?? [1, 1];
+    this.transform = createTransform({ position, rotation, scale });
     this._color = color ?? [1, 1, 1, 1];
     this.physicsType = physicsType ?? "kinematic";
     this._velocity = velocity ?? [0, 0];
   }
 
   get position() {
-    return this._position;
+    return this.transform.position;
   }
 
   set position(position: [number, number]) {
-    this._position = position;
+    this.transform.position[0] = position[0];
+    this.transform.position[1] = position[1];
   }
 
   get rotation() {
-    return this._rotation;
+    return this.transform.rotation;
   }
 
   set rotation(rotation: number) {
-    this._rotation = rotation;
+    this.transform.rotation = rotation;
+  }
+
+  get scale() {
+    return this.transform.scale;
+  }
+
+  set scale(scale: [number, number]) {
+    this.transform.scale[0] = scale[0];
+    this.transform.scale[1] = scale[1];
   }
 
   get drawEntities(): DrawEntity[] {
     if (!this._drawEntity) {
       this._drawEntity = createRightTriangle(this, this.width, this.height);
+      this._drawEntity.attachToEntity(this.id, this.transform);
     }
 
     return [this._drawEntity];
@@ -214,21 +220,24 @@ export class RightTriangle implements Drawable, Physical {
   }
 
   delete() {
+    if (this.markedForDeletion) {
+      return;
+    }
     if (this._drawEntity) {
       this._drawEntity.delete();
     }
+    if (this._physicsEntity) {
+      this._physicsEntity.delete();
+    }
+    this.markedForDeletion = true;
   }
 
   sync() {
     if (this._physicsEntity) {
-      this._position = this._physicsEntity.position;
-      this._rotation = this._physicsEntity.rotation;
+      this._velocity = this._physicsEntity.velocity;
     }
 
     if (this._drawEntity) {
-      this._drawEntity.position = this._position;
-      this._drawEntity.rotation = this._rotation;
-      // this._drawEntity.scale = this.scale;
       this._drawEntity.color = this._color;
     }
   }
@@ -243,12 +252,13 @@ export class RightTriangle implements Drawable, Physical {
       const entity: PhysicsEntity = new PhysicsEntity({
         parent: this,
         type: this.physicsType,
-        position: this._position,
-        rotation: this._rotation,
+        position: this.transform.position,
+        rotation: this.transform.rotation,
+        transform: this.transform,
         velocity: this.velocity,
         boundingShape: {
           type: "BoundingConvexPolygon",
-          position: this._position,
+          position: this.transform.position,
           vertices,
         },
       });

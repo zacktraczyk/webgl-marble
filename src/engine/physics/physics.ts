@@ -2,6 +2,8 @@
 // Collision Resolution reference: https://spicyyoghurt.com/tutorials/html5-javascript-game-development/collision-detection-physics
 
 import { Observer } from "../utils/Observer";
+import type { EntityId } from "../core/entity";
+import type { Transform } from "../core/transform";
 import {
   type CollisionDetector,
   type CollisionResolver,
@@ -10,12 +12,24 @@ import {
 import { GeneralCollisionResolver } from "./collision/general";
 import { GJKCollisionDetector } from "./collision/GJK";
 import { type Physical, PhysicsEntity } from "./entity";
+import type {
+  ColliderDefinition,
+  PhysicsComponentDefinition,
+} from "./component";
 
 const GRAVITY_X = 0;
 const GRAVITY_Y = 9.8;
 
 export type CollisionEvents = {
   collisions: Collision[];
+  entityCollisions: EntityCollision[];
+};
+
+export type EntityCollision = {
+  entity1: EntityId;
+  entity2: EntityId;
+  normal: [number, number];
+  magnitude: number;
 };
 
 class Physics {
@@ -51,6 +65,11 @@ class Physics {
     this._observer.clear();
   }
 
+  dispose() {
+    this._entities = [];
+    this._observer.clear();
+  }
+
   // Entity
 
   private _cleanup() {
@@ -63,6 +82,58 @@ class Physics {
 
   add({ physicsEntity }: Physical) {
     this._entities.push(physicsEntity);
+  }
+
+  addEntity(
+    ownerId: EntityId,
+    transform: Transform,
+    definition: PhysicsComponentDefinition
+  ) {
+    const collider = definition.collider;
+    const entity = new PhysicsEntity({
+      ownerId,
+      transform,
+      type: definition.type,
+      boundingShape: this._toBoundingShape(collider, transform.position),
+      position: transform.position,
+      velocity: definition.velocity,
+      angularVelocity: definition.angularVelocity,
+      acceleration: definition.acceleration,
+    });
+    this._entities.push(entity);
+    return entity;
+  }
+
+  removeEntity(ownerId: EntityId) {
+    for (const entity of this._entities) {
+      if (entity.ownerId === ownerId) {
+        entity.delete();
+      }
+    }
+  }
+
+  getEntity(ownerId: EntityId) {
+    return this._entities.find((entity) => entity.ownerId === ownerId);
+  }
+
+  private _toBoundingShape(
+    collider: ColliderDefinition,
+    position: [number, number]
+  ) {
+    switch (collider.type) {
+      case "circle":
+        return {
+          type: "BoundingCircle" as const,
+          position,
+          radius: collider.radius,
+        };
+      case "polygon":
+        return {
+          type: "BoundingConvexPolygon" as const,
+          position,
+          vertices: collider.vertices,
+        };
+    }
   }
 
   // Simulation
@@ -106,7 +177,17 @@ class Physics {
     const collisions = this._collider.detectCollisions(this._entities);
 
     if (collisions) {
-      this._observer.notify({ collisions });
+      this._observer.notify({
+        collisions,
+        entityCollisions: collisions.map(
+          ({ entity1, entity2, minimumTranslationVector }) => ({
+            entity1: entity1.ownerId,
+            entity2: entity2.ownerId,
+            normal: minimumTranslationVector.normal,
+            magnitude: minimumTranslationVector.magnitude,
+          })
+        ),
+      });
       this._resolver.resolveCollisions(collisions);
     }
   }
