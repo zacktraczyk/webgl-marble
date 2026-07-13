@@ -1,11 +1,11 @@
 import {
   createCollision,
-  createFallbackManifold,
+  createApproximateManifold,
   type Collision,
   type CollisionDetector,
-} from ".";
-import { Observer } from "../../utils/Observer";
-import type { PhysicsEntity } from "../entity";
+} from "../types";
+import { Observer } from "../../../utils/Observer";
+import type { PhysicsEntity } from "../../entity";
 
 /** Diagnostic GJK/EPA implementation. Production contacts use SAT manifolds. */
 export class GJKCollisionDetector implements CollisionDetector {
@@ -427,7 +427,7 @@ export class GJKCollisionDetector implements CollisionDetector {
     return { isColliding, normal, magnitude };
   }
 
-  detectCollisions(entities: PhysicsEntity[]): Collision[] | null {
+  detectCollisions(entities: PhysicsEntity[]): Collision[] {
     const collisions: Collision[] = [];
     const activeEntities = entities;
     for (let i = 0; i < activeEntities.length; i++) {
@@ -457,7 +457,7 @@ export class GJKCollisionDetector implements CollisionDetector {
               createCollision({
                 entity1: entity,
                 entity2: otherEntity,
-                manifold: createFallbackManifold({
+                manifold: createApproximateManifold({
                   entity1: entity,
                   entity2: otherEntity,
                   normal: edgeNormal,
@@ -479,7 +479,7 @@ export class GJKCollisionDetector implements CollisionDetector {
             createCollision({
               entity1: entity,
               entity2: otherEntity,
-              manifold: createFallbackManifold({
+              manifold: createApproximateManifold({
                 entity1: entity,
                 entity2: otherEntity,
                 normal: edgeNormal,
@@ -492,7 +492,7 @@ export class GJKCollisionDetector implements CollisionDetector {
       }
     }
 
-    return collisions.length > 0 ? collisions : null;
+    return collisions;
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -282,6 +282,7 @@ function init() {
         width: PUSHER_SIZE,
         height: PUSHER_SIZE,
         color: PUSHER_COLOR,
+        bodyType: "kinematic",
         velocity: [60, 0],
       })
     );
@@ -304,6 +305,7 @@ function init() {
         width: PUSHER_SIZE,
         height: PUSHER_SIZE,
         color: PUSHER_COLOR,
+        bodyType: "kinematic",
         velocity: [-60, 0],
       })
     );
@@ -325,6 +327,7 @@ function init() {
         width: PUSHER_SIZE,
         height: PUSHER_SIZE,
         color: PUSHER_COLOR,
+        bodyType: "kinematic",
         velocity: [60, 0],
       })
     );

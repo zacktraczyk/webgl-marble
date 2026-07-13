@@ -11,8 +11,15 @@ export interface RectangleDefinitionOptions {
   rotation?: number;
   bodyType?: PhysicsEntityType;
   velocity?: Vec2;
+  angularVelocity?: number;
+  acceleration?: Vec2;
   tags?: string[];
   physical?: boolean;
+  mass?: number;
+  inertia?: number;
+  friction?: number;
+  restitution?: number;
+  fixedRotation?: boolean;
 }
 
 export const rectangleDefinition = ({
@@ -21,10 +28,17 @@ export const rectangleDefinition = ({
   height,
   color,
   rotation = 0,
-  bodyType = "kinematic",
+  bodyType = "static",
   velocity = [0, 0],
+  angularVelocity,
+  acceleration,
   tags = [],
   physical = true,
+  mass,
+  inertia,
+  friction,
+  restitution,
+  fixedRotation,
 }: RectangleDefinitionOptions): EntityDefinition => ({
   transform: { position, rotation },
   tags,
@@ -44,6 +58,13 @@ export const rectangleDefinition = ({
     ? {
         type: bodyType,
         velocity,
+        angularVelocity,
+        acceleration,
+        mass,
+        inertia,
+        friction,
+        restitution,
+        fixedRotation,
         collider: {
           type: "polygon",
           vertices: [

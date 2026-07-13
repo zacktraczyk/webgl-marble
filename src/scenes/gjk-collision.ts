@@ -3,7 +3,10 @@ import { Graph } from "../engine/object/graph";
 import { Line } from "../engine/object/line";
 import { Point } from "../engine/object/point";
 import { TriangleOutline } from "../engine/object/triangle";
-import { GJKCollisionDetector } from "../engine/physics/collision/GJK";
+import {
+  GJKCollisionDetector,
+  SequentialImpulseSolver,
+} from "../engine/physics/collision";
 import Physics from "../engine/physics/physics";
 import Stage, { type StageObject } from "../engine/stage";
 import { type Drawable } from "../engine/vdu/entity";
@@ -12,7 +15,6 @@ import {
   DragAndDropHexagon,
   DragAndDropRectangle,
 } from "../engine/object/dragAndDrop";
-import { GeneralCollisionResolver } from "../engine/physics/collision/general";
 import type { Scene } from "../engine/runtime/scene";
 
 function createScene(): Scene {
@@ -73,21 +75,22 @@ function createScene(): Scene {
   let currentCollisions: {
     entity1: number;
     entity2: number;
-    minimumTranslationVector: {
+    manifold: {
       normal: [number, number];
-      magnitude: number;
+      penetrationDepth: number;
     };
   }[] = [];
   let collisionEdges: Record<string, Line> = {};
-  let minimumTranslationVectorArrows: Record<string, [Arrow, Arrow]> = {};
+  let contactNormalArrows: Record<string, [Arrow, Arrow]> = {};
   stage.registerPhysicsObserver(async ({ collisions }) => {
     for (const collision of collisions) {
       const {
         entity1,
         entity2,
-        edge,
-        minimumTranslationVector: { normal, magnitude },
+        diagnostics,
+        manifold: { normal, penetrationDepth: magnitude },
       } = collision;
+      const edge = diagnostics?.referenceEdge;
       const collisionKey = [entity1, entity2].sort().join("-");
 
       if (edge && edge.length === 2) {
@@ -107,7 +110,7 @@ function createScene(): Scene {
       }
 
       if (normal && magnitude) {
-        if (!minimumTranslationVectorArrows[collisionKey]) {
+        if (!contactNormalArrows[collisionKey]) {
           const arrow = new Arrow({
             basePosition: [0, 0],
             tipPosition: [1, 0],
@@ -125,23 +128,23 @@ function createScene(): Scene {
             color: [1, 1, 1, 1],
           });
           stage.add(arrow2);
-          minimumTranslationVectorArrows[collisionKey] = [arrow, arrow2];
+          contactNormalArrows[collisionKey] = [arrow, arrow2];
         }
 
-        minimumTranslationVectorArrows[collisionKey][0].basePosition = [
+        contactNormalArrows[collisionKey][0].basePosition = [
           entity2.position[0],
           entity2.position[1],
         ];
-        minimumTranslationVectorArrows[collisionKey][0].tipPosition = [
+        contactNormalArrows[collisionKey][0].tipPosition = [
           entity2.position[0] + normal[0] * magnitude,
           entity2.position[1] + normal[1] * magnitude,
         ];
 
-        minimumTranslationVectorArrows[collisionKey][1].basePosition = [
+        contactNormalArrows[collisionKey][1].basePosition = [
           entity1.position[0],
           entity1.position[1],
         ];
-        minimumTranslationVectorArrows[collisionKey][1].tipPosition = [
+        contactNormalArrows[collisionKey][1].tipPosition = [
           entity1.position[0] - normal[0] * magnitude,
           entity1.position[1] - normal[1] * magnitude,
         ];
@@ -152,8 +155,8 @@ function createScene(): Scene {
       const collisionDebug = {
         entity1: collision.entity1.parent.id,
         entity2: collision.entity2.parent.id,
-        edge: collision.edge,
-        minimumTranslationVector: collision.minimumTranslationVector,
+        referenceEdge: collision.diagnostics?.referenceEdge,
+        manifold: collision.manifold,
       };
 
       return collisionDebug;
@@ -166,13 +169,13 @@ function createScene(): Scene {
         collisionEdges[collisionKey].delete();
       }
 
-      for (const collisionKey in minimumTranslationVectorArrows) {
-        minimumTranslationVectorArrows[collisionKey][0].delete();
-        minimumTranslationVectorArrows[collisionKey][1].delete();
+      for (const collisionKey in contactNormalArrows) {
+        contactNormalArrows[collisionKey][0].delete();
+        contactNormalArrows[collisionKey][1].delete();
       }
 
       collisionEdges = {};
-      minimumTranslationVectorArrows = {};
+      contactNormalArrows = {};
       currentCollisions = [];
     }
   };
@@ -194,7 +197,7 @@ function createScene(): Scene {
 function init() {
   // Stage
   const gjkCollisionDetector = new GJKCollisionDetector();
-  const resolver = new GeneralCollisionResolver();
+  const resolver = new SequentialImpulseSolver();
   const physics = new Physics({
     collisionDetector: gjkCollisionDetector,
     collisionResolver: resolver,

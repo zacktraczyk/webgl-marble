@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { SATCollisionDetector } from "../src/engine/physics/collision/SAT";
+import { SATCollisionDetector } from "../src/engine/physics/collision";
 import { PhysicsEntity } from "../src/engine/physics/entity";
 
 let nextOwnerId = 1;

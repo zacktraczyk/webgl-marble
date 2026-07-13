@@ -16,6 +16,7 @@ export class Circle implements Drawable, Physical {
   private _drawEntity: DrawEntity | null = null;
   private _physicsEntity: PhysicsEntity | null = null;
   readonly physicsType: PhysicsEntityType;
+  private _angularVelocity: number;
   markedForDeletion: boolean = false;
 
   constructor({
@@ -26,6 +27,7 @@ export class Circle implements Drawable, Physical {
     color,
     physicsType = "dynamic",
     velocity,
+    angularVelocity,
   }: {
     radius: number;
     position: [number, number];
@@ -34,6 +36,7 @@ export class Circle implements Drawable, Physical {
     color?: [number, number, number, number];
     physicsType?: PhysicsEntityType;
     velocity?: [number, number];
+    angularVelocity?: number;
   }) {
     this.id = id.getNext();
     this.radius = radius;
@@ -41,6 +44,7 @@ export class Circle implements Drawable, Physical {
     this.color = color ?? [1, 1, 1, 1];
     this.physicsType = physicsType;
     this.velocity = velocity ?? [0, 0];
+    this._angularVelocity = angularVelocity ?? 0;
   }
 
   delete() {
@@ -80,6 +84,7 @@ export class Circle implements Drawable, Physical {
           radius: this.radius,
         },
         velocity: this.velocity,
+        angularVelocity: this.angularVelocity,
       });
       this._physicsEntity = entity;
     }
@@ -104,6 +109,17 @@ export class Circle implements Drawable, Physical {
     this.transform.rotation = rotation;
   }
 
+  get angularVelocity() {
+    return this._angularVelocity;
+  }
+
+  set angularVelocity(value: number) {
+    this._angularVelocity = value;
+    if (this._physicsEntity) {
+      this._physicsEntity.angularVelocity = value;
+    }
+  }
+
   get scale() {
     return this.transform.scale;
   }
@@ -116,6 +132,7 @@ export class Circle implements Drawable, Physical {
   sync() {
     if (this._physicsEntity) {
       this.velocity = this._physicsEntity.velocity;
+      this._angularVelocity = this._physicsEntity.angularVelocity;
     }
 
     if (this._drawEntity) {

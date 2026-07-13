@@ -143,6 +143,7 @@ export class RightTriangle implements Drawable, Physical {
   private _physicsEntity: PhysicsEntity | null = null;
   readonly physicsType: PhysicsEntityType;
   private _velocity: [number, number];
+  private _angularVelocity: number;
   markedForDeletion: boolean = false;
 
   constructor({
@@ -154,6 +155,7 @@ export class RightTriangle implements Drawable, Physical {
     color,
     physicsType,
     velocity,
+    angularVelocity,
   }: {
     width: number;
     height: number;
@@ -163,6 +165,7 @@ export class RightTriangle implements Drawable, Physical {
     color?: [number, number, number, number];
     physicsType?: PhysicsEntityType;
     velocity?: [number, number];
+    angularVelocity?: number;
   }) {
     this.id = getNext();
     this.width = width;
@@ -171,6 +174,7 @@ export class RightTriangle implements Drawable, Physical {
     this._color = color ?? [1, 1, 1, 1];
     this.physicsType = physicsType ?? "kinematic";
     this._velocity = velocity ?? [0, 0];
+    this._angularVelocity = angularVelocity ?? 0;
   }
 
   get position() {
@@ -219,6 +223,17 @@ export class RightTriangle implements Drawable, Physical {
     }
   }
 
+  get angularVelocity() {
+    return this._angularVelocity;
+  }
+
+  set angularVelocity(value: number) {
+    this._angularVelocity = value;
+    if (this._physicsEntity) {
+      this._physicsEntity.angularVelocity = value;
+    }
+  }
+
   delete() {
     if (this.markedForDeletion) {
       return;
@@ -235,6 +250,7 @@ export class RightTriangle implements Drawable, Physical {
   sync() {
     if (this._physicsEntity) {
       this._velocity = this._physicsEntity.velocity;
+      this._angularVelocity = this._physicsEntity.angularVelocity;
     }
 
     if (this._drawEntity) {
@@ -256,6 +272,7 @@ export class RightTriangle implements Drawable, Physical {
         rotation: this.transform.rotation,
         transform: this.transform,
         velocity: this.velocity,
+        angularVelocity: this.angularVelocity,
         boundingShape: {
           type: "BoundingConvexPolygon",
           position: this.transform.position,

@@ -16,5 +16,10 @@ export interface PhysicsComponentDefinition {
   velocity?: Vec2;
   angularVelocity?: number;
   acceleration?: Vec2;
+  mass?: number;
+  inertia?: number;
+  friction?: number;
+  restitution?: number;
+  fixedRotation?: boolean;
   collider: ColliderDefinition;
 }

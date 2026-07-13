@@ -107,6 +107,7 @@ function createScene(): Scene {
     width: 300,
     height: 10,
     color: SQUARE_COLOR,
+    angularVelocity: 0.075,
   });
   stage.add(spinnerArm1);
 
@@ -116,6 +117,7 @@ function createScene(): Scene {
     height: 10,
     rotation: Math.PI / 2,
     color: SQUARE_COLOR,
+    angularVelocity: 0.075,
   });
   stage.add(spinnerArm2);
 
@@ -167,8 +169,6 @@ function createScene(): Scene {
       square2.velocity[0] =
         (Math.sin(simulationTime / 1000) * oscillationMagnitude) / 2;
 
-      spinnerArm1.rotation += 0.01;
-      spinnerArm2.rotation += 0.01;
       stage.update(deltaMs);
       resetOutOfBoundsCircles();
     },

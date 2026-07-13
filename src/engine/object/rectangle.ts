@@ -17,6 +17,7 @@ export class Rectangle implements Drawable, Physical {
   private _physicsEntity: PhysicsEntity | null = null;
   readonly physicsType: PhysicsEntityType;
   velocity: [number, number];
+  private _angularVelocity: number;
   markedForDeletion: boolean = false;
 
   constructor({
@@ -28,6 +29,7 @@ export class Rectangle implements Drawable, Physical {
     color,
     physicsType = "kinematic",
     velocity,
+    angularVelocity,
   }: {
     width: number;
     height: number;
@@ -37,6 +39,7 @@ export class Rectangle implements Drawable, Physical {
     color?: [number, number, number, number];
     physicsType?: PhysicsEntityType;
     velocity?: [number, number];
+    angularVelocity?: number;
   }) {
     this.id = getNext();
     this.width = width;
@@ -45,6 +48,7 @@ export class Rectangle implements Drawable, Physical {
     this.color = color ?? [1, 1, 1, 1];
     this.physicsType = physicsType;
     this.velocity = velocity ?? [0, 0];
+    this._angularVelocity = angularVelocity ?? 0;
   }
 
   delete() {
@@ -94,6 +98,7 @@ export class Rectangle implements Drawable, Physical {
           ],
         },
         velocity: this.velocity,
+        angularVelocity: this.angularVelocity,
       });
       this._physicsEntity = entity;
     }
@@ -118,6 +123,17 @@ export class Rectangle implements Drawable, Physical {
     this.transform.rotation = rotation;
   }
 
+  get angularVelocity() {
+    return this._angularVelocity;
+  }
+
+  set angularVelocity(value: number) {
+    this._angularVelocity = value;
+    if (this._physicsEntity) {
+      this._physicsEntity.angularVelocity = value;
+    }
+  }
+
   get scale() {
     return this.transform.scale;
   }
@@ -130,6 +146,7 @@ export class Rectangle implements Drawable, Physical {
   sync() {
     if (this._physicsEntity) {
       this.velocity = this._physicsEntity.velocity;
+      this._angularVelocity = this._physicsEntity.angularVelocity;
     }
 
     if (this._drawEntity) {

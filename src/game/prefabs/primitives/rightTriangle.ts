@@ -11,8 +11,15 @@ export interface RightTriangleDefinitionOptions {
   rotation?: number;
   bodyType?: PhysicsEntityType;
   velocity?: Vec2;
+  angularVelocity?: number;
+  acceleration?: Vec2;
   tags?: string[];
   physical?: boolean;
+  mass?: number;
+  inertia?: number;
+  friction?: number;
+  restitution?: number;
+  fixedRotation?: boolean;
 }
 
 export const rightTriangleDefinition = ({
@@ -21,10 +28,17 @@ export const rightTriangleDefinition = ({
   height,
   color,
   rotation = 0,
-  bodyType = "kinematic",
+  bodyType = "static",
   velocity = [0, 0],
+  angularVelocity,
+  acceleration,
   tags = [],
   physical = true,
+  mass,
+  inertia,
+  friction,
+  restitution,
+  fixedRotation,
 }: RightTriangleDefinitionOptions): EntityDefinition => ({
   transform: { position, rotation },
   tags,
@@ -44,6 +58,13 @@ export const rightTriangleDefinition = ({
     ? {
         type: bodyType,
         velocity,
+        angularVelocity,
+        acceleration,
+        mass,
+        inertia,
+        friction,
+        restitution,
+        fixedRotation,
         collider: {
           type: "polygon",
           vertices: [

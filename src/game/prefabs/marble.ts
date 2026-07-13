@@ -9,6 +9,13 @@ export interface MarbleDefinitionOptions {
   color: Color;
   team?: string;
   velocity?: Vec2;
+  angularVelocity?: number;
+  acceleration?: Vec2;
+  mass?: number;
+  inertia?: number;
+  friction?: number;
+  restitution?: number;
+  fixedRotation?: boolean;
   decorated?: boolean;
 }
 
@@ -19,6 +26,13 @@ export const marbleDefinition = ({
   color,
   team,
   velocity,
+  angularVelocity,
+  acceleration,
+  mass,
+  inertia,
+  friction,
+  restitution,
+  fixedRotation,
   decorated = true,
 }: MarbleDefinitionOptions): EntityDefinition => {
   const definition = circleDefinition({
@@ -26,6 +40,13 @@ export const marbleDefinition = ({
     radius,
     color,
     velocity,
+    angularVelocity,
+    acceleration,
+    mass,
+    inertia,
+    friction,
+    restitution,
+    fixedRotation,
     bodyType: "dynamic",
     tags: ["marble", ...(team ? [`team:${team}`] : [])],
   });

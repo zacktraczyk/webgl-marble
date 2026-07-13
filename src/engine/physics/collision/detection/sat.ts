@@ -5,12 +5,12 @@ import {
   type ContactManifold,
   type ContactPoint,
   type Line,
-} from ".";
+} from "../types";
 import type {
   BoundingCircle,
   BoundingConvexPolygon,
   PhysicsEntity,
-} from "../entity";
+} from "../../entity";
 import {
   GEOMETRY_EPSILON,
   add,
@@ -23,7 +23,7 @@ import {
   signedArea,
   subtract,
   type Vec2,
-} from "./geometry";
+} from "../geometry";
 
 type WorldPolygon = {
   vertices: Vec2[];
@@ -82,7 +82,7 @@ export class SATCollisionDetector implements CollisionDetector {
         entity1,
         entity2,
         manifold,
-        edge: result.edge,
+        diagnostics: { referenceEdge: result.edge ?? undefined },
       });
     }
 
@@ -95,7 +95,7 @@ export class SATCollisionDetector implements CollisionDetector {
             entity1,
             entity2,
             manifold: result.manifold,
-            edge: result.edge,
+            diagnostics: { referenceEdge: result.edge ?? undefined },
           })
         : null;
     }
@@ -107,12 +107,12 @@ export class SATCollisionDetector implements CollisionDetector {
           entity1,
           entity2,
           manifold: result.manifold,
-          edge: result.edge,
+          diagnostics: { referenceEdge: result.edge ?? undefined },
         })
       : null;
   }
 
-  detectCollisions(entities: PhysicsEntity[]): Collision[] | null {
+  detectCollisions(entities: PhysicsEntity[]): Collision[] {
     const collisions: Collision[] = [];
     for (let i = 0; i < entities.length; i++) {
       for (let j = i + 1; j < entities.length; j++) {
@@ -122,7 +122,7 @@ export class SATCollisionDetector implements CollisionDetector {
         }
       }
     }
-    return collisions.length > 0 ? collisions : null;
+    return collisions;
   }
 
   private _circleCircle(

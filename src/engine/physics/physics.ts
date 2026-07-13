@@ -8,10 +8,10 @@ import {
   type CollisionDetector,
   type CollisionResolver,
   type Collision,
+  SATCollisionDetector,
+  SequentialImpulseSolver,
 } from "./collision";
-import { GeneralCollisionResolver } from "./collision/general";
 import { assertValidConvexPolygon } from "./collision/geometry";
-import { SATCollisionDetector } from "./collision/SAT";
 import { type Physical, PhysicsEntity } from "./entity";
 import type {
   ColliderDefinition,
@@ -47,7 +47,7 @@ class Physics {
     const { collisionDetector, collisionResolver } = params ?? {};
 
     this._collider = collisionDetector ?? new SATCollisionDetector();
-    this._resolver = collisionResolver ?? new GeneralCollisionResolver();
+    this._resolver = collisionResolver ?? new SequentialImpulseSolver();
   }
 
   private _gravity_enabled: boolean = true;
@@ -69,6 +69,7 @@ class Physics {
   dispose() {
     this._entities = [];
     this._observer.clear();
+    this._resolver.clear?.();
   }
 
   // Entity
@@ -100,6 +101,11 @@ class Physics {
       velocity: definition.velocity,
       angularVelocity: definition.angularVelocity,
       acceleration: definition.acceleration,
+      mass: definition.mass,
+      inertia: definition.inertia,
+      friction: definition.friction,
+      restitution: definition.restitution,
+      fixedRotation: definition.fixedRotation,
     });
     this._entities.push(entity);
     return entity;
@@ -148,6 +154,12 @@ class Physics {
   // Simulation
 
   update(elapsed: number) {
+    if (!Number.isFinite(elapsed)) {
+      throw new Error("Physics update requires a finite elapsed time");
+    }
+    if (elapsed <= 0) {
+      return;
+    }
     if (elapsed > 100) {
       console.debug("Skipping physics update: elapsed time is too high", {
         elapsed,
@@ -157,35 +169,41 @@ class Physics {
 
     this._cleanup();
 
-    elapsed *= 0.008;
+    const deltaSeconds = elapsed * 0.008;
 
-    const gx = GRAVITY_X * elapsed;
-    const gy = GRAVITY_Y * elapsed;
+    const gx = GRAVITY_X * deltaSeconds;
+    const gy = GRAVITY_Y * deltaSeconds;
 
     for (let i = 0; i < this._entities.length; i++) {
       const entity = this._entities[i];
 
-      entity.velocity[0] += entity.acceleration[0] * elapsed;
-      entity.velocity[1] += entity.acceleration[1] * elapsed;
-
-      entity.position[0] += entity.velocity[0] * elapsed;
-      entity.position[1] += entity.velocity[1] * elapsed;
-
       switch (entity.type) {
+        case "static":
+          break;
         case "dynamic":
+          entity.velocity[0] += entity.acceleration[0] * deltaSeconds;
+          entity.velocity[1] += entity.acceleration[1] * deltaSeconds;
           if (this._gravity_enabled) {
             entity.velocity[0] += gx;
             entity.velocity[1] += gy;
           }
+          entity.position[0] += entity.velocity[0] * deltaSeconds;
+          entity.position[1] += entity.velocity[1] * deltaSeconds;
+          entity.rotation += entity.angularVelocity * deltaSeconds;
           break;
         case "kinematic":
+          entity.velocity[0] += entity.acceleration[0] * deltaSeconds;
+          entity.velocity[1] += entity.acceleration[1] * deltaSeconds;
+          entity.position[0] += entity.velocity[0] * deltaSeconds;
+          entity.position[1] += entity.velocity[1] * deltaSeconds;
+          entity.rotation += entity.angularVelocity * deltaSeconds;
           break;
       }
     }
 
     const collisions = this._collider.detectCollisions(this._entities);
 
-    if (collisions) {
+    if (collisions.length > 0) {
       this._observer.notify({
         collisions,
         entityCollisions: collisions.map(({ entity1, entity2, manifold }) => ({
@@ -195,8 +213,8 @@ class Physics {
           magnitude: manifold.penetrationDepth,
         })),
       });
-      this._resolver.resolveCollisions(collisions);
     }
+    this._resolver.resolveCollisions(collisions, deltaSeconds);
   }
 }
 
