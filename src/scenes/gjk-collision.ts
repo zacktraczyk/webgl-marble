@@ -13,8 +13,9 @@ import {
   DragAndDropRectangle,
 } from "../engine/object/dragAndDrop";
 import { GeneralCollisionResolver } from "../engine/physics/collision/general";
+import type { Scene } from "../engine/runtime/scene";
 
-function main() {
+function createScene(): Scene {
   const { stage, debugCleanup } = init();
 
   const centerX = 0;
@@ -176,31 +177,18 @@ function main() {
     }
   };
 
-  let lastTime = performance.now();
-  function updateScene() {
-    const time = performance.now();
-    const elapsed = time - lastTime;
-    lastTime = time;
-
-    debugCleanup();
-    cleanupCollision();
-
-    stage.update(elapsed);
-
-    updateFpsPerf();
-    updateDebugInfo({
-      collisions: currentCollisions,
-    });
-  }
-
-  function render() {
-    updateScene();
-
-    stage.render();
-    requestAnimationFrame(render);
-  }
-
-  requestAnimationFrame(render);
+  return {
+    fixedUpdate: (deltaMs) => {
+      debugCleanup();
+      cleanupCollision();
+      stage.update(deltaMs);
+    },
+    update: () => {
+      updateDebugInfo({ collisions: currentCollisions });
+    },
+    render: () => stage.render(),
+    dispose: () => stage.dispose(),
+  };
 }
 
 function init() {
@@ -504,23 +492,4 @@ const updateDebugInfo = (obj: any) => {
   }
 };
 
-// FPS Counter
-const fpsElem = document.getElementById("#fps");
-let lastTime = performance.now();
-let frameCount = 0;
-const updateFpsPerf = () => {
-  const now = performance.now();
-  const delta = now - lastTime;
-  frameCount++;
-
-  if (delta > 500) {
-    const fps = (frameCount / delta) * 1000;
-    if (fpsElem) {
-      fpsElem.textContent = `FPS: ${fps.toFixed(2)}`;
-    }
-    lastTime = now;
-    frameCount = 0;
-  }
-};
-
-export default main;
+export default createScene;

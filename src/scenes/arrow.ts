@@ -1,8 +1,9 @@
 import { Arrow } from "../engine/object/arrow";
 import { Rectangle } from "../engine/object/rectangle";
 import Stage from "../engine/stage";
+import type { Scene } from "../engine/runtime/scene";
 
-function main() {
+function createScene(): Scene {
   const stage = new Stage();
 
   const pinWheelCenter: [number, number] = [0, 0];
@@ -93,33 +94,24 @@ function main() {
   });
   stage.add(rotatingArrow);
 
-  let lastTime = performance.now();
-  function updateScene() {
-    const time = performance.now();
-    const elapsed = time - lastTime;
-    lastTime = time;
-
-    const arrowTip: [number, number] = [
-      rotatingArrowCenter[0] + Math.cos(time / 1000) * arrowLength,
-      rotatingArrowCenter[1] + Math.sin(time / 1000) * arrowLength,
-    ];
-    rotatingArrow.tipPosition = arrowTip;
-    tipSquareRotating.position = arrowTip;
-
-    stage.update(elapsed);
-
-    updateDebugInfo({});
-    updateFpsPerf();
-  }
-
-  function render() {
-    updateScene();
-
-    stage.render();
-    requestAnimationFrame(render);
-  }
-
-  requestAnimationFrame(render);
+  let simulationTime = 0;
+  return {
+    fixedUpdate: (deltaMs) => {
+      simulationTime += deltaMs;
+      const arrowTip: [number, number] = [
+        rotatingArrowCenter[0] + Math.cos(simulationTime / 1000) * arrowLength,
+        rotatingArrowCenter[1] + Math.sin(simulationTime / 1000) * arrowLength,
+      ];
+      rotatingArrow.tipPosition = arrowTip;
+      tipSquareRotating.position = arrowTip;
+      stage.update(deltaMs);
+    },
+    update: () => {
+      updateDebugInfo({});
+    },
+    render: () => stage.render(),
+    dispose: () => stage.dispose(),
+  };
 }
 
 // Debug info
@@ -131,23 +123,4 @@ const updateDebugInfo = (obj: any) => {
   }
 };
 
-// FPS Counter
-const fpsElem = document.getElementById("#fps");
-let lastTime = performance.now();
-let frameCount = 0;
-const updateFpsPerf = () => {
-  const now = performance.now();
-  const delta = now - lastTime;
-  frameCount++;
-
-  if (delta > 500) {
-    const fps = (frameCount / delta) * 1000;
-    if (fpsElem) {
-      fpsElem.textContent = `FPS: ${fps.toFixed(2)}`;
-    }
-    lastTime = now;
-    frameCount = 0;
-  }
-};
-
-export default main;
+export default createScene;

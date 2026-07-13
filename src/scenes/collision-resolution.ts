@@ -3,8 +3,9 @@ import { Ball } from "../engine/object/ball";
 import { GJKCollisionDetector } from "../engine/physics/collision/GJK";
 import Physics from "../engine/physics/physics";
 import { GeneralCollisionResolver } from "../engine/physics/collision/general";
+import type { Scene } from "../engine/runtime/scene";
 
-function main() {
+function createScene(): Scene {
   const gjk = new GJKCollisionDetector();
   const resolver = new GeneralCollisionResolver();
   const physics = new Physics({
@@ -79,48 +80,33 @@ function main() {
   };
 
   const collisions: [number, number][] = [];
-  stage.registerPhysicsObserver(({ collisions: newCollisions }) => {
-    for (const collision of newCollisions) {
+  stage.registerPhysicsObserver(({ entityCollisions }) => {
+    for (const collision of entityCollisions) {
       const { entity1, entity2 } = collision;
       const alreadyCollided = collisions.some(
-        (c) =>
-          c[0] === entity1.parent.physicsEntity.id &&
-          c[1] === entity2.parent.physicsEntity.id
+        (pair) => pair[0] === entity1 && pair[1] === entity2
       );
       if (alreadyCollided) {
         continue;
       }
 
-      collisions.push([
-        entity1.parent.physicsEntity.id,
-        entity2.parent.physicsEntity.id,
-      ]);
+      collisions.push([entity1, entity2]);
     }
   });
 
-  let lastTime = performance.now();
-  function updateScene() {
-    const time = performance.now();
-    const elapsed = time - lastTime;
-    lastTime = time;
-
-    if (shouldReset()) {
-      resetObjects();
-    }
-
-    stage.update(elapsed);
-    updateFpsPerf();
-    updateDebugInfo({ collisions });
-  }
-
-  function render() {
-    updateScene();
-
-    stage.render();
-    requestAnimationFrame(render);
-  }
-
-  requestAnimationFrame(render);
+  return {
+    fixedUpdate: (deltaMs) => {
+      if (shouldReset()) {
+        resetObjects();
+      }
+      stage.update(deltaMs);
+    },
+    update: () => {
+      updateDebugInfo({ collisions });
+    },
+    render: () => stage.render(),
+    dispose: () => stage.dispose(),
+  };
 }
 
 // Debug info
@@ -132,23 +118,4 @@ const updateDebugInfo = (obj: any) => {
   }
 };
 
-// FPS Counter
-const fpsElem = document.getElementById("#fps");
-let lastTime = performance.now();
-let frameCount = 0;
-const updateFpsPerf = () => {
-  const now = performance.now();
-  const delta = now - lastTime;
-  frameCount++;
-
-  if (delta > 500) {
-    const fps = (frameCount / delta) * 1000;
-    if (fpsElem) {
-      fpsElem.textContent = `FPS: ${fps.toFixed(2)}`;
-    }
-    lastTime = now;
-    frameCount = 0;
-  }
-};
-
-export default main;
+export default createScene;

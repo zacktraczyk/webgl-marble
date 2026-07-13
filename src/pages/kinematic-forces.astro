@@ -28,11 +28,12 @@ import "../styles/global.css";
 </Layout>
 
 <script>
-  import main from "../scenes/kinematic-forces.ts";
+  import { mountScene } from "../engine/runtime/mountScene";
+  import createScene from "../scenes/kinematic-forces.ts";
 
   // Display errors on page
   try {
-    main();
+    mountScene(createScene(), { showFps: true });
   } catch (error) {
     const errorElem = document.getElementById("#error");
     if (errorElem) {

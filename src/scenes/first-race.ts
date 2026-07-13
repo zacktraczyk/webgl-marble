@@ -1,12 +1,13 @@
 import { GeneralCollisionResolver } from "../engine/physics/collision/general";
 import { GJKCollisionDetector } from "../engine/physics/collision/GJK";
 import Physics from "../engine/physics/physics";
+import type { Scene } from "../engine/runtime/scene";
 import Stage from "../engine/stage";
 import { finishZoneDefinition } from "../game/prefabs/finishZone";
 import { marbleDefinition } from "../game/prefabs/marble";
 import { rectangleDefinition } from "../game/prefabs/primitives/rectangle";
 
-function main() {
+function createScene(): Scene {
   const { stage, finishLine } = init();
 
   const finishedBalls: number[] = [];
@@ -29,25 +30,14 @@ function main() {
     }
   });
 
-  let lastTime = performance.now();
-  function updateScene() {
-    const time = performance.now();
-    const elapsed = time - lastTime;
-    lastTime = time;
-
-    stage.update(elapsed);
-    updateFpsPerf();
-    updateDebugInfo({ finishedBalls });
-  }
-
-  function render() {
-    updateScene();
-
-    stage.render();
-    requestAnimationFrame(render);
-  }
-
-  requestAnimationFrame(render);
+  return {
+    fixedUpdate: (deltaMs) => stage.update(deltaMs),
+    update: () => {
+      updateDebugInfo({ finishedBalls });
+    },
+    render: () => stage.render(),
+    dispose: () => stage.dispose(),
+  };
 }
 
 function init() {
@@ -134,15 +124,6 @@ function init() {
   }
 
   function spawnWalls() {
-    // const ground = new Rectangle({
-    //   position: [stage.width / 2, stage.height - 25],
-    //   width: stage.width,
-    //   height: 50,
-    //   color: [0, 1, 0, 1],
-    // });
-    // vdu.add(ground);
-    // physics.add(ground);
-
     stage.spawn(
       rectangleDefinition({
         position: [25 - stage.width / 2, 25],
@@ -227,23 +208,4 @@ const updateDebugInfo = (obj: any) => {
   }
 };
 
-// FPS Counter
-const fpsElem = document.getElementById("#fps");
-let lastTime = performance.now();
-let frameCount = 0;
-const updateFpsPerf = () => {
-  const now = performance.now();
-  const delta = now - lastTime;
-  frameCount++;
-
-  if (delta > 500) {
-    const fps = (frameCount / delta) * 1000;
-    if (fpsElem) {
-      fpsElem.textContent = `FPS: ${fps.toFixed(2)}`;
-    }
-    lastTime = now;
-    frameCount = 0;
-  }
-};
-
-export default main;
+export default createScene;

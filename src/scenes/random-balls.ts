@@ -1,31 +1,19 @@
-import { Ball } from "../engine/object/ball";
-import { Rectangle } from "../engine/object/rectangle";
 import { GeneralCollisionResolver } from "../engine/physics/collision/general";
 import { GJKCollisionDetector } from "../engine/physics/collision/GJK";
 import Physics from "../engine/physics/physics";
+import type { Scene } from "../engine/runtime/scene";
 import Stage from "../engine/stage";
+import { marbleDefinition } from "../game/prefabs/marble";
+import { rectangleDefinition } from "../game/prefabs/primitives/rectangle";
 
-function main() {
+function createScene(): Scene {
   const { stage } = init();
 
-  let lastTime = performance.now();
-  function updateScene() {
-    const time = performance.now();
-    const elapsed = time - lastTime;
-    lastTime = time;
-
-    stage.update(elapsed);
-    updateFpsPerf();
-  }
-
-  function render() {
-    updateScene();
-
-    stage.render();
-    requestAnimationFrame(render);
-  }
-
-  requestAnimationFrame(render);
+  return {
+    fixedUpdate: (deltaMs) => stage.update(deltaMs),
+    render: () => stage.render(),
+    dispose: () => stage.dispose(),
+  };
 }
 
 function init() {
@@ -61,48 +49,40 @@ function init() {
       const vx = Math.random() * 200 - 100;
       const vy = Math.random() * 200 - 100;
 
-      const circle = new Ball({
-        position: [x, y],
-        velocity: [vx, vy],
-        color: [0, 0, Math.random() * 0.5 + 0.5, 1],
-        ...circleSharedProps,
-      });
-      stage.add(circle);
+      stage.spawn(
+        marbleDefinition({
+          position: [x, y],
+          velocity: [vx, vy],
+          radius: circleSharedProps.radius,
+          color: [0, 0, Math.random() * 0.5 + 0.5, 1],
+          decorated: false,
+        })
+      );
     }
   }
 
   function spawnWalls() {
-    const ground = new Rectangle({
-      position: [0, stage.height / 2 - 25],
-      width: stage.width,
-      height: 50,
-      color: [0, 1, 0, 1],
-    });
-    stage.add(ground);
-
-    const leftWall = new Rectangle({
-      position: [25 - stage.width / 2, 0],
-      width: 50,
-      height: stage.height - 100,
-      color: [0, 1, 0, 1],
-    });
-    stage.add(leftWall);
-
-    const rightWall = new Rectangle({
-      position: [stage.width / 2 - 25, 0],
-      width: 50,
-      height: stage.height - 100,
-      color: [0, 1, 0, 1],
-    });
-    stage.add(rightWall);
-
-    const ceiling = new Rectangle({
-      position: [0, 25 - stage.height / 2],
-      width: stage.width,
-      height: 50,
-      color: [0, 1, 0, 1],
-    });
-    stage.add(ceiling);
+    const walls: {
+      position: [number, number];
+      width: number;
+      height: number;
+    }[] = [
+      { position: [0, stage.height / 2 - 25], width: stage.width, height: 50 },
+      {
+        position: [25 - stage.width / 2, 0],
+        width: 50,
+        height: stage.height - 100,
+      },
+      {
+        position: [stage.width / 2 - 25, 0],
+        width: 50,
+        height: stage.height - 100,
+      },
+      { position: [0, 25 - stage.height / 2], width: stage.width, height: 50 },
+    ];
+    for (const wall of walls) {
+      stage.spawn(rectangleDefinition({ ...wall, color: [0, 1, 0, 1] }));
+    }
   }
 
   // Init
@@ -114,23 +94,4 @@ function init() {
   };
 }
 
-// FPS Counter
-const fpsElem = document.getElementById("#fps");
-let lastTime = performance.now();
-let frameCount = 0;
-const updateFpsPerf = () => {
-  const now = performance.now();
-  const delta = now - lastTime;
-  frameCount++;
-
-  if (delta > 500) {
-    const fps = (frameCount / delta) * 1000;
-    if (fpsElem) {
-      fpsElem.textContent = `FPS: ${fps.toFixed(2)}`;
-    }
-    lastTime = now;
-    frameCount = 0;
-  }
-};
-
-export default main;
+export default createScene;

@@ -2,6 +2,7 @@ import Stage from "../engine/stage";
 import { Rectangle } from "../engine/object/rectangle";
 import { Circle } from "../engine/object/circle";
 import type { Ball } from "../engine/object/ball";
+import type { Scene } from "../engine/runtime/scene";
 
 const NUM_SPAWN_ENTITIES = 40;
 const SPAWN_BUFFER = 10;
@@ -54,7 +55,7 @@ const getOscillationMagnitude = (desiredWidth: number) => {
   return velocityMagnitude;
 };
 
-function main() {
+function createScene(): Scene {
   const stage = new Stage();
   stage.panAndZoom = true;
 
@@ -154,55 +155,25 @@ function main() {
     }
   };
 
-  let lastTime = performance.now();
-  function updateScene() {
-    const time = performance.now();
-    const elapsed = time - lastTime;
-    lastTime = time;
+  let simulationTime = 0;
+  return {
+    fixedUpdate: (deltaMs) => {
+      simulationTime += deltaMs;
+      const oscillationWidth = stage.canvas.clientWidth / 2;
+      const oscillationMagnitude = getOscillationMagnitude(oscillationWidth);
+      square1.velocity[0] =
+        (Math.sin(simulationTime / 1000 + Math.PI / 2) * oscillationMagnitude) /
+        2;
+      square2.velocity[0] =
+        (Math.sin(simulationTime / 1000) * oscillationMagnitude) / 2;
 
-    // Oscillate squares
-    const oscillationWidth = stage.canvas.clientWidth / 2;
-    const oscillationMagnitude = getOscillationMagnitude(oscillationWidth);
-    square1.velocity[0] =
-      (Math.sin(time / 1000 + Math.PI / 2) * oscillationMagnitude) / 2;
-    square2.velocity[0] = (Math.sin(time / 1000) * oscillationMagnitude) / 2;
-
-    // Rotate spinner arms
-    // TODO: Angular velocity
-    spinnerArm1.rotation += 0.01;
-    spinnerArm2.rotation += 0.01;
-
-    stage.update(elapsed);
-    resetOutOfBoundsCircles();
-    updateFpsPerf();
-  }
-
-  function render() {
-    updateScene();
-
-    stage.render();
-    requestAnimationFrame(render);
-  }
-
-  requestAnimationFrame(render);
+      spinnerArm1.rotation += 0.01;
+      spinnerArm2.rotation += 0.01;
+      stage.update(deltaMs);
+      resetOutOfBoundsCircles();
+    },
+    render: () => stage.render(),
+    dispose: () => stage.dispose(),
+  };
 }
-// FPS Counter
-const fpsElem = document.getElementById("#fps");
-let lastTime = performance.now();
-let frameCount = 0;
-const updateFpsPerf = () => {
-  const now = performance.now();
-  const delta = now - lastTime;
-  frameCount++;
-
-  if (delta > 500) {
-    const fps = (frameCount / delta) * 1000;
-    if (fpsElem) {
-      fpsElem.textContent = `FPS: ${fps.toFixed(2)}`;
-    }
-    lastTime = now;
-    frameCount = 0;
-  }
-};
-
-export default main;
+export default createScene;

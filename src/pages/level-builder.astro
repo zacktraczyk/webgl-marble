@@ -164,7 +164,8 @@ import "../styles/global.css";
 </Layout>
 
 <script>
-  import main from "../scenes/level-builder.ts";
+  import { mountScene } from "../engine/runtime/mountScene";
+  import createScene from "../scenes/level-builder.ts";
 
   // Display errors on page
   try {
@@ -176,13 +177,16 @@ import "../styles/global.css";
       "#tool-select-finish-line"
     );
 
-    main({
-      pan: toolSelectPan,
-      select: toolSelectSelect,
-      square: toolSelectSquare,
-      circle: toolSelectCircle,
-      finishLine: toolSelectFinishLine,
-    });
+    mountScene(
+      createScene({
+        pan: toolSelectPan,
+        select: toolSelectSelect,
+        square: toolSelectSquare,
+        circle: toolSelectCircle,
+        finishLine: toolSelectFinishLine,
+      }),
+      { showFps: true }
+    );
   } catch (error) {
     const errorElem = document.getElementById("#error");
     if (errorElem) {

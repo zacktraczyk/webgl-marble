@@ -26,11 +26,12 @@ import "../styles/global.css";
 </Layout>
 
 <script>
-  import main from "../scenes/sat-collision.ts";
+  import { mountScene } from "../engine/runtime/mountScene";
+  import createScene from "../scenes/sat-collision.ts";
 
   // Display errors on page
   try {
-    main();
+    mountScene(createScene(), { showFps: true });
   } catch (error) {
     const errorElem = document.getElementById("#error");
     if (errorElem) {
