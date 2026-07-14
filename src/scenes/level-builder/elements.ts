@@ -7,13 +7,18 @@ export type BuilderUi = {
   wallButton: HTMLButtonElement;
   bumperButton: HTMLButtonElement;
   spawnPointButton: HTMLButtonElement;
-  gridToggleButton: HTMLButtonElement;
+  majorGridToggleButton: HTMLButtonElement;
+  minorGridToggleButton: HTMLButtonElement;
   gridOverlay: HTMLElement;
   editorOverlayCanvas: HTMLCanvasElement;
   playButton: HTMLButtonElement;
   playButtonLabel: HTMLElement | null;
   playButtonIcons: SVGElement[];
   resetButton: HTMLButtonElement;
+  zoomInButton: HTMLButtonElement;
+  zoomOutButton: HTMLButtonElement;
+  zoomResetButton: HTMLButtonElement;
+  zoomLevelOutput: HTMLOutputElement;
   teamCountInput: HTMLInputElement;
   teamCountOutput: HTMLOutputElement;
   marblesPerTeamInput: HTMLInputElement;
@@ -34,7 +39,14 @@ export const resolveBuilderUi = (selectors: BuilderElements): BuilderUi => {
     wallButton: requireElement(selectors.wall, "wall tool"),
     bumperButton: requireElement(selectors.bumper, "bumper tool"),
     spawnPointButton: requireElement(selectors.spawnPoint, "spawn point tool"),
-    gridToggleButton: requireElement(selectors.gridToggle, "grid toggle"),
+    majorGridToggleButton: requireElement(
+      selectors.majorGridToggle,
+      "major grid toggle"
+    ),
+    minorGridToggleButton: requireElement(
+      selectors.minorGridToggle,
+      "minor grid toggle"
+    ),
     gridOverlay: requireElement(selectors.gridOverlay, "grid overlay"),
     editorOverlayCanvas: requireElement(
       selectors.editorOverlay,
@@ -46,6 +58,10 @@ export const resolveBuilderUi = (selectors: BuilderElements): BuilderUi => {
       playButton.querySelectorAll<SVGElement>("[data-race-icon]")
     ),
     resetButton: requireElement(selectors.reset, "reset"),
+    zoomInButton: requireElement(selectors.zoomIn, "zoom in"),
+    zoomOutButton: requireElement(selectors.zoomOut, "zoom out"),
+    zoomResetButton: requireElement(selectors.zoomReset, "reset zoom"),
+    zoomLevelOutput: requireElement(selectors.zoomLevel, "zoom level"),
     teamCountInput: requireElement(selectors.teamCount, "team count"),
     teamCountOutput: requireElement(
       selectors.teamCountOutput,

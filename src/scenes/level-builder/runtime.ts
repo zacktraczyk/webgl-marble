@@ -31,6 +31,11 @@ import {
 } from "./types";
 import { clampInteger, snapToGrid } from "./utils";
 
+const MIN_ZOOM = 0.1;
+const MAX_ZOOM = 4;
+const ZOOM_STEP = 0.1;
+const STAGE_FIT_PADDING = 128;
+
 export class LevelBuilderRuntime {
   readonly stage: Stage;
   private readonly ui: BuilderUi;
@@ -41,14 +46,15 @@ export class LevelBuilderRuntime {
   private readonly gridOverlay: GridOverlay;
   private configuration: RoundConfiguration;
   private selectedTool = SelectedTool.Pointer;
+  private playbackActive = false;
 
   constructor(selectors: BuilderElements, signal: AbortSignal) {
     this.ui = resolveBuilderUi(selectors);
     this.stage = new Stage({ width: STAGE_WIDTH, height: STAGE_HEIGHT });
     this.stage.centerCameraOnResize = true;
-    this.stage.fitStageToWindowOnResizePadding = 64;
+    this.stage.fitStageToWindowOnResizePadding = STAGE_FIT_PADDING;
     this.stage.fitStageToWindowOnResize = true;
-    this.stage.fitStageToWindow(64);
+    this.stage.fitStageToWindow(STAGE_FIT_PADDING);
 
     this.configuration = this.readRoundConfiguration();
     this.level = new AuthoredLevel(this.stage, this.configuration.teamCount);
@@ -62,7 +68,8 @@ export class LevelBuilderRuntime {
     this.race = new RaceController(this.stage, this.level, this.configuration);
     this.gridOverlay = new GridOverlay(
       this.stage,
-      this.ui.gridToggleButton,
+      this.ui.majorGridToggleButton,
+      this.ui.minorGridToggleButton,
       this.ui.gridOverlay
     );
     this.editorController = new LevelEditorController({
@@ -94,11 +101,19 @@ export class LevelBuilderRuntime {
   }
 
   updateInterface() {
+    const race = this.race.snapshot;
+    this.playbackActive = race.phase !== "ready";
+    const spawnPoint = this.level.find("spawn-point");
+    if (spawnPoint) {
+      this.level.setVisible(spawnPoint.id, !this.playbackActive);
+    }
+    this.gridOverlay.setSuppressed(this.playbackActive);
     this.gridOverlay.update();
+    this.updateViewportControls();
     updateBuilderInterface({
       ui: this.ui,
       configuration: this.configuration,
-      race: this.race.snapshot,
+      race,
       authoredObjects: this.level.objects.length,
       selectedObject: this.editorController.selectedObject?.id ?? null,
       hoveredObject: this.editorController.hoveredObject?.id ?? null,
@@ -107,10 +122,18 @@ export class LevelBuilderRuntime {
 
   render() {
     this.stage.render();
+    const hoveredObject = this.editorController.hoveredObject;
+    const selectedObject = this.editorController.selectedObject;
     this.editorOverlay.render({
       active: this.editorController.isActive,
-      hoveredObject: this.editorController.hoveredObject,
-      selectedObject: this.editorController.selectedObject,
+      hoveredObject:
+        this.playbackActive && hoveredObject?.prefab === "spawn-point"
+          ? null
+          : hoveredObject,
+      selectedObject:
+        this.playbackActive && selectedObject?.prefab === "spawn-point"
+          ? null
+          : selectedObject,
     });
   }
 
@@ -133,9 +156,14 @@ export class LevelBuilderRuntime {
       });
     }
 
-    this.ui.gridToggleButton.addEventListener(
+    this.ui.majorGridToggleButton.addEventListener(
       "click",
-      () => this.gridOverlay.toggle(),
+      () => this.gridOverlay.toggleMajor(),
+      { signal }
+    );
+    this.ui.minorGridToggleButton.addEventListener(
+      "click",
+      () => this.gridOverlay.toggleMinor(),
       { signal }
     );
     this.stage.canvas.addEventListener("click", this.placeSelectedObject, {
@@ -175,6 +203,23 @@ export class LevelBuilderRuntime {
     this.ui.resetButton.addEventListener("click", () => this.race.reset(), {
       signal,
     });
+    this.ui.zoomInButton.addEventListener(
+      "click",
+      () => this.adjustZoom(ZOOM_STEP),
+      { signal }
+    );
+    this.ui.zoomOutButton.addEventListener(
+      "click",
+      () => this.adjustZoom(-ZOOM_STEP),
+      { signal }
+    );
+    this.ui.zoomResetButton.addEventListener(
+      "click",
+      () => {
+        this.stage.zoom = 1;
+      },
+      { signal }
+    );
   }
 
   private setActiveTool(tool: SelectedTool, button: HTMLButtonElement) {
@@ -231,6 +276,19 @@ export class LevelBuilderRuntime {
     this.level.refresh(object);
   }
 
+  private adjustZoom(delta: number) {
+    this.stage.zoom = Math.min(
+      MAX_ZOOM,
+      Math.max(MIN_ZOOM, this.stage.zoom + delta)
+    );
+  }
+
+  private updateViewportControls() {
+    this.ui.zoomLevelOutput.value = `${Math.round(this.stage.zoom * 100)}%`;
+    this.ui.zoomOutButton.disabled = this.stage.zoom <= MIN_ZOOM;
+    this.ui.zoomInButton.disabled = this.stage.zoom >= MAX_ZOOM;
+  }
+
   private readCourseSize(): Vec2 {
     return [
       clampInteger(
@@ -273,7 +331,7 @@ export class LevelBuilderRuntime {
 
     this.stage.setSize(width, height);
     this.level.resize([width, height], createCourseBoundaries(width, height));
-    this.stage.fitStageToWindow(64);
+    this.stage.fitStageToWindow(STAGE_FIT_PADDING);
     this.race.reset();
   };
 }

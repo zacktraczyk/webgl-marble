@@ -2,23 +2,40 @@ import type Stage from "../../engine/stage";
 import { GRID_MAJOR_INTERVAL, GRID_SIZE } from "./constants";
 
 export class GridOverlay {
-  private visible = true;
+  private majorVisible = true;
+  private minorVisible = false;
+  private suppressed = false;
 
   constructor(
     private readonly stage: Stage,
-    private readonly toggleButton: HTMLButtonElement,
+    private readonly majorToggleButton: HTMLButtonElement,
+    private readonly minorToggleButton: HTMLButtonElement,
     private readonly overlay: HTMLElement
   ) {}
 
-  toggle() {
-    this.visible = !this.visible;
+  toggleMajor() {
+    this.majorVisible = !this.majorVisible;
     this.update();
   }
 
+  toggleMinor() {
+    this.minorVisible = !this.minorVisible;
+    this.update();
+  }
+
+  setSuppressed(suppressed: boolean) {
+    this.suppressed = suppressed;
+  }
+
   update() {
-    this.toggleButton.ariaChecked = `${this.visible}`;
-    this.toggleButton.dataset.active = `${this.visible}`;
-    this.overlay.hidden = !this.visible;
+    this.majorToggleButton.ariaChecked = `${this.majorVisible}`;
+    this.majorToggleButton.dataset.active = `${this.majorVisible}`;
+    this.minorToggleButton.ariaChecked = `${this.minorVisible}`;
+    this.minorToggleButton.dataset.active = `${this.minorVisible}`;
+    this.overlay.dataset.majorVisible = `${this.majorVisible}`;
+    this.overlay.dataset.minorVisible = `${this.minorVisible}`;
+    this.overlay.hidden =
+      (!this.majorVisible && !this.minorVisible) || this.suppressed;
 
     const [left, top] = this.stage.worldToScreen(
       -this.stage.width / 2,

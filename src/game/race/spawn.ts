@@ -1,4 +1,4 @@
-export const DEFAULT_SPAWN_DIRECTION_VARIANCE = Math.PI / 12;
+export const DEFAULT_SPAWN_DIRECTION_VARIANCE = Math.PI / 6;
 
 export const randomSpawnAngle = (
   centerAngle: number,

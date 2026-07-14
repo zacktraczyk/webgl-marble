@@ -10,7 +10,7 @@ describe("spawn point", () => {
     const center = Math.PI / 2;
     const variance = DEFAULT_SPAWN_DIRECTION_VARIANCE;
 
-    expect(variance).toBeCloseTo(Math.PI / 12);
+    expect(variance).toBeCloseTo(Math.PI / 6);
     expect(randomSpawnAngle(center, variance, () => 0)).toBeCloseTo(
       center - variance
     );
@@ -35,5 +35,7 @@ describe("spawn point", () => {
     expect(parts[3].localTransform?.rotation).toBeCloseTo(
       DEFAULT_SPAWN_DIRECTION_VARIANCE
     );
+    expect(parts[2].localTransform?.scale?.[0]).toBe(20);
+    expect(parts[3].localTransform?.scale?.[0]).toBe(20);
   });
 });

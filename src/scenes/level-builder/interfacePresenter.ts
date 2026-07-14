@@ -37,6 +37,7 @@ export const updateBuilderInterface = ({
         : "play";
 
   ui.playButton.disabled = Boolean(race.courseIssue);
+  ui.playButton.dataset.previewing = `${race.phase !== "ready"}`;
   ui.playButton.ariaLabel = race.courseIssue ?? playButtonText;
   ui.playButton.title = race.courseIssue ?? playButtonText;
   if (ui.playButtonLabel) {

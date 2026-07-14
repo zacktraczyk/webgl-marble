@@ -13,6 +13,7 @@ type LevelPrefab = LevelObjectData["prefab"];
 export class AuthoredLevel {
   readonly document: LevelDocument;
   private readonly entities = new Map<string, Entity[]>();
+  private readonly hiddenObjects = new Set<string>();
   private readonly runtimePositions = new Map<string, Vec2>();
   private teamCount: number;
 
@@ -41,7 +42,19 @@ export class AuthoredLevel {
 
   remove(id: string) {
     this.clearRuntimeEntities(id);
+    this.hiddenObjects.delete(id);
     this.document.remove(id);
+  }
+
+  setVisible(id: string, visible: boolean) {
+    if (visible) {
+      this.hiddenObjects.delete(id);
+    } else {
+      this.hiddenObjects.add(id);
+    }
+    for (const entity of this.entities.get(id) ?? []) {
+      entity.scale = visible ? [1, 1] : [0, 0];
+    }
   }
 
   resize(size: Vec2, boundaries: NewLevelObjectData[]) {
@@ -87,6 +100,11 @@ export class AuthoredLevel {
     const entities = levelObjectDefinitions(object, {
       teamCount: this.teamCount,
     }).map((definition) => this.stage.spawn(definition));
+    if (this.hiddenObjects.has(object.id)) {
+      for (const entity of entities) {
+        entity.scale = [0, 0];
+      }
+    }
     this.entities.set(object.id, entities);
     this.runtimePositions.set(object.id, [...object.transform.position]);
     return object;

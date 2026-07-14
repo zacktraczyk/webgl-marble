@@ -4,11 +4,16 @@ export type BuilderElements = {
   wall: HTMLElement | null;
   bumper: HTMLElement | null;
   spawnPoint: HTMLElement | null;
-  gridToggle: HTMLElement | null;
+  majorGridToggle: HTMLElement | null;
+  minorGridToggle: HTMLElement | null;
   gridOverlay: HTMLElement | null;
   editorOverlay: HTMLElement | null;
   play: HTMLElement | null;
   reset: HTMLElement | null;
+  zoomIn: HTMLElement | null;
+  zoomOut: HTMLElement | null;
+  zoomReset: HTMLElement | null;
+  zoomLevel: HTMLElement | null;
   teamCount: HTMLElement | null;
   teamCountOutput: HTMLElement | null;
   marblesPerTeam: HTMLElement | null;
