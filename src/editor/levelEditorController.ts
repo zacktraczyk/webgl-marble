@@ -4,10 +4,13 @@ import type { LevelObjectData } from "./levelDocument";
 import {
   applyLevelObjectShape,
   getLevelObjectShape,
+  getRotationHandle,
   getResizeAnchors,
+  isLevelObjectRotatable,
   isLevelObjectResizable,
   moveShape,
   pickLevelObject,
+  rotateShape,
   resizeHandleCursor,
   resizeShape,
   type LevelObjectShape,
@@ -22,7 +25,7 @@ type EditorCallbacks = {
 
 type DragState = {
   objectId: string;
-  mode: "move" | "resize";
+  mode: "move" | "resize" | "rotate";
   handle?: ResizeHandle;
   startShape: LevelObjectShape;
   startWorld: Vec2;
@@ -32,6 +35,8 @@ type DragState = {
 
 const POSITION_SNAP_STEP = 25;
 const SIZE_SNAP_STEP = 5;
+const ROTATION_SNAP_STEP = Math.PI / 12;
+const ROTATION_HANDLE_OFFSET = 28;
 const HANDLE_HIT_RADIUS = 8;
 const DRAG_THRESHOLD = 2;
 
@@ -130,6 +135,19 @@ export class LevelEditorController {
     return null;
   }
 
+  private rotationHandleAt(object: LevelObjectData, [screenX, screenY]: Vec2) {
+    if (!isLevelObjectRotatable(object)) {
+      return false;
+    }
+    const offset =
+      ROTATION_HANDLE_OFFSET / Math.max(Math.abs(this.stage.zoom), 0.001);
+    const handle = getRotationHandle(getLevelObjectShape(object), offset);
+    const [handleX, handleY] = this.stage.worldToScreen(...handle.position);
+    return (
+      Math.hypot(handleX - screenX, handleY - screenY) <= HANDLE_HIT_RADIUS
+    );
+  }
+
   private beginDrag(
     object: LevelObjectData,
     mode: DragState["mode"],
@@ -154,11 +172,17 @@ export class LevelEditorController {
 
     const screenPoint = this.screenPoint(event);
     const selectedObject = this.selectedObject;
+    const isRotationHandle = selectedObject
+      ? this.rotationHandleAt(selectedObject, screenPoint)
+      : false;
     const resizeHandle = selectedObject
       ? this.resizeHandleAt(selectedObject, screenPoint)
       : null;
 
-    if (selectedObject && resizeHandle) {
+    if (selectedObject && isRotationHandle) {
+      this.beginDrag(selectedObject, "rotate", screenPoint);
+      this.stage.canvas.style.cursor = "grabbing";
+    } else if (selectedObject && resizeHandle) {
       this.beginDrag(selectedObject, "resize", screenPoint, resizeHandle);
       this.stage.canvas.style.cursor = resizeHandleCursor(resizeHandle);
     } else {
@@ -226,7 +250,7 @@ export class LevelEditorController {
         event.altKey ? 0 : POSITION_SNAP_STEP
       );
       this.stage.canvas.style.cursor = "grabbing";
-    } else {
+    } else if (this.dragState.mode === "resize") {
       const handle = this.dragState.handle;
       if (!handle) {
         return;
@@ -238,6 +262,26 @@ export class LevelEditorController {
         event.altKey ? 0 : SIZE_SNAP_STEP
       );
       this.stage.canvas.style.cursor = resizeHandleCursor(handle);
+    } else {
+      const center = this.dragState.startShape.position;
+      const startAngle = Math.atan2(
+        this.dragState.startWorld[1] - center[1],
+        this.dragState.startWorld[0] - center[0]
+      );
+      const currentAngle = Math.atan2(
+        worldPoint[1] - center[1],
+        worldPoint[0] - center[0]
+      );
+      const angleDelta = Math.atan2(
+        Math.sin(currentAngle - startAngle),
+        Math.cos(currentAngle - startAngle)
+      );
+      nextShape = rotateShape(
+        this.dragState.startShape,
+        this.dragState.startShape.rotation + angleDelta,
+        event.altKey ? 0 : ROTATION_SNAP_STEP
+      );
+      this.stage.canvas.style.cursor = "grabbing";
     }
 
     applyLevelObjectShape(object, nextShape);
@@ -271,6 +315,11 @@ export class LevelEditorController {
 
   private updateIdleState(screenPoint: Vec2) {
     const selectedObject = this.selectedObject;
+    if (selectedObject && this.rotationHandleAt(selectedObject, screenPoint)) {
+      this.hoveredId = selectedObject.id;
+      this.stage.canvas.style.cursor = "grab";
+      return;
+    }
     const handle = selectedObject
       ? this.resizeHandleAt(selectedObject, screenPoint)
       : null;

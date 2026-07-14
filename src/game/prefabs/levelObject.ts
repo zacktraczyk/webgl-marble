@@ -37,6 +37,7 @@ export const levelObjectDefinitions = (
       definitions = [
         finishZoneDefinition({
           position,
+          rotation: object.transform.rotation,
           ...object.properties,
         }),
       ];

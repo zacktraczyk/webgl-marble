@@ -2,12 +2,15 @@ import { describe, expect, test } from "bun:test";
 import {
   applyLevelObjectShape,
   getLevelObjectShape,
+  getRotationHandle,
   getResizeAnchors,
   hitTestLevelObject,
   moveShape,
   pickLevelObject,
+  rotateShape,
   resizeShape,
 } from "../src/editor/levelGeometry.ts";
+import { levelObjectDefinitions } from "../src/game/prefabs/levelObject.ts";
 
 const wall = (overrides = {}) => ({
   id: "wall",
@@ -70,5 +73,35 @@ describe("level editor geometry", () => {
     expect(
       resizeShape(getLevelObjectShape(bumper), "e", [37, 0], 5)
     ).toMatchObject({ radius: 35 });
+  });
+
+  test("positions rotation handles and snaps edited rotation", () => {
+    const object = wall();
+    const shape = getLevelObjectShape(object);
+
+    expect(getRotationHandle(shape, 30)).toEqual({
+      connection: [0, -20],
+      position: [0, -50],
+    });
+
+    const rotated = rotateShape(shape, (47 * Math.PI) / 180, Math.PI / 12);
+    applyLevelObjectShape(object, rotated);
+
+    expect(object.transform.rotation).toBeCloseTo(Math.PI / 4);
+  });
+
+  test("passes finish-zone rotation into its runtime definition", () => {
+    const [definition] = levelObjectDefinitions({
+      id: "finish",
+      prefab: "finish-zone",
+      transform: { position: [25, 30], rotation: Math.PI / 4 },
+      properties: {
+        width: 120,
+        height: 24,
+        color: [1, 1, 1, 0.35],
+      },
+    });
+
+    expect(definition.transform.rotation).toBeCloseTo(Math.PI / 4);
   });
 });

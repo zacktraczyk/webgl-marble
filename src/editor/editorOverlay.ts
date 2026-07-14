@@ -3,7 +3,9 @@ import type { LevelObjectData } from "./levelDocument";
 import {
   getLevelObjectShape,
   getRectangleCorners,
+  getRotationHandle,
   getResizeAnchors,
+  isLevelObjectRotatable,
   isLevelObjectResizable,
   type LevelObjectShape,
 } from "./levelGeometry";
@@ -59,6 +61,9 @@ export class EditorOverlay {
       if (isLevelObjectResizable(selectedObject)) {
         this.drawResizeAnchors(getLevelObjectShape(selectedObject));
       }
+      if (isLevelObjectRotatable(selectedObject)) {
+        this.drawRotationHandle(getLevelObjectShape(selectedObject));
+      }
     }
   }
 
@@ -113,6 +118,30 @@ export class EditorOverlay {
       context.fillRect(x - size / 2, y - size / 2, size, size);
       context.strokeRect(x - size / 2, y - size / 2, size, size);
     }
+    context.restore();
+  }
+
+  private drawRotationHandle(shape: LevelObjectShape) {
+    const context = this.context;
+    const offset = 28 / Math.max(Math.abs(this.stage.zoom), 0.001);
+    const handle = getRotationHandle(shape, offset);
+    const [connectionX, connectionY] = this.stage.worldToScreen(
+      ...handle.connection
+    );
+    const [handleX, handleY] = this.stage.worldToScreen(...handle.position);
+
+    context.save();
+    context.strokeStyle = "rgb(34 211 238)";
+    context.fillStyle = "rgb(24 24 27)";
+    context.lineWidth = 2;
+    context.beginPath();
+    context.moveTo(connectionX, connectionY);
+    context.lineTo(handleX, handleY);
+    context.stroke();
+    context.beginPath();
+    context.arc(handleX, handleY, 5, 0, Math.PI * 2);
+    context.fill();
+    context.stroke();
     context.restore();
   }
 }

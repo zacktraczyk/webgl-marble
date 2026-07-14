@@ -25,6 +25,11 @@ export type ResizeAnchor = {
   position: Vec2;
 };
 
+export type RotationHandle = {
+  connection: Vec2;
+  position: Vec2;
+};
+
 const rectangleHandles: ResizeHandle[] = [
   "nw",
   "n",
@@ -89,6 +94,11 @@ export const isLevelObjectResizable = (object: LevelObjectData) =>
   object.prefab === "bumper" ||
   object.prefab === "finish-zone";
 
+export const isLevelObjectRotatable = (object: LevelObjectData) =>
+  object.prefab === "wall" ||
+  object.prefab === "finish-zone" ||
+  object.prefab === "spawn-point";
+
 export const localToWorld = (shape: LevelObjectShape, [x, y]: Vec2): Vec2 => {
   const cosine = Math.cos(shape.rotation);
   const sine = Math.sin(shape.rotation);
@@ -128,6 +138,17 @@ export const getResizeAnchors = (shape: LevelObjectShape): ResizeAnchor[] => {
   });
 };
 
+export const getRotationHandle = (
+  shape: LevelObjectShape,
+  offset: number
+): RotationHandle => {
+  const edge = shape.kind === "rectangle" ? shape.height / 2 : shape.radius;
+  return {
+    connection: localToWorld(shape, [0, -edge]),
+    position: localToWorld(shape, [0, -edge - offset]),
+  };
+};
+
 export const hitTestLevelObject = (
   object: LevelObjectData,
   point: Vec2,
@@ -165,6 +186,16 @@ export const moveShape = (
 ): LevelObjectShape => ({
   ...shape,
   position: snapPoint(position, snapStep),
+});
+
+export const rotateShape = (
+  shape: LevelObjectShape,
+  rotation: number,
+  snapStep = 0
+): LevelObjectShape => ({
+  ...shape,
+  position: [...shape.position],
+  rotation: snap(rotation, snapStep),
 });
 
 export const resizeShape = (
@@ -218,6 +249,7 @@ export const applyLevelObjectShape = (
   shape: LevelObjectShape
 ) => {
   object.transform.position = [...shape.position];
+  object.transform.rotation = shape.rotation;
 
   if (shape.kind === "circle") {
     if (object.prefab === "bumper" || object.prefab === "spawn-point") {
