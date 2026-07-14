@@ -60,6 +60,7 @@ export class LevelBuilderRuntime {
   private configuration: RoundConfiguration;
   private selectedTool = SelectedTool.Pointer;
   private toolLocked = false;
+  private gridSnapEnabled = true;
   private playbackActive = false;
 
   constructor(selectors: BuilderElements, signal: AbortSignal) {
@@ -97,6 +98,7 @@ export class LevelBuilderRuntime {
       stage: this.stage,
       getObjects: () => this.level.objects,
       getDefaultWallThickness: () => this.level.wallThickness,
+      getGridSnapEnabled: () => this.gridSnapEnabled,
       callbacks: {
         onObjectsChange: (objects) => this.refreshAuthoredObjects(objects),
         onObjectsCommit: () => this.commitLevelChange(),
@@ -232,6 +234,11 @@ export class LevelBuilderRuntime {
       () => this.gridOverlay.toggleMinor(),
       { signal }
     );
+    this.ui.gridSnapToggleButton.addEventListener(
+      "click",
+      this.toggleGridSnap,
+      { signal }
+    );
     this.ui.teamCountInput.addEventListener(
       "input",
       this.handleRoundConfigurationChange,
@@ -313,6 +320,12 @@ export class LevelBuilderRuntime {
     }
     this.toolLocked = !this.toolLocked;
   }
+
+  private readonly toggleGridSnap = () => {
+    this.gridSnapEnabled = !this.gridSnapEnabled;
+    this.ui.gridSnapToggleButton.dataset.active = `${this.gridSnapEnabled}`;
+    this.ui.gridSnapToggleButton.ariaChecked = `${this.gridSnapEnabled}`;
+  };
 
   private refreshAuthoredObjects(objects: readonly LevelObjectData[]) {
     for (const object of objects) {

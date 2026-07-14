@@ -404,65 +404,6 @@ import "../styles/global.css";
       <h1 class="pr-10 text-sm font-medium text-zinc-100">Level options</h1>
 
       <div class="mt-4 divide-y divide-zinc-700">
-        <button
-          id="toggle-major-grid"
-          type="button"
-          role="switch"
-          aria-checked="true"
-          data-active="true"
-          class="group flex w-full items-center gap-3 py-3 text-left text-zinc-300 hover:text-zinc-100"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.5"
-            class="size-5 shrink-0"
-            aria-hidden="true"
-          >
-            <path d="M4 4h16v16H4zM12 4v16M4 12h16"></path>
-          </svg>
-          <span class="text-sm">Major grid lines</span>
-          <span
-            aria-hidden="true"
-            class="relative ml-auto h-5 w-9 rounded-full bg-zinc-600 transition-colors group-data-[active=true]:bg-cyan-500"
-          >
-            <span
-              class="absolute left-0.5 top-0.5 size-4 rounded-full bg-white shadow-sm transition-transform group-data-[active=true]:translate-x-4"
-            ></span>
-          </span>
-        </button>
-
-        <button
-          id="toggle-minor-grid"
-          type="button"
-          role="switch"
-          aria-checked="false"
-          data-active="false"
-          class="group flex w-full items-center gap-3 py-3 text-left text-zinc-300 hover:text-zinc-100"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.5"
-            class="size-5 shrink-0"
-            aria-hidden="true"
-          >
-            <path d="M4 4h16v16H4zM9.33 4v16M14.67 4v16M4 9.33h16M4 14.67h16"
-            ></path>
-          </svg>
-          <span class="text-sm">Minor grid lines</span>
-          <span
-            aria-hidden="true"
-            class="relative ml-auto h-5 w-9 rounded-full bg-zinc-600 transition-colors group-data-[active=true]:bg-cyan-500"
-          >
-            <span
-              class="absolute left-0.5 top-0.5 size-4 rounded-full bg-white shadow-sm transition-transform group-data-[active=true]:translate-x-4"
-            ></span>
-          </span>
-        </button>
-
         <div class="py-4">
           <p class="mb-3 text-xs font-medium text-zinc-300">Course size</p>
           <div class="grid grid-cols-2 gap-2">
@@ -532,8 +473,19 @@ import "../styles/global.css";
           />
         </label>
 
-        <label
-          class="flex items-center gap-3 py-3 text-zinc-300"
+        <section
+          aria-labelledby="spawn-settings-heading"
+          class="py-3"
+        >
+          <h2
+            id="spawn-settings-heading"
+            class="mb-1 text-xs font-medium text-zinc-400"
+          >
+            Spawn settings
+          </h2>
+
+          <label
+          class="flex items-center gap-3 py-2.5 text-zinc-300"
           for="team-count"
           title="Teams"
         >
@@ -567,8 +519,8 @@ import "../styles/global.css";
           >
         </label>
 
-        <label
-          class="flex items-center gap-3 py-3 text-zinc-300"
+          <label
+          class="flex items-center gap-3 py-2.5 text-zinc-300"
           for="marbles-per-team"
           title="Marbles per team"
         >
@@ -600,8 +552,8 @@ import "../styles/global.css";
           >
         </label>
 
-        <label
-          class="flex items-center gap-3 py-3 text-zinc-300"
+          <label
+          class="flex items-center gap-3 py-2.5 text-zinc-300"
           for="release-interval"
           title="Release interval"
         >
@@ -633,7 +585,111 @@ import "../styles/global.css";
             class="w-14 text-right font-mono text-xs text-zinc-400"
             for="release-interval">140 ms</output
           >
-        </label>
+          </label>
+        </section>
+
+        <section
+          aria-labelledby="grid-options-heading"
+          class="border-b border-zinc-700 py-3"
+        >
+          <h2
+            id="grid-options-heading"
+            class="mb-1 text-xs font-medium text-zinc-400"
+          >
+            Grid
+          </h2>
+
+          <button
+            id="toggle-grid-snap"
+            type="button"
+            role="switch"
+            aria-checked="true"
+            data-active="true"
+            class="group flex w-full items-center gap-3 py-2.5 text-left text-zinc-300 hover:text-zinc-100"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="size-5 shrink-0"
+              aria-hidden="true"
+            >
+              <path d="M8 4H4v4M16 4h4v4M8 20H4v-4M16 20h4v-4"></path>
+              <path d="M12 8v8M8 12h8"></path>
+            </svg>
+            <span class="text-sm">Snap to grid</span>
+            <span
+              aria-hidden="true"
+              class="relative ml-auto h-5 w-9 rounded-full bg-zinc-600 transition-colors group-data-[active=true]:bg-cyan-500"
+            >
+              <span
+                class="absolute left-0.5 top-0.5 size-4 rounded-full bg-white shadow-sm transition-transform group-data-[active=true]:translate-x-4"
+              ></span>
+            </span>
+          </button>
+
+          <button
+            id="toggle-major-grid"
+            type="button"
+            role="switch"
+            aria-checked="true"
+            data-active="true"
+            class="group flex w-full items-center gap-3 py-2.5 text-left text-zinc-300 hover:text-zinc-100"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              class="size-5 shrink-0"
+              aria-hidden="true"
+            >
+              <path d="M4 4h16v16H4zM12 4v16M4 12h16"></path>
+            </svg>
+            <span class="text-sm">Major grid lines</span>
+            <span
+              aria-hidden="true"
+              class="relative ml-auto h-5 w-9 rounded-full bg-zinc-600 transition-colors group-data-[active=true]:bg-cyan-500"
+            >
+              <span
+                class="absolute left-0.5 top-0.5 size-4 rounded-full bg-white shadow-sm transition-transform group-data-[active=true]:translate-x-4"
+              ></span>
+            </span>
+          </button>
+
+          <button
+            id="toggle-minor-grid"
+            type="button"
+            role="switch"
+            aria-checked="false"
+            data-active="false"
+            class="group flex w-full items-center gap-3 py-2.5 text-left text-zinc-300 hover:text-zinc-100"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              class="size-5 shrink-0"
+              aria-hidden="true"
+            >
+              <path d="M4 4h16v16H4zM9.33 4v16M14.67 4v16M4 9.33h16M4 14.67h16"
+              ></path>
+            </svg>
+            <span class="text-sm">Minor grid lines</span>
+            <span
+              aria-hidden="true"
+              class="relative ml-auto h-5 w-9 rounded-full bg-zinc-600 transition-colors group-data-[active=true]:bg-cyan-500"
+            >
+              <span
+                class="absolute left-0.5 top-0.5 size-4 rounded-full bg-white shadow-sm transition-transform group-data-[active=true]:translate-x-4"
+              ></span>
+            </span>
+          </button>
+        </section>
       </div>
 
       <p id="race-status" class="mt-3 text-xs text-zinc-400">Ready to race</p>
@@ -778,6 +834,7 @@ import "../styles/global.css";
         wall: byId("tool-wall"),
         bumper: byId("tool-bumper"),
         spawnPoint: byId("tool-spawn-point"),
+        gridSnapToggle: byId("toggle-grid-snap"),
         majorGridToggle: byId("toggle-major-grid"),
         minorGridToggle: byId("toggle-minor-grid"),
         gridOverlay: byId("builder-grid"),

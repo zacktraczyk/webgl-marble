@@ -9,6 +9,7 @@ export type BuilderUi = {
   wallButton: HTMLButtonElement;
   bumperButton: HTMLButtonElement;
   spawnPointButton: HTMLButtonElement;
+  gridSnapToggleButton: HTMLButtonElement;
   majorGridToggleButton: HTMLButtonElement;
   minorGridToggleButton: HTMLButtonElement;
   gridOverlay: HTMLElement;
@@ -46,6 +47,10 @@ export const resolveBuilderUi = (selectors: BuilderElements): BuilderUi => {
     wallButton: requireElement(selectors.wall, "wall tool"),
     bumperButton: requireElement(selectors.bumper, "bumper tool"),
     spawnPointButton: requireElement(selectors.spawnPoint, "spawn point tool"),
+    gridSnapToggleButton: requireElement(
+      selectors.gridSnapToggle,
+      "grid snap toggle"
+    ),
     majorGridToggleButton: requireElement(
       selectors.majorGridToggle,
       "major grid toggle"

@@ -6,6 +6,7 @@ export type BuilderElements = {
   wall: HTMLElement | null;
   bumper: HTMLElement | null;
   spawnPoint: HTMLElement | null;
+  gridSnapToggle: HTMLElement | null;
   majorGridToggle: HTMLElement | null;
   minorGridToggle: HTMLElement | null;
   gridOverlay: HTMLElement | null;

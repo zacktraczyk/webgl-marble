@@ -145,6 +145,7 @@ export class LevelEditorController {
   private readonly stage: Stage;
   private readonly getObjects: () => readonly LevelObjectData[];
   private readonly getDefaultWallThickness: () => number;
+  private readonly getGridSnapEnabled: () => boolean;
   private readonly callbacks: EditorCallbacks;
   private gesture: EditorGesture | null = null;
   private activeTool = SelectedTool.Pointer;
@@ -159,18 +160,21 @@ export class LevelEditorController {
     stage,
     getObjects,
     getDefaultWallThickness,
+    getGridSnapEnabled,
     callbacks,
     signal,
   }: {
     stage: Stage;
     getObjects: () => readonly LevelObjectData[];
     getDefaultWallThickness: () => number;
+    getGridSnapEnabled: () => boolean;
     callbacks: EditorCallbacks;
     signal: AbortSignal;
   }) {
     this.stage = stage;
     this.getObjects = getObjects;
     this.getDefaultWallThickness = getDefaultWallThickness;
+    this.getGridSnapEnabled = getGridSnapEnabled;
     this.callbacks = callbacks;
 
     stage.canvas.addEventListener("pointerdown", this.pointerDown, { signal });
@@ -421,9 +425,12 @@ export class LevelEditorController {
         Math.hypot(candidate[0] - point[0], candidate[1] - point[1]) <=
         tolerance
     );
-    return endpoint
-      ? ([...endpoint] as Vec2)
-      : snapPoint(point, POSITION_SNAP_STEP);
+    if (endpoint) {
+      return [...endpoint] as Vec2;
+    }
+    return this.getGridSnapEnabled()
+      ? snapPoint(point, POSITION_SNAP_STEP)
+      : ([...point] as Vec2);
   }
 
   private snapWallEndpoint(
@@ -439,7 +446,7 @@ export class LevelEditorController {
         fixed,
         point,
         ROTATION_SNAP_STEP,
-        POSITION_SNAP_STEP
+        this.getGridSnapEnabled() ? POSITION_SNAP_STEP : 0
       );
     }
     return this.snapPlacementPoint(point, false);
@@ -744,9 +751,10 @@ export class LevelEditorController {
         worldPoint[0] - this.gesture.startWorld[0],
         worldPoint[1] - this.gesture.startWorld[1],
       ];
-      const delta = event.altKey
-        ? rawDelta
-        : snapPoint(rawDelta, POSITION_SNAP_STEP);
+      const delta =
+        event.altKey || !this.getGridSnapEnabled()
+          ? rawDelta
+          : snapPoint(rawDelta, POSITION_SNAP_STEP);
       const changed: LevelObjectData[] = [];
       for (const [id, original] of this.gesture.originals) {
         const object = this.findObject(id);
