@@ -10,13 +10,13 @@ import "../styles/global.css";
 
     <p
       id="builder-error"
-      class="pointer-events-none absolute left-[calc(50%+10rem)] top-24 z-30 -translate-x-1/2 rounded-lg bg-rose-950/90 px-5 py-3 font-mono text-sm text-rose-200 empty:hidden"
+      class="pointer-events-none absolute left-[calc(50%-8rem)] top-24 z-30 -translate-x-1/2 rounded-lg bg-rose-950/90 px-5 py-3 font-mono text-sm text-rose-200 empty:hidden"
     >
     </p>
 
     <nav
       aria-label="Level tools"
-      class="absolute left-[calc(50%+10rem)] top-5 z-20 flex -translate-x-1/2 items-center gap-1 rounded-lg bg-zinc-700 p-2 shadow-lg"
+      class="absolute left-[calc(50%-8rem)] top-5 z-20 flex -translate-x-1/2 items-center gap-1 rounded-lg bg-zinc-700 p-2 shadow-lg"
     >
       <button
         id="tool-pan"
@@ -157,100 +157,220 @@ import "../styles/global.css";
     </nav>
 
     <aside
-      class="absolute left-5 top-24 z-20 w-72 rounded-xl border border-zinc-700/80 bg-zinc-900/90 p-5 shadow-xl backdrop-blur"
+      aria-label="Level options"
+      class="absolute inset-y-0 right-0 z-20 w-64 border-l border-zinc-700 bg-zinc-800 p-4"
     >
-      <div class="mb-5">
-        <p
-          class="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-400"
-        >
-          Round preview
-        </p>
-        <h1 class="mt-1 text-xl font-semibold">Staging setup</h1>
-        <p class="mt-1 text-sm leading-5 text-zinc-400">
-          The course stays fixed while teams and marbles change each round.
-        </p>
-      </div>
+      <h1 class="text-sm font-medium text-zinc-100">Level options</h1>
 
-      <div class="space-y-5">
-        <label class="block text-sm text-zinc-300" for="team-count">
-          <span class="mb-2 flex justify-between">
-            <span>Teams</span>
-            <output id="team-count-output" for="team-count">6</output>
+      <div class="mt-4 divide-y divide-zinc-700">
+        <button
+          id="toggle-grid"
+          type="button"
+          role="switch"
+          aria-checked="true"
+          data-active="true"
+          class="group flex w-full items-center gap-3 py-3 text-left text-zinc-300 hover:text-zinc-100"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            class="size-5 shrink-0"
+            aria-hidden="true"
+          >
+            <path d="M4 4h16v16H4zM9.33 4v16M14.67 4v16M4 9.33h16M4 14.67h16"
+            ></path>
+          </svg>
+          <span class="text-sm">Show grid</span>
+          <span
+            aria-hidden="true"
+            class="relative ml-auto h-5 w-9 rounded-full bg-zinc-600 transition-colors group-data-[active=true]:bg-cyan-500"
+          >
+            <span
+              class="absolute left-0.5 top-0.5 size-4 rounded-full bg-white shadow-sm transition-transform group-data-[active=true]:translate-x-4"
+            ></span>
           </span>
+        </button>
+
+        <label
+          class="flex items-center gap-3 py-3 text-zinc-300"
+          for="team-count"
+          title="Teams"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="size-5 shrink-0"
+            aria-hidden="true"
+          >
+            <circle cx="8" cy="8" r="3"></circle>
+            <circle cx="17" cy="9" r="2"></circle>
+            <path d="M3 20v-2a5 5 0 0 1 10 0v2M14 15a4 4 0 0 1 7 3v2"></path>
+          </svg>
+          <span class="sr-only">Teams</span>
           <input
             id="team-count"
-            class="w-full accent-cyan-500"
+            class="min-w-0 flex-1 accent-zinc-100"
             type="range"
             min="1"
             max="12"
             value="6"
           />
+          <output
+            id="team-count-output"
+            class="w-7 text-right font-mono text-xs text-zinc-400"
+            for="team-count">6</output
+          >
         </label>
 
-        <label class="block text-sm text-zinc-300" for="marbles-per-team">
-          <span class="mb-2 flex justify-between">
-            <span>Marbles per team</span>
-            <output id="marbles-per-team-output" for="marbles-per-team"
-              >8</output
-            >
-          </span>
+        <label
+          class="flex items-center gap-3 py-3 text-zinc-300"
+          for="marbles-per-team"
+          title="Marbles per team"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            class="size-5 shrink-0"
+            aria-hidden="true"
+          >
+            <circle cx="8" cy="8" r="3"></circle>
+            <circle cx="16" cy="8" r="3"></circle>
+            <circle cx="12" cy="16" r="3"></circle>
+          </svg>
+          <span class="sr-only">Marbles per team</span>
           <input
             id="marbles-per-team"
-            class="w-full accent-cyan-500"
+            class="min-w-0 flex-1 accent-zinc-100"
             type="range"
             min="1"
             max="100"
             value="8"
           />
+          <output
+            id="marbles-per-team-output"
+            class="w-7 text-right font-mono text-xs text-zinc-400"
+            for="marbles-per-team">8</output
+          >
         </label>
 
-        <label class="block text-sm text-zinc-300" for="release-interval">
-          <span class="mb-2 flex justify-between">
-            <span>Release interval</span>
-            <output id="release-interval-output" for="release-interval"
-              >140 ms</output
-            >
-          </span>
+        <label
+          class="flex items-center gap-3 py-3 text-zinc-300"
+          for="release-interval"
+          title="Release interval"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="size-5 shrink-0"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="13" r="8"></circle>
+            <path d="M12 9v4l3 2M9 2h6"></path>
+          </svg>
+          <span class="sr-only">Release interval</span>
           <input
             id="release-interval"
-            class="w-full accent-cyan-500"
+            class="min-w-0 flex-1 accent-zinc-100"
             type="range"
             min="50"
             max="1000"
             step="10"
             value="140"
           />
+          <output
+            id="release-interval-output"
+            class="w-14 text-right font-mono text-xs text-zinc-400"
+            for="release-interval">140 ms</output
+          >
         </label>
       </div>
 
-      <div class="mt-6 grid grid-cols-2 gap-2">
+      <div class="mt-3 flex items-center gap-1 border-t border-zinc-700 pt-3">
         <button
           id="run-race"
           type="button"
-          class="rounded-lg bg-cyan-600 px-3 py-2.5 text-sm font-semibold text-white hover:bg-cyan-500"
+          aria-label="Run race"
+          title="Run race"
+          class="flex size-9 items-center justify-center rounded-md text-zinc-100 hover:bg-zinc-700 disabled:cursor-not-allowed disabled:text-zinc-600 disabled:hover:bg-transparent"
         >
-          Run race
+          <svg
+            data-race-icon="play"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            class="size-5"
+            aria-hidden="true"
+          >
+            <path d="M8 5v14l11-7z"></path>
+          </svg>
+          <svg
+            data-race-icon="pause"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            class="hidden size-5"
+            aria-hidden="true"
+          >
+            <path d="M6 5h4v14H6zM14 5h4v14h-4z"></path>
+          </svg>
+          <svg
+            data-race-icon="replay"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="hidden size-5"
+            aria-hidden="true"
+          >
+            <path d="M3 12a9 9 0 1 0 3-6.7L3 8"></path>
+            <path d="M3 3v5h5"></path>
+          </svg>
+          <span data-race-button-label class="sr-only">Run race</span>
         </button>
         <button
           id="reset-race"
           type="button"
-          class="rounded-lg bg-zinc-700 px-3 py-2.5 text-sm font-semibold text-zinc-100 hover:bg-zinc-600"
+          aria-label="Reset race"
+          title="Reset race"
+          class="flex size-9 items-center justify-center rounded-md text-zinc-100 hover:bg-zinc-700"
         >
-          Reset
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="size-5"
+            aria-hidden="true"
+          >
+            <path d="M3 12a9 9 0 1 0 3-6.7L3 8"></path>
+            <path d="M3 3v5h5"></path>
+          </svg>
         </button>
       </div>
 
-      <p id="race-status" class="mt-4 text-sm font-medium text-cyan-300">
-        Ready to race
-      </p>
-      <p class="mt-1 text-xs leading-5 text-zinc-500">
-        Placement snaps to a 25-unit grid. The red strip is the automatic finish
-        trigger.
+      <p id="race-status" class="mt-3 text-xs text-zinc-400">Ready to race</p>
+      <p class="mt-2 text-[11px] leading-4 text-zinc-500">
+        Select and drag to move. Drag anchors to resize. Hold Alt for free
+        movement; use arrow keys to nudge. Delete removes the selection.
       </p>
     </aside>
 
     <details
-      class="absolute bottom-5 right-5 z-20 w-56 rounded-lg border border-zinc-700 bg-zinc-900/85 p-3 text-xs text-zinc-400 backdrop-blur"
+      class="absolute bottom-5 right-[17rem] z-20 w-56 rounded-lg border border-zinc-700 bg-zinc-900/85 p-3 text-xs text-zinc-400 backdrop-blur"
     >
       <summary class="cursor-pointer select-none font-medium text-zinc-300">
         Runtime details · <span id="builder-fps">FPS: 0</span>
@@ -258,16 +378,46 @@ import "../styles/global.css";
       <pre id="builder-debug" class="mt-3 overflow-auto font-mono"></pre>
     </details>
 
-    <div class="absolute inset-y-0 left-80 right-0">
+    <div class="absolute inset-y-0 left-0 right-64 overflow-hidden">
       <canvas
         id="gl-canvas"
         class="size-full bg-zinc-950 data-[pointer=pan]:cursor-grab data-[pointer=select]:cursor-default data-[pointer=shape]:cursor-crosshair"
       >
         Canvas not supported
       </canvas>
+      <div id="builder-grid" aria-hidden="true"></div>
+      <canvas
+        id="editor-overlay"
+        class="pointer-events-none absolute inset-0 z-10 size-full"
+        aria-hidden="true"></canvas>
     </div>
   </main>
 </Layout>
+
+<style>
+  #builder-grid {
+    --grid-step: 25px;
+    --grid-major-step: 100px;
+    position: absolute;
+    pointer-events: none;
+    box-sizing: border-box;
+    border: 1px solid rgb(161 161 170 / 35%);
+    background-image:
+      linear-gradient(to right, rgb(161 161 170 / 22%) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(161 161 170 / 22%) 1px, transparent 1px),
+      linear-gradient(to right, rgb(34 211 238 / 28%) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(34 211 238 / 28%) 1px, transparent 1px);
+    background-size:
+      var(--grid-step) var(--grid-step),
+      var(--grid-step) var(--grid-step),
+      var(--grid-major-step) var(--grid-major-step),
+      var(--grid-major-step) var(--grid-major-step);
+  }
+
+  #builder-grid[hidden] {
+    display: none;
+  }
+</style>
 
 <script>
   import { mountScene } from "../engine/runtime/mountScene";
@@ -285,6 +435,9 @@ import "../styles/global.css";
         bumper: byId("tool-bumper"),
         stagingRack: byId("tool-staging-rack"),
         spawnPoint: byId("tool-spawn-point"),
+        gridToggle: byId("toggle-grid"),
+        gridOverlay: byId("builder-grid"),
+        editorOverlay: byId("editor-overlay"),
         play: byId("run-race"),
         reset: byId("reset-race"),
         teamCount: byId("team-count"),
