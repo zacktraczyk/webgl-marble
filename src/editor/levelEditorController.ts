@@ -39,6 +39,7 @@ type EditorCallbacks = {
   onToggleToolLock(): void;
   onUndo(): void;
   onRedo(): void;
+  onReset(): void;
 };
 
 type PanGesture = {
@@ -1078,6 +1079,11 @@ export class LevelEditorController {
     }
 
     if (!modifier && !event.altKey) {
+      if (event.key.toLowerCase() === "r" && this.readOnly) {
+        this.callbacks.onReset();
+        event.preventDefault();
+        return;
+      }
       const toolByKey: Partial<Record<string, SelectedTool>> = {
         v: SelectedTool.Pointer,
         h: SelectedTool.Pan,

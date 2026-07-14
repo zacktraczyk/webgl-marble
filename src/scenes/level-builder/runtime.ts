@@ -135,6 +135,7 @@ export class LevelBuilderRuntime {
         onToggleToolLock: () => this.toggleToolLock(),
         onUndo: () => this.undo(),
         onRedo: () => this.redo(),
+        onReset: () => this.resetRace(),
       },
       signal,
     });
@@ -401,6 +402,9 @@ export class LevelBuilderRuntime {
     this.playbackActive = playbackActive;
     this.editorController.setReadOnly(playbackActive);
     if (playbackActive) {
+      this.editorController.clearSelection();
+      this.setActiveTool(SelectedTool.Pan);
+    } else {
       this.setActiveTool(SelectedTool.Pointer);
     }
   }

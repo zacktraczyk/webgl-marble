@@ -12,7 +12,7 @@ const toolHint = ({
   playbackActive: boolean;
 }) => {
   if (playbackActive) {
-    return `Hold ${key("Space")} and drag to pan`;
+    return `Press ${key("R")}, or click the restart button, to continue editing`;
   }
   switch (selectedTool) {
     case SelectedTool.Pan:
@@ -59,6 +59,7 @@ export const updateBuilderInterface = ({
   const playbackActive = race.phase !== "ready";
   ui.undoButton.disabled = playbackActive || !canUndo;
   ui.redoButton.disabled = playbackActive || !canRedo;
+  ui.pointerButton.disabled = playbackActive;
   ui.wallButton.disabled = playbackActive;
   ui.bumperButton.disabled = playbackActive;
   ui.spawnPointButton.disabled = playbackActive;
