@@ -1,4 +1,5 @@
 import type Stage from "../../engine/stage";
+import { STAGING_RACK_HEIGHT } from "../../game/prefabs/stagingRack";
 import { GRID_MAJOR_INTERVAL, GRID_SIZE } from "./constants";
 
 export class GridOverlay {
@@ -45,6 +46,7 @@ export class GridOverlay {
     this.overlay.style.top = `${top}px`;
     this.overlay.style.width = `${this.stage.width * this.stage.zoom}px`;
     this.overlay.style.height = `${this.stage.height * this.stage.zoom}px`;
+    this.overlay.style.clipPath = `inset(${STAGING_RACK_HEIGHT * this.stage.zoom}px 0 0 0)`;
     this.overlay.style.setProperty(
       "--grid-step",
       `${GRID_SIZE * this.stage.zoom}px`

@@ -36,6 +36,7 @@ describe("level builder grid overlay", () => {
     expect(overlay.dataset.majorVisible).toBe("true");
     expect(overlay.dataset.minorVisible).toBe("false");
     expect(overlay.hidden).toBe(false);
+    expect(overlay.style.clipPath).toBe("inset(460px 0 0 0)");
     expect(properties.get("--grid-step")).toBe("50px");
     expect(properties.get("--grid-major-step")).toBe("200px");
   });
