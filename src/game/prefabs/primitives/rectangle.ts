@@ -10,6 +10,7 @@ export interface RectangleDefinitionOptions {
   color: Color;
   rotation?: number;
   bodyType?: PhysicsEntityType;
+  sensor?: boolean;
   velocity?: Vec2;
   angularVelocity?: number;
   acceleration?: Vec2;
@@ -29,6 +30,7 @@ export const rectangleDefinition = ({
   color,
   rotation = 0,
   bodyType = "static",
+  sensor = false,
   velocity = [0, 0],
   angularVelocity,
   acceleration,
@@ -57,6 +59,7 @@ export const rectangleDefinition = ({
   physics: physical
     ? {
         type: bodyType,
+        sensor,
         velocity,
         angularVelocity,
         acceleration,

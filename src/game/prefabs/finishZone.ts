@@ -19,5 +19,6 @@ export const finishZoneDefinition = ({
     height,
     color,
     bodyType: "kinematic",
+    sensor: true,
     tags: ["finish-zone"],
   });

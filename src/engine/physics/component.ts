@@ -13,6 +13,8 @@ export type ColliderDefinition =
 
 export interface PhysicsComponentDefinition {
   type: PhysicsEntityType;
+  /** Sensors report collisions without applying contact impulses. */
+  sensor?: boolean;
   velocity?: Vec2;
   angularVelocity?: number;
   acceleration?: Vec2;

@@ -101,6 +101,7 @@ class Physics {
       ownerId,
       transform,
       type: definition.type,
+      sensor: definition.sensor,
       boundingShape: this._toBoundingShape(collider, transform.position),
       position: transform.position,
       velocity: definition.velocity,
@@ -231,7 +232,10 @@ class Physics {
         })),
       });
     }
-    this._contactSolver.solve(collisions, deltaSeconds);
+    const solidCollisions = collisions.filter(
+      ({ entity1, entity2 }) => !entity1.sensor && !entity2.sensor
+    );
+    this._contactSolver.solve(solidCollisions, deltaSeconds);
   }
 }
 

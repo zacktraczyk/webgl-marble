@@ -51,6 +51,7 @@ describe("prefabs", () => {
       position: [30, 40],
       radius: 12,
       color: [0, 0, 1, 1],
+      decorated: true,
     });
 
     expect(definition.tags).toContain("marble");

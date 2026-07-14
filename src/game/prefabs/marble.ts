@@ -17,6 +17,8 @@ export interface MarbleDefinitionOptions {
   restitution?: number;
   fixedRotation?: boolean;
   decorated?: boolean;
+  tags?: string[];
+  physical?: boolean;
 }
 
 /** A game-level variation composed from the circle primitive definition. */
@@ -33,7 +35,9 @@ export const marbleDefinition = ({
   friction,
   restitution,
   fixedRotation,
-  decorated = true,
+  decorated = false,
+  tags = [],
+  physical = true,
 }: MarbleDefinitionOptions): EntityDefinition => {
   const definition = circleDefinition({
     position,
@@ -47,8 +51,9 @@ export const marbleDefinition = ({
     friction,
     restitution,
     fixedRotation,
+    physical,
     bodyType: "dynamic",
-    tags: ["marble", ...(team ? [`team:${team}`] : [])],
+    tags: ["marble", ...tags, ...(team ? [`team:${team}`] : [])],
   });
 
   if (decorated) {

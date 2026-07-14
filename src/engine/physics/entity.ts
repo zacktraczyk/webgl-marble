@@ -35,6 +35,7 @@ export class PhysicsEntity {
   readonly ownerId: EntityId;
   readonly id: number;
   readonly type: PhysicsEntityType;
+  readonly sensor: boolean;
   readonly boundingShape: BoundingShape | undefined;
 
   private readonly _transform: Transform;
@@ -56,6 +57,7 @@ export class PhysicsEntity {
     ownerId,
     transform,
     type,
+    sensor,
     boundingShape,
     position,
     velocity,
@@ -72,6 +74,7 @@ export class PhysicsEntity {
     ownerId?: EntityId;
     transform?: Transform;
     type: PhysicsEntityType;
+    sensor?: boolean;
     boundingShape: BoundingShape;
     position: [number, number];
     velocity?: [number, number];
@@ -90,6 +93,7 @@ export class PhysicsEntity {
     this.ownerId = ownerId ?? parent?.id ?? id.getNext();
     this.id = id.getNext();
     this.type = type;
+    this.sensor = sensor ?? false;
 
     this.boundingShape = boundingShape;
 

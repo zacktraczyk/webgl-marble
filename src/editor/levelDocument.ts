@@ -12,12 +12,25 @@ export type LevelObjectData =
       properties: { width: number; height: number; color: Color };
     })
   | (BaseLevelObject & {
-      prefab: "marble";
-      properties: { radius: number; color: Color; team?: string };
+      prefab: "bumper";
+      properties: { radius: number; color: Color };
     })
   | (BaseLevelObject & {
       prefab: "finish-zone";
       properties: { width: number; height: number; color: Color };
+    })
+  | (BaseLevelObject & {
+      prefab: "staging-rack";
+      properties: {
+        width: number;
+        height: number;
+        wallThickness: number;
+        color: Color;
+      };
+    })
+  | (BaseLevelObject & {
+      prefab: "spawn-point";
+      properties: { radius: number; color: Color; launchSpeed: number };
     });
 
 export type NewLevelObjectData = LevelObjectData extends infer ObjectData

@@ -80,4 +80,53 @@ describe("Physics integration", () => {
     expect(solveCount).toBe(0);
     expect(() => physics.update(Number.NaN)).toThrow();
   });
+
+  test("reports sensor overlaps without sending them to the contact solver", () => {
+    let observed;
+    let solvedCollisions;
+    const physics = new Physics({
+      broadPhase: {
+        findPairs: (entities) => [[entities[0], entities[1]]],
+      },
+      narrowPhase: {
+        detectCollision: (entity1, entity2) => ({
+          entity1,
+          entity2,
+          manifold: {
+            normal: [1, 0],
+            penetrationDepth: 1,
+            points: [
+              {
+                position: [0, 0],
+                separation: -1,
+                featureId: "sensor-overlap",
+              },
+            ],
+          },
+        }),
+      },
+      contactSolver: {
+        solve: (collisions) => {
+          solvedCollisions = collisions;
+        },
+      },
+    });
+    physics.register((events) => {
+      observed = events;
+    });
+    physics.addEntity(1, createTransform({ position: [0, 0] }), {
+      type: "kinematic",
+      sensor: true,
+      collider,
+    });
+    physics.addEntity(2, createTransform({ position: [0, 0] }), {
+      type: "dynamic",
+      collider,
+    });
+
+    physics.update(10);
+
+    expect(observed.entityCollisions).toHaveLength(1);
+    expect(solvedCollisions).toEqual([]);
+  });
 });
