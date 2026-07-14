@@ -1,5 +1,5 @@
 import type Stage from "../../engine/stage";
-import { GRID_SIZE } from "./constants";
+import { GRID_MAJOR_INTERVAL, GRID_SIZE } from "./constants";
 
 export class GridOverlay {
   private visible = true;
@@ -34,7 +34,7 @@ export class GridOverlay {
     );
     this.overlay.style.setProperty(
       "--grid-major-step",
-      `${GRID_SIZE * 4 * this.stage.zoom}px`
+      `${GRID_SIZE * GRID_MAJOR_INTERVAL * this.stage.zoom}px`
     );
   }
 }

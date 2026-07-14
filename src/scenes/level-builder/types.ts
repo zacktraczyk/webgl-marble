@@ -3,7 +3,6 @@ export type BuilderElements = {
   pointer: HTMLElement | null;
   wall: HTMLElement | null;
   bumper: HTMLElement | null;
-  stagingRack: HTMLElement | null;
   spawnPoint: HTMLElement | null;
   gridToggle: HTMLElement | null;
   gridOverlay: HTMLElement | null;
@@ -16,6 +15,8 @@ export type BuilderElements = {
   marblesPerTeamOutput: HTMLElement | null;
   releaseInterval: HTMLElement | null;
   releaseIntervalOutput: HTMLElement | null;
+  courseWidth: HTMLElement | null;
+  courseHeight: HTMLElement | null;
   status: HTMLElement | null;
   debugInfo: HTMLElement | null;
 };
@@ -25,7 +26,6 @@ export enum SelectedTool {
   Pointer,
   Wall,
   Bumper,
-  StagingRack,
   SpawnPoint,
 }
 

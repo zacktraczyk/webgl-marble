@@ -1,5 +1,4 @@
 import type { Entity } from "../../engine/core/entity";
-import type { Vec2 } from "../../engine/core/transform";
 import type { CollisionEvents } from "../../engine/physics/physics";
 import type Stage from "../../engine/stage";
 import { marbleDefinition } from "../../game/prefabs/marble";
@@ -160,19 +159,6 @@ export class RaceController {
       teamQueues[placement.teamIndex].push(stagedMarble);
     }
     this.releaseQueue = new RoundRobinReleaseQueue(teamQueues);
-  }
-
-  translateStagedMarbles([deltaX, deltaY]: Vec2) {
-    for (const stagedMarble of this.stagedMarbles) {
-      const marble = stagedMarble.entity;
-      if (marble.markedForDeletion || !marble.hasTag("staged-marble")) {
-        continue;
-      }
-      marble.position = [
-        marble.position[0] + deltaX,
-        marble.position[1] + deltaY,
-      ];
-    }
   }
 
   fixedUpdate(deltaMs: number) {

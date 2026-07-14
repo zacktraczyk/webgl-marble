@@ -37,6 +37,13 @@ describe("level editor geometry", () => {
     expect(pickLevelObject([bottom, top], [0, 0])?.id).toBe("top");
   });
 
+  test("does not pick locked course objects", () => {
+    const boundary = wall({ locked: true });
+
+    expect(hitTestLevelObject(boundary, [0, 0])).toBe(true);
+    expect(pickLevelObject([boundary], [0, 0])).toBeNull();
+  });
+
   test("moves objects with optional grid snapping", () => {
     const shape = getLevelObjectShape(wall());
 

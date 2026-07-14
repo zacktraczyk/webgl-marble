@@ -90,14 +90,16 @@ export const getLevelObjectShape = (
 };
 
 export const isLevelObjectResizable = (object: LevelObjectData) =>
-  object.prefab === "wall" ||
-  object.prefab === "bumper" ||
-  object.prefab === "finish-zone";
+  !object.locked &&
+  (object.prefab === "wall" ||
+    object.prefab === "bumper" ||
+    object.prefab === "finish-zone");
 
 export const isLevelObjectRotatable = (object: LevelObjectData) =>
-  object.prefab === "wall" ||
-  object.prefab === "finish-zone" ||
-  object.prefab === "spawn-point";
+  !object.locked &&
+  (object.prefab === "wall" ||
+    object.prefab === "finish-zone" ||
+    object.prefab === "spawn-point");
 
 export const localToWorld = (shape: LevelObjectShape, [x, y]: Vec2): Vec2 => {
   const cosine = Math.cos(shape.rotation);
@@ -172,7 +174,7 @@ export const pickLevelObject = (
 ) => {
   for (let index = objects.length - 1; index >= 0; index--) {
     const object = objects[index];
-    if (hitTestLevelObject(object, point, tolerance)) {
+    if (!object.locked && hitTestLevelObject(object, point, tolerance)) {
       return object;
     }
   }

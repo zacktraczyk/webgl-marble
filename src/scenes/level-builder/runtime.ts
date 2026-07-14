@@ -5,12 +5,19 @@ import type { Vec2 } from "../../engine/core/transform";
 import Stage from "../../engine/stage";
 import { MAX_TEAMS } from "../../game/race/staging";
 import { AuthoredLevel } from "./authoredLevel";
-import { STAGE_HEIGHT, STAGE_WIDTH } from "./constants";
+import {
+  MAX_STAGE_HEIGHT,
+  MAX_STAGE_WIDTH,
+  MIN_STAGE_HEIGHT,
+  MIN_STAGE_WIDTH,
+  STAGE_HEIGHT,
+  STAGE_WIDTH,
+} from "./constants";
 import {
   createBumper,
+  createCourseBoundaries,
   createDefaultCourse,
   createSpawnPoint,
-  createStagingRack,
   createWall,
 } from "./courseObjects";
 import { resolveBuilderUi, type BuilderUi } from "./elements";
@@ -118,7 +125,6 @@ export class LevelBuilderRuntime {
       [this.ui.pointerButton, SelectedTool.Pointer],
       [this.ui.wallButton, SelectedTool.Wall],
       [this.ui.bumperButton, SelectedTool.Bumper],
-      [this.ui.stagingRackButton, SelectedTool.StagingRack],
       [this.ui.spawnPointButton, SelectedTool.SpawnPoint],
     ];
     for (const [button, tool] of toolBindings) {
@@ -151,6 +157,16 @@ export class LevelBuilderRuntime {
       this.handleRoundConfigurationChange,
       { signal }
     );
+    this.ui.courseWidthInput.addEventListener(
+      "change",
+      this.handleCourseSizeChange,
+      { signal }
+    );
+    this.ui.courseHeightInput.addEventListener(
+      "change",
+      this.handleCourseSizeChange,
+      { signal }
+    );
     this.ui.playButton.addEventListener(
       "click",
       () => this.race.toggleRunning(),
@@ -168,7 +184,6 @@ export class LevelBuilderRuntime {
       this.ui.pointerButton,
       this.ui.wallButton,
       this.ui.bumperButton,
-      this.ui.stagingRackButton,
       this.ui.spawnPointButton,
     ]) {
       toolButton.dataset.active = toolButton === button ? "true" : "false";
@@ -205,10 +220,6 @@ export class LevelBuilderRuntime {
       case SelectedTool.Bumper:
         this.level.add(createBumper(position));
         break;
-      case SelectedTool.StagingRack:
-        this.level.replaceUnique("staging-rack", createStagingRack(position));
-        this.race.reset();
-        break;
       case SelectedTool.SpawnPoint:
         this.level.replaceUnique("spawn-point", createSpawnPoint(position));
         this.race.reset();
@@ -217,14 +228,22 @@ export class LevelBuilderRuntime {
   };
 
   private refreshAuthoredObject(object: LevelObjectData) {
-    const previousPosition = this.level.refresh(object);
-    if (object.prefab === "staging-rack" && previousPosition) {
-      const delta: Vec2 = [
-        object.transform.position[0] - previousPosition[0],
-        object.transform.position[1] - previousPosition[1],
-      ];
-      this.race.translateStagedMarbles(delta);
-    }
+    this.level.refresh(object);
+  }
+
+  private readCourseSize(): Vec2 {
+    return [
+      clampInteger(
+        this.ui.courseWidthInput.value,
+        MIN_STAGE_WIDTH,
+        MAX_STAGE_WIDTH
+      ),
+      clampInteger(
+        this.ui.courseHeightInput.value,
+        MIN_STAGE_HEIGHT,
+        MAX_STAGE_HEIGHT
+      ),
+    ];
   }
 
   private readRoundConfiguration(): RoundConfiguration {
@@ -242,5 +261,19 @@ export class LevelBuilderRuntime {
   private readonly handleRoundConfigurationChange = () => {
     this.configuration = this.readRoundConfiguration();
     this.race.setConfiguration(this.configuration);
+  };
+
+  private readonly handleCourseSizeChange = () => {
+    const [width, height] = this.readCourseSize();
+    this.ui.courseWidthInput.value = `${width}`;
+    this.ui.courseHeightInput.value = `${height}`;
+    if (width === this.stage.width && height === this.stage.height) {
+      return;
+    }
+
+    this.stage.setSize(width, height);
+    this.level.resize([width, height], createCourseBoundaries(width, height));
+    this.stage.fitStageToWindow(64);
+    this.race.reset();
   };
 }

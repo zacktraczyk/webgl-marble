@@ -3,6 +3,7 @@ import type { Color } from "../engine/vdu/component";
 
 type BaseLevelObject = {
   id: string;
+  locked?: boolean;
   transform: TransformInput;
 };
 

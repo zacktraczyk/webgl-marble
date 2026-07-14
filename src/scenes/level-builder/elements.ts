@@ -6,7 +6,6 @@ export type BuilderUi = {
   pointerButton: HTMLButtonElement;
   wallButton: HTMLButtonElement;
   bumperButton: HTMLButtonElement;
-  stagingRackButton: HTMLButtonElement;
   spawnPointButton: HTMLButtonElement;
   gridToggleButton: HTMLButtonElement;
   gridOverlay: HTMLElement;
@@ -21,6 +20,8 @@ export type BuilderUi = {
   marblesPerTeamOutput: HTMLOutputElement;
   releaseIntervalInput: HTMLInputElement;
   releaseIntervalOutput: HTMLOutputElement;
+  courseWidthInput: HTMLInputElement;
+  courseHeightInput: HTMLInputElement;
   statusOutput: HTMLElement;
   debugInfo: HTMLElement;
 };
@@ -32,10 +33,6 @@ export const resolveBuilderUi = (selectors: BuilderElements): BuilderUi => {
     pointerButton: requireElement(selectors.pointer, "pointer tool"),
     wallButton: requireElement(selectors.wall, "wall tool"),
     bumperButton: requireElement(selectors.bumper, "bumper tool"),
-    stagingRackButton: requireElement(
-      selectors.stagingRack,
-      "staging rack tool"
-    ),
     spawnPointButton: requireElement(selectors.spawnPoint, "spawn point tool"),
     gridToggleButton: requireElement(selectors.gridToggle, "grid toggle"),
     gridOverlay: requireElement(selectors.gridOverlay, "grid overlay"),
@@ -70,6 +67,8 @@ export const resolveBuilderUi = (selectors: BuilderElements): BuilderUi => {
       selectors.releaseIntervalOutput,
       "release interval output"
     ),
+    courseWidthInput: requireElement(selectors.courseWidth, "course width"),
+    courseHeightInput: requireElement(selectors.courseHeight, "course height"),
     statusOutput: requireElement(selectors.status, "status"),
     debugInfo: requireElement(selectors.debugInfo, "debug info"),
   };

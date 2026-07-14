@@ -29,8 +29,8 @@ export class Stage {
   physicsEnabled: boolean = true;
   private readonly _physics: Physics;
 
-  readonly height: number;
-  readonly width: number;
+  height: number;
+  width: number;
 
   private _objects: StageObject[];
   readonly world: World;
@@ -365,6 +365,19 @@ export class Stage {
     );
 
     this.centerStage();
+  }
+
+  setSize(width: number, height: number) {
+    if (
+      !Number.isFinite(width) ||
+      width <= 0 ||
+      !Number.isFinite(height) ||
+      height <= 0
+    ) {
+      throw new Error("Stage dimensions must be positive finite numbers");
+    }
+    this.width = width;
+    this.height = height;
   }
 
   mouseWorldPosition(event: PointerEvent) {

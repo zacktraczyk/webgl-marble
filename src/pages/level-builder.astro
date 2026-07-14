@@ -1,6 +1,15 @@
 ---
 import HomeLink from "../components/HomeLink.astro";
 import Layout from "../layouts/Layout.astro";
+import {
+  MAX_STAGE_HEIGHT,
+  MAX_STAGE_WIDTH,
+  MIN_STAGE_HEIGHT,
+  MIN_STAGE_WIDTH,
+  STAGE_HEIGHT,
+  STAGE_SIZE_STEP,
+  STAGE_WIDTH,
+} from "../scenes/level-builder/constants";
 import "../styles/global.css";
 ---
 
@@ -113,28 +122,6 @@ import "../styles/global.css";
         >
           <circle cx="12" cy="12" r="9"></circle>
           <circle cx="12" cy="12" r="3"></circle>
-        </svg>
-      </button>
-      <button
-        id="tool-staging-rack"
-        type="button"
-        aria-label="Move the start rack"
-        title="Move the fixed-size staging rack"
-        data-active="false"
-        class="flex size-9 items-center justify-center rounded-md hover:bg-zinc-600 data-[active=true]:bg-zinc-500"
-      >
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          class="size-6"
-          aria-hidden="true"
-        >
-          <rect x="2" y="6" width="20" height="12" rx="1"></rect>
-          <path d="M7 6v12M12 6v12M17 6v12"></path>
         </svg>
       </button>
       <button
@@ -304,6 +291,46 @@ import "../styles/global.css";
             ></span>
           </span>
         </button>
+
+        <div class="py-4">
+          <p class="mb-3 text-xs font-medium text-zinc-300">Course size</p>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="relative" for="course-width">
+              <span class="sr-only">Course width</span>
+              <span
+                aria-hidden="true"
+                class="pointer-events-none absolute inset-y-0 left-2 flex items-center font-mono text-[11px] text-zinc-500"
+                >W</span
+              >
+              <input
+                id="course-width"
+                type="number"
+                min={MIN_STAGE_WIDTH}
+                max={MAX_STAGE_WIDTH}
+                step={STAGE_SIZE_STEP}
+                value={STAGE_WIDTH}
+                class="w-full rounded-md border border-zinc-600 bg-zinc-900 py-1.5 pl-6 pr-2 font-mono text-xs text-zinc-200 outline-none focus:border-cyan-500"
+              />
+            </label>
+            <label class="relative" for="course-height">
+              <span class="sr-only">Course height</span>
+              <span
+                aria-hidden="true"
+                class="pointer-events-none absolute inset-y-0 left-2 flex items-center font-mono text-[11px] text-zinc-500"
+                >H</span
+              >
+              <input
+                id="course-height"
+                type="number"
+                min={MIN_STAGE_HEIGHT}
+                max={MAX_STAGE_HEIGHT}
+                step={STAGE_SIZE_STEP}
+                value={STAGE_HEIGHT}
+                class="w-full rounded-md border border-zinc-600 bg-zinc-900 py-1.5 pl-6 pr-2 font-mono text-xs text-zinc-200 outline-none focus:border-cyan-500"
+              />
+            </label>
+          </div>
+        </div>
 
         <label
           class="flex items-center gap-3 py-3 text-zinc-300"
@@ -526,7 +553,6 @@ import "../styles/global.css";
         pointer: byId("tool-pointer"),
         wall: byId("tool-wall"),
         bumper: byId("tool-bumper"),
-        stagingRack: byId("tool-staging-rack"),
         spawnPoint: byId("tool-spawn-point"),
         gridToggle: byId("toggle-grid"),
         gridOverlay: byId("builder-grid"),
@@ -539,6 +565,8 @@ import "../styles/global.css";
         marblesPerTeamOutput: byId("marbles-per-team-output"),
         releaseInterval: byId("release-interval"),
         releaseIntervalOutput: byId("release-interval-output"),
+        courseWidth: byId("course-width"),
+        courseHeight: byId("course-height"),
         status: byId("race-status"),
         debugInfo: byId("builder-debug"),
       }),

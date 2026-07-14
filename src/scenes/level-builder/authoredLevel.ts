@@ -44,10 +44,19 @@ export class AuthoredLevel {
     this.document.remove(id);
   }
 
-  replaceUnique(
-    prefab: "staging-rack" | "spawn-point",
-    data: NewLevelObjectData
-  ) {
+  resize(size: Vec2, boundaries: NewLevelObjectData[]) {
+    for (const object of [...this.objects]) {
+      if (object.locked) {
+        this.remove(object.id);
+      }
+    }
+    this.document.size = [...size];
+    for (const boundary of boundaries) {
+      this.add(boundary);
+    }
+  }
+
+  replaceUnique(prefab: "spawn-point", data: NewLevelObjectData) {
     const current = this.find(prefab);
     if (current) {
       this.remove(current.id);

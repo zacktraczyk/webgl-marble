@@ -2,14 +2,13 @@ import type { NewLevelObjectData } from "../../editor/levelDocument";
 import type { Vec2 } from "../../engine/core/transform";
 import {
   STAGING_RACK_HEIGHT,
-  STAGING_RACK_WALL_THICKNESS,
   STAGING_RACK_WIDTH,
 } from "../../game/prefabs/stagingRack";
 import {
   BUMPER_COLOR,
+  COURSE_STROKE_WIDTH,
   DEFAULT_LAUNCH_SPEED,
   FINISH_COLOR,
-  FINISH_LINE_HEIGHT,
   MAX_MARBLE_RADIUS,
   SPAWN_COLOR,
   WALL_COLOR,
@@ -20,7 +19,7 @@ export const createWall = (position: Vec2): NewLevelObjectData => ({
   transform: { position },
   properties: {
     width: 150,
-    height: 25,
+    height: COURSE_STROKE_WIDTH,
     color: [...WALL_COLOR],
   },
 });
@@ -34,13 +33,17 @@ export const createBumper = (position: Vec2): NewLevelObjectData => ({
   },
 });
 
-export const createStagingRack = (position: Vec2): NewLevelObjectData => ({
+export const createStagingRack = (
+  position: Vec2,
+  width = STAGING_RACK_WIDTH
+): NewLevelObjectData => ({
   prefab: "staging-rack",
+  locked: true,
   transform: { position },
   properties: {
-    width: STAGING_RACK_WIDTH,
+    width,
     height: STAGING_RACK_HEIGHT,
-    wallThickness: STAGING_RACK_WALL_THICKNESS,
+    wallThickness: COURSE_STROKE_WIDTH,
     color: [...WALL_COLOR],
   },
 });
@@ -59,17 +62,46 @@ export const createDefaultCourse = (
   stageWidth: number,
   stageHeight: number
 ): NewLevelObjectData[] => [
-  {
-    prefab: "finish-zone",
-    transform: {
-      position: [0, stageHeight / 2 - FINISH_LINE_HEIGHT / 2],
-    },
-    properties: {
-      width: stageWidth,
-      height: FINISH_LINE_HEIGHT,
-      color: [...FINISH_COLOR],
-    },
-  },
-  createStagingRack([0, -250]),
-  createSpawnPoint([0, -75]),
+  ...createCourseBoundaries(stageWidth, stageHeight),
+  createSpawnPoint([
+    0,
+    -stageHeight / 2 + STAGING_RACK_HEIGHT + MAX_MARBLE_RADIUS * 10,
+  ]),
 ];
+
+export const createCourseBoundaries = (
+  stageWidth: number,
+  stageHeight: number
+): NewLevelObjectData[] => {
+  const sideWall = (x: number): NewLevelObjectData => ({
+    prefab: "wall",
+    locked: true,
+    transform: { position: [x, 0] },
+    properties: {
+      width: COURSE_STROKE_WIDTH,
+      height: stageHeight,
+      color: [...WALL_COLOR],
+    },
+  });
+
+  return [
+    createStagingRack(
+      [0, -stageHeight / 2 + STAGING_RACK_HEIGHT / 2],
+      stageWidth
+    ),
+    {
+      prefab: "finish-zone",
+      locked: true,
+      transform: {
+        position: [0, stageHeight / 2 - COURSE_STROKE_WIDTH / 2],
+      },
+      properties: {
+        width: stageWidth,
+        height: COURSE_STROKE_WIDTH,
+        color: [...FINISH_COLOR],
+      },
+    },
+    sideWall(-stageWidth / 2 + COURSE_STROKE_WIDTH / 2),
+    sideWall(stageWidth / 2 - COURSE_STROKE_WIDTH / 2),
+  ];
+};
