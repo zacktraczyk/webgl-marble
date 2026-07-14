@@ -14,14 +14,14 @@ import "../styles/global.css";
 
     <p
       id="builder-error"
-      class="pointer-events-none absolute left-[calc(50%-8rem)] top-24 z-30 -translate-x-1/2 rounded-lg bg-rose-950/90 px-5 py-3 font-mono text-sm text-rose-200 transition-[left] duration-200 empty:hidden"
+      class="pointer-events-none absolute left-1/2 top-24 z-30 -translate-x-1/2 rounded-lg bg-rose-950/90 px-5 py-3 font-mono text-sm text-rose-200 empty:hidden"
     >
     </p>
 
     <nav
       id="builder-toolbar"
       aria-label="Level tools"
-      class="absolute left-[calc(50%-8rem)] top-5 z-20 flex -translate-x-1/2 items-center gap-1 rounded-lg bg-zinc-700 p-2 shadow-lg transition-[left] duration-200"
+      class="absolute left-1/2 top-5 z-20 flex -translate-x-1/2 items-center gap-1 rounded-lg bg-zinc-700 p-2 shadow-lg"
     >
       <button
         id="tool-pan"
@@ -425,10 +425,7 @@ import "../styles/global.css";
       </details>
     </aside>
 
-    <div
-      id="builder-workspace"
-      class="absolute inset-y-0 left-0 right-64 overflow-hidden transition-[right] duration-200"
-    >
+    <div id="builder-workspace" class="absolute inset-0 overflow-hidden">
       <canvas
         id="gl-canvas"
         class="size-full bg-zinc-950 data-[pointer=pan]:cursor-grab data-[pointer=select]:cursor-default data-[pointer=shape]:cursor-crosshair"
@@ -472,20 +469,8 @@ import "../styles/global.css";
     transform: translateX(100%);
   }
 
-  #level-builder[data-sidebar-open="false"] #builder-workspace {
-    right: 0;
-  }
-
-  #level-builder[data-sidebar-open="false"] #builder-toolbar,
-  #level-builder[data-sidebar-open="false"] #builder-error {
-    left: 50%;
-  }
-
   @media (prefers-reduced-motion: reduce) {
-    #level-options-sidebar,
-    #builder-workspace,
-    #builder-toolbar,
-    #builder-error {
+    #level-options-sidebar {
       transition-duration: 0ms;
     }
   }
@@ -525,8 +510,6 @@ import "../styles/global.css";
     sidebar.toggleAttribute("inert", !open);
     openSidebarIcon?.classList.toggle("hidden", open);
     closeSidebarIcon?.classList.toggle("hidden", !open);
-
-    window.dispatchEvent(new Event("resize"));
   };
 
   sidebarToggle?.addEventListener("click", () => {
