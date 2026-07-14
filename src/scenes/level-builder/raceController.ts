@@ -52,6 +52,7 @@ export class RaceController {
   private releaseElapsedMs = 0;
   private releasedMarbles = 0;
   private finishedMarbles = 0;
+  private motionElapsedMs = 0;
   private readonly stagingPreviewCache = new Map<
     string,
     ReturnType<typeof createStagingMarblePlacements>
@@ -130,7 +131,9 @@ export class RaceController {
     this.releaseElapsedMs = 0;
     this.releasedMarbles = 0;
     this.finishedMarbles = 0;
+    this.motionElapsedMs = 0;
     this.clearRaceMarbles();
+    this.level.resetMotion();
 
     const rack = this.level.find("staging-rack");
     if (!rack) {
@@ -177,6 +180,7 @@ export class RaceController {
 
   fixedUpdate(deltaMs: number) {
     if (this.phase === "running") {
+      this.level.prepareMotionStep(this.motionElapsedMs, deltaMs);
       this.releaseElapsedMs += deltaMs;
       if (this.releaseElapsedMs >= this.configuration.releaseIntervalMs) {
         if (this.releaseNextMarble()) {
@@ -188,6 +192,10 @@ export class RaceController {
     if (this.phase !== "paused" && this.phase !== "complete") {
       this.stage.update(deltaMs);
       this.stage.clearOutOfBoundsObjects();
+    }
+
+    if (this.phase === "running") {
+      this.motionElapsedMs += deltaMs;
     }
 
     if (

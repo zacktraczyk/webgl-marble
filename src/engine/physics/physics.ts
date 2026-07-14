@@ -23,6 +23,9 @@ import type {
 const GRAVITY_X = 0;
 const GRAVITY_Y = 9.8;
 
+export const millisecondsToSimulationSeconds = (milliseconds: number) =>
+  milliseconds * 0.008;
+
 export type CollisionEvents = {
   collisions: Collision[];
   entityCollisions: EntityCollision[];
@@ -187,7 +190,7 @@ class Physics {
 
     this._cleanup();
 
-    const deltaSeconds = elapsed * 0.008;
+    const deltaSeconds = millisecondsToSimulationSeconds(elapsed);
 
     const gx = GRAVITY_X * deltaSeconds;
     const gy = GRAVITY_Y * deltaSeconds;

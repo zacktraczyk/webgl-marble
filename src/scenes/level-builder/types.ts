@@ -8,6 +8,11 @@ export type BuilderElements = {
   wall: HTMLElement | null;
   bumper: HTMLElement | null;
   spawnPoint: HTMLElement | null;
+  pusherMenuToggle: HTMLElement | null;
+  pusherLibrary: HTMLElement | null;
+  slider: HTMLElement | null;
+  spinner: HTMLElement | null;
+  sweeper: HTMLElement | null;
   gridSnapToggle: HTMLElement | null;
   majorGridToggle: HTMLElement | null;
   minorGridToggle: HTMLElement | null;
@@ -30,6 +35,17 @@ export type BuilderElements = {
   courseWidth: HTMLElement | null;
   courseHeight: HTMLElement | null;
   wallThickness: HTMLElement | null;
+  objectInspector: HTMLElement | null;
+  objectInspectorTitle: HTMLElement | null;
+  motionType: HTMLElement | null;
+  motionControls: HTMLElement | null;
+  motionRangeRow: HTMLElement | null;
+  motionRange: HTMLElement | null;
+  motionRangeOutput: HTMLElement | null;
+  motionReverse: HTMLElement | null;
+  motionSpeedSlow: HTMLElement | null;
+  motionSpeedMedium: HTMLElement | null;
+  motionSpeedFast: HTMLElement | null;
   status: HTMLElement | null;
   debugInfo: HTMLElement | null;
 };
@@ -40,7 +56,15 @@ export enum SelectedTool {
   Wall,
   Bumper,
   SpawnPoint,
+  Slider,
+  Spinner,
+  Sweeper,
 }
+
+export type PusherTool =
+  | SelectedTool.Slider
+  | SelectedTool.Spinner
+  | SelectedTool.Sweeper;
 
 export type RacePhase = "ready" | "running" | "paused" | "complete";
 

@@ -1,4 +1,7 @@
-import type { NewLevelObjectData } from "../../editor/levelDocument";
+import type {
+  LevelObjectMotion,
+  NewLevelObjectData,
+} from "../../editor/levelDocument";
 import type { Vec2 } from "../../engine/core/transform";
 import {
   STAGING_RACK_HEIGHT,
@@ -14,6 +17,35 @@ import {
   SPAWN_COLOR,
   WALL_COLOR,
 } from "./constants";
+import { SelectedTool, type PusherTool } from "./types";
+
+export const PUSHER_WALL_LENGTH = 120;
+export const PUSHER_DEFAULT_RANGE = 90;
+export const PUSHER_PERIODS = {
+  slow: 4000,
+  medium: 2400,
+  fast: 1400,
+} as const;
+
+const pusherMotion = (tool: PusherTool): LevelObjectMotion => {
+  const shared = {
+    periodMs: PUSHER_PERIODS.medium,
+    phase: 0,
+    direction: 1 as const,
+  };
+  if (tool === SelectedTool.Slider) {
+    return {
+      type: "oscillate",
+      vector: [PUSHER_DEFAULT_RANGE, 0],
+      ...shared,
+    };
+  }
+  return {
+    type: "rotate",
+    pivot: tool === SelectedTool.Sweeper ? "start" : "center",
+    ...shared,
+  };
+};
 
 export const createWall = (
   start: Vec2,
@@ -37,6 +69,29 @@ export const createBumper = (position: Vec2): NewLevelObjectData => ({
     color: [...BUMPER_COLOR],
   },
 });
+
+export const createPusher = (
+  tool: PusherTool,
+  position: Vec2
+): NewLevelObjectData => {
+  const halfLength = PUSHER_WALL_LENGTH / 2;
+  const start: Vec2 =
+    tool === SelectedTool.Sweeper
+      ? [...position]
+      : tool === SelectedTool.Slider
+        ? [position[0], position[1] - halfLength]
+        : [position[0] - halfLength, position[1]];
+  const end: Vec2 =
+    tool === SelectedTool.Sweeper
+      ? [position[0] + PUSHER_WALL_LENGTH, position[1]]
+      : tool === SelectedTool.Slider
+        ? [position[0], position[1] + halfLength]
+        : [position[0] + halfLength, position[1]];
+  return {
+    ...createWall(start, end),
+    motion: pusherMotion(tool),
+  } as NewLevelObjectData;
+};
 
 export const createStagingRack = (
   position: Vec2,

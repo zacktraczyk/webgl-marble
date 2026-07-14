@@ -1,12 +1,14 @@
 import type { Vec2 } from "../engine/core/transform";
 import type Stage from "../engine/stage";
 import { GRID_SIZE } from "../scenes/level-builder/constants";
-import { SelectedTool } from "../scenes/level-builder/types";
-import type { LevelObjectData } from "./levelDocument";
+import { SelectedTool, type PusherTool } from "../scenes/level-builder/types";
+import type { LevelObjectData, LevelObjectMotion } from "./levelDocument";
 import {
   applyLevelObjectShape,
   boundsIntersect,
+  constrainDeltaToAxis,
   constrainPointToAngle,
+  findNearestPointIndex,
   getLevelObjectBounds,
   getLevelObjectShape,
   getRotationHandle,
@@ -32,7 +34,7 @@ type EditorCallbacks = {
   onDelete(objects: readonly LevelObjectData[]): void;
   onCreateWall(start: Vec2, end: Vec2): LevelObjectData;
   onPlaceObject(
-    tool: SelectedTool.Bumper | SelectedTool.SpawnPoint,
+    tool: SelectedTool.Bumper | SelectedTool.SpawnPoint | PusherTool,
     position: Vec2
   ): LevelObjectData;
   onToolRequest(tool: SelectedTool): void;
@@ -93,8 +95,17 @@ type WallGesture = {
 type PlaceGesture = {
   kind: "place";
   pointerId: number;
-  tool: SelectedTool.Bumper | SelectedTool.SpawnPoint;
+  tool: SelectedTool.Bumper | SelectedTool.SpawnPoint | PusherTool;
   startScreen: Vec2;
+};
+
+type MotionRangeGesture = {
+  kind: "motion-range";
+  pointerId: number;
+  objectId: string;
+  startMotion: LevelObjectMotion;
+  startScreen: Vec2;
+  changed: boolean;
 };
 
 type MarqueeGesture = {
@@ -115,10 +126,24 @@ type EditorGesture =
   | WallEndpointGesture
   | WallGesture
   | PlaceGesture
+  | MotionRangeGesture
   | MarqueeGesture;
 
 export type WallDraft = { start: Vec2; end: Vec2; thickness: number };
 export type SelectionMarquee = { start: Vec2; end: Vec2 };
+export type WallEndpointFeedback = {
+  objectId: string;
+  endpoint: "start" | "end";
+  position: Vec2;
+  kind: "snap" | "edit";
+};
+export type PusherPlacementPreview = { tool: PusherTool; position: Vec2 };
+
+type WallObject = Extract<LevelObjectData, { prefab: "wall" }>;
+type WallEndpointTarget = Omit<WallEndpointFeedback, "kind"> & {
+  object: WallObject;
+};
+type WallEndpointExclusion = Pick<WallEndpointTarget, "objectId" | "endpoint">;
 
 const POSITION_SNAP_STEP = GRID_SIZE;
 const SIZE_SNAP_STEP = GRID_SIZE / 5;
@@ -131,6 +156,11 @@ const MIN_OBJECT_SIZE = GRID_SIZE * 0.4;
 const MIN_WALL_LENGTH = GRID_SIZE * 0.4;
 const MIN_ZOOM = 0.1;
 const MAX_ZOOM = 4;
+
+const isPusherTool = (tool: SelectedTool): tool is PusherTool =>
+  tool === SelectedTool.Slider ||
+  tool === SelectedTool.Spinner ||
+  tool === SelectedTool.Sweeper;
 
 const isTypingTarget = (target: EventTarget | null) =>
   target instanceof HTMLElement &&
@@ -154,10 +184,14 @@ export class LevelEditorController {
   private activeTool = SelectedTool.Pointer;
   private readOnly = false;
   private spaceHeld = false;
+  private selectionModifierHeld = false;
+  private lastPointerScreen: Vec2 | null = null;
   private readonly selectedIds = new Set<string>();
   private hoveredId: string | null = null;
   private wallAnchor: Vec2 | null = null;
   private wallPreviewEnd: Vec2 | null = null;
+  private endpointFeedback: WallEndpointFeedback | null = null;
+  private placementPreviewPosition: Vec2 | null = null;
 
   constructor({
     stage,
@@ -205,6 +239,8 @@ export class LevelEditorController {
     }
     this.activeTool = tool;
     this.hoveredId = null;
+    this.endpointFeedback = null;
+    this.placementPreviewPosition = null;
     this.updateCursor();
   }
 
@@ -213,6 +249,8 @@ export class LevelEditorController {
       this.cancelGesture();
       this.clearWallAnchor();
       this.hoveredId = null;
+      this.endpointFeedback = null;
+      this.placementPreviewPosition = null;
     }
     this.readOnly = readOnly;
     this.updateCursor();
@@ -228,6 +266,8 @@ export class LevelEditorController {
       this.activeTool === SelectedTool.Pointer ||
       this.selectedIds.size > 0 ||
       this.wallAnchor !== null ||
+      this.endpointFeedback !== null ||
+      this.pusherPlacementPreview !== null ||
       this.gesture?.kind === "wall" ||
       this.gesture?.kind === "marquee"
     );
@@ -275,6 +315,24 @@ export class LevelEditorController {
       : null;
   }
 
+  get wallEndpointFeedback() {
+    return this.endpointFeedback
+      ? {
+          ...this.endpointFeedback,
+          position: [...this.endpointFeedback.position] as Vec2,
+        }
+      : null;
+  }
+
+  get pusherPlacementPreview(): PusherPlacementPreview | null {
+    return isPusherTool(this.activeTool) && this.placementPreviewPosition
+      ? {
+          tool: this.activeTool,
+          position: [...this.placementPreviewPosition],
+        }
+      : null;
+  }
+
   private findObject(id: string | null) {
     if (!id) {
       return null;
@@ -305,6 +363,7 @@ export class LevelEditorController {
   private clearWallAnchor() {
     this.wallAnchor = null;
     this.wallPreviewEnd = null;
+    this.endpointFeedback = null;
   }
 
   private rollbackGesture(gesture: EditorGesture) {
@@ -343,6 +402,15 @@ export class LevelEditorController {
       return;
     }
 
+    if (gesture.kind === "motion-range" && gesture.changed) {
+      const object = this.findObject(gesture.objectId);
+      if (object) {
+        object.motion = structuredClone(gesture.startMotion);
+        this.callbacks.onObjectsChange([object]);
+      }
+      return;
+    }
+
     if (gesture.kind === "marquee") {
       this.selectedIds.clear();
       for (const id of gesture.initialSelection) {
@@ -358,11 +426,28 @@ export class LevelEditorController {
       this.releasePointer(gesture.pointerId);
     }
     this.gesture = null;
+    this.endpointFeedback = null;
     this.updateCursor();
   }
 
   private screenDistance(first: Vec2, second: Vec2) {
     return Math.hypot(first[0] - second[0], first[1] - second[1]);
+  }
+
+  private get creationToolActive() {
+    return (
+      this.activeTool === SelectedTool.Wall ||
+      this.activeTool === SelectedTool.Bumper ||
+      this.activeTool === SelectedTool.SpawnPoint ||
+      isPusherTool(this.activeTool)
+    );
+  }
+
+  private isTemporarySelection(modifier: {
+    metaKey: boolean;
+    ctrlKey: boolean;
+  }) {
+    return this.creationToolActive && (modifier.metaKey || modifier.ctrlKey);
   }
 
   private endpointAt(object: LevelObjectData, screenPoint: Vec2) {
@@ -379,6 +464,58 @@ export class LevelEditorController {
       return "end" as const;
     }
     return null;
+  }
+
+  private wallEndpointTargetAt(
+    screenPoint: Vec2,
+    maximumDistance: number,
+    {
+      selectableOnly = false,
+      exclude,
+    }: {
+      selectableOnly?: boolean;
+      exclude?: WallEndpointExclusion;
+    } = {}
+  ): WallEndpointTarget | null {
+    const candidates = this.getObjects().flatMap((object) => {
+      if (object.prefab !== "wall" || (selectableOnly && object.locked)) {
+        return [];
+      }
+      const { start, end } = getWallEndpoints(object);
+      return (["start", "end"] as const)
+        .filter(
+          (endpoint) =>
+            object.id !== exclude?.objectId || endpoint !== exclude.endpoint
+        )
+        .map((endpoint) => ({
+          object,
+          objectId: object.id,
+          endpoint,
+          position: endpoint === "start" ? start : end,
+        }));
+    });
+    const nearestIndex = findNearestPointIndex(
+      candidates.map((candidate) =>
+        this.stage.worldToScreen(...candidate.position)
+      ),
+      screenPoint,
+      maximumDistance
+    );
+    return nearestIndex === null ? null : candidates[nearestIndex];
+  }
+
+  private showEndpointFeedback(
+    target: WallEndpointTarget | null,
+    kind: WallEndpointFeedback["kind"]
+  ) {
+    this.endpointFeedback = target
+      ? {
+          objectId: target.objectId,
+          endpoint: target.endpoint,
+          position: [...target.position],
+          kind,
+        }
+      : null;
   }
 
   private resizeHandleAt(object: LevelObjectData, screenPoint: Vec2) {
@@ -413,23 +550,41 @@ export class LevelEditorController {
     );
   }
 
-  private snapPlacementPoint(point: Vec2, free: boolean) {
+  private motionRangeHandleAt(object: LevelObjectData, screenPoint: Vec2) {
+    if (object.motion?.type !== "oscillate") {
+      return false;
+    }
+    const center = getLevelObjectShape(
+      object,
+      this.getDefaultWallThickness()
+    ).position;
+    const handle: Vec2 = [
+      center[0] + object.motion.vector[0],
+      center[1] + object.motion.vector[1],
+    ];
+    return (
+      this.screenDistance(this.stage.worldToScreen(...handle), screenPoint) <=
+      HANDLE_HIT_RADIUS + 2
+    );
+  }
+
+  private snapPlacementPoint(
+    point: Vec2,
+    free: boolean,
+    exclude?: WallEndpointExclusion
+  ) {
     if (free) {
+      this.endpointFeedback = null;
       return [...point] as Vec2;
     }
-    const endpoints = this.getObjects().flatMap((object) =>
-      object.prefab === "wall"
-        ? [object.properties.start, object.properties.end]
-        : []
+    const target = this.wallEndpointTargetAt(
+      this.stage.worldToScreen(...point),
+      ENDPOINT_SNAP_RADIUS,
+      { exclude }
     );
-    const tolerance = ENDPOINT_SNAP_RADIUS / Math.max(this.stage.zoom, 0.001);
-    const endpoint = endpoints.find(
-      (candidate) =>
-        Math.hypot(candidate[0] - point[0], candidate[1] - point[1]) <=
-        tolerance
-    );
-    if (endpoint) {
-      return [...endpoint] as Vec2;
+    this.showEndpointFeedback(target, "snap");
+    if (target) {
+      return [...target.position] as Vec2;
     }
     return this.getGridSnapEnabled()
       ? snapPoint(point, POSITION_SNAP_STEP)
@@ -439,12 +594,15 @@ export class LevelEditorController {
   private snapWallEndpoint(
     fixed: Vec2,
     point: Vec2,
-    { free, constrain }: { free: boolean; constrain: boolean }
+    { free, constrain }: { free: boolean; constrain: boolean },
+    exclude?: WallEndpointExclusion
   ) {
     if (free) {
+      this.endpointFeedback = null;
       return [...point] as Vec2;
     }
     if (constrain) {
+      this.endpointFeedback = null;
       return constrainPointToAngle(
         fixed,
         point,
@@ -452,7 +610,7 @@ export class LevelEditorController {
         this.getGridSnapEnabled() ? POSITION_SNAP_STEP : 0
       );
     }
-    return this.snapPlacementPoint(point, false);
+    return this.snapPlacementPoint(point, false, exclude);
   }
 
   private beginPan(event: PointerEvent, screenPoint: Vec2) {
@@ -503,6 +661,7 @@ export class LevelEditorController {
 
   private readonly pointerDown = (event: PointerEvent) => {
     const screenPoint = this.screenPoint(event);
+    this.lastPointerScreen = screenPoint;
     const temporaryPan = this.spaceHeld && event.button === 0;
     if (
       event.button === 1 ||
@@ -518,7 +677,13 @@ export class LevelEditorController {
       return;
     }
 
-    if (this.activeTool === SelectedTool.Wall && !this.readOnly) {
+    const temporarySelection = this.isTemporarySelection(event);
+
+    if (
+      this.activeTool === SelectedTool.Wall &&
+      !temporarySelection &&
+      !this.readOnly
+    ) {
       const worldPoint = this.worldPoint(screenPoint);
       const existingAnchor = this.wallAnchor;
       const anchored = existingAnchor !== null;
@@ -547,7 +712,9 @@ export class LevelEditorController {
 
     if (
       (this.activeTool === SelectedTool.Bumper ||
-        this.activeTool === SelectedTool.SpawnPoint) &&
+        this.activeTool === SelectedTool.SpawnPoint ||
+        isPusherTool(this.activeTool)) &&
+      !temporarySelection &&
       !this.readOnly
     ) {
       this.gesture = {
@@ -561,26 +728,59 @@ export class LevelEditorController {
       return;
     }
 
-    if (this.activeTool !== SelectedTool.Pointer) {
+    if (this.activeTool !== SelectedTool.Pointer && !temporarySelection) {
       return;
     }
 
     const selectedObject = this.selectedObject;
-    const endpoint = selectedObject
-      ? this.endpointAt(selectedObject, screenPoint)
+    if (
+      selectedObject &&
+      this.motionRangeHandleAt(selectedObject, screenPoint) &&
+      !this.readOnly
+    ) {
+      if (!selectedObject.motion) {
+        return;
+      }
+      this.gesture = {
+        kind: "motion-range",
+        pointerId: event.pointerId,
+        objectId: selectedObject.id,
+        startMotion: structuredClone(selectedObject.motion),
+        startScreen: screenPoint,
+        changed: false,
+      };
+      this.capturePointer(event.pointerId);
+      event.preventDefault();
+      return;
+    }
+    const directEndpointTarget = temporarySelection
+      ? this.wallEndpointTargetAt(screenPoint, HANDLE_HIT_RADIUS, {
+          selectableOnly: true,
+        })
       : null;
-    if (selectedObject?.prefab === "wall" && endpoint && !this.readOnly) {
-      const { start, end } = getWallEndpoints(selectedObject);
+    const endpointObject =
+      directEndpointTarget?.object ??
+      (selectedObject?.prefab === "wall" ? selectedObject : null);
+    const endpoint =
+      directEndpointTarget?.endpoint ??
+      (endpointObject ? this.endpointAt(endpointObject, screenPoint) : null);
+    if (endpointObject && endpoint && !this.readOnly) {
+      if (directEndpointTarget) {
+        this.selectedIds.clear();
+        this.selectedIds.add(endpointObject.id);
+      }
+      const { start, end } = getWallEndpoints(endpointObject);
       this.gesture = {
         kind: "wall-endpoint",
         pointerId: event.pointerId,
-        objectId: selectedObject.id,
+        objectId: endpointObject.id,
         endpoint,
         start,
         end,
         startScreen: screenPoint,
         changed: false,
       };
+      this.showEndpointFeedback(directEndpointTarget, "edit");
       this.capturePointer(event.pointerId);
       event.preventDefault();
       return;
@@ -657,10 +857,13 @@ export class LevelEditorController {
 
   private readonly pointerMove = (event: PointerEvent) => {
     const screenPoint = this.screenPoint(event);
+    this.lastPointerScreen = screenPoint;
     if (!this.gesture) {
+      const temporarySelection = this.isTemporarySelection(event);
       if (
         this.activeTool === SelectedTool.Wall &&
         this.wallAnchor &&
+        !temporarySelection &&
         !this.readOnly
       ) {
         this.wallPreviewEnd = this.snapWallEndpoint(
@@ -671,8 +874,25 @@ export class LevelEditorController {
             constrain: event.shiftKey,
           }
         );
+      } else if (
+        this.creationToolActive &&
+        !temporarySelection &&
+        !this.readOnly
+      ) {
+        const position = this.snapPlacementPoint(
+          this.worldPoint(screenPoint),
+          event.altKey
+        );
+        this.placementPreviewPosition = isPusherTool(this.activeTool)
+          ? position
+          : null;
+      } else if (temporarySelection) {
+        this.endpointFeedback = null;
+        this.placementPreviewPosition = null;
       }
-      this.updateIdleState(screenPoint);
+      this.updateIdleState(screenPoint, {
+        temporarySelection,
+      });
       return;
     }
 
@@ -691,6 +911,39 @@ export class LevelEditorController {
     }
 
     const worldPoint = this.worldPoint(screenPoint);
+    if (this.gesture.kind === "motion-range") {
+      if (
+        !this.gesture.changed &&
+        this.screenDistance(screenPoint, this.gesture.startScreen) <
+          DRAG_THRESHOLD
+      ) {
+        return;
+      }
+      const object = this.findObject(this.gesture.objectId);
+      if (!object || object.motion?.type !== "oscillate") {
+        this.cancelGesture();
+        return;
+      }
+      const center = getLevelObjectShape(
+        object,
+        this.getDefaultWallThickness()
+      ).position;
+      let vector: Vec2 = [worldPoint[0] - center[0], worldPoint[1] - center[1]];
+      if (event.shiftKey) {
+        vector = constrainDeltaToAxis(vector);
+      }
+      if (!event.altKey && this.getGridSnapEnabled()) {
+        vector = snapPoint(vector, POSITION_SNAP_STEP);
+      }
+      if (Math.hypot(...vector) >= MIN_OBJECT_SIZE) {
+        object.motion.vector = vector;
+        this.gesture.changed = true;
+        this.callbacks.onObjectsChange([object]);
+      }
+      event.preventDefault();
+      return;
+    }
+
     if (this.gesture.kind === "wall") {
       this.gesture.end = this.snapWallEndpoint(this.gesture.start, worldPoint, {
         free: event.altKey,
@@ -750,10 +1003,13 @@ export class LevelEditorController {
         return;
       }
       this.gesture.changed = true;
-      const rawDelta: Vec2 = [
+      let rawDelta: Vec2 = [
         worldPoint[0] - this.gesture.startWorld[0],
         worldPoint[1] - this.gesture.startWorld[1],
       ];
+      if (event.shiftKey) {
+        rawDelta = constrainDeltaToAxis(rawDelta);
+      }
       const delta =
         event.altKey || !this.getGridSnapEnabled()
           ? rawDelta
@@ -814,10 +1070,18 @@ export class LevelEditorController {
         this.gesture.endpoint === "start"
           ? this.gesture.end
           : this.gesture.start;
-      const endpoint = this.snapWallEndpoint(fixed, worldPoint, {
-        free: event.altKey,
-        constrain: event.shiftKey,
-      });
+      const endpoint = this.snapWallEndpoint(
+        fixed,
+        worldPoint,
+        {
+          free: event.altKey,
+          constrain: event.shiftKey,
+        },
+        {
+          objectId: this.gesture.objectId,
+          endpoint: this.gesture.endpoint,
+        }
+      );
       setWallEndpoints(
         object,
         this.gesture.endpoint === "start" ? endpoint : this.gesture.start,
@@ -884,6 +1148,7 @@ export class LevelEditorController {
     }
     const gesture = this.gesture;
     const screenPoint = this.screenPoint(event);
+    this.lastPointerScreen = screenPoint;
     this.gesture = null;
     this.releasePointer(event.pointerId);
 
@@ -893,10 +1158,15 @@ export class LevelEditorController {
         gesture.end[1] - gesture.start[1]
       );
       if ((gesture.changed || gesture.anchored) && length >= MIN_WALL_LENGTH) {
-        this.clearWallAnchor();
         const object = this.callbacks.onCreateWall(gesture.start, gesture.end);
         this.selectedIds.clear();
         this.selectedIds.add(object.id);
+        if (gesture.anchored) {
+          this.wallAnchor = [...gesture.end];
+          this.wallPreviewEnd = [...gesture.end];
+        } else {
+          this.clearWallAnchor();
+        }
         this.callbacks.onToolComplete(SelectedTool.Wall);
       } else if (!gesture.anchored) {
         this.wallAnchor = [...gesture.start];
@@ -913,19 +1183,23 @@ export class LevelEditorController {
         const object = this.callbacks.onPlaceObject(gesture.tool, position);
         this.selectedIds.clear();
         this.selectedIds.add(object.id);
+        this.placementPreviewPosition = null;
         this.callbacks.onToolComplete(gesture.tool);
       }
     } else if (
       (gesture.kind === "move" ||
         gesture.kind === "resize" ||
         gesture.kind === "rotate" ||
-        gesture.kind === "wall-endpoint") &&
+        gesture.kind === "wall-endpoint" ||
+        gesture.kind === "motion-range") &&
       gesture.changed
     ) {
       this.callbacks.onObjectsCommit(this.selectedObjects);
     }
 
-    this.updateIdleState(screenPoint);
+    this.updateIdleState(screenPoint, {
+      temporarySelection: this.isTemporarySelection(event),
+    });
     event.preventDefault();
   };
 
@@ -936,8 +1210,11 @@ export class LevelEditorController {
   };
 
   private readonly pointerLeave = () => {
+    this.lastPointerScreen = null;
+    this.placementPreviewPosition = null;
     if (!this.gesture) {
       this.hoveredId = null;
+      this.endpointFeedback = null;
       this.updateCursor();
     }
   };
@@ -956,7 +1233,13 @@ export class LevelEditorController {
     event.preventDefault();
   };
 
-  private updateIdleState(screenPoint: Vec2) {
+  private updateIdleState(
+    screenPoint: Vec2,
+    {
+      temporarySelection = this.selectionModifierHeld &&
+        this.creationToolActive,
+    }: { temporarySelection?: boolean } = {}
+  ) {
     if (this.gesture) {
       return;
     }
@@ -965,11 +1248,7 @@ export class LevelEditorController {
       this.stage.canvas.style.cursor = "grab";
       return;
     }
-    if (
-      this.activeTool === SelectedTool.Wall ||
-      this.activeTool === SelectedTool.Bumper ||
-      this.activeTool === SelectedTool.SpawnPoint
-    ) {
+    if (this.creationToolActive && !temporarySelection) {
       this.hoveredId = null;
       this.stage.canvas.style.cursor = this.readOnly
         ? "not-allowed"
@@ -977,9 +1256,43 @@ export class LevelEditorController {
       return;
     }
 
+    const directEndpointTarget = temporarySelection
+      ? this.wallEndpointTargetAt(screenPoint, HANDLE_HIT_RADIUS, {
+          selectableOnly: true,
+        })
+      : null;
+    if (directEndpointTarget) {
+      this.hoveredId = directEndpointTarget.objectId;
+      this.showEndpointFeedback(directEndpointTarget, "edit");
+      this.stage.canvas.style.cursor = this.readOnly ? "default" : "crosshair";
+      return;
+    }
+
+    this.endpointFeedback = null;
     const selectedObject = this.selectedObject;
-    if (selectedObject && this.endpointAt(selectedObject, screenPoint)) {
+    if (
+      selectedObject &&
+      this.motionRangeHandleAt(selectedObject, screenPoint)
+    ) {
       this.hoveredId = selectedObject.id;
+      this.stage.canvas.style.cursor = this.readOnly ? "default" : "crosshair";
+      return;
+    }
+    const selectedEndpoint = selectedObject
+      ? this.endpointAt(selectedObject, screenPoint)
+      : null;
+    if (selectedObject?.prefab === "wall" && selectedEndpoint) {
+      const { start, end } = getWallEndpoints(selectedObject);
+      this.hoveredId = selectedObject.id;
+      this.showEndpointFeedback(
+        {
+          object: selectedObject,
+          objectId: selectedObject.id,
+          endpoint: selectedEndpoint,
+          position: selectedEndpoint === "start" ? start : end,
+        },
+        "edit"
+      );
       this.stage.canvas.style.cursor = this.readOnly ? "default" : "crosshair";
       return;
     }
@@ -1014,11 +1327,9 @@ export class LevelEditorController {
       this.stage.canvas.style.cursor = "grabbing";
     } else if (this.spaceHeld || this.activeTool === SelectedTool.Pan) {
       this.stage.canvas.style.cursor = "grab";
-    } else if (
-      this.activeTool === SelectedTool.Wall ||
-      this.activeTool === SelectedTool.Bumper ||
-      this.activeTool === SelectedTool.SpawnPoint
-    ) {
+    } else if (this.selectionModifierHeld && this.creationToolActive) {
+      this.stage.canvas.style.cursor = "default";
+    } else if (this.creationToolActive) {
       this.stage.canvas.style.cursor = this.readOnly
         ? "not-allowed"
         : "crosshair";
@@ -1029,6 +1340,18 @@ export class LevelEditorController {
 
   private readonly keyDown = (event: KeyboardEvent) => {
     if (isTypingTarget(event.target)) {
+      return;
+    }
+
+    if ((event.key === "Meta" || event.key === "Control") && !event.repeat) {
+      this.selectionModifierHeld = true;
+      if (this.lastPointerScreen) {
+        this.updateIdleState(this.lastPointerScreen, {
+          temporarySelection: this.creationToolActive,
+        });
+      } else {
+        this.updateCursor();
+      }
       return;
     }
 
@@ -1072,11 +1395,18 @@ export class LevelEditorController {
         this.cancelGesture();
       } else if (this.wallAnchor) {
         this.clearWallAnchor();
-      } else if (this.selectedIds.size > 0) {
-        this.clearSelection();
       } else if (this.activeTool !== SelectedTool.Pointer) {
         this.callbacks.onToolRequest(SelectedTool.Pointer);
+      } else if (this.selectedIds.size > 0) {
+        this.clearSelection();
       }
+      event.preventDefault();
+      return;
+    }
+
+    if (event.key === "Enter" && this.wallAnchor) {
+      this.clearWallAnchor();
+      this.updateCursor();
       event.preventDefault();
       return;
     }
@@ -1091,6 +1421,7 @@ export class LevelEditorController {
         v: SelectedTool.Pointer,
         h: SelectedTool.Pan,
         w: SelectedTool.Wall,
+        l: SelectedTool.Wall,
         b: SelectedTool.Bumper,
         s: SelectedTool.SpawnPoint,
       };
@@ -1163,6 +1494,18 @@ export class LevelEditorController {
   };
 
   private readonly keyUp = (event: KeyboardEvent) => {
+    if (event.key === "Meta" || event.key === "Control") {
+      this.selectionModifierHeld = false;
+      this.endpointFeedback = null;
+      if (this.lastPointerScreen) {
+        this.updateIdleState(this.lastPointerScreen, {
+          temporarySelection: false,
+        });
+      } else {
+        this.updateCursor();
+      }
+      return;
+    }
     if (event.key === " ") {
       this.spaceHeld = false;
       this.updateCursor();
@@ -1172,6 +1515,8 @@ export class LevelEditorController {
 
   private readonly windowBlur = () => {
     this.spaceHeld = false;
+    this.selectionModifierHeld = false;
+    this.endpointFeedback = null;
     if (this.gesture) {
       this.cancelGesture();
     }

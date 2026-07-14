@@ -1,4 +1,6 @@
+import type { LevelObjectData } from "../../editor/levelDocument";
 import type { BuilderUi } from "./elements";
+import { PUSHER_PERIODS } from "./courseObjects";
 import type { RaceSnapshot } from "./raceController";
 import { SelectedTool, type RoundConfiguration } from "./types";
 
@@ -18,11 +20,17 @@ const toolHint = ({
     case SelectedTool.Pan:
       return `${key("Ctrl/⌘")} + wheel to zoom`;
     case SelectedTool.Wall:
-      return `Hold ${key("Shift")} to lock the wall angle`;
+      return `Click points to create connected walls`;
     case SelectedTool.Bumper:
-      return `Hold ${key("Alt")} to place without snapping`;
+      return `Place bumpers · ${key("⌘/Ctrl")} edit · ${key("Alt")} no snap · ${key("Esc")} finish`;
     case SelectedTool.SpawnPoint:
       return `Hold ${key("Alt")} to place without snapping`;
+    case SelectedTool.Slider:
+      return `Place a sliding wall · drag its violet path handle to aim and resize`;
+    case SelectedTool.Spinner:
+      return `Place a wall that spins around its center`;
+    case SelectedTool.Sweeper:
+      return `Place a wall that sweeps around its first endpoint`;
     case SelectedTool.Pointer:
       return `Hold ${key("Space")} and drag to pan`;
   }
@@ -34,6 +42,7 @@ export const updateBuilderInterface = ({
   race,
   authoredObjects,
   selectedObjects,
+  selectedObject,
   hoveredObject,
   wallThickness,
   selectedTool,
@@ -46,6 +55,7 @@ export const updateBuilderInterface = ({
   race: RaceSnapshot;
   authoredObjects: number;
   selectedObjects: readonly string[];
+  selectedObject: LevelObjectData | null;
   hoveredObject: string | null;
   wallThickness: number;
   selectedTool: SelectedTool;
@@ -63,20 +73,80 @@ export const updateBuilderInterface = ({
   ui.wallButton.disabled = playbackActive;
   ui.bumperButton.disabled = playbackActive;
   ui.spawnPointButton.disabled = playbackActive;
+  ui.pusherMenuToggleButton.disabled = playbackActive;
+  ui.sliderButton.disabled = playbackActive;
+  ui.spinnerButton.disabled = playbackActive;
+  ui.sweeperButton.disabled = playbackActive;
   ui.toolLockButton.disabled =
     playbackActive ||
     (selectedTool !== SelectedTool.Wall &&
-      selectedTool !== SelectedTool.Bumper &&
-      selectedTool !== SelectedTool.SpawnPoint);
+      selectedTool !== SelectedTool.Bumper);
   ui.toolLockButton.dataset.active = `${toolLocked}`;
   ui.toolLockButton.ariaPressed = `${toolLocked}`;
   ui.toolLockButton.title = toolLocked
-    ? "Create multiple objects (Q)"
-    : "Create one object (Q)";
+    ? "Keep drawing is on (Q)"
+    : "Create once is on (Q)";
+  ui.toolLockButton.ariaLabel = toolLocked
+    ? "Keep drawing is on"
+    : "Create once is on";
   ui.toolHintOutput.innerHTML = toolHint({
     selectedTool,
     playbackActive,
   });
+
+  const selectedWall =
+    selectedObject?.prefab === "wall" && !selectedObject.locked
+      ? selectedObject
+      : null;
+  ui.objectInspector.hidden = !selectedWall || playbackActive;
+  if (selectedWall) {
+    const motion = selectedWall.motion;
+    const motionType =
+      motion?.type === "oscillate"
+        ? "slide"
+        : motion?.type === "rotate" && motion.pivot === "start"
+          ? "sweep"
+          : motion?.type === "rotate"
+            ? "spin"
+            : "none";
+    ui.objectInspectorTitle.textContent =
+      motionType === "none"
+        ? "Wall"
+        : motionType === "slide"
+          ? "Slider"
+          : motionType === "spin"
+            ? "Spinner"
+            : "Sweeper";
+    ui.motionTypeSelect.value = motionType;
+    ui.motionControls.hidden = !motion;
+    ui.motionRangeRow.hidden = motion?.type !== "oscillate";
+    if (motion?.type === "oscillate") {
+      const range = Math.round(Math.hypot(...motion.vector));
+      if (document.activeElement !== ui.motionRangeInput) {
+        ui.motionRangeInput.value = `${range}`;
+      }
+      ui.motionRangeOutput.value = `${range}`;
+    }
+    if (motion) {
+      const periods = Object.entries(PUSHER_PERIODS) as Array<
+        [keyof typeof PUSHER_PERIODS, number]
+      >;
+      const activeSpeed = periods.reduce((nearest, candidate) =>
+        Math.abs(candidate[1] - motion.periodMs) <
+        Math.abs(nearest[1] - motion.periodMs)
+          ? candidate
+          : nearest
+      )[0];
+      for (const button of ui.motionSpeedButtons) {
+        button.dataset.active = `${button.dataset.speed === activeSpeed}`;
+      }
+      ui.motionReverseButton.ariaLabel =
+        motion.direction === 1
+          ? "Reverse motion direction"
+          : "Restore forward motion direction";
+      ui.motionReverseButton.title = ui.motionReverseButton.ariaLabel;
+    }
+  }
 
   const playButtonText =
     race.phase === "running"

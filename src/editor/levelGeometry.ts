@@ -66,6 +66,27 @@ export const snapPoint = ([x, y]: Vec2, step: number): Vec2 => [
   snap(y, step),
 ];
 
+export const constrainDeltaToAxis = ([x, y]: Vec2): Vec2 =>
+  Math.abs(x) >= Math.abs(y) ? [x, 0] : [0, y];
+
+export const findNearestPointIndex = (
+  points: readonly Vec2[],
+  target: Vec2,
+  maximumDistance: number
+) => {
+  let nearestIndex: number | null = null;
+  let nearestDistance = maximumDistance;
+  for (let index = 0; index < points.length; index++) {
+    const point = points[index];
+    const distance = Math.hypot(point[0] - target[0], point[1] - target[1]);
+    if (distance <= nearestDistance) {
+      nearestIndex = index;
+      nearestDistance = distance;
+    }
+  }
+  return nearestIndex;
+};
+
 export const getWallThickness = (
   object: Extract<LevelObjectData, { prefab: "wall" }>,
   defaultWallThickness: number

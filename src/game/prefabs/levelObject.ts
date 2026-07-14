@@ -30,6 +30,7 @@ export const levelObjectDefinitions = (
           width: shape.width,
           height: shape.height,
           color: object.properties.color,
+          bodyType: object.motion ? "kinematic" : "static",
         }),
       ];
       break;
@@ -38,7 +39,7 @@ export const levelObjectDefinitions = (
       definitions = [
         circleDefinition({
           position: object.transform.position,
-          bodyType: "static",
+          bodyType: object.motion ? "kinematic" : "static",
           ...object.properties,
         }),
       ];

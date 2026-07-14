@@ -1,6 +1,11 @@
 import type Stage from "../engine/stage";
 import type { LevelObjectData } from "./levelDocument";
 import {
+  getLevelObjectMotionPose,
+  getOscillationEndpoints,
+  getRotationPivot,
+} from "./levelMotion";
+import {
   getLevelObjectBounds,
   getLevelObjectShape,
   getRectangleCorners,
@@ -12,7 +17,11 @@ import {
   type LevelObjectShape,
   type RectangleLevelShape,
 } from "./levelGeometry";
-import type { SelectionMarquee, WallDraft } from "./levelEditorController";
+import type {
+  SelectionMarquee,
+  WallDraft,
+  WallEndpointFeedback,
+} from "./levelEditorController";
 
 export type EditorOverlayState = {
   active: boolean;
@@ -21,6 +30,8 @@ export type EditorOverlayState = {
   hoveredObject: LevelObjectData | null;
   selectedObjects: readonly LevelObjectData[];
   wallDraft: WallDraft | null;
+  pusherDraft: LevelObjectData | null;
+  wallEndpointFeedback: WallEndpointFeedback | null;
   selectionMarquee: SelectionMarquee | null;
 };
 
@@ -58,6 +69,8 @@ export class EditorOverlay {
     hoveredObject,
     selectedObjects,
     wallDraft,
+    pusherDraft,
+    wallEndpointFeedback,
     selectionMarquee,
   }: EditorOverlayState) {
     const width = this.canvas.clientWidth;
@@ -92,7 +105,14 @@ export class EditorOverlay {
     }
 
     for (const object of selectedObjects) {
+      if (object.motion) {
+        this.drawMotionGuide(object, defaultWallThickness, false);
+      }
       this.strokeObject(object, defaultWallThickness, "rgb(34 211 238)", 2, []);
+    }
+
+    if (pusherDraft) {
+      this.drawMotionGuide(pusherDraft, defaultWallThickness, true);
     }
 
     if (selectedObjects.length > 1) {
@@ -117,6 +137,9 @@ export class EditorOverlay {
     }
     if (selectionMarquee) {
       this.drawMarquee(selectionMarquee);
+    }
+    if (wallEndpointFeedback) {
+      this.drawWallEndpointFeedback(wallEndpointFeedback);
     }
   }
 
@@ -170,6 +193,203 @@ export class EditorOverlay {
     }
 
     context.stroke();
+    context.restore();
+  }
+
+  private drawMotionGuide(
+    object: LevelObjectData,
+    defaultWallThickness: number,
+    draft: boolean
+  ) {
+    const motion = object.motion;
+    if (!motion) {
+      return;
+    }
+    const baseShape = getLevelObjectShape(object, defaultWallThickness);
+    const color = "rgb(196 181 253)";
+    const ghostColor = "rgb(196 181 253 / 55%)";
+
+    if (draft) {
+      this.fillShape(baseShape, "rgb(139 92 246 / 24%)");
+      this.strokeShape(baseShape, color, 2, []);
+    }
+
+    if (motion.type === "oscillate") {
+      const endpoints = getOscillationEndpoints(object, defaultWallThickness);
+      if (!endpoints) {
+        return;
+      }
+      const [first, second] = endpoints;
+      for (const position of endpoints) {
+        this.strokeShape({ ...baseShape, position }, ghostColor, 1.5, [5, 4]);
+      }
+      const firstScreen = this.stage.worldToScreen(...first);
+      const secondScreen = this.stage.worldToScreen(...second);
+      const context = this.context;
+      context.save();
+      context.strokeStyle = color;
+      context.lineWidth = 2;
+      context.setLineDash([7, 5]);
+      context.beginPath();
+      context.moveTo(...firstScreen);
+      context.lineTo(...secondScreen);
+      context.stroke();
+      context.setLineDash([]);
+      this.drawMotionArrow(firstScreen, secondScreen, 0.38, color);
+      this.drawMotionArrow(secondScreen, firstScreen, 0.38, color);
+      context.fillStyle = "rgb(24 24 27)";
+      context.strokeStyle = color;
+      context.beginPath();
+      context.arc(
+        secondScreen[0],
+        secondScreen[1],
+        draft ? 4 : 6,
+        0,
+        Math.PI * 2
+      );
+      context.fill();
+      context.stroke();
+      context.restore();
+      this.drawMotionLabel(
+        [
+          (firstScreen[0] + secondScreen[0]) / 2,
+          (firstScreen[1] + secondScreen[1]) / 2,
+        ],
+        `SLIDE · ${(motion.periodMs / 1000).toFixed(1)}s`,
+        color
+      );
+      return;
+    }
+
+    const pivot = getRotationPivot(object, defaultWallThickness);
+    if (!pivot || baseShape.kind !== "rectangle") {
+      return;
+    }
+    const radiusWorld =
+      motion.pivot === "start" ? baseShape.width : baseShape.width / 2;
+    const [pivotX, pivotY] = this.stage.worldToScreen(...pivot);
+    const radius = Math.max(18, Math.abs(radiusWorld * this.stage.zoom));
+    const context = this.context;
+
+    for (const progress of [0.25, 0.75]) {
+      const pose = getLevelObjectMotionPose(
+        object,
+        defaultWallThickness,
+        motion.periodMs * progress
+      );
+      this.strokeShape(
+        { ...baseShape, position: pose.position, rotation: pose.rotation },
+        ghostColor,
+        1.5,
+        [5, 4]
+      );
+    }
+
+    context.save();
+    context.strokeStyle = color;
+    context.lineWidth = 2;
+    context.setLineDash([7, 5]);
+    context.beginPath();
+    context.arc(pivotX, pivotY, radius, 0, Math.PI * 2);
+    context.stroke();
+    context.setLineDash([]);
+    const arrowAngle =
+      motion.direction === 1 ? -Math.PI / 4 : (-3 * Math.PI) / 4;
+    const tangentAngle =
+      arrowAngle + (motion.direction === 1 ? Math.PI / 2 : -Math.PI / 2);
+    const arrowPoint: [number, number] = [
+      pivotX + Math.cos(arrowAngle) * radius,
+      pivotY + Math.sin(arrowAngle) * radius,
+    ];
+    const arrowFrom: [number, number] = [
+      arrowPoint[0] - Math.cos(tangentAngle) * 18,
+      arrowPoint[1] - Math.sin(tangentAngle) * 18,
+    ];
+    this.drawMotionArrow(arrowFrom, arrowPoint, 1, color);
+    context.fillStyle = "rgb(24 24 27)";
+    context.strokeStyle = color;
+    context.beginPath();
+    context.arc(pivotX, pivotY, 6, 0, Math.PI * 2);
+    context.fill();
+    context.stroke();
+    context.restore();
+    this.drawMotionLabel(
+      [pivotX, pivotY - radius],
+      `${motion.pivot === "start" ? "SWEEP" : "SPIN"} · ${(motion.periodMs / 1000).toFixed(1)}s`,
+      color
+    );
+  }
+
+  private fillShape(shape: LevelObjectShape, color: string) {
+    const context = this.context;
+    context.save();
+    context.fillStyle = color;
+    context.beginPath();
+    if (shape.kind === "circle") {
+      const [x, y] = this.stage.worldToScreen(...shape.position);
+      context.arc(
+        x,
+        y,
+        Math.abs(shape.radius * this.stage.zoom),
+        0,
+        Math.PI * 2
+      );
+    } else {
+      const corners = getRectangleCorners(shape).map((corner) =>
+        this.stage.worldToScreen(...corner)
+      );
+      context.moveTo(...corners[0]);
+      for (const corner of corners.slice(1)) {
+        context.lineTo(...corner);
+      }
+      context.closePath();
+    }
+    context.fill();
+    context.restore();
+  }
+
+  private drawMotionArrow(
+    from: [number, number],
+    to: [number, number],
+    progress: number,
+    color: string
+  ) {
+    const x = from[0] + (to[0] - from[0]) * progress;
+    const y = from[1] + (to[1] - from[1]) * progress;
+    const angle = Math.atan2(to[1] - from[1], to[0] - from[0]);
+    const context = this.context;
+    context.save();
+    context.strokeStyle = color;
+    context.lineWidth = 2;
+    context.beginPath();
+    context.moveTo(
+      x - Math.cos(angle - 0.65) * 8,
+      y - Math.sin(angle - 0.65) * 8
+    );
+    context.lineTo(x, y);
+    context.lineTo(
+      x - Math.cos(angle + 0.65) * 8,
+      y - Math.sin(angle + 0.65) * 8
+    );
+    context.stroke();
+    context.restore();
+  }
+
+  private drawMotionLabel(
+    position: [number, number],
+    label: string,
+    color: string
+  ) {
+    const context = this.context;
+    context.save();
+    context.font = "10px ui-monospace, SFMono-Regular, Menlo, monospace";
+    context.textAlign = "center";
+    context.textBaseline = "bottom";
+    const width = context.measureText(label).width + 10;
+    context.fillStyle = "rgb(24 24 27 / 92%)";
+    context.fillRect(position[0] - width / 2, position[1] - 25, width, 18);
+    context.fillStyle = color;
+    context.fillText(label, position[0], position[1] - 11);
     context.restore();
   }
 
@@ -287,6 +507,36 @@ export class EditorOverlay {
     );
     context.fillStyle = "rgb(165 243 252)";
     context.fillText(label, midpoint[0], midpoint[1] - 15);
+    context.restore();
+  }
+
+  private drawWallEndpointFeedback({ position, kind }: WallEndpointFeedback) {
+    const [x, y] = this.stage.worldToScreen(...position);
+    const context = this.context;
+    const color = kind === "snap" ? "rgb(250 204 21)" : "rgb(34 211 238)";
+    const label = kind === "snap" ? "Snap to endpoint" : "Edit endpoint";
+
+    context.save();
+    context.fillStyle = "rgb(24 24 27 / 92%)";
+    context.strokeStyle = color;
+    context.lineWidth = 2;
+    context.beginPath();
+    context.arc(x, y, 9, 0, Math.PI * 2);
+    context.fill();
+    context.stroke();
+    context.beginPath();
+    context.fillStyle = color;
+    context.arc(x, y, 3, 0, Math.PI * 2);
+    context.fill();
+
+    context.font = "10px ui-monospace, SFMono-Regular, Menlo, monospace";
+    const labelWidth = context.measureText(label).width + 10;
+    context.fillStyle = "rgb(24 24 27 / 92%)";
+    context.fillRect(x + 12, y - 11, labelWidth, 20);
+    context.fillStyle = color;
+    context.textAlign = "left";
+    context.textBaseline = "middle";
+    context.fillText(label, x + 17, y - 1);
     context.restore();
   }
 

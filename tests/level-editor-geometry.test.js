@@ -1,6 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import {
   applyLevelObjectShape,
+  constrainDeltaToAxis,
+  findNearestPointIndex,
   getLevelObjectShape,
   getRotationHandle,
   getResizeAnchors,
@@ -33,6 +35,23 @@ const finishZone = (overrides = {}) => ({
 });
 
 describe("level editor geometry", () => {
+  test("constrains movement to its dominant axis", () => {
+    expect(constrainDeltaToAxis([23, 8])).toEqual([23, 0]);
+    expect(constrainDeltaToAxis([-4, -19])).toEqual([0, -19]);
+    expect(constrainDeltaToAxis([12, -12])).toEqual([12, 0]);
+  });
+
+  test("finds the nearest point inside a snapping radius", () => {
+    const points = [
+      [0, 0],
+      [8, 0],
+      [12, 0],
+    ];
+
+    expect(findNearestPointIndex(points, [7, 1], 10)).toBe(1);
+    expect(findNearestPointIndex(points, [30, 0], 10)).toBeNull();
+  });
+
   test("hit-tests rotated authored objects in local coordinates", () => {
     const rotatedWall = wall({
       properties: {

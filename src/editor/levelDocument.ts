@@ -4,7 +4,26 @@ import type { Color } from "../engine/vdu/component";
 type BaseLevelObject = {
   id: string;
   locked?: boolean;
+  motion?: LevelObjectMotion;
 };
+
+type LevelObjectMotionBase = {
+  periodMs: number;
+  /** Cycle offset from 0 to 1. Kept in the format for future advanced controls. */
+  phase: number;
+  direction: 1 | -1;
+};
+
+export type LevelObjectMotion =
+  | (LevelObjectMotionBase & {
+      type: "oscillate";
+      /** Peak offset from the authored center; the full path is twice this vector. */
+      vector: Vec2;
+    })
+  | (LevelObjectMotionBase & {
+      type: "rotate";
+      pivot: "center" | "start";
+    });
 
 type TransformedLevelObject = BaseLevelObject & {
   transform: TransformInput;
@@ -58,7 +77,7 @@ export type NewLevelObjectData = LevelObjectData extends infer ObjectData
   : never;
 
 export interface SerializedLevel {
-  version: 2;
+  version: 3;
   name: string;
   size: Vec2;
   settings: LevelSettings;
@@ -67,7 +86,7 @@ export interface SerializedLevel {
 
 /** Serializable authoring state, deliberately independent of runtime entities. */
 export class LevelDocument {
-  readonly version = 2 as const;
+  readonly version = 3 as const;
   readonly objects: LevelObjectData[] = [];
   private _nextObjectId = 0;
 

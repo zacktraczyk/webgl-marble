@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { LevelHistory } from "../src/editor/levelHistory.ts";
 
 const level = (name, wallThickness = 25) => ({
-  version: 2,
+  version: 3,
   name,
   size: [800, 800],
   settings: { wallThickness },

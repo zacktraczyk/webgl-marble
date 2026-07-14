@@ -11,6 +11,11 @@ export type BuilderUi = {
   wallButton: HTMLButtonElement;
   bumperButton: HTMLButtonElement;
   spawnPointButton: HTMLButtonElement;
+  pusherMenuToggleButton: HTMLButtonElement;
+  pusherLibrary: HTMLElement;
+  sliderButton: HTMLButtonElement;
+  spinnerButton: HTMLButtonElement;
+  sweeperButton: HTMLButtonElement;
   gridSnapToggleButton: HTMLButtonElement;
   majorGridToggleButton: HTMLButtonElement;
   minorGridToggleButton: HTMLButtonElement;
@@ -35,6 +40,15 @@ export type BuilderUi = {
   courseWidthInput: HTMLInputElement;
   courseHeightInput: HTMLInputElement;
   wallThicknessInput: HTMLInputElement;
+  objectInspector: HTMLElement;
+  objectInspectorTitle: HTMLElement;
+  motionTypeSelect: HTMLSelectElement;
+  motionControls: HTMLElement;
+  motionRangeRow: HTMLElement;
+  motionRangeInput: HTMLInputElement;
+  motionRangeOutput: HTMLOutputElement;
+  motionReverseButton: HTMLButtonElement;
+  motionSpeedButtons: HTMLButtonElement[];
   statusOutput: HTMLElement;
   debugInfo: HTMLElement;
 };
@@ -51,6 +65,14 @@ export const resolveBuilderUi = (selectors: BuilderElements): BuilderUi => {
     wallButton: requireElement(selectors.wall, "wall tool"),
     bumperButton: requireElement(selectors.bumper, "bumper tool"),
     spawnPointButton: requireElement(selectors.spawnPoint, "spawn point tool"),
+    pusherMenuToggleButton: requireElement(
+      selectors.pusherMenuToggle,
+      "pusher library toggle"
+    ),
+    pusherLibrary: requireElement(selectors.pusherLibrary, "pusher library"),
+    sliderButton: requireElement(selectors.slider, "slider pusher"),
+    spinnerButton: requireElement(selectors.spinner, "spinner pusher"),
+    sweeperButton: requireElement(selectors.sweeper, "sweeper pusher"),
     gridSnapToggleButton: requireElement(
       selectors.gridSnapToggle,
       "grid snap toggle"
@@ -107,6 +129,43 @@ export const resolveBuilderUi = (selectors: BuilderElements): BuilderUi => {
       selectors.wallThickness,
       "wall thickness"
     ),
+    objectInspector: requireElement(
+      selectors.objectInspector,
+      "object inspector"
+    ),
+    objectInspectorTitle: requireElement(
+      selectors.objectInspectorTitle,
+      "object inspector title"
+    ),
+    motionTypeSelect: requireElement(selectors.motionType, "motion type"),
+    motionControls: requireElement(selectors.motionControls, "motion controls"),
+    motionRangeRow: requireElement(
+      selectors.motionRangeRow,
+      "motion range row"
+    ),
+    motionRangeInput: requireElement(selectors.motionRange, "motion range"),
+    motionRangeOutput: requireElement(
+      selectors.motionRangeOutput,
+      "motion range output"
+    ),
+    motionReverseButton: requireElement(
+      selectors.motionReverse,
+      "reverse motion"
+    ),
+    motionSpeedButtons: [
+      requireElement<HTMLButtonElement>(
+        selectors.motionSpeedSlow,
+        "slow motion"
+      ),
+      requireElement<HTMLButtonElement>(
+        selectors.motionSpeedMedium,
+        "medium motion"
+      ),
+      requireElement<HTMLButtonElement>(
+        selectors.motionSpeedFast,
+        "fast motion"
+      ),
+    ],
     statusOutput: requireElement(selectors.status, "status"),
     debugInfo: requireElement(selectors.debugInfo, "debug info"),
   };

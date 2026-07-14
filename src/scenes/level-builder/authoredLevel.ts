@@ -6,7 +6,9 @@ import {
 } from "../../editor/levelDocument";
 import type { Entity } from "../../engine/core/entity";
 import type { Vec2 } from "../../engine/core/transform";
+import { millisecondsToSimulationSeconds } from "../../engine/physics/physics";
 import type Stage from "../../engine/stage";
+import { getLevelObjectMotionPose } from "../../editor/levelMotion";
 import { levelObjectDefinitions } from "../../game/prefabs/levelObject";
 
 type LevelPrefab = LevelObjectData["prefab"];
@@ -118,6 +120,61 @@ export class AuthoredLevel {
   refresh(object: LevelObjectData) {
     this.clearRuntimeEntities(object.id);
     this.spawn(object);
+  }
+
+  prepareMotionStep(elapsedMs: number, deltaMs: number) {
+    const deltaSeconds = millisecondsToSimulationSeconds(deltaMs);
+    if (deltaSeconds <= 0) {
+      return;
+    }
+
+    for (const object of this.objects) {
+      if (!object.motion) {
+        continue;
+      }
+      const current = getLevelObjectMotionPose(
+        object,
+        this.wallThickness,
+        elapsedMs
+      );
+      const next = getLevelObjectMotionPose(
+        object,
+        this.wallThickness,
+        elapsedMs + deltaMs
+      );
+      for (const entity of this.entities.get(object.id) ?? []) {
+        entity.position = [...current.position];
+        entity.rotation = current.rotation;
+        const physicsEntity = this.stage.getPhysicsEntity(entity);
+        if (!physicsEntity) {
+          continue;
+        }
+        physicsEntity.velocity = [
+          (next.position[0] - current.position[0]) / deltaSeconds,
+          (next.position[1] - current.position[1]) / deltaSeconds,
+        ];
+        physicsEntity.angularVelocity =
+          (next.rotation - current.rotation) / deltaSeconds;
+      }
+    }
+  }
+
+  resetMotion() {
+    for (const object of this.objects) {
+      if (!object.motion) {
+        continue;
+      }
+      const rest = getLevelObjectMotionPose(object, this.wallThickness, 0);
+      for (const entity of this.entities.get(object.id) ?? []) {
+        entity.position = [...rest.position];
+        entity.rotation = rest.rotation;
+        const physicsEntity = this.stage.getPhysicsEntity(entity);
+        if (physicsEntity) {
+          physicsEntity.velocity = [0, 0];
+          physicsEntity.angularVelocity = 0;
+        }
+      }
+    }
   }
 
   private spawn(object: LevelObjectData) {

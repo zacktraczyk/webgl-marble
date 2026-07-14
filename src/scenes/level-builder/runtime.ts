@@ -1,9 +1,13 @@
 import { EditorOverlay } from "../../editor/editorOverlay";
-import { getLevelObjectBounds } from "../../editor/levelGeometry";
+import {
+  getLevelObjectBounds,
+  getLevelObjectShape,
+} from "../../editor/levelGeometry";
 import { LevelEditorController } from "../../editor/levelEditorController";
 import { LevelHistory } from "../../editor/levelHistory";
 import type {
   LevelObjectData,
+  LevelObjectMotion,
   SerializedLevel,
 } from "../../editor/levelDocument";
 import type { Vec2 } from "../../engine/core/transform";
@@ -27,8 +31,11 @@ import {
   createBumper,
   createCourseBoundaries,
   createDefaultCourse,
+  createPusher,
   createSpawnPoint,
   createWall,
+  PUSHER_DEFAULT_RANGE,
+  PUSHER_PERIODS,
 } from "./courseObjects";
 import { resolveBuilderUi, type BuilderUi } from "./elements";
 import { GridOverlay, type GridWorldBounds } from "./gridOverlay";
@@ -37,6 +44,7 @@ import { RaceController } from "./raceController";
 import {
   SelectedTool,
   type BuilderElements,
+  type PusherTool,
   type RoundConfiguration,
 } from "./types";
 import { clampInteger, clampStepInteger } from "./utils";
@@ -44,10 +52,17 @@ import { clampInteger, clampStepInteger } from "./utils";
 const MIN_ZOOM = 0.1;
 const MAX_ZOOM = 4;
 const ZOOM_STEP = 0.1;
+const isPusherTool = (tool: SelectedTool): tool is PusherTool =>
+  tool === SelectedTool.Slider ||
+  tool === SelectedTool.Spinner ||
+  tool === SelectedTool.Sweeper;
 const isCreationTool = (tool: SelectedTool) =>
   tool === SelectedTool.Wall ||
   tool === SelectedTool.Bumper ||
-  tool === SelectedTool.SpawnPoint;
+  tool === SelectedTool.SpawnPoint ||
+  isPusherTool(tool);
+const isRepeatableCreationTool = (tool: SelectedTool) =>
+  tool === SelectedTool.Wall || tool === SelectedTool.Bumper;
 
 export class LevelBuilderRuntime {
   readonly stage: Stage;
@@ -60,7 +75,7 @@ export class LevelBuilderRuntime {
   private readonly gridOverlay: GridOverlay;
   private configuration: RoundConfiguration;
   private selectedTool = SelectedTool.Pointer;
-  private toolLocked = false;
+  private toolLocked = true;
   private gridSnapEnabled = true;
   private playbackActive = false;
 
@@ -119,6 +134,8 @@ export class LevelBuilderRuntime {
           let object: LevelObjectData;
           if (tool === SelectedTool.Bumper) {
             object = this.level.add(createBumper(position));
+          } else if (isPusherTool(tool)) {
+            object = this.level.add(createPusher(tool, position));
           } else {
             object = this.level.replaceUnique(
               "spawn-point",
@@ -129,8 +146,12 @@ export class LevelBuilderRuntime {
           return object;
         },
         onToolRequest: (tool) => this.setActiveTool(tool),
-        onToolComplete: () => {
-          if (!this.toolLocked) {
+        onToolComplete: (tool) => {
+          if (
+            tool === SelectedTool.SpawnPoint ||
+            isPusherTool(tool) ||
+            !this.toolLocked
+          ) {
             this.setActiveTool(SelectedTool.Pointer);
           }
         },
@@ -174,10 +195,12 @@ export class LevelBuilderRuntime {
       selectedObjects: this.editorController.selectedObjects.map(
         (object) => object.id
       ),
+      selectedObject: this.editorController.selectedObject,
       hoveredObject: this.editorController.hoveredObject?.id ?? null,
       wallThickness: this.level.wallThickness,
       selectedTool: this.selectedTool,
-      toolLocked: this.toolLocked && isCreationTool(this.selectedTool),
+      toolLocked:
+        this.toolLocked && isRepeatableCreationTool(this.selectedTool),
       canUndo: this.history.canUndo,
       canRedo: this.history.canRedo,
     });
@@ -189,6 +212,13 @@ export class LevelBuilderRuntime {
     const selectedObjects = this.editorController.selectedObjects.filter(
       (object) => !(this.playbackActive && object.prefab === "spawn-point")
     );
+    const pusherPlacement = this.editorController.pusherPlacementPreview;
+    const pusherDraft = pusherPlacement
+      ? ({
+          ...createPusher(pusherPlacement.tool, pusherPlacement.position),
+          id: "pusher-placement-preview",
+        } as LevelObjectData)
+      : null;
     this.editorOverlay.render({
       active: this.editorController.isActive,
       readOnly: this.playbackActive,
@@ -199,6 +229,8 @@ export class LevelBuilderRuntime {
           : hoveredObject,
       selectedObjects,
       wallDraft: this.editorController.wallDraft,
+      pusherDraft,
+      wallEndpointFeedback: this.editorController.wallEndpointFeedback,
       selectionMarquee: this.editorController.selectionMarquee,
     });
   }
@@ -215,12 +247,43 @@ export class LevelBuilderRuntime {
       [this.ui.wallButton, SelectedTool.Wall],
       [this.ui.bumperButton, SelectedTool.Bumper],
       [this.ui.spawnPointButton, SelectedTool.SpawnPoint],
+      [this.ui.sliderButton, SelectedTool.Slider],
+      [this.ui.spinnerButton, SelectedTool.Spinner],
+      [this.ui.sweeperButton, SelectedTool.Sweeper],
     ];
     for (const [button, tool] of toolBindings) {
       button.addEventListener("click", () => this.setActiveTool(tool), {
         signal,
       });
     }
+    this.ui.pusherMenuToggleButton.addEventListener(
+      "click",
+      () => this.setPusherLibraryOpen(this.ui.pusherLibrary.hidden),
+      { signal }
+    );
+    document.addEventListener(
+      "pointerdown",
+      (event) => {
+        if (
+          !this.ui.pusherLibrary.hidden &&
+          !this.ui.pusherLibrary.contains(event.target as Node) &&
+          !this.ui.pusherMenuToggleButton.contains(event.target as Node)
+        ) {
+          this.setPusherLibraryOpen(false);
+        }
+      },
+      { signal }
+    );
+    document.addEventListener(
+      "keydown",
+      (event) => {
+        if (event.key === "Escape" && !this.ui.pusherLibrary.hidden) {
+          this.setPusherLibraryOpen(false);
+          this.ui.pusherMenuToggleButton.focus();
+        }
+      },
+      { signal }
+    );
     this.ui.toolLockButton.addEventListener(
       "click",
       () => this.toggleToolLock(),
@@ -272,6 +335,29 @@ export class LevelBuilderRuntime {
       this.handleWallThicknessChange,
       { signal }
     );
+    this.ui.motionTypeSelect.addEventListener(
+      "change",
+      this.handleMotionTypeChange,
+      { signal }
+    );
+    this.ui.motionRangeInput.addEventListener(
+      "input",
+      this.handleMotionRangeInput,
+      { signal }
+    );
+    this.ui.motionRangeInput.addEventListener(
+      "change",
+      this.handleMotionRangeCommit,
+      { signal }
+    );
+    this.ui.motionReverseButton.addEventListener(
+      "click",
+      this.reverseSelectedMotion,
+      { signal }
+    );
+    for (const button of this.ui.motionSpeedButtons) {
+      button.addEventListener("click", this.setSelectedMotionSpeed, { signal });
+    }
     this.ui.playButton.addEventListener("click", this.toggleRace, { signal });
     this.ui.resetButton.addEventListener("click", this.resetRace, { signal });
     this.ui.undoButton.addEventListener("click", () => this.undo(), { signal });
@@ -304,9 +390,16 @@ export class LevelBuilderRuntime {
       [SelectedTool.Wall, this.ui.wallButton],
       [SelectedTool.Bumper, this.ui.bumperButton],
       [SelectedTool.SpawnPoint, this.ui.spawnPointButton],
+      [SelectedTool.Slider, this.ui.sliderButton],
+      [SelectedTool.Spinner, this.ui.spinnerButton],
+      [SelectedTool.Sweeper, this.ui.sweeperButton],
     ]);
     for (const button of buttonByTool.values()) {
       button.dataset.active = `${button === buttonByTool.get(tool)}`;
+    }
+    this.ui.pusherMenuToggleButton.dataset.active = `${isPusherTool(tool)}`;
+    if (isPusherTool(tool)) {
+      this.setPusherLibraryOpen(false);
     }
     this.editorController.setActiveTool(tool);
     this.stage.canvas.dataset.pointer =
@@ -318,7 +411,7 @@ export class LevelBuilderRuntime {
   }
 
   private toggleToolLock() {
-    if (this.playbackActive || !isCreationTool(this.selectedTool)) {
+    if (this.playbackActive || !isRepeatableCreationTool(this.selectedTool)) {
       return;
     }
     this.toolLocked = !this.toolLocked;
@@ -328,6 +421,116 @@ export class LevelBuilderRuntime {
     this.gridSnapEnabled = !this.gridSnapEnabled;
     this.ui.gridSnapToggleButton.dataset.active = `${this.gridSnapEnabled}`;
     this.ui.gridSnapToggleButton.ariaChecked = `${this.gridSnapEnabled}`;
+  };
+
+  private setPusherLibraryOpen(open: boolean) {
+    this.ui.pusherLibrary.hidden = !open;
+    this.ui.pusherMenuToggleButton.ariaExpanded = `${open}`;
+  }
+
+  private getSelectedEditableWall() {
+    const object = this.editorController.selectedObject;
+    return object?.prefab === "wall" && !object.locked ? object : null;
+  }
+
+  private updateSelectedMotion(
+    update: (object: Extract<LevelObjectData, { prefab: "wall" }>) => void,
+    commit = true
+  ) {
+    const object = this.getSelectedEditableWall();
+    if (!object || this.playbackActive) {
+      return;
+    }
+    update(object);
+    this.level.refresh(object);
+    if (commit) {
+      this.commitLevelChange();
+    }
+  }
+
+  private readonly handleMotionTypeChange = () => {
+    const value = this.ui.motionTypeSelect.value;
+    this.updateSelectedMotion((object) => {
+      if (value === "none") {
+        delete object.motion;
+        return;
+      }
+      const current = object.motion;
+      const shared = {
+        periodMs: current?.periodMs ?? PUSHER_PERIODS.medium,
+        phase: current?.phase ?? 0,
+        direction: current?.direction ?? (1 as const),
+      };
+      let motion: LevelObjectMotion;
+      if (value === "slide") {
+        const shape = getLevelObjectShape(object, this.level.wallThickness);
+        const rotation = shape.kind === "rectangle" ? shape.rotation : 0;
+        motion = {
+          type: "oscillate",
+          vector:
+            current?.type === "oscillate"
+              ? [...current.vector]
+              : [
+                  -Math.sin(rotation) * PUSHER_DEFAULT_RANGE,
+                  Math.cos(rotation) * PUSHER_DEFAULT_RANGE,
+                ],
+          ...shared,
+        };
+      } else {
+        motion = {
+          type: "rotate",
+          pivot: value === "sweep" ? "start" : "center",
+          ...shared,
+        };
+      }
+      object.motion = motion;
+    });
+  };
+
+  private readonly handleMotionRangeInput = () => {
+    const range = clampInteger(this.ui.motionRangeInput.value, 15, 240);
+    this.ui.motionRangeOutput.value = `${range}`;
+    this.updateSelectedMotion((object) => {
+      if (object.motion?.type !== "oscillate") {
+        return;
+      }
+      const magnitude = Math.hypot(...object.motion.vector);
+      const direction: Vec2 =
+        magnitude > Number.EPSILON
+          ? [
+              object.motion.vector[0] / magnitude,
+              object.motion.vector[1] / magnitude,
+            ]
+          : [1, 0];
+      object.motion.vector = [direction[0] * range, direction[1] * range];
+    }, false);
+  };
+
+  private readonly handleMotionRangeCommit = () => {
+    this.handleMotionRangeInput();
+    this.commitLevelChange();
+  };
+
+  private readonly reverseSelectedMotion = () => {
+    this.updateSelectedMotion((object) => {
+      if (object.motion) {
+        object.motion.direction = object.motion.direction === 1 ? -1 : 1;
+      }
+    });
+  };
+
+  private readonly setSelectedMotionSpeed = (event: Event) => {
+    const speed = (event.currentTarget as HTMLButtonElement).dataset.speed as
+      | keyof typeof PUSHER_PERIODS
+      | undefined;
+    if (!speed) {
+      return;
+    }
+    this.updateSelectedMotion((object) => {
+      if (object.motion) {
+        object.motion.periodMs = PUSHER_PERIODS[speed];
+      }
+    });
   };
 
   private refreshAuthoredObjects(objects: readonly LevelObjectData[]) {
@@ -449,6 +652,7 @@ export class LevelBuilderRuntime {
     this.playbackActive = playbackActive;
     this.editorController.setReadOnly(playbackActive);
     if (playbackActive) {
+      this.setPusherLibraryOpen(false);
       this.editorController.clearSelection();
       this.setActiveTool(SelectedTool.Pan);
     } else {
