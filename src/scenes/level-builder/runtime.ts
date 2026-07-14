@@ -1,4 +1,5 @@
 import { EditorOverlay } from "../../editor/editorOverlay";
+import { getLevelObjectBounds } from "../../editor/levelGeometry";
 import { LevelEditorController } from "../../editor/levelEditorController";
 import { LevelHistory } from "../../editor/levelHistory";
 import type {
@@ -19,6 +20,7 @@ import {
   MIN_STAGE_WIDTH,
   MIN_WALL_THICKNESS,
   STAGE_HEIGHT,
+  STAGE_SIZE_STEP,
   STAGE_WIDTH,
 } from "./constants";
 import {
@@ -29,7 +31,7 @@ import {
   createWall,
 } from "./courseObjects";
 import { resolveBuilderUi, type BuilderUi } from "./elements";
-import { GridOverlay } from "./gridOverlay";
+import { GridOverlay, type GridWorldBounds } from "./gridOverlay";
 import { updateBuilderInterface } from "./interfacePresenter";
 import { RaceController } from "./raceController";
 import {
@@ -37,7 +39,7 @@ import {
   type BuilderElements,
   type RoundConfiguration,
 } from "./types";
-import { clampInteger } from "./utils";
+import { clampInteger, clampStepInteger } from "./utils";
 
 const MIN_ZOOM = 0.1;
 const MAX_ZOOM = 4;
@@ -91,7 +93,8 @@ export class LevelBuilderRuntime {
       this.stage,
       this.ui.majorGridToggleButton,
       this.ui.minorGridToggleButton,
-      this.ui.gridOverlay
+      this.ui.gridOverlay,
+      this.getGridWorldBounds
     );
     this.editorController = new LevelEditorController({
       stage: this.stage,
@@ -411,6 +414,34 @@ export class LevelBuilderRuntime {
     };
   };
 
+  private readonly getGridWorldBounds = (): GridWorldBounds => {
+    const boundaryWallBounds = this.level.objects
+      .filter((object) => object.prefab === "wall" && object.locked)
+      .map((object) => getLevelObjectBounds(object, this.level.wallThickness))
+      .sort((first, second) => first.min[0] - second.min[0]);
+    const leftWall = boundaryWallBounds[0];
+    const rightWall = boundaryWallBounds[boundaryWallBounds.length - 1];
+    const rack = this.level.find("staging-rack");
+    const finish = this.level.find("finish-zone");
+    const rackBounds = rack
+      ? getLevelObjectBounds(rack, this.level.wallThickness)
+      : null;
+    const finishBounds = finish
+      ? getLevelObjectBounds(finish, this.level.wallThickness)
+      : null;
+
+    return {
+      min: [
+        leftWall?.max[0] ?? -this.stage.width / 2,
+        rackBounds?.max[1] ?? -this.stage.height / 2,
+      ],
+      max: [
+        rightWall?.min[0] ?? this.stage.width / 2,
+        finishBounds?.min[1] ?? this.stage.height / 2,
+      ],
+    };
+  };
+
   private syncPlaybackState(playbackActive: boolean) {
     if (this.playbackActive === playbackActive) {
       return;
@@ -427,15 +458,17 @@ export class LevelBuilderRuntime {
 
   private readCourseSize(): Vec2 {
     return [
-      clampInteger(
+      clampStepInteger(
         this.ui.courseWidthInput.value,
         MIN_STAGE_WIDTH,
-        MAX_STAGE_WIDTH
+        MAX_STAGE_WIDTH,
+        STAGE_SIZE_STEP
       ),
-      clampInteger(
+      clampStepInteger(
         this.ui.courseHeightInput.value,
         MIN_STAGE_HEIGHT,
-        MAX_STAGE_HEIGHT
+        MAX_STAGE_HEIGHT,
+        STAGE_SIZE_STEP
       ),
     ];
   }

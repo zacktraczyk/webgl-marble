@@ -5,7 +5,7 @@ import { stagingDividerPositions } from "../race/staging";
 import { rectangleDefinition } from "./primitives/rectangle";
 
 export const STAGING_RACK_WIDTH = 576;
-export const STAGING_RACK_HEIGHT = 138;
+export const STAGING_RACK_HEIGHT = 135;
 export const STAGING_RACK_WALL_THICKNESS = 6;
 
 export interface StagingRackDefinitionOptions {

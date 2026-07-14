@@ -2,14 +2,17 @@ import { describe, expect, test } from "bun:test";
 import { STAGING_RACK_HEIGHT } from "../src/game/prefabs/stagingRack.ts";
 import {
   COURSE_STROKE_WIDTH,
+  GRID_MAJOR_INTERVAL,
   GRID_SIZE,
   STAGE_HEIGHT,
+  STAGE_SIZE_STEP,
   STAGE_WIDTH,
 } from "../src/scenes/level-builder/constants.ts";
 import {
   createCourseBoundaries,
   createDefaultCourse,
 } from "../src/scenes/level-builder/courseObjects.ts";
+import { clampStepInteger } from "../src/scenes/level-builder/utils.ts";
 
 describe("level builder course boundaries", () => {
   test("uses a larger widescreen default course", () => {
@@ -71,6 +74,29 @@ describe("level builder course boundaries", () => {
 
   test("derives the shared boundary stroke from one grid cell", () => {
     expect(COURSE_STROKE_WIDTH).toBe(GRID_SIZE);
+  });
+
+  test("aligns the playable course edges to complete grid cells", () => {
+    const playableWidth = STAGE_WIDTH - COURSE_STROKE_WIDTH * 2;
+    const playableHeight =
+      STAGE_HEIGHT - STAGING_RACK_HEIGHT - COURSE_STROKE_WIDTH;
+    const rackBottom = -STAGE_HEIGHT / 2 + STAGING_RACK_HEIGHT;
+    const finishTop = STAGE_HEIGHT / 2 - COURSE_STROKE_WIDTH;
+
+    expect(playableWidth % GRID_SIZE).toBe(0);
+    expect(playableHeight % GRID_SIZE).toBe(0);
+    expect(Math.abs(rackBottom % GRID_SIZE)).toBe(0);
+    expect(finishTop % GRID_SIZE).toBe(0);
+
+    const majorGridSize = GRID_SIZE * GRID_MAJOR_INTERVAL;
+    expect(STAGE_SIZE_STEP).toBe(majorGridSize);
+    expect(Math.abs(playableWidth % majorGridSize)).toBe(0);
+    expect(Math.abs(playableHeight % majorGridSize)).toBe(0);
+  });
+
+  test("snaps typed course dimensions to the major grid", () => {
+    expect(clampStepInteger("1437", 480, 3600, STAGE_SIZE_STEP)).toBe(1440);
+    expect(clampStepInteger("812", 480, 2700, STAGE_SIZE_STEP)).toBe(810);
   });
 
   test("keeps the spawn point editable in the default course", () => {

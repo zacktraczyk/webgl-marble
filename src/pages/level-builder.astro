@@ -728,7 +728,11 @@ import "../styles/global.css";
 <style>
   #builder-grid {
     --grid-step: 15px;
-    --grid-major-step: 60px;
+    --grid-major-step: 30px;
+    --grid-minor-offset-x: 0px;
+    --grid-minor-offset-y: 0px;
+    --grid-major-offset-x: 0px;
+    --grid-major-offset-y: 0px;
     --grid-minor-color: transparent;
     --grid-major-color: transparent;
     position: absolute;
@@ -745,6 +749,11 @@ import "../styles/global.css";
       var(--grid-step) var(--grid-step),
       var(--grid-major-step) var(--grid-major-step),
       var(--grid-major-step) var(--grid-major-step);
+    background-position:
+      var(--grid-minor-offset-x) 0,
+      0 var(--grid-minor-offset-y),
+      var(--grid-major-offset-x) 0,
+      0 var(--grid-major-offset-y);
   }
 
   #builder-grid[data-minor-visible="true"] {
