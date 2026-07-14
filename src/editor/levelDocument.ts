@@ -31,7 +31,12 @@ export type LevelObjectData =
     })
   | (BaseLevelObject & {
       prefab: "spawn-point";
-      properties: { radius: number; color: Color; launchSpeed: number };
+      properties: {
+        radius: number;
+        color: Color;
+        launchSpeed: number;
+        directionVariance?: number;
+      };
     });
 
 export type NewLevelObjectData = LevelObjectData extends infer ObjectData

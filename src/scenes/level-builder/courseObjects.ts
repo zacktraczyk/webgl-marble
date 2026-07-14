@@ -4,6 +4,7 @@ import {
   STAGING_RACK_HEIGHT,
   STAGING_RACK_WIDTH,
 } from "../../game/prefabs/stagingRack";
+import { DEFAULT_SPAWN_DIRECTION_VARIANCE } from "../../game/race/spawn";
 import {
   BUMPER_COLOR,
   COURSE_STROKE_WIDTH,
@@ -55,6 +56,7 @@ export const createSpawnPoint = (position: Vec2): NewLevelObjectData => ({
     radius: MAX_MARBLE_RADIUS * 2.5,
     color: [...SPAWN_COLOR],
     launchSpeed: DEFAULT_LAUNCH_SPEED,
+    directionVariance: DEFAULT_SPAWN_DIRECTION_VARIANCE,
   },
 });
 

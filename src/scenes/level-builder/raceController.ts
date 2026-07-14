@@ -8,6 +8,10 @@ import {
   RoundRobinReleaseQueue,
   TEAM_COLORS,
 } from "../../game/race/staging";
+import {
+  DEFAULT_SPAWN_DIRECTION_VARIANCE,
+  randomSpawnAngle,
+} from "../../game/race/spawn";
 import type { AuthoredLevel } from "./authoredLevel";
 import { MAX_MARBLE_RADIUS, STAGING_MARBLE_GAP } from "./constants";
 import type { RacePhase, RoundConfiguration } from "./types";
@@ -295,7 +299,11 @@ export class RaceController {
       return false;
     }
 
-    const angle = spawnPoint.transform.rotation ?? 0;
+    const angle = randomSpawnAngle(
+      spawnPoint.transform.rotation ?? 0,
+      spawnPoint.properties.directionVariance ??
+        DEFAULT_SPAWN_DIRECTION_VARIANCE
+    );
     const marble = stagedMarble.entity;
     const physicsMarble = this.stage.getPhysicsEntity(marble);
     if (!physicsMarble) {
