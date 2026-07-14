@@ -4,23 +4,35 @@ import type { Color } from "../engine/vdu/component";
 type BaseLevelObject = {
   id: string;
   locked?: boolean;
+};
+
+type TransformedLevelObject = BaseLevelObject & {
   transform: TransformInput;
+};
+
+export type LevelSettings = {
+  wallThickness: number;
 };
 
 export type LevelObjectData =
   | (BaseLevelObject & {
       prefab: "wall";
-      properties: { width: number; height: number; color: Color };
+      properties: {
+        start: Vec2;
+        end: Vec2;
+        thickness?: number;
+        color: Color;
+      };
     })
-  | (BaseLevelObject & {
+  | (TransformedLevelObject & {
       prefab: "bumper";
       properties: { radius: number; color: Color };
     })
-  | (BaseLevelObject & {
+  | (TransformedLevelObject & {
       prefab: "finish-zone";
       properties: { width: number; height: number; color: Color };
     })
-  | (BaseLevelObject & {
+  | (TransformedLevelObject & {
       prefab: "staging-rack";
       properties: {
         width: number;
@@ -29,7 +41,7 @@ export type LevelObjectData =
         color: Color;
       };
     })
-  | (BaseLevelObject & {
+  | (TransformedLevelObject & {
       prefab: "spawn-point";
       properties: {
         radius: number;
@@ -46,21 +58,23 @@ export type NewLevelObjectData = LevelObjectData extends infer ObjectData
   : never;
 
 export interface SerializedLevel {
-  version: 1;
+  version: 2;
   name: string;
   size: Vec2;
+  settings: LevelSettings;
   objects: LevelObjectData[];
 }
 
 /** Serializable authoring state, deliberately independent of runtime entities. */
 export class LevelDocument {
-  readonly version = 1 as const;
+  readonly version = 2 as const;
   readonly objects: LevelObjectData[] = [];
   private _nextObjectId = 0;
 
   constructor(
     public name: string,
-    public size: Vec2
+    public size: Vec2,
+    public settings: LevelSettings
   ) {}
 
   add(data: NewLevelObjectData): LevelObjectData {
@@ -79,11 +93,27 @@ export class LevelDocument {
     }
   }
 
+  restore(serialized: SerializedLevel) {
+    this.name = serialized.name;
+    this.size = [...serialized.size];
+    this.settings = structuredClone(serialized.settings);
+    this.objects.splice(
+      0,
+      this.objects.length,
+      ...structuredClone(serialized.objects)
+    );
+    this._nextObjectId = this.objects.reduce((nextId, object) => {
+      const match = /^level-object-(\d+)$/.exec(object.id);
+      return match ? Math.max(nextId, Number(match[1]) + 1) : nextId;
+    }, 0);
+  }
+
   serialize(): SerializedLevel {
     return {
       version: this.version,
       name: this.name,
       size: [...this.size],
+      settings: structuredClone(this.settings),
       objects: structuredClone(this.objects),
     };
   }

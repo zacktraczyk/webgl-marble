@@ -2,6 +2,7 @@ import {
   LevelDocument,
   type LevelObjectData,
   type NewLevelObjectData,
+  type SerializedLevel,
 } from "../../editor/levelDocument";
 import type { Entity } from "../../engine/core/entity";
 import type { Vec2 } from "../../engine/core/transform";
@@ -14,18 +15,19 @@ export class AuthoredLevel {
   readonly document: LevelDocument;
   private readonly entities = new Map<string, Entity[]>();
   private readonly hiddenObjects = new Set<string>();
-  private readonly runtimePositions = new Map<string, Vec2>();
   private teamCount: number;
 
   constructor(
     private readonly stage: Stage,
-    teamCount: number
+    teamCount: number,
+    wallThickness: number
   ) {
     this.teamCount = teamCount;
-    this.document = new LevelDocument("Untitled level", [
-      stage.width,
-      stage.height,
-    ]);
+    this.document = new LevelDocument(
+      "Untitled level",
+      [stage.width, stage.height],
+      { wallThickness }
+    );
   }
 
   setTeamCount(teamCount: number) {
@@ -34,6 +36,10 @@ export class AuthoredLevel {
 
   get objects() {
     return this.document.objects;
+  }
+
+  get wallThickness() {
+    return this.document.settings.wallThickness;
   }
 
   add(data: NewLevelObjectData) {
@@ -69,6 +75,26 @@ export class AuthoredLevel {
     }
   }
 
+  setWallThickness(wallThickness: number) {
+    this.document.settings.wallThickness = wallThickness;
+    for (const object of [...this.objects]) {
+      if (object.prefab === "wall") {
+        this.refresh(object);
+      }
+    }
+  }
+
+  restore(serialized: SerializedLevel) {
+    for (const object of [...this.objects]) {
+      this.clearRuntimeEntities(object.id);
+    }
+    this.hiddenObjects.clear();
+    this.document.restore(serialized);
+    for (const object of this.objects) {
+      this.spawn(object);
+    }
+  }
+
   replaceUnique(prefab: "spawn-point", data: NewLevelObjectData) {
     const current = this.find(prefab);
     if (current) {
@@ -90,15 +116,14 @@ export class AuthoredLevel {
   }
 
   refresh(object: LevelObjectData) {
-    const previousPosition = this.runtimePositions.get(object.id);
     this.clearRuntimeEntities(object.id);
     this.spawn(object);
-    return previousPosition ? ([...previousPosition] as Vec2) : null;
   }
 
   private spawn(object: LevelObjectData) {
     const entities = levelObjectDefinitions(object, {
       teamCount: this.teamCount,
+      wallThickness: this.wallThickness,
     }).map((definition) => this.stage.spawn(definition));
     if (this.hiddenObjects.has(object.id)) {
       for (const entity of entities) {
@@ -106,7 +131,6 @@ export class AuthoredLevel {
       }
     }
     this.entities.set(object.id, entities);
-    this.runtimePositions.set(object.id, [...object.transform.position]);
     return object;
   }
 
@@ -115,7 +139,6 @@ export class AuthoredLevel {
       entity.delete();
     }
     this.entities.delete(id);
-    this.runtimePositions.delete(id);
     this.stage.world.flushDestruction();
   }
 }

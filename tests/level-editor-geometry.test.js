@@ -15,6 +15,18 @@ import { levelObjectDefinitions } from "../src/game/prefabs/levelObject.ts";
 const wall = (overrides = {}) => ({
   id: "wall",
   prefab: "wall",
+  properties: {
+    start: [-50, 0],
+    end: [50, 0],
+    thickness: 40,
+    color: [1, 1, 1, 1],
+  },
+  ...overrides,
+});
+
+const finishZone = (overrides = {}) => ({
+  id: "finish",
+  prefab: "finish-zone",
   transform: { position: [0, 0], rotation: 0 },
   properties: { width: 100, height: 40, color: [1, 1, 1, 1] },
   ...overrides,
@@ -23,7 +35,12 @@ const wall = (overrides = {}) => ({
 describe("level editor geometry", () => {
   test("hit-tests rotated authored objects in local coordinates", () => {
     const rotatedWall = wall({
-      transform: { position: [20, 30], rotation: Math.PI / 2 },
+      properties: {
+        start: [20, -20],
+        end: [20, 80],
+        thickness: 40,
+        color: [1, 1, 1, 1],
+      },
     });
 
     expect(hitTestLevelObject(rotatedWall, [20, 75])).toBe(true);
@@ -52,7 +69,7 @@ describe("level editor geometry", () => {
   });
 
   test("resizes a rectangle while keeping the opposite edge fixed", () => {
-    const object = wall();
+    const object = finishZone();
     const shape = getLevelObjectShape(object);
     const resized = resizeShape(shape, "e", [82, 0], 5);
 
@@ -83,7 +100,7 @@ describe("level editor geometry", () => {
   });
 
   test("positions rotation handles and snaps edited rotation", () => {
-    const object = wall();
+    const object = finishZone();
     const shape = getLevelObjectShape(object);
 
     expect(getRotationHandle(shape, 30)).toEqual({
@@ -95,6 +112,23 @@ describe("level editor geometry", () => {
     applyLevelObjectShape(object, rotated);
 
     expect(object.transform.rotation).toBeCloseTo(Math.PI / 4);
+  });
+
+  test("derives wall transforms from endpoints and writes moved endpoints back", () => {
+    const object = wall();
+    const shape = getLevelObjectShape(object);
+
+    expect(shape).toMatchObject({
+      kind: "rectangle",
+      position: [0, 0],
+      width: 100,
+      height: 40,
+      rotation: 0,
+    });
+
+    applyLevelObjectShape(object, moveShape(shape, [25, 50]));
+    expect(object.properties.start).toEqual([-25, 50]);
+    expect(object.properties.end).toEqual([75, 50]);
   });
 
   test("passes finish-zone rotation into its runtime definition", () => {

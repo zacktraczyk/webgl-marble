@@ -15,12 +15,16 @@ import {
   WALL_COLOR,
 } from "./constants";
 
-export const createWall = (position: Vec2): NewLevelObjectData => ({
+export const createWall = (
+  start: Vec2,
+  end: Vec2,
+  thickness?: number
+): NewLevelObjectData => ({
   prefab: "wall",
-  transform: { position },
   properties: {
-    width: 150,
-    height: COURSE_STROKE_WIDTH,
+    start: [...start],
+    end: [...end],
+    ...(thickness === undefined ? {} : { thickness }),
     color: [...WALL_COLOR],
   },
 });
@@ -62,9 +66,10 @@ export const createSpawnPoint = (position: Vec2): NewLevelObjectData => ({
 
 export const createDefaultCourse = (
   stageWidth: number,
-  stageHeight: number
+  stageHeight: number,
+  wallThickness = COURSE_STROKE_WIDTH
 ): NewLevelObjectData[] => [
-  ...createCourseBoundaries(stageWidth, stageHeight),
+  ...createCourseBoundaries(stageWidth, stageHeight, wallThickness),
   createSpawnPoint([
     0,
     -stageHeight / 2 + STAGING_RACK_HEIGHT + MAX_MARBLE_RADIUS * 10,
@@ -73,15 +78,15 @@ export const createDefaultCourse = (
 
 export const createCourseBoundaries = (
   stageWidth: number,
-  stageHeight: number
+  stageHeight: number,
+  wallThickness = COURSE_STROKE_WIDTH
 ): NewLevelObjectData[] => {
   const sideWall = (x: number): NewLevelObjectData => ({
     prefab: "wall",
     locked: true,
-    transform: { position: [x, 0] },
     properties: {
-      width: COURSE_STROKE_WIDTH,
-      height: stageHeight,
+      start: [x, -stageHeight / 2],
+      end: [x, stageHeight / 2],
       color: [...WALL_COLOR],
     },
   });
@@ -103,7 +108,7 @@ export const createCourseBoundaries = (
         color: [...FINISH_COLOR],
       },
     },
-    sideWall(-stageWidth / 2 + COURSE_STROKE_WIDTH / 2),
-    sideWall(stageWidth / 2 - COURSE_STROKE_WIDTH / 2),
+    sideWall(-stageWidth / 2 + wallThickness / 2),
+    sideWall(stageWidth / 2 - wallThickness / 2),
   ];
 };

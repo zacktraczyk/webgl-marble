@@ -1,6 +1,7 @@
 import { isPhysical, type Physical } from "../physics/entity";
 import type { EntityDefinition } from "../core/definition";
 import { Entity, type EntityId } from "../core/entity";
+import type { Vec2 } from "../core/transform";
 import { World } from "../core/world";
 import Physics, { type CollisionEvents } from "../physics/physics";
 import { debounce } from "../utils/utils";
@@ -158,6 +159,18 @@ export class Stage {
 
   get zoom() {
     return this._vdu.zoom;
+  }
+
+  panByScreen(deltaX: number, deltaY: number) {
+    this._vdu.camera.position[0] += deltaX;
+    this._vdu.camera.position[1] += deltaY;
+  }
+
+  zoomAtScreenPoint(screenX: number, screenY: number, zoom: number) {
+    const [worldX, worldY] = this.screenToWorld(screenX, screenY);
+    this._vdu.zoom = zoom;
+    this._vdu.camera.position[0] = screenX - worldX * zoom;
+    this._vdu.camera.position[1] = screenY - worldY * zoom;
   }
 
   private _registerEventHandlers() {
@@ -387,14 +400,14 @@ export class Stage {
     return [x, y];
   }
 
-  screenToWorld(screenX: number, screenY: number) {
+  screenToWorld(screenX: number, screenY: number): Vec2 {
     return [
       (screenX - this._vdu.camera.position[0]) / this.zoom,
       (screenY - this._vdu.camera.position[1]) / this.zoom,
     ];
   }
 
-  worldToScreen(worldX: number, worldY: number) {
+  worldToScreen(worldX: number, worldY: number): Vec2 {
     // TODO: Verify this is correct... should be the inverse of screenToWorld ?
     return [
       worldX * this.zoom + this._vdu.camera.position[0],

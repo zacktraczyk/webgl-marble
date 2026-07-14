@@ -1,4 +1,6 @@
 export type BuilderElements = {
+  toolLock: HTMLElement | null;
+  toolHint: HTMLElement | null;
   pan: HTMLElement | null;
   pointer: HTMLElement | null;
   wall: HTMLElement | null;
@@ -14,6 +16,8 @@ export type BuilderElements = {
   zoomOut: HTMLElement | null;
   zoomReset: HTMLElement | null;
   zoomLevel: HTMLElement | null;
+  undo: HTMLElement | null;
+  redo: HTMLElement | null;
   teamCount: HTMLElement | null;
   teamCountOutput: HTMLElement | null;
   marblesPerTeam: HTMLElement | null;
@@ -22,6 +26,7 @@ export type BuilderElements = {
   releaseIntervalOutput: HTMLElement | null;
   courseWidth: HTMLElement | null;
   courseHeight: HTMLElement | null;
+  wallThickness: HTMLElement | null;
   status: HTMLElement | null;
   debugInfo: HTMLElement | null;
 };

@@ -2,6 +2,7 @@
 import HomeLink from "../components/HomeLink.astro";
 import Layout from "../layouts/Layout.astro";
 import {
+  COURSE_STROKE_WIDTH,
   MAX_STAGE_HEIGHT,
   MAX_STAGE_WIDTH,
   MIN_STAGE_HEIGHT,
@@ -23,7 +24,7 @@ import "../styles/global.css";
 
     <p
       id="builder-error"
-      class="pointer-events-none absolute left-1/2 top-16 z-30 -translate-x-1/2 rounded-md border border-rose-900 bg-rose-950/90 px-3 py-2 font-mono text-xs text-rose-200 shadow-lg backdrop-blur empty:hidden"
+      class="pointer-events-none absolute left-1/2 top-24 z-30 -translate-x-1/2 rounded-md border border-rose-900 bg-rose-950/90 px-3 py-2 font-mono text-xs text-rose-200 shadow-lg backdrop-blur empty:hidden"
     >
     </p>
 
@@ -32,6 +33,31 @@ import "../styles/global.css";
       aria-label="Level tools"
       class="absolute left-1/2 top-3 z-20 flex -translate-x-1/2 items-center gap-1 rounded-lg border border-zinc-700 bg-zinc-800/90 p-1 shadow-lg backdrop-blur"
     >
+      <button
+        id="tool-lock"
+        type="button"
+        aria-label="Keep creation tool active"
+        aria-pressed="false"
+        title="Create one object (Q)"
+        data-active="false"
+        disabled
+        class="flex size-9 items-center justify-center rounded-md text-zinc-200 hover:bg-zinc-600 data-[active=true]:bg-violet-400 data-[active=true]:text-violet-950 disabled:cursor-not-allowed disabled:text-zinc-600 disabled:hover:bg-transparent"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          class="size-5"
+          aria-hidden="true"
+        >
+          <rect x="5" y="10" width="14" height="10" rx="2"></rect>
+          <path d="M8 10V7a4 4 0 0 1 8 0v3"></path>
+        </svg>
+      </button>
+      <span class="mx-1 h-5 w-px bg-zinc-600" aria-hidden="true"></span>
       <button
         id="tool-pan"
         type="button"
@@ -148,58 +174,118 @@ import "../styles/global.css";
       </button>
     </nav>
 
-    <nav
-      aria-label="Viewport zoom"
-      class="absolute bottom-3 left-3 z-20 flex items-center gap-1 rounded-lg border border-zinc-700 bg-zinc-800/90 p-1 shadow-lg backdrop-blur"
+    <p
+      id="tool-hint"
+      aria-live="polite"
+      class="pointer-events-none absolute left-1/2 top-16 z-20 -translate-x-1/2 whitespace-nowrap text-center text-xs text-zinc-500"
     >
-      <button
-        id="zoom-out"
-        type="button"
-        aria-label="Zoom out"
-        title="Zoom out"
-        class="flex size-9 items-center justify-center rounded-md text-zinc-100 hover:bg-zinc-700 disabled:cursor-not-allowed disabled:text-zinc-600 disabled:hover:bg-transparent"
+      Hold <kbd>Space</kbd> and drag to pan
+    </p>
+
+    <div class="absolute bottom-3 left-3 z-20 flex h-9 items-stretch gap-2">
+      <nav
+        aria-label="Viewport zoom"
+        class="flex h-9 items-stretch overflow-hidden rounded-md border border-zinc-700 bg-zinc-800/90 shadow-lg backdrop-blur"
       >
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          class="size-5"
-          aria-hidden="true"
+        <button
+          id="zoom-out"
+          type="button"
+          aria-label="Zoom out"
+          title="Zoom out"
+          class="flex w-9 items-center justify-center text-zinc-100 hover:bg-zinc-700 disabled:cursor-not-allowed disabled:text-zinc-600 disabled:hover:bg-transparent"
         >
-          <path d="M5 12h14"></path>
-        </svg>
-      </button>
-      <button
-        id="zoom-reset"
-        type="button"
-        aria-label="Reset zoom to 100%"
-        title="Reset zoom to 100%"
-        class="flex h-9 min-w-12 items-center justify-center rounded-md px-1 text-center font-mono text-xs text-zinc-300"
-      >
-        <output id="zoom-level" aria-live="polite">100%</output>
-      </button>
-      <button
-        id="zoom-in"
-        type="button"
-        aria-label="Zoom in"
-        title="Zoom in"
-        class="flex size-9 items-center justify-center rounded-md text-zinc-100 hover:bg-zinc-700 disabled:cursor-not-allowed disabled:text-zinc-600 disabled:hover:bg-transparent"
-      >
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          class="size-5"
-          aria-hidden="true"
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            class="size-5"
+            aria-hidden="true"
+          >
+            <path d="M5 12h14"></path>
+          </svg>
+        </button>
+        <button
+          id="zoom-reset"
+          type="button"
+          aria-label="Reset zoom to 100%"
+          title="Reset zoom to 100%"
+          class="flex min-w-14 items-center justify-center px-2 text-center font-mono text-xs text-zinc-300 hover:bg-zinc-700"
         >
-          <path d="M12 5v14M5 12h14"></path>
-        </svg>
-      </button>
-    </nav>
+          <output id="zoom-level" aria-live="polite">100%</output>
+        </button>
+        <button
+          id="zoom-in"
+          type="button"
+          aria-label="Zoom in"
+          title="Zoom in"
+          class="flex w-9 items-center justify-center text-zinc-100 hover:bg-zinc-700 disabled:cursor-not-allowed disabled:text-zinc-600 disabled:hover:bg-transparent"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            class="size-5"
+            aria-hidden="true"
+          >
+            <path d="M12 5v14M5 12h14"></path>
+          </svg>
+        </button>
+      </nav>
+
+      <nav
+        aria-label="Edit history"
+        class="flex h-9 items-stretch overflow-hidden rounded-md border border-zinc-700 bg-zinc-800/90 shadow-lg backdrop-blur"
+      >
+        <button
+          id="undo-level"
+          type="button"
+          aria-label="Undo"
+          title="Undo (Ctrl/⌘ Z)"
+          disabled
+          class="flex w-9 items-center justify-center text-zinc-100 hover:bg-zinc-700 disabled:cursor-not-allowed disabled:text-zinc-600 disabled:hover:bg-transparent"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="size-5"
+            aria-hidden="true"
+          >
+            <path d="M9 7 4 12l5 5"></path>
+            <path d="M4 12h9a6 6 0 0 1 6 6"></path>
+          </svg>
+        </button>
+        <button
+          id="redo-level"
+          type="button"
+          aria-label="Redo"
+          title="Redo (Ctrl/⌘ Shift Z)"
+          disabled
+          class="flex w-9 items-center justify-center text-zinc-100 hover:bg-zinc-700 disabled:cursor-not-allowed disabled:text-zinc-600 disabled:hover:bg-transparent"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="size-5"
+            aria-hidden="true"
+          >
+            <path d="m15 7 5 5-5 5"></path>
+            <path d="M20 12h-9a6 6 0 0 0-6 6"></path>
+          </svg>
+        </button>
+      </nav>
+    </div>
 
     <nav
       aria-label="Race controls"
@@ -419,6 +505,35 @@ import "../styles/global.css";
 
         <label
           class="flex items-center gap-3 py-3 text-zinc-300"
+          for="wall-thickness"
+          title="Default wall thickness"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            class="size-5 shrink-0"
+            aria-hidden="true"
+          >
+            <path d="M4 8h16M4 16h16"></path>
+            <path d="M7 5v6M17 13v6"></path>
+          </svg>
+          <span class="text-sm">Wall thickness</span>
+          <input
+            id="wall-thickness"
+            type="number"
+            min="5"
+            max="100"
+            step="1"
+            value={COURSE_STROKE_WIDTH}
+            class="ml-auto w-16 rounded-md border border-zinc-600 bg-zinc-900 px-2 py-1.5 text-right font-mono text-xs text-zinc-200 outline-none focus:border-cyan-500"
+          />
+        </label>
+
+        <label
+          class="flex items-center gap-3 py-3 text-zinc-300"
           for="team-count"
           title="Teams"
         >
@@ -522,11 +637,6 @@ import "../styles/global.css";
       </div>
 
       <p id="race-status" class="mt-3 text-xs text-zinc-400">Ready to race</p>
-      <p class="mt-2 text-[11px] leading-4 text-zinc-500">
-        Select and drag to move. Drag handles to resize or rotate. Hold Alt for
-        free transforms; use arrow keys to nudge. Delete removes the selection.
-      </p>
-
       <details
         class="mt-auto border-t border-zinc-700 pt-3 text-xs text-zinc-400"
       >
@@ -590,6 +700,23 @@ import "../styles/global.css";
     display: none;
   }
 
+  #tool-hint :global(kbd) {
+    --keycap-color: rgb(113 113 122);
+    display: inline-flex;
+    min-height: 1.15rem;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--keycap-color);
+    border-radius: 0.3rem;
+    background: transparent;
+    padding: 0 0.25rem;
+    color: var(--keycap-color);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+      monospace;
+    font-size: 0.68rem;
+    line-height: 1;
+  }
+
   #level-builder[data-sidebar-open="false"] #level-options-sidebar {
     transform: translateX(100%);
   }
@@ -644,6 +771,8 @@ import "../styles/global.css";
   try {
     mountScene(
       createScene({
+        toolLock: byId("tool-lock"),
+        toolHint: byId("tool-hint"),
         pan: byId("tool-pan"),
         pointer: byId("tool-pointer"),
         wall: byId("tool-wall"),
@@ -659,6 +788,8 @@ import "../styles/global.css";
         zoomOut: byId("zoom-out"),
         zoomReset: byId("zoom-reset"),
         zoomLevel: byId("zoom-level"),
+        undo: byId("undo-level"),
+        redo: byId("redo-level"),
         teamCount: byId("team-count"),
         teamCountOutput: byId("team-count-output"),
         marblesPerTeam: byId("marbles-per-team"),
@@ -667,6 +798,7 @@ import "../styles/global.css";
         releaseIntervalOutput: byId("release-interval-output"),
         courseWidth: byId("course-width"),
         courseHeight: byId("course-height"),
+        wallThickness: byId("wall-thickness"),
         status: byId("race-status"),
         debugInfo: byId("builder-debug"),
       }),

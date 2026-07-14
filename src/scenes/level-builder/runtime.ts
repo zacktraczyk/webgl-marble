@@ -1,11 +1,16 @@
 import { EditorOverlay } from "../../editor/editorOverlay";
 import { LevelEditorController } from "../../editor/levelEditorController";
-import type { LevelObjectData } from "../../editor/levelDocument";
+import { LevelHistory } from "../../editor/levelHistory";
+import type {
+  LevelObjectData,
+  SerializedLevel,
+} from "../../editor/levelDocument";
 import type { Vec2 } from "../../engine/core/transform";
 import Stage from "../../engine/stage";
 import { MAX_TEAMS } from "../../game/race/staging";
 import { AuthoredLevel } from "./authoredLevel";
 import {
+  COURSE_STROKE_WIDTH,
   MAX_STAGE_HEIGHT,
   MAX_STAGE_WIDTH,
   MIN_STAGE_HEIGHT,
@@ -29,23 +34,32 @@ import {
   type BuilderElements,
   type RoundConfiguration,
 } from "./types";
-import { clampInteger, snapToGrid } from "./utils";
+import { clampInteger } from "./utils";
 
 const MIN_ZOOM = 0.1;
 const MAX_ZOOM = 4;
 const ZOOM_STEP = 0.1;
 const STAGE_FIT_PADDING = 128;
+const MIN_WALL_THICKNESS = 5;
+const MAX_WALL_THICKNESS = 100;
+
+const isCreationTool = (tool: SelectedTool) =>
+  tool === SelectedTool.Wall ||
+  tool === SelectedTool.Bumper ||
+  tool === SelectedTool.SpawnPoint;
 
 export class LevelBuilderRuntime {
   readonly stage: Stage;
   private readonly ui: BuilderUi;
   private readonly level: AuthoredLevel;
   private readonly race: RaceController;
+  private readonly history: LevelHistory;
   private readonly editorController: LevelEditorController;
   private readonly editorOverlay: EditorOverlay;
   private readonly gridOverlay: GridOverlay;
   private configuration: RoundConfiguration;
   private selectedTool = SelectedTool.Pointer;
+  private toolLocked = false;
   private playbackActive = false;
 
   constructor(selectors: BuilderElements, signal: AbortSignal) {
@@ -57,15 +71,22 @@ export class LevelBuilderRuntime {
     this.stage.fitStageToWindow(STAGE_FIT_PADDING);
 
     this.configuration = this.readRoundConfiguration();
-    this.level = new AuthoredLevel(this.stage, this.configuration.teamCount);
+    const wallThickness = this.readWallThickness();
+    this.level = new AuthoredLevel(
+      this.stage,
+      this.configuration.teamCount,
+      wallThickness
+    );
     for (const object of createDefaultCourse(
       this.stage.width,
-      this.stage.height
+      this.stage.height,
+      wallThickness
     )) {
       this.level.add(object);
     }
 
     this.race = new RaceController(this.stage, this.level, this.configuration);
+    this.history = new LevelHistory(this.level.document.serialize());
     this.gridOverlay = new GridOverlay(
       this.stage,
       this.ui.majorGridToggleButton,
@@ -75,13 +96,43 @@ export class LevelBuilderRuntime {
     this.editorController = new LevelEditorController({
       stage: this.stage,
       getObjects: () => this.level.objects,
+      getDefaultWallThickness: () => this.level.wallThickness,
       callbacks: {
-        onObjectChange: (object) => this.refreshAuthoredObject(object),
-        onObjectCommit: () => this.race.reset(),
-        onDelete: (object) => {
-          this.level.remove(object.id);
-          this.race.reset();
+        onObjectsChange: (objects) => this.refreshAuthoredObjects(objects),
+        onObjectsCommit: () => this.commitLevelChange(),
+        onDelete: (objects) => {
+          for (const object of objects) {
+            this.level.remove(object.id);
+          }
+          this.commitLevelChange();
         },
+        onCreateWall: (start, end) => {
+          const object = this.level.add(createWall(start, end));
+          this.commitLevelChange();
+          return object;
+        },
+        onPlaceObject: (tool, position) => {
+          let object: LevelObjectData;
+          if (tool === SelectedTool.Bumper) {
+            object = this.level.add(createBumper(position));
+          } else {
+            object = this.level.replaceUnique(
+              "spawn-point",
+              createSpawnPoint(position)
+            );
+          }
+          this.commitLevelChange();
+          return object;
+        },
+        onToolRequest: (tool) => this.setActiveTool(tool),
+        onToolComplete: () => {
+          if (!this.toolLocked) {
+            this.setActiveTool(SelectedTool.Pointer);
+          }
+        },
+        onToggleToolLock: () => this.toggleToolLock(),
+        onUndo: () => this.undo(),
+        onRedo: () => this.redo(),
       },
       signal,
     });
@@ -91,7 +142,7 @@ export class LevelBuilderRuntime {
     );
 
     this.bindEventHandlers(signal);
-    this.setActiveTool(SelectedTool.Pointer, this.ui.pointerButton);
+    this.setActiveTool(SelectedTool.Pointer);
     this.gridOverlay.update();
     this.race.reset();
   }
@@ -102,7 +153,7 @@ export class LevelBuilderRuntime {
 
   updateInterface() {
     const race = this.race.snapshot;
-    this.playbackActive = race.phase !== "ready";
+    this.syncPlaybackState(race.phase !== "ready");
     const spawnPoint = this.level.find("spawn-point");
     if (spawnPoint) {
       this.level.setVisible(spawnPoint.id, !this.playbackActive);
@@ -115,25 +166,35 @@ export class LevelBuilderRuntime {
       configuration: this.configuration,
       race,
       authoredObjects: this.level.objects.length,
-      selectedObject: this.editorController.selectedObject?.id ?? null,
+      selectedObjects: this.editorController.selectedObjects.map(
+        (object) => object.id
+      ),
       hoveredObject: this.editorController.hoveredObject?.id ?? null,
+      wallThickness: this.level.wallThickness,
+      selectedTool: this.selectedTool,
+      toolLocked: this.toolLocked && isCreationTool(this.selectedTool),
+      canUndo: this.history.canUndo,
+      canRedo: this.history.canRedo,
     });
   }
 
   render() {
     this.stage.render();
     const hoveredObject = this.editorController.hoveredObject;
-    const selectedObject = this.editorController.selectedObject;
+    const selectedObjects = this.editorController.selectedObjects.filter(
+      (object) => !(this.playbackActive && object.prefab === "spawn-point")
+    );
     this.editorOverlay.render({
       active: this.editorController.isActive,
+      readOnly: this.playbackActive,
+      defaultWallThickness: this.level.wallThickness,
       hoveredObject:
         this.playbackActive && hoveredObject?.prefab === "spawn-point"
           ? null
           : hoveredObject,
-      selectedObject:
-        this.playbackActive && selectedObject?.prefab === "spawn-point"
-          ? null
-          : selectedObject,
+      selectedObjects,
+      wallDraft: this.editorController.wallDraft,
+      selectionMarquee: this.editorController.selectionMarquee,
     });
   }
 
@@ -151,10 +212,15 @@ export class LevelBuilderRuntime {
       [this.ui.spawnPointButton, SelectedTool.SpawnPoint],
     ];
     for (const [button, tool] of toolBindings) {
-      button.addEventListener("click", () => this.setActiveTool(tool, button), {
+      button.addEventListener("click", () => this.setActiveTool(tool), {
         signal,
       });
     }
+    this.ui.toolLockButton.addEventListener(
+      "click",
+      () => this.toggleToolLock(),
+      { signal }
+    );
 
     this.ui.majorGridToggleButton.addEventListener(
       "click",
@@ -166,10 +232,6 @@ export class LevelBuilderRuntime {
       () => this.gridOverlay.toggleMinor(),
       { signal }
     );
-    this.stage.canvas.addEventListener("click", this.placeSelectedObject, {
-      signal,
-    });
-
     this.ui.teamCountInput.addEventListener(
       "input",
       this.handleRoundConfigurationChange,
@@ -195,14 +257,15 @@ export class LevelBuilderRuntime {
       this.handleCourseSizeChange,
       { signal }
     );
-    this.ui.playButton.addEventListener(
-      "click",
-      () => this.race.toggleRunning(),
+    this.ui.wallThicknessInput.addEventListener(
+      "change",
+      this.handleWallThicknessChange,
       { signal }
     );
-    this.ui.resetButton.addEventListener("click", () => this.race.reset(), {
-      signal,
-    });
+    this.ui.playButton.addEventListener("click", this.toggleRace, { signal });
+    this.ui.resetButton.addEventListener("click", this.resetRace, { signal });
+    this.ui.undoButton.addEventListener("click", () => this.undo(), { signal });
+    this.ui.redoButton.addEventListener("click", () => this.redo(), { signal });
     this.ui.zoomInButton.addEventListener(
       "click",
       () => this.adjustZoom(ZOOM_STEP),
@@ -215,26 +278,27 @@ export class LevelBuilderRuntime {
     );
     this.ui.zoomResetButton.addEventListener(
       "click",
-      () => {
-        this.stage.zoom = 1;
-      },
+      () => this.setZoomAtCanvasCenter(1),
       { signal }
     );
   }
 
-  private setActiveTool(tool: SelectedTool, button: HTMLButtonElement) {
-    this.selectedTool = tool;
-    for (const toolButton of [
-      this.ui.panButton,
-      this.ui.pointerButton,
-      this.ui.wallButton,
-      this.ui.bumperButton,
-      this.ui.spawnPointButton,
-    ]) {
-      toolButton.dataset.active = toolButton === button ? "true" : "false";
+  private setActiveTool(tool: SelectedTool) {
+    if (this.playbackActive && isCreationTool(tool)) {
+      return;
     }
-    this.stage.panAndZoom = tool === SelectedTool.Pan;
-    this.editorController.setActive(tool === SelectedTool.Pointer);
+    this.selectedTool = tool;
+    const buttonByTool = new Map<SelectedTool, HTMLButtonElement>([
+      [SelectedTool.Pan, this.ui.panButton],
+      [SelectedTool.Pointer, this.ui.pointerButton],
+      [SelectedTool.Wall, this.ui.wallButton],
+      [SelectedTool.Bumper, this.ui.bumperButton],
+      [SelectedTool.SpawnPoint, this.ui.spawnPointButton],
+    ]);
+    for (const button of buttonByTool.values()) {
+      button.dataset.active = `${button === buttonByTool.get(tool)}`;
+    }
+    this.editorController.setActiveTool(tool);
     this.stage.canvas.dataset.pointer =
       tool === SelectedTool.Pan
         ? "pan"
@@ -243,43 +307,71 @@ export class LevelBuilderRuntime {
           : "shape";
   }
 
-  private readonly placeSelectedObject = (event: MouseEvent) => {
-    if (
-      this.selectedTool === SelectedTool.Pan ||
-      this.selectedTool === SelectedTool.Pointer
-    ) {
+  private toggleToolLock() {
+    if (this.playbackActive || !isCreationTool(this.selectedTool)) {
       return;
     }
+    this.toolLocked = !this.toolLocked;
+  }
 
-    const bounds = this.stage.canvas.getBoundingClientRect();
-    const [worldX, worldY] = this.stage.screenToWorld(
-      event.clientX - bounds.left,
-      event.clientY - bounds.top
-    );
-    const position = snapToGrid([worldX, worldY]);
-
-    switch (this.selectedTool) {
-      case SelectedTool.Wall:
-        this.level.add(createWall(position));
-        break;
-      case SelectedTool.Bumper:
-        this.level.add(createBumper(position));
-        break;
-      case SelectedTool.SpawnPoint:
-        this.level.replaceUnique("spawn-point", createSpawnPoint(position));
-        this.race.reset();
-        break;
+  private refreshAuthoredObjects(objects: readonly LevelObjectData[]) {
+    for (const object of objects) {
+      this.level.refresh(object);
     }
-  };
+  }
 
-  private refreshAuthoredObject(object: LevelObjectData) {
-    this.level.refresh(object);
+  private commitLevelChange() {
+    this.race.reset();
+    this.history.record(this.level.document.serialize());
+  }
+
+  private undo() {
+    if (this.playbackActive) {
+      return;
+    }
+    const snapshot = this.history.undo();
+    if (snapshot) {
+      this.restoreLevel(snapshot);
+    }
+  }
+
+  private redo() {
+    if (this.playbackActive) {
+      return;
+    }
+    const snapshot = this.history.redo();
+    if (snapshot) {
+      this.restoreLevel(snapshot);
+    }
+  }
+
+  private restoreLevel(snapshot: SerializedLevel) {
+    const sizeChanged =
+      snapshot.size[0] !== this.stage.width ||
+      snapshot.size[1] !== this.stage.height;
+    this.stage.setSize(...snapshot.size);
+    this.level.restore(snapshot);
+    this.editorController.clearSelection();
+    this.ui.courseWidthInput.value = `${snapshot.size[0]}`;
+    this.ui.courseHeightInput.value = `${snapshot.size[1]}`;
+    this.ui.wallThicknessInput.value = `${snapshot.settings.wallThickness}`;
+    if (sizeChanged) {
+      this.stage.fitStageToWindow(STAGE_FIT_PADDING);
+    }
+    this.race.reset();
   }
 
   private adjustZoom(delta: number) {
-    this.stage.zoom = Math.min(
-      MAX_ZOOM,
-      Math.max(MIN_ZOOM, this.stage.zoom + delta)
+    this.setZoomAtCanvasCenter(
+      Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, this.stage.zoom + delta))
+    );
+  }
+
+  private setZoomAtCanvasCenter(zoom: number) {
+    this.stage.zoomAtScreenPoint(
+      this.stage.canvas.clientWidth / 2,
+      this.stage.canvas.clientHeight / 2,
+      zoom
     );
   }
 
@@ -287,6 +379,17 @@ export class LevelBuilderRuntime {
     this.ui.zoomLevelOutput.value = `${Math.round(this.stage.zoom * 100)}%`;
     this.ui.zoomOutButton.disabled = this.stage.zoom <= MIN_ZOOM;
     this.ui.zoomInButton.disabled = this.stage.zoom >= MAX_ZOOM;
+  }
+
+  private syncPlaybackState(playbackActive: boolean) {
+    if (this.playbackActive === playbackActive) {
+      return;
+    }
+    this.playbackActive = playbackActive;
+    this.editorController.setReadOnly(playbackActive);
+    if (playbackActive) {
+      this.setActiveTool(SelectedTool.Pointer);
+    }
   }
 
   private readCourseSize(): Vec2 {
@@ -302,6 +405,14 @@ export class LevelBuilderRuntime {
         MAX_STAGE_HEIGHT
       ),
     ];
+  }
+
+  private readWallThickness() {
+    return clampInteger(
+      this.ui.wallThicknessInput.value || `${COURSE_STROKE_WIDTH}`,
+      MIN_WALL_THICKNESS,
+      MAX_WALL_THICKNESS
+    );
   }
 
   private readRoundConfiguration(): RoundConfiguration {
@@ -328,10 +439,36 @@ export class LevelBuilderRuntime {
     if (width === this.stage.width && height === this.stage.height) {
       return;
     }
-
     this.stage.setSize(width, height);
-    this.level.resize([width, height], createCourseBoundaries(width, height));
+    this.level.resize(
+      [width, height],
+      createCourseBoundaries(width, height, this.level.wallThickness)
+    );
     this.stage.fitStageToWindow(STAGE_FIT_PADDING);
+    this.commitLevelChange();
+  };
+
+  private readonly handleWallThicknessChange = () => {
+    const wallThickness = this.readWallThickness();
+    this.ui.wallThicknessInput.value = `${wallThickness}`;
+    if (wallThickness === this.level.wallThickness) {
+      return;
+    }
+    this.level.setWallThickness(wallThickness);
+    this.level.resize(
+      [this.stage.width, this.stage.height],
+      createCourseBoundaries(this.stage.width, this.stage.height, wallThickness)
+    );
+    this.commitLevelChange();
+  };
+
+  private readonly toggleRace = () => {
+    this.race.toggleRunning();
+    this.syncPlaybackState(this.race.snapshot.phase !== "ready");
+  };
+
+  private readonly resetRace = () => {
     this.race.reset();
+    this.syncPlaybackState(false);
   };
 }

@@ -54,18 +54,18 @@ describe("level builder course boundaries", () => {
     expect(leftWall).toMatchObject({
       prefab: "wall",
       locked: true,
-      transform: {
-        position: [-width / 2 + COURSE_STROKE_WIDTH / 2, 0],
+      properties: {
+        start: [-width / 2 + COURSE_STROKE_WIDTH / 2, -height / 2],
+        end: [-width / 2 + COURSE_STROKE_WIDTH / 2, height / 2],
       },
-      properties: { width: COURSE_STROKE_WIDTH, height },
     });
     expect(rightWall).toMatchObject({
       prefab: "wall",
       locked: true,
-      transform: {
-        position: [width / 2 - COURSE_STROKE_WIDTH / 2, 0],
+      properties: {
+        start: [width / 2 - COURSE_STROKE_WIDTH / 2, -height / 2],
+        end: [width / 2 - COURSE_STROKE_WIDTH / 2, height / 2],
       },
-      properties: { width: COURSE_STROKE_WIDTH, height },
     });
   });
 

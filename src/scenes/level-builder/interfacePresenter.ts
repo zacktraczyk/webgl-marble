@@ -1,25 +1,81 @@
 import type { BuilderUi } from "./elements";
 import type { RaceSnapshot } from "./raceController";
-import type { RoundConfiguration } from "./types";
+import { SelectedTool, type RoundConfiguration } from "./types";
+
+const key = (label: string) => `<kbd>${label}</kbd>`;
+
+const toolHint = ({
+  selectedTool,
+  playbackActive,
+}: {
+  selectedTool: SelectedTool;
+  playbackActive: boolean;
+}) => {
+  if (playbackActive) {
+    return `Hold ${key("Space")} and drag to pan`;
+  }
+  switch (selectedTool) {
+    case SelectedTool.Pan:
+      return `${key("Ctrl/⌘")} + wheel to zoom`;
+    case SelectedTool.Wall:
+      return `Hold ${key("Shift")} to lock the wall angle`;
+    case SelectedTool.Bumper:
+      return `Hold ${key("Alt")} to place without snapping`;
+    case SelectedTool.SpawnPoint:
+      return `Hold ${key("Alt")} to place without snapping`;
+    case SelectedTool.Pointer:
+      return `Hold ${key("Space")} and drag to pan`;
+  }
+};
 
 export const updateBuilderInterface = ({
   ui,
   configuration,
   race,
   authoredObjects,
-  selectedObject,
+  selectedObjects,
   hoveredObject,
+  wallThickness,
+  selectedTool,
+  toolLocked,
+  canUndo,
+  canRedo,
 }: {
   ui: BuilderUi;
   configuration: RoundConfiguration;
   race: RaceSnapshot;
   authoredObjects: number;
-  selectedObject: string | null;
+  selectedObjects: readonly string[];
   hoveredObject: string | null;
+  wallThickness: number;
+  selectedTool: SelectedTool;
+  toolLocked: boolean;
+  canUndo: boolean;
+  canRedo: boolean;
 }) => {
   ui.teamCountOutput.value = `${configuration.teamCount}`;
   ui.marblesPerTeamOutput.value = `${configuration.marblesPerTeam}`;
   ui.releaseIntervalOutput.value = `${configuration.releaseIntervalMs} ms`;
+  const playbackActive = race.phase !== "ready";
+  ui.undoButton.disabled = playbackActive || !canUndo;
+  ui.redoButton.disabled = playbackActive || !canRedo;
+  ui.wallButton.disabled = playbackActive;
+  ui.bumperButton.disabled = playbackActive;
+  ui.spawnPointButton.disabled = playbackActive;
+  ui.toolLockButton.disabled =
+    playbackActive ||
+    (selectedTool !== SelectedTool.Wall &&
+      selectedTool !== SelectedTool.Bumper &&
+      selectedTool !== SelectedTool.SpawnPoint);
+  ui.toolLockButton.dataset.active = `${toolLocked}`;
+  ui.toolLockButton.ariaPressed = `${toolLocked}`;
+  ui.toolLockButton.title = toolLocked
+    ? "Create multiple objects (Q)"
+    : "Create one object (Q)";
+  ui.toolHintOutput.innerHTML = toolHint({
+    selectedTool,
+    playbackActive,
+  });
 
   const playButtonText =
     race.phase === "running"
@@ -71,8 +127,10 @@ export const updateBuilderInterface = ({
       stagingPhysicsActive: race.stagingPhysicsActive,
       lostMarbles: race.lostMarbles,
       authoredObjects,
-      selectedObject,
+      selectedObjects,
       hoveredObject,
+      wallThickness,
+      toolLocked,
     },
     null,
     2
