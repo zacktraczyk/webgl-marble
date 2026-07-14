@@ -33,7 +33,7 @@ export const createBumper = (position: Vec2): NewLevelObjectData => ({
   prefab: "bumper",
   transform: { position },
   properties: {
-    radius: 22,
+    radius: 13.2,
     color: [...BUMPER_COLOR],
   },
 });

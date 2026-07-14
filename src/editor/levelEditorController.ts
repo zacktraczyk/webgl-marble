@@ -1,5 +1,6 @@
 import type { Vec2 } from "../engine/core/transform";
 import type Stage from "../engine/stage";
+import { GRID_SIZE } from "../scenes/level-builder/constants";
 import { SelectedTool } from "../scenes/level-builder/types";
 import type { LevelObjectData } from "./levelDocument";
 import {
@@ -119,14 +120,15 @@ type EditorGesture =
 export type WallDraft = { start: Vec2; end: Vec2; thickness: number };
 export type SelectionMarquee = { start: Vec2; end: Vec2 };
 
-const POSITION_SNAP_STEP = 25;
-const SIZE_SNAP_STEP = 5;
+const POSITION_SNAP_STEP = GRID_SIZE;
+const SIZE_SNAP_STEP = GRID_SIZE / 5;
 const ROTATION_SNAP_STEP = Math.PI / 12;
 const ROTATION_HANDLE_OFFSET = 28;
 const HANDLE_HIT_RADIUS = 8;
 const ENDPOINT_SNAP_RADIUS = 12;
 const DRAG_THRESHOLD = 3;
-const MIN_WALL_LENGTH = 10;
+const MIN_OBJECT_SIZE = GRID_SIZE * 0.4;
+const MIN_WALL_LENGTH = GRID_SIZE * 0.4;
 const MIN_ZOOM = 0.1;
 const MAX_ZOOM = 4;
 
@@ -848,7 +850,8 @@ export class LevelEditorController {
         this.gesture.startShape,
         this.gesture.handle,
         worldPoint,
-        event.altKey ? 0 : SIZE_SNAP_STEP
+        event.altKey ? 0 : SIZE_SNAP_STEP,
+        MIN_OBJECT_SIZE
       );
     } else {
       const center = this.gesture.startShape.position;

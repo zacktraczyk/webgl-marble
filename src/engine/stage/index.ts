@@ -15,6 +15,7 @@ import {
   FitStageToWindowOnResizeHandlers,
   PanAndZoomHandlers,
 } from "./eventHandlers";
+import { calculateStageFitZoom } from "./fit";
 
 export type StageObject = {
   id: number;
@@ -361,6 +362,14 @@ export class Stage {
     return this._fitStageToWindowOnResizeHandlers.padding;
   }
 
+  set snapFitStageToNativeZoom(value: boolean) {
+    this._fitStageToWindowOnResizeHandlers.snapToNativeZoom = value;
+  }
+
+  get snapFitStageToNativeZoom() {
+    return this._fitStageToWindowOnResizeHandlers.snapToNativeZoom;
+  }
+
   centerStage() {
     const width = this.canvas.clientWidth;
     const height = this.canvas.clientHeight;
@@ -372,10 +381,14 @@ export class Stage {
   fitStageToWindow(padding: number = 0) {
     const width = this.canvas.clientWidth;
     const height = this.canvas.clientHeight;
-    this._vdu.zoom = Math.min(
-      (width - padding * 2) / this.width,
-      (height - padding * 2) / this.height
-    );
+    this._vdu.zoom = calculateStageFitZoom({
+      viewportWidth: width,
+      viewportHeight: height,
+      stageWidth: this.width,
+      stageHeight: this.height,
+      padding,
+      snapToNativeZoom: this.snapFitStageToNativeZoom,
+    });
 
     this.centerStage();
   }

@@ -4,9 +4,9 @@ import type { Color } from "../../engine/vdu/component";
 import { stagingDividerPositions } from "../race/staging";
 import { rectangleDefinition } from "./primitives/rectangle";
 
-export const STAGING_RACK_WIDTH = 960;
-export const STAGING_RACK_HEIGHT = 230;
-export const STAGING_RACK_WALL_THICKNESS = 10;
+export const STAGING_RACK_WIDTH = 576;
+export const STAGING_RACK_HEIGHT = 138;
+export const STAGING_RACK_WALL_THICKNESS = 6;
 
 export interface StagingRackDefinitionOptions {
   position: Vec2;

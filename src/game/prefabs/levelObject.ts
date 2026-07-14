@@ -12,7 +12,7 @@ export const levelObjectDefinitions = (
   object: LevelObjectData,
   {
     teamCount = 1,
-    wallThickness = 25,
+    wallThickness = 15,
   }: { teamCount?: number; wallThickness?: number } = {}
 ): EntityDefinition[] => {
   let definitions: EntityDefinition[];

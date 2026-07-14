@@ -1,5 +1,6 @@
 import type Stage from ".";
 import { VDU } from "../vdu/vdu";
+import { calculateStageFitZoom } from "./fit";
 
 export interface EventHandlers {
   pointerdown?: (event: PointerEvent) => void;
@@ -134,6 +135,7 @@ export class FitStageToWindowOnResizeHandlers implements EventHandlers {
   private _vdu: VDU;
   private _stage: Stage;
   padding: number = 0;
+  snapToNativeZoom = false;
 
   constructor(vdu: VDU, stage: Stage) {
     this._vdu = vdu;
@@ -146,9 +148,13 @@ export class FitStageToWindowOnResizeHandlers implements EventHandlers {
     const stageWidth = this._stage.width;
     const stageHeight = this._stage.height;
 
-    this._vdu.zoom = Math.min(
-      (clientWidth - this.padding * 2) / stageWidth,
-      (clientHeight - this.padding * 2) / stageHeight
-    );
+    this._vdu.zoom = calculateStageFitZoom({
+      viewportWidth: clientWidth,
+      viewportHeight: clientHeight,
+      stageWidth,
+      stageHeight,
+      padding: this.padding,
+      snapToNativeZoom: this.snapToNativeZoom,
+    });
   }
 }

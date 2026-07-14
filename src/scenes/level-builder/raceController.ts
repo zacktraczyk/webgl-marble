@@ -13,7 +13,13 @@ import {
   randomSpawnAngle,
 } from "../../game/race/spawn";
 import type { AuthoredLevel } from "./authoredLevel";
-import { MAX_MARBLE_RADIUS, STAGING_MARBLE_GAP } from "./constants";
+import {
+  MARBLE_RADIUS_STEP,
+  MAX_MARBLE_RADIUS,
+  MIN_MARBLE_RADIUS,
+  STAGING_MARBLE_GAP,
+  STAGING_MARBLE_PADDING,
+} from "./constants";
 import type { RacePhase, RoundConfiguration } from "./types";
 import { createSeededRandom, hashString } from "./utils";
 
@@ -143,7 +149,11 @@ export class RaceController {
       ...rack.properties,
       teamCount: this.configuration.teamCount,
       marblesPerTeam: this.configuration.marblesPerTeam,
+      maximumRadius: MAX_MARBLE_RADIUS,
+      minimumRadius: MIN_MARBLE_RADIUS,
+      radiusStep: MARBLE_RADIUS_STEP,
       gap: STAGING_MARBLE_GAP,
+      padding: STAGING_MARBLE_PADDING,
     });
 
     for (const placement of this.getFrozenStagingPlacements(rack)) {
@@ -231,6 +241,7 @@ export class RaceController {
       marblesPerTeam: this.configuration.marblesPerTeam,
       marbleRadius: this.marbleRadius,
       gap: STAGING_MARBLE_GAP,
+      padding: STAGING_MARBLE_PADDING,
       distribution: "stacked",
       random: createSeededRandom(hashString(cacheKey)),
     });

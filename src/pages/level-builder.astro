@@ -5,8 +5,10 @@ import {
   COURSE_STROKE_WIDTH,
   MAX_STAGE_HEIGHT,
   MAX_STAGE_WIDTH,
+  MAX_WALL_THICKNESS,
   MIN_STAGE_HEIGHT,
   MIN_STAGE_WIDTH,
+  MIN_WALL_THICKNESS,
   STAGE_HEIGHT,
   STAGE_SIZE_STEP,
   STAGE_WIDTH,
@@ -465,8 +467,8 @@ import "../styles/global.css";
           <input
             id="wall-thickness"
             type="number"
-            min="5"
-            max="100"
+            min={MIN_WALL_THICKNESS}
+            max={MAX_WALL_THICKNESS}
             step="1"
             value={COURSE_STROKE_WIDTH}
             class="ml-auto w-16 rounded-md border border-zinc-600 bg-zinc-900 px-2 py-1.5 text-right font-mono text-xs text-zinc-200 outline-none focus:border-cyan-500"
@@ -724,8 +726,8 @@ import "../styles/global.css";
 
 <style>
   #builder-grid {
-    --grid-step: 25px;
-    --grid-major-step: 100px;
+    --grid-step: 15px;
+    --grid-major-step: 60px;
     --grid-minor-color: transparent;
     --grid-major-color: transparent;
     position: absolute;

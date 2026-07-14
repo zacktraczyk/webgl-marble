@@ -184,12 +184,13 @@ export class VDU {
   private _lastUsedBuffer: BufferInfo | undefined = undefined;
   render() {
     const gl = this._gl;
-    if (!(gl.canvas instanceof HTMLCanvasElement)) {
+    const canvas = gl.canvas;
+    if (!(canvas instanceof HTMLCanvasElement)) {
       throw new Error("Failed to get canvas element");
     }
 
-    WebglUtils.resizeCanvasToDisplaySize(gl.canvas);
-    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+    WebglUtils.resizeCanvasToDisplaySize(canvas, window.devicePixelRatio || 1);
+    gl.viewport(0, 0, canvas.width, canvas.height);
     // 2D parts are ordered by submission. Alpha blending supports highlights,
     // shadows, and other local render parts on the same entity.
     gl.disable(gl.DEPTH_TEST);
@@ -228,7 +229,7 @@ export class VDU {
         );
       }
 
-      object.uniforms.uResolution = [gl.canvas.width, gl.canvas.height];
+      object.uniforms.uResolution = [canvas.clientWidth, canvas.clientHeight];
       object.computeMatrix();
       mat3.multiply(object.matrix, cameraMatrix, object.matrix);
       object.setUniforms();

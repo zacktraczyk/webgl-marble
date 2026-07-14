@@ -13,10 +13,10 @@ import {
 
 describe("level builder course boundaries", () => {
   test("uses a larger widescreen default course", () => {
-    expect(STAGE_WIDTH).toBe(2400);
-    expect(STAGE_HEIGHT).toBe(1350);
+    expect(STAGE_WIDTH).toBe(1440);
+    expect(STAGE_HEIGHT).toBe(810);
     expect(STAGE_WIDTH / STAGE_HEIGHT).toBeCloseTo(16 / 9);
-    expect(COURSE_STROKE_WIDTH).toBe(25);
+    expect(COURSE_STROKE_WIDTH).toBe(15);
   });
 
   test("locks the rack and finish zone to the full-width top and bottom edges", () => {

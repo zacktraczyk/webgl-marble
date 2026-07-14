@@ -13,8 +13,10 @@ import {
   COURSE_STROKE_WIDTH,
   MAX_STAGE_HEIGHT,
   MAX_STAGE_WIDTH,
+  MAX_WALL_THICKNESS,
   MIN_STAGE_HEIGHT,
   MIN_STAGE_WIDTH,
+  MIN_WALL_THICKNESS,
   STAGE_HEIGHT,
   STAGE_WIDTH,
 } from "./constants";
@@ -40,9 +42,6 @@ const MIN_ZOOM = 0.1;
 const MAX_ZOOM = 4;
 const ZOOM_STEP = 0.1;
 const STAGE_FIT_PADDING = 128;
-const MIN_WALL_THICKNESS = 5;
-const MAX_WALL_THICKNESS = 100;
-
 const isCreationTool = (tool: SelectedTool) =>
   tool === SelectedTool.Wall ||
   tool === SelectedTool.Bumper ||
@@ -68,6 +67,7 @@ export class LevelBuilderRuntime {
     this.stage = new Stage({ width: STAGE_WIDTH, height: STAGE_HEIGHT });
     this.stage.centerCameraOnResize = true;
     this.stage.fitStageToWindowOnResizePadding = STAGE_FIT_PADDING;
+    this.stage.snapFitStageToNativeZoom = true;
     this.stage.fitStageToWindowOnResize = true;
     this.stage.fitStageToWindow(STAGE_FIT_PADDING);
 

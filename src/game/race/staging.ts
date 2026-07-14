@@ -47,6 +47,7 @@ export interface FittedMarbleRadiusOptions extends StagingRackGeometry {
   marblesPerTeam: number;
   maximumRadius?: number;
   minimumRadius?: number;
+  radiusStep?: number;
   gap?: number;
   padding?: number;
 }
@@ -130,10 +131,11 @@ export const fitStagingMarbleRadius = ({
   wallThickness,
   teamCount,
   marblesPerTeam,
-  maximumRadius = 8,
-  minimumRadius = 2,
-  gap = 1,
-  padding = 5,
+  maximumRadius = 4.8,
+  minimumRadius = 1.2,
+  radiusStep = 0.15,
+  gap = 0.6,
+  padding = 3,
 }: FittedMarbleRadiusOptions) => {
   assertTeamCount(teamCount);
   if (!Number.isInteger(marblesPerTeam) || marblesPerTeam < 1) {
@@ -141,13 +143,18 @@ export const fitStagingMarbleRadius = ({
   }
   assertPositiveFinite(maximumRadius, "Maximum marble radius");
   assertPositiveFinite(minimumRadius, "Minimum marble radius");
+  assertPositiveFinite(radiusStep, "Marble radius step");
   if (minimumRadius > maximumRadius) {
     throw new Error("Minimum marble radius cannot exceed the maximum");
   }
 
   const rack = { position, width, height, wallThickness };
   const findRadius = (requiredCapacity: number) => {
-    for (let radius = maximumRadius; radius >= minimumRadius; radius -= 0.25) {
+    for (let step = 0; ; step++) {
+      const radius = Number((maximumRadius - step * radiusStep).toFixed(10));
+      if (radius < minimumRadius) {
+        break;
+      }
       if (
         stagingCapacity({
           rack,
@@ -181,8 +188,8 @@ export const createStagingMarblePlacements = ({
   teamCount,
   marblesPerTeam,
   marbleRadius,
-  gap = 3,
-  padding = 5,
+  gap = 1.8,
+  padding = 3,
   random = Math.random,
   distribution = "scattered",
 }: StagingLayoutOptions): StagingMarblePlacement[] => {

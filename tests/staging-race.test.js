@@ -31,7 +31,7 @@ describe("staging rack", () => {
     const dividers = stagingDividerPositions(rack, 4);
 
     expect(dividers).toHaveLength(3);
-    expect(dividers.map(([x]) => x)).toEqual([-235, 0, 235]);
+    expect(dividers.map(([x]) => x)).toEqual([-141, 0, 141]);
     expect(dividers.every(([, y]) => y === rack.position[1])).toBe(true);
   });
 
@@ -40,7 +40,7 @@ describe("staging rack", () => {
       ...rack,
       teamCount: 12,
       marblesPerTeam: 20,
-      marbleRadius: 8,
+      marbleRadius: 4.8,
       random: seededRandom(42),
     });
 
@@ -56,7 +56,7 @@ describe("staging rack", () => {
           const [secondX, secondY] = teamPlacements[second].position;
           expect(
             Math.hypot(firstX - secondX, firstY - secondY)
-          ).toBeGreaterThan(16);
+          ).toBeGreaterThan(9.6);
         }
       }
     }
@@ -76,7 +76,7 @@ describe("staging rack", () => {
         ...rack,
         teamCount: 12,
         marblesPerTeam: 31,
-        marbleRadius: 8,
+        marbleRadius: 4.8,
         random: seededRandom(42),
       })
     ).toThrow("fits 30 marbles per team");
@@ -87,19 +87,19 @@ describe("staging rack", () => {
       ...rack,
       teamCount: 12,
       marblesPerTeam: 100,
-      gap: 1,
+      gap: 0.6,
     });
     const placements = createStagingMarblePlacements({
       ...rack,
       teamCount: 12,
       marblesPerTeam: 100,
       marbleRadius,
-      gap: 1,
+      gap: 0.6,
       distribution: "stacked",
       random: seededRandom(100),
     });
 
-    expect(marbleRadius).toBe(4.25);
+    expect(marbleRadius).toBe(2.55);
     expect(placements).toHaveLength(1200);
     const firstTeam = placements.filter(({ teamIndex }) => teamIndex === 0);
     for (let first = 0; first < firstTeam.length; first++) {
@@ -118,8 +118,8 @@ describe("staging rack", () => {
       ...rack,
       teamCount: 6,
       marblesPerTeam: 12,
-      marbleRadius: 8,
-      gap: 1,
+      marbleRadius: 4.8,
+      gap: 0.6,
       distribution: "stacked",
     };
     const firstLayout = createStagingMarblePlacements({
@@ -155,7 +155,7 @@ describe("staging rack", () => {
         const [firstX, firstY] = firstTeam[first].position;
         const [secondX, secondY] = firstTeam[second].position;
         expect(Math.hypot(firstX - secondX, firstY - secondY)).toBeGreaterThan(
-          16
+          9.6
         );
       }
     }
