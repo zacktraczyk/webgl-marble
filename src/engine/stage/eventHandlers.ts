@@ -1,6 +1,10 @@
 import type Stage from ".";
 import { VDU } from "../vdu/vdu";
-import { calculateStageFitZoom } from "./fit";
+import {
+  calculateStageFit,
+  type StageFitInsetSource,
+  uniformStageFitInsets,
+} from "./fit";
 
 export interface EventHandlers {
   pointerdown?: (event: PointerEvent) => void;
@@ -135,7 +139,7 @@ export class FitStageToWindowOnResizeHandlers implements EventHandlers {
   private _vdu: VDU;
   private _stage: Stage;
   padding: number = 0;
-  snapToNativeZoom = false;
+  insets: StageFitInsetSource | null = null;
 
   constructor(vdu: VDU, stage: Stage) {
     this._vdu = vdu;
@@ -148,13 +152,18 @@ export class FitStageToWindowOnResizeHandlers implements EventHandlers {
     const stageWidth = this._stage.width;
     const stageHeight = this._stage.height;
 
-    this._vdu.zoom = calculateStageFitZoom({
+    const insets =
+      typeof this.insets === "function"
+        ? this.insets()
+        : (this.insets ?? uniformStageFitInsets(this.padding));
+    const fit = calculateStageFit({
       viewportWidth: clientWidth,
       viewportHeight: clientHeight,
       stageWidth,
       stageHeight,
-      padding: this.padding,
-      snapToNativeZoom: this.snapToNativeZoom,
+      insets,
     });
+    this._vdu.zoom = fit.zoom;
+    this._vdu.camera.position = fit.cameraPosition;
   }
 }

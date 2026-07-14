@@ -15,7 +15,12 @@ import {
   FitStageToWindowOnResizeHandlers,
   PanAndZoomHandlers,
 } from "./eventHandlers";
-import { calculateStageFitZoom } from "./fit";
+import {
+  calculateStageFit,
+  type StageFitInsets,
+  type StageFitInsetSource,
+  uniformStageFitInsets,
+} from "./fit";
 
 export type StageObject = {
   id: number;
@@ -362,12 +367,12 @@ export class Stage {
     return this._fitStageToWindowOnResizeHandlers.padding;
   }
 
-  set snapFitStageToNativeZoom(value: boolean) {
-    this._fitStageToWindowOnResizeHandlers.snapToNativeZoom = value;
+  set fitStageToWindowOnResizeInsets(value: StageFitInsetSource | null) {
+    this._fitStageToWindowOnResizeHandlers.insets = value;
   }
 
-  get snapFitStageToNativeZoom() {
-    return this._fitStageToWindowOnResizeHandlers.snapToNativeZoom;
+  get fitStageToWindowOnResizeInsets() {
+    return this._fitStageToWindowOnResizeHandlers.insets;
   }
 
   centerStage() {
@@ -378,19 +383,22 @@ export class Stage {
     this._vdu.camera.position[1] = height / 2;
   }
 
-  fitStageToWindow(padding: number = 0) {
+  fitStageToWindow(paddingOrInsets: number | StageFitInsets = 0) {
     const width = this.canvas.clientWidth;
     const height = this.canvas.clientHeight;
-    this._vdu.zoom = calculateStageFitZoom({
+    const insets =
+      typeof paddingOrInsets === "number"
+        ? uniformStageFitInsets(paddingOrInsets)
+        : paddingOrInsets;
+    const fit = calculateStageFit({
       viewportWidth: width,
       viewportHeight: height,
       stageWidth: this.width,
       stageHeight: this.height,
-      padding,
-      snapToNativeZoom: this.snapFitStageToNativeZoom,
+      insets,
     });
-
-    this.centerStage();
+    this._vdu.zoom = fit.zoom;
+    this._vdu.camera.position = fit.cameraPosition;
   }
 
   setSize(width: number, height: number) {

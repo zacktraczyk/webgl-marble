@@ -1,34 +1,46 @@
-const NATIVE_ZOOM_SNAP_TOLERANCE = 0.1;
+export type StageFitInsets = {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+};
 
-export const calculateStageFitZoom = ({
+export type StageFitInsetSource = StageFitInsets | (() => StageFitInsets);
+
+export const uniformStageFitInsets = (padding: number): StageFitInsets => ({
+  top: padding,
+  right: padding,
+  bottom: padding,
+  left: padding,
+});
+
+export const calculateStageFit = ({
   viewportWidth,
   viewportHeight,
   stageWidth,
   stageHeight,
-  padding = 0,
-  snapToNativeZoom = false,
+  insets = uniformStageFitInsets(0),
 }: {
   viewportWidth: number;
   viewportHeight: number;
   stageWidth: number;
   stageHeight: number;
-  padding?: number;
-  snapToNativeZoom?: boolean;
+  insets?: StageFitInsets;
 }) => {
-  const fittedZoom = Math.min(
-    (viewportWidth - padding * 2) / stageWidth,
-    (viewportHeight - padding * 2) / stageHeight
+  const availableWidth = Math.max(
+    0,
+    viewportWidth - insets.left - insets.right
   );
-  const stageFitsAtNativeZoom =
-    viewportWidth >= stageWidth && viewportHeight >= stageHeight;
+  const availableHeight = Math.max(
+    0,
+    viewportHeight - insets.top - insets.bottom
+  );
 
-  if (
-    snapToNativeZoom &&
-    stageFitsAtNativeZoom &&
-    Math.abs(fittedZoom - 1) <= NATIVE_ZOOM_SNAP_TOLERANCE
-  ) {
-    return 1;
-  }
-
-  return fittedZoom;
+  return {
+    zoom: Math.min(availableWidth / stageWidth, availableHeight / stageHeight),
+    cameraPosition: [
+      insets.left + availableWidth / 2,
+      insets.top + availableHeight / 2,
+    ] as [number, number],
+  };
 };

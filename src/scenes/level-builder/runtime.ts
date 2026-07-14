@@ -7,6 +7,7 @@ import type {
 } from "../../editor/levelDocument";
 import type { Vec2 } from "../../engine/core/transform";
 import Stage from "../../engine/stage";
+import type { StageFitInsets } from "../../engine/stage/fit";
 import { MAX_TEAMS } from "../../game/race/staging";
 import { AuthoredLevel } from "./authoredLevel";
 import {
@@ -41,7 +42,6 @@ import { clampInteger } from "./utils";
 const MIN_ZOOM = 0.1;
 const MAX_ZOOM = 4;
 const ZOOM_STEP = 0.1;
-const STAGE_FIT_PADDING = 128;
 const isCreationTool = (tool: SelectedTool) =>
   tool === SelectedTool.Wall ||
   tool === SelectedTool.Bumper ||
@@ -66,10 +66,9 @@ export class LevelBuilderRuntime {
     this.ui = resolveBuilderUi(selectors);
     this.stage = new Stage({ width: STAGE_WIDTH, height: STAGE_HEIGHT });
     this.stage.centerCameraOnResize = true;
-    this.stage.fitStageToWindowOnResizePadding = STAGE_FIT_PADDING;
-    this.stage.snapFitStageToNativeZoom = true;
+    this.stage.fitStageToWindowOnResizeInsets = this.getStageFitInsets;
     this.stage.fitStageToWindowOnResize = true;
-    this.stage.fitStageToWindow(STAGE_FIT_PADDING);
+    this.stage.fitStageToWindow(this.getStageFitInsets());
 
     this.configuration = this.readRoundConfiguration();
     const wallThickness = this.readWallThickness();
@@ -370,7 +369,7 @@ export class LevelBuilderRuntime {
     this.ui.courseHeightInput.value = `${snapshot.size[1]}`;
     this.ui.wallThicknessInput.value = `${snapshot.settings.wallThickness}`;
     if (sizeChanged) {
-      this.stage.fitStageToWindow(STAGE_FIT_PADDING);
+      this.stage.fitStageToWindow(this.getStageFitInsets());
     }
     this.race.reset();
   }
@@ -394,6 +393,23 @@ export class LevelBuilderRuntime {
     this.ui.zoomOutButton.disabled = this.stage.zoom <= MIN_ZOOM;
     this.ui.zoomInButton.disabled = this.stage.zoom >= MAX_ZOOM;
   }
+
+  private readonly getStageFitInsets = (): StageFitInsets => {
+    const canvasBounds = this.stage.canvas.getBoundingClientRect();
+    const toolbarBounds = this.ui.toolbar.getBoundingClientRect();
+    const toolHintBounds = this.ui.toolHintOutput.getBoundingClientRect();
+    const raceControlBounds = this.ui.raceControls.getBoundingClientRect();
+    const margin = Math.max(0, toolbarBounds.top - canvasBounds.top);
+    const toolbarInset = margin + toolbarBounds.height + margin;
+    const toolHintInset = toolHintBounds.bottom - canvasBounds.top + margin;
+
+    return {
+      top: Math.max(toolbarInset, toolHintInset),
+      right: margin,
+      bottom: margin + raceControlBounds.height + margin,
+      left: margin,
+    };
+  };
 
   private syncPlaybackState(playbackActive: boolean) {
     if (this.playbackActive === playbackActive) {
@@ -461,7 +477,7 @@ export class LevelBuilderRuntime {
       [width, height],
       createCourseBoundaries(width, height, this.level.wallThickness)
     );
-    this.stage.fitStageToWindow(STAGE_FIT_PADDING);
+    this.stage.fitStageToWindow(this.getStageFitInsets());
     this.commitLevelChange();
   };
 

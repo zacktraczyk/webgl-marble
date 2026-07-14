@@ -290,6 +290,7 @@ import "../styles/global.css";
     </div>
 
     <nav
+      id="builder-race-controls"
       aria-label="Race controls"
       class="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 items-center gap-3 rounded-lg border border-zinc-700 bg-zinc-800/90 p-1 shadow-lg backdrop-blur"
     >
@@ -829,6 +830,8 @@ import "../styles/global.css";
   try {
     mountScene(
       createScene({
+        toolbar: byId("builder-toolbar"),
+        raceControls: byId("builder-race-controls"),
         toolLock: byId("tool-lock"),
         toolHint: byId("tool-hint"),
         pan: byId("tool-pan"),

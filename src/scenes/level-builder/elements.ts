@@ -2,6 +2,8 @@ import type { BuilderElements } from "./types";
 import { requireElement } from "./utils";
 
 export type BuilderUi = {
+  toolbar: HTMLElement;
+  raceControls: HTMLElement;
   toolLockButton: HTMLButtonElement;
   toolHintOutput: HTMLElement;
   panButton: HTMLButtonElement;
@@ -40,6 +42,8 @@ export type BuilderUi = {
 export const resolveBuilderUi = (selectors: BuilderElements): BuilderUi => {
   const playButton = requireElement<HTMLButtonElement>(selectors.play, "play");
   return {
+    toolbar: requireElement(selectors.toolbar, "builder toolbar"),
+    raceControls: requireElement(selectors.raceControls, "race controls"),
     toolLockButton: requireElement(selectors.toolLock, "tool lock"),
     toolHintOutput: requireElement(selectors.toolHint, "tool hint"),
     panButton: requireElement(selectors.pan, "pan tool"),
