@@ -1,7 +1,7 @@
 import type { EntityDefinition } from "../../engine/core/definition";
 import type { LevelObjectData } from "../../editor/levelDocument";
 import { getLevelObjectShape } from "../../editor/levelGeometry";
-import { finishZoneDefinition } from "./finishZone";
+import { finishRackDefinitions } from "./finishZone";
 import { circleDefinition } from "./primitives/circle";
 import { rectangleDefinition } from "./primitives/rectangle";
 import { spawnPointDefinition } from "./spawnPoint";
@@ -12,8 +12,21 @@ export const levelObjectDefinitions = (
   object: LevelObjectData,
   {
     teamCount = 1,
+    marblesPerTeam = 1,
     wallThickness = 15,
-  }: { teamCount?: number; wallThickness?: number } = {}
+    maximumMarbleRadius = 4.8,
+    minimumMarbleRadius = 1.2,
+    marbleGap = 0.6,
+    raceMarbleRadius = maximumMarbleRadius,
+  }: {
+    teamCount?: number;
+    marblesPerTeam?: number;
+    wallThickness?: number;
+    maximumMarbleRadius?: number;
+    minimumMarbleRadius?: number;
+    marbleGap?: number;
+    raceMarbleRadius?: number;
+  } = {}
 ): EntityDefinition[] => {
   let definitions: EntityDefinition[];
 
@@ -45,13 +58,17 @@ export const levelObjectDefinitions = (
       ];
       break;
     case "finish-zone":
-      definitions = [
-        finishZoneDefinition({
-          position: object.transform.position,
-          rotation: object.transform.rotation,
-          ...object.properties,
-        }),
-      ];
+      definitions = finishRackDefinitions({
+        position: object.transform.position,
+        rotation: object.transform.rotation,
+        wallThickness,
+        teamCount,
+        marblesPerTeam,
+        maximumMarbleRadius,
+        minimumMarbleRadius,
+        marbleGap,
+        ...object.properties,
+      });
       break;
     case "staging-rack":
       definitions = stagingRackDefinitions({
@@ -65,6 +82,8 @@ export const levelObjectDefinitions = (
         spawnPointDefinition({
           position: object.transform.position,
           rotation: object.transform.rotation,
+          marbleCount: teamCount,
+          marbleRadius: raceMarbleRadius,
           ...object.properties,
         }),
       ];

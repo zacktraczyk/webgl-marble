@@ -6,6 +6,10 @@ import {
   stagingDividerPositions,
 } from "../src/game/race/staging";
 import {
+  createFinishGridLayout,
+  createFinishGridPlacements,
+} from "../src/game/race/finishGrid";
+import {
   STAGING_RACK_HEIGHT,
   STAGING_RACK_WALL_THICKNESS,
   STAGING_RACK_WIDTH,
@@ -159,6 +163,105 @@ describe("staging rack", () => {
         );
       }
     }
+  });
+
+  test("fills finish-style bays in an exact bottom-up grid", () => {
+    const options = {
+      position: [0, 0],
+      width: 100,
+      height: 60,
+      wallThickness: 4,
+      teamCount: 2,
+      marblesPerTeam: 6,
+      marbleRadius: 4,
+      gap: 2,
+      padding: 3,
+      distribution: "grid",
+    };
+    const placements = createStagingMarblePlacements({
+      ...options,
+      random: seededRandom(1),
+    });
+    const repeated = createStagingMarblePlacements({
+      ...options,
+      random: seededRandom(999),
+    });
+    const firstBay = placements.filter(({ teamIndex }) => teamIndex === 0);
+
+    expect(placements).toEqual(repeated);
+    expect(firstBay.map(({ position: [x] }) => x)).toEqual([
+      -33, -23, -13, -33, -23, -13,
+    ]);
+    expect(firstBay.map(({ position: [, y] }) => y)).toEqual([
+      15, 15, 15, 5, 5, 5,
+    ]);
+  });
+});
+
+describe("finish grid", () => {
+  test("sizes the default team boxes to an exact 10 by 10 marble grid", () => {
+    const options = {
+      position: [0, 337.5],
+      width: 1440,
+      height: 135,
+      wallThickness: 15,
+      teamCount: 12,
+      marblesPerTeam: 100,
+      maximumRadius: 4.8,
+      minimumRadius: 1.2,
+      gap: 0.6,
+    };
+    const layout = createFinishGridLayout(options);
+    const placements = createFinishGridPlacements(options);
+
+    expect(layout).toMatchObject({
+      columns: 10,
+      rows: 10,
+      capacity: 100,
+      marbleRadius: 4.8,
+    });
+    expect(layout.gridWidth).toBeCloseTo(103.75);
+    expect(layout.gridHeight).toBeCloseTo(105);
+    expect(layout.rackWidth).toBe(1440);
+    expect(layout.rackHeight).toBe(135);
+    expect(placements).toHaveLength(1200);
+
+    const firstTeam = placements.filter(({ teamIndex }) => teamIndex === 0);
+    expect(new Set(firstTeam.map(({ position: [x] }) => x)).size).toBe(10);
+    expect(new Set(firstTeam.map(({ position: [, y] }) => y)).size).toBe(10);
+
+    const rackLeft = -layout.rackWidth / 2;
+    const leftMarbleEdge =
+      Math.min(...firstTeam.map(({ position: [x] }) => x)) -
+      layout.marbleRadius;
+    const rightMarbleEdge =
+      Math.max(...firstTeam.map(({ position: [x] }) => x)) +
+      layout.marbleRadius;
+    expect(leftMarbleEdge).toBeCloseTo(rackLeft + options.wallThickness);
+    expect(rightMarbleEdge).toBeCloseTo(
+      rackLeft + options.wallThickness + layout.gridWidth
+    );
+  });
+
+  test("keeps bottom-up ordering across the full team box", () => {
+    const placements = createFinishGridPlacements({
+      position: [0, 0],
+      width: 200,
+      height: 80,
+      wallThickness: 4,
+      teamCount: 2,
+      marblesPerTeam: 6,
+      maximumRadius: 4,
+      minimumRadius: 1,
+      gap: 2,
+    }).filter(({ teamIndex }) => teamIndex === 0);
+
+    expect(placements.slice(0, 3).map(({ position: [, y] }) => y)).toEqual([
+      32, 32, 32,
+    ]);
+    expect(placements.slice(3).map(({ position: [, y] }) => y)).toEqual([
+      -32, -32, -32,
+    ]);
   });
 });
 

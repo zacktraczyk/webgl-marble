@@ -1,5 +1,6 @@
 import type { LevelObjectData } from "../../editor/levelDocument";
 import type { BuilderUi } from "./elements";
+import { TEAM_COLORS, TEAM_NAMES } from "../../game/race/staging";
 import { PUSHER_PERIODS } from "./courseObjects";
 import type { RaceSnapshot } from "./raceController";
 import { SelectedTool, type RoundConfiguration } from "./types";
@@ -8,12 +9,15 @@ const key = (label: string) => `<kbd>${label}</kbd>`;
 
 const toolHint = ({
   selectedTool,
-  playbackActive,
+  phase,
 }: {
   selectedTool: SelectedTool;
-  playbackActive: boolean;
+  phase: RaceSnapshot["phase"];
 }) => {
-  if (playbackActive) {
+  if (phase === "complete") {
+    return `Round frozen · press ${key("R")} to reset and keep editing`;
+  }
+  if (phase !== "ready") {
     return `Press ${key("R")}, or click the restart button, to continue editing`;
   }
   switch (selectedTool) {
@@ -86,7 +90,7 @@ export const updateBuilderInterface = ({
     : "Create once is on";
   ui.toolHintOutput.innerHTML = toolHint({
     selectedTool,
-    playbackActive,
+    phase: race.phase,
   });
 
   const selectedWall =
@@ -169,28 +173,43 @@ export const updateBuilderInterface = ({
     icon.classList.toggle("hidden", icon.dataset.raceIcon !== playButtonIcon);
   }
 
+  const eliminatedTeamName =
+    race.eliminatedTeamIndex === null
+      ? null
+      : TEAM_NAMES[race.eliminatedTeamIndex];
+  ui.raceOutcome.hidden = race.phase !== "complete" || !eliminatedTeamName;
+  if (eliminatedTeamName && race.eliminatedTeamIndex !== null) {
+    const [red, green, blue] = TEAM_COLORS[race.eliminatedTeamIndex];
+    ui.raceOutcomeSwatch.style.backgroundColor = `rgb(${Math.round(red * 255)} ${Math.round(green * 255)} ${Math.round(blue * 255)})`;
+    ui.raceOutcomeLabel.textContent = `${eliminatedTeamName} marble eliminated`;
+  }
+
   ui.statusOutput.textContent = race.courseIssue
     ? race.courseIssue
     : race.phase === "ready"
       ? "Ready to race"
-      : race.phase === "running" && race.stagedMarbles > 0
+      : race.phase === "running" && race.queuedMarbles > 0
         ? `Releasing ${race.totalMarbles} marbles round-robin`
         : race.phase === "running"
-          ? "All marbles released"
+          ? `${race.finishedMarbles} of ${race.totalMarbles} finished · ${race.remainingMarbles} on track`
           : race.phase === "paused"
             ? "Race paused"
-            : "Race complete";
+            : eliminatedTeamName
+              ? `${eliminatedTeamName} marble eliminated · time frozen`
+              : "Race complete";
 
   ui.debugInfo.textContent = JSON.stringify(
     {
       phase: race.phase,
       teams: race.teamCount,
       totalMarbles: race.totalMarbles,
-      stagedMarbles: race.stagedMarbles,
+      queuedMarbles: race.queuedMarbles,
       releasedMarbles: race.releasedMarbles,
       finishedMarbles: race.finishedMarbles,
+      remainingMarbles: race.remainingMarbles,
+      eliminatedTeam: eliminatedTeamName,
       marbleRadius: race.marbleRadius,
-      stagingPhysicsActive: race.stagingPhysicsActive,
+      physicsActive: race.physicsActive,
       lostMarbles: race.lostMarbles,
       authoredObjects,
       selectedObjects,

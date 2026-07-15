@@ -19,6 +19,21 @@ export const TEAM_COLORS: readonly Color[] = [
   [248 / 255, 250 / 255, 252 / 255, 1],
 ];
 
+export const TEAM_NAMES = [
+  "Blue",
+  "Green",
+  "Red",
+  "Yellow",
+  "Purple",
+  "Orange",
+  "Pink",
+  "Brown",
+  "Teal",
+  "Indigo",
+  "Lime",
+  "White",
+] as const;
+
 export interface StagingRackGeometry {
   position: Vec2;
   width: number;
@@ -33,7 +48,7 @@ export interface StagingLayoutOptions extends StagingRackGeometry {
   gap?: number;
   padding?: number;
   random?: () => number;
-  distribution?: "scattered" | "stacked";
+  distribution?: "scattered" | "stacked" | "grid";
 }
 
 export interface StagingMarblePlacement {
@@ -370,20 +385,28 @@ export const createStagingMarblePlacements = ({
 
     const firstX = bayCenterX - gridWidth / 2 + marbleRadius;
     const firstY = position[1] - gridHeight / 2 + marbleRadius;
-    const slots = shuffle(
-      Array.from({ length: capacity }, (_, slotIndex) => ({
-        column: slotIndex % columns,
-        row: Math.floor(slotIndex / columns),
-      }))
-    );
+    const slots = Array.from({ length: capacity }, (_, slotIndex) => ({
+      column: slotIndex % columns,
+      row:
+        distribution === "grid"
+          ? rows - 1 - Math.floor(slotIndex / columns)
+          : Math.floor(slotIndex / columns),
+    }));
+    if (distribution === "scattered") {
+      shuffle(slots);
+    }
     for (let slotIndex = 0; slotIndex < marblesPerTeam; slotIndex++) {
       const { column, row } = slots[slotIndex];
       placements.push({
         teamIndex,
         slotIndex,
         position: [
-          firstX + column * pitch + (random() * 2 - 1) * jitter,
-          firstY + row * pitch + (random() * 2 - 1) * jitter,
+          firstX +
+            column * pitch +
+            (distribution === "grid" ? 0 : (random() * 2 - 1) * jitter),
+          firstY +
+            row * pitch +
+            (distribution === "grid" ? 0 : (random() * 2 - 1) * jitter),
         ],
       });
     }

@@ -19,6 +19,7 @@ export type BuilderElements = {
   editorOverlay: HTMLElement | null;
   play: HTMLElement | null;
   reset: HTMLElement | null;
+  raceOutcome: HTMLElement | null;
   zoomIn: HTMLElement | null;
   zoomOut: HTMLElement | null;
   zoomReset: HTMLElement | null;

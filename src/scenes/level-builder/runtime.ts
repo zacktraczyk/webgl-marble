@@ -89,7 +89,7 @@ export class LevelBuilderRuntime {
     const wallThickness = this.readWallThickness();
     this.level = new AuthoredLevel(
       this.stage,
-      this.configuration.teamCount,
+      this.configuration,
       wallThickness
     );
     for (const object of createDefaultCourse(
@@ -612,10 +612,29 @@ export class LevelBuilderRuntime {
   };
 
   private readonly getGridWorldBounds = (): GridWorldBounds => {
-    const boundaryWallBounds = this.level.objects
-      .filter((object) => object.prefab === "wall" && object.locked)
-      .map((object) => getLevelObjectBounds(object, this.level.wallThickness))
+    const boundaryWalls = this.level.objects
+      .filter(
+        (object): object is Extract<LevelObjectData, { prefab: "wall" }> =>
+          object.prefab === "wall" && Boolean(object.locked)
+      )
+      .map((object) => ({
+        object,
+        bounds: getLevelObjectBounds(object, this.level.wallThickness),
+      }));
+    const boundaryWallBounds = boundaryWalls
+      .filter(({ object }) => {
+        const { start, end } = object.properties;
+        return Math.abs(end[1] - start[1]) >= Math.abs(end[0] - start[0]);
+      })
+      .map(({ bounds }) => bounds)
       .sort((first, second) => first.min[0] - second.min[0]);
+    const topWall = boundaryWalls
+      .filter(({ object }) => {
+        const { start, end } = object.properties;
+        return Math.abs(end[0] - start[0]) > Math.abs(end[1] - start[1]);
+      })
+      .map(({ bounds }) => bounds)
+      .sort((first, second) => first.min[1] - second.min[1])[0];
     const leftWall = boundaryWallBounds[0];
     const rightWall = boundaryWallBounds[boundaryWallBounds.length - 1];
     const rack = this.level.find("staging-rack");
@@ -630,7 +649,7 @@ export class LevelBuilderRuntime {
     return {
       min: [
         leftWall?.max[0] ?? -this.stage.width / 2,
-        rackBounds?.max[1] ?? -this.stage.height / 2,
+        rackBounds?.max[1] ?? topWall?.max[1] ?? -this.stage.height / 2,
       ],
       max: [
         rightWall?.min[0] ?? this.stage.width / 2,
@@ -681,12 +700,12 @@ export class LevelBuilderRuntime {
 
   private readRoundConfiguration(): RoundConfiguration {
     return {
-      teamCount: clampInteger(this.ui.teamCountInput.value, 1, MAX_TEAMS),
+      teamCount: clampInteger(this.ui.teamCountInput.value, 2, MAX_TEAMS),
       marblesPerTeam: clampInteger(this.ui.marblesPerTeamInput.value, 1, 100),
       releaseIntervalMs: clampInteger(
         this.ui.releaseIntervalInput.value,
-        50,
-        1000
+        10,
+        250
       ),
     };
   }

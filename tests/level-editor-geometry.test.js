@@ -151,16 +151,19 @@ describe("level editor geometry", () => {
   });
 
   test("passes finish-zone rotation into its runtime definition", () => {
-    const [definition] = levelObjectDefinitions({
-      id: "finish",
-      prefab: "finish-zone",
-      transform: { position: [25, 30], rotation: Math.PI / 4 },
-      properties: {
-        width: 120,
-        height: 24,
-        color: [1, 1, 1, 0.35],
+    const [definition] = levelObjectDefinitions(
+      {
+        id: "finish",
+        prefab: "finish-zone",
+        transform: { position: [25, 30], rotation: Math.PI / 4 },
+        properties: {
+          width: 120,
+          height: 24,
+          color: [1, 1, 1, 0.35],
+        },
       },
-    });
+      { wallThickness: 4, marblesPerTeam: 1 }
+    );
 
     expect(definition.transform.rotation).toBeCloseTo(Math.PI / 4);
   });

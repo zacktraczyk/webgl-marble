@@ -10,6 +10,12 @@ import { millisecondsToSimulationSeconds } from "../../engine/physics/physics";
 import type Stage from "../../engine/stage";
 import { getLevelObjectMotionPose } from "../../editor/levelMotion";
 import { levelObjectDefinitions } from "../../game/prefabs/levelObject";
+import {
+  MAX_MARBLE_RADIUS,
+  MIN_MARBLE_RADIUS,
+  STAGING_MARBLE_GAP,
+} from "./constants";
+import type { RoundConfiguration } from "./types";
 
 type LevelPrefab = LevelObjectData["prefab"];
 
@@ -18,13 +24,16 @@ export class AuthoredLevel {
   private readonly entities = new Map<string, Entity[]>();
   private readonly hiddenObjects = new Set<string>();
   private teamCount: number;
+  private marblesPerTeam: number;
+  private raceMarbleRadius = MAX_MARBLE_RADIUS;
 
   constructor(
     private readonly stage: Stage,
-    teamCount: number,
+    configuration: Pick<RoundConfiguration, "teamCount" | "marblesPerTeam">,
     wallThickness: number
   ) {
-    this.teamCount = teamCount;
+    this.teamCount = configuration.teamCount;
+    this.marblesPerTeam = configuration.marblesPerTeam;
     this.document = new LevelDocument(
       "Untitled level",
       [stage.width, stage.height],
@@ -32,8 +41,37 @@ export class AuthoredLevel {
     );
   }
 
-  setTeamCount(teamCount: number) {
-    this.teamCount = teamCount;
+  setRoundConfiguration(
+    configuration: Pick<RoundConfiguration, "teamCount" | "marblesPerTeam">
+  ) {
+    if (
+      this.teamCount === configuration.teamCount &&
+      this.marblesPerTeam === configuration.marblesPerTeam
+    ) {
+      return;
+    }
+    this.teamCount = configuration.teamCount;
+    this.marblesPerTeam = configuration.marblesPerTeam;
+    for (const object of [...this.objects]) {
+      if (
+        object.prefab === "staging-rack" ||
+        object.prefab === "finish-zone" ||
+        object.prefab === "spawn-point"
+      ) {
+        this.refresh(object);
+      }
+    }
+  }
+
+  setRaceMarbleRadius(marbleRadius: number) {
+    if (Math.abs(this.raceMarbleRadius - marbleRadius) < Number.EPSILON) {
+      return;
+    }
+    this.raceMarbleRadius = marbleRadius;
+    const spawnPoint = this.find("spawn-point");
+    if (spawnPoint) {
+      this.refresh(spawnPoint);
+    }
   }
 
   get objects() {
@@ -80,7 +118,7 @@ export class AuthoredLevel {
   setWallThickness(wallThickness: number) {
     this.document.settings.wallThickness = wallThickness;
     for (const object of [...this.objects]) {
-      if (object.prefab === "wall") {
+      if (object.prefab === "wall" || object.prefab === "finish-zone") {
         this.refresh(object);
       }
     }
@@ -180,7 +218,12 @@ export class AuthoredLevel {
   private spawn(object: LevelObjectData) {
     const entities = levelObjectDefinitions(object, {
       teamCount: this.teamCount,
+      marblesPerTeam: this.marblesPerTeam,
       wallThickness: this.wallThickness,
+      maximumMarbleRadius: MAX_MARBLE_RADIUS,
+      minimumMarbleRadius: MIN_MARBLE_RADIUS,
+      marbleGap: STAGING_MARBLE_GAP,
+      raceMarbleRadius: this.raceMarbleRadius,
     }).map((definition) => this.stage.spawn(definition));
     if (this.hiddenObjects.has(object.id)) {
       for (const entity of entities) {

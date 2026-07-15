@@ -7,7 +7,12 @@ import {
   STAGING_RACK_HEIGHT,
   STAGING_RACK_WIDTH,
 } from "../../game/prefabs/stagingRack";
-import { DEFAULT_SPAWN_DIRECTION_VARIANCE } from "../../game/race/spawn";
+import { FINISH_RACK_HEIGHT } from "../../game/prefabs/finishZone";
+import {
+  DEFAULT_SPAWN_DIRECTION_VARIANCE,
+  spawnAreaRadius,
+} from "../../game/race/spawn";
+import { MAX_TEAMS } from "../../game/race/staging";
 import {
   COURSE_STROKE_WIDTH,
   DEFAULT_LAUNCH_SPEED,
@@ -102,7 +107,11 @@ export const createSpawnPoint = (position: Vec2): NewLevelObjectData => ({
   prefab: "spawn-point",
   transform: { position, rotation: Math.PI / 2 },
   properties: {
-    radius: MAX_MARBLE_RADIUS * 2.5,
+    radius: spawnAreaRadius(
+      MAX_MARBLE_RADIUS * 2.5,
+      MAX_TEAMS,
+      MAX_MARBLE_RADIUS
+    ),
     color: [...SPAWN_COLOR],
     launchSpeed: DEFAULT_LAUNCH_SPEED,
     directionVariance: DEFAULT_SPAWN_DIRECTION_VARIANCE,
@@ -115,10 +124,7 @@ export const createDefaultCourse = (
   wallThickness = COURSE_STROKE_WIDTH
 ): NewLevelObjectData[] => [
   ...createCourseBoundaries(stageWidth, stageHeight, wallThickness),
-  createSpawnPoint([
-    0,
-    -stageHeight / 2 + STAGING_RACK_HEIGHT + MAX_MARBLE_RADIUS * 10,
-  ]),
+  createSpawnPoint([0, -stageHeight / 2 + MAX_MARBLE_RADIUS * 10]),
 ];
 
 export const createCourseBoundaries = (
@@ -135,22 +141,28 @@ export const createCourseBoundaries = (
       color: [...WALL_COLOR],
     },
   });
+  const topWallY = -stageHeight / 2 + wallThickness / 2;
 
   return [
-    createStagingRack(
-      [0, -stageHeight / 2 + STAGING_RACK_HEIGHT / 2],
-      stageWidth
-    ),
     {
       prefab: "finish-zone",
       locked: true,
       transform: {
-        position: [0, stageHeight / 2 - COURSE_STROKE_WIDTH / 2],
+        position: [0, stageHeight / 2 - FINISH_RACK_HEIGHT / 2],
       },
       properties: {
         width: stageWidth,
-        height: COURSE_STROKE_WIDTH,
+        height: FINISH_RACK_HEIGHT,
         color: [...FINISH_COLOR],
+      },
+    },
+    {
+      prefab: "wall",
+      locked: true,
+      properties: {
+        start: [-stageWidth / 2, topWallY],
+        end: [stageWidth / 2, topWallY],
+        color: [...WALL_COLOR],
       },
     },
     sideWall(-stageWidth / 2 + wallThickness / 2),

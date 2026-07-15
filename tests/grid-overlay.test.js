@@ -68,8 +68,8 @@ describe("level builder grid overlay", () => {
 
   test("aligns major columns and rows with every default course boundary", () => {
     const { grid, properties } = createGridOverlay({
-      min: [-705, -270],
-      max: [705, 390],
+      min: [-705, -390],
+      max: [705, 270],
     });
 
     grid.update();

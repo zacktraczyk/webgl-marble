@@ -24,6 +24,9 @@ export type BuilderUi = {
   playButtonLabel: HTMLElement | null;
   playButtonIcons: SVGElement[];
   resetButton: HTMLButtonElement;
+  raceOutcome: HTMLElement;
+  raceOutcomeSwatch: HTMLElement;
+  raceOutcomeLabel: HTMLElement;
   zoomInButton: HTMLButtonElement;
   zoomOutButton: HTMLButtonElement;
   zoomResetButton: HTMLButtonElement;
@@ -54,6 +57,7 @@ export type BuilderUi = {
 
 export const resolveBuilderUi = (selectors: BuilderElements): BuilderUi => {
   const playButton = requireElement<HTMLButtonElement>(selectors.play, "play");
+  const raceOutcome = requireElement(selectors.raceOutcome, "race outcome");
   return {
     toolbar: requireElement(selectors.toolbar, "builder toolbar"),
     raceControls: requireElement(selectors.raceControls, "race controls"),
@@ -94,6 +98,15 @@ export const resolveBuilderUi = (selectors: BuilderElements): BuilderUi => {
       playButton.querySelectorAll<SVGElement>("[data-race-icon]")
     ),
     resetButton: requireElement(selectors.reset, "reset"),
+    raceOutcome,
+    raceOutcomeSwatch: requireElement(
+      raceOutcome.querySelector("[data-race-outcome-swatch]"),
+      "race outcome swatch"
+    ),
+    raceOutcomeLabel: requireElement(
+      raceOutcome.querySelector("[data-race-outcome-label]"),
+      "race outcome label"
+    ),
     zoomInButton: requireElement(selectors.zoomIn, "zoom in"),
     zoomOutButton: requireElement(selectors.zoomOut, "zoom out"),
     zoomResetButton: requireElement(selectors.zoomReset, "reset zoom"),
