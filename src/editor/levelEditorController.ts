@@ -1,8 +1,22 @@
 import type { Vec2 } from "../engine/core/transform";
 import type Stage from "../engine/stage";
 import { GRID_SIZE } from "../scenes/level-builder/constants";
-import { SelectedTool, type PusherTool } from "../scenes/level-builder/types";
-import type { LevelObjectData, LevelObjectMotion } from "./levelDocument";
+import {
+  isPusherTool,
+  SelectedTool,
+  type PusherTool,
+} from "../scenes/level-builder/types";
+import type { LevelObjectData } from "./levelDocument";
+import type {
+  EditorGesture,
+  PusherPlacementPreview,
+  SelectionMarquee,
+  TransformGesture,
+  WallDraft,
+  WallEndpointFeedback,
+} from "./levelEditorGestures";
+import { LevelEditorKeyboard } from "./levelEditorKeyboard";
+import { LevelEditorSelection } from "./levelEditorSelection";
 import { oscillationPeriodForRange } from "./levelMotion";
 import {
   applyLevelObjectShape,
@@ -45,99 +59,12 @@ type EditorCallbacks = {
   onReset(): void;
 };
 
-type PanGesture = {
-  kind: "pan";
-  pointerId: number;
-  lastScreen: Vec2;
-};
-
-type MoveGesture = {
-  kind: "move";
-  pointerId: number;
-  startWorld: Vec2;
-  startScreen: Vec2;
-  originals: Map<string, LevelObjectData>;
-  changed: boolean;
-};
-
-type TransformGesture = {
-  kind: "resize" | "rotate";
-  pointerId: number;
-  objectId: string;
-  handle?: ResizeHandle;
-  startShape: LevelObjectShape;
-  startWorld: Vec2;
-  startScreen: Vec2;
-  changed: boolean;
-};
-
-type WallEndpointGesture = {
-  kind: "wall-endpoint";
-  pointerId: number;
-  objectId: string;
-  endpoint: "start" | "end";
-  start: Vec2;
-  end: Vec2;
-  startScreen: Vec2;
-  changed: boolean;
-};
-
-type WallGesture = {
-  kind: "wall";
-  pointerId: number;
-  start: Vec2;
-  end: Vec2;
-  startScreen: Vec2;
-  anchored: boolean;
-  changed: boolean;
-};
-
-type PlaceGesture = {
-  kind: "place";
-  pointerId: number;
-  tool: SelectedTool.SpawnPoint | PusherTool;
-  startScreen: Vec2;
-};
-
-type MotionRangeGesture = {
-  kind: "motion-range";
-  pointerId: number;
-  objectId: string;
-  startMotion: LevelObjectMotion;
-  startScreen: Vec2;
-  changed: boolean;
-};
-
-type MarqueeGesture = {
-  kind: "marquee";
-  pointerId: number;
-  startWorld: Vec2;
-  currentWorld: Vec2;
-  startScreen: Vec2;
-  additive: boolean;
-  initialSelection: Set<string>;
-  changed: boolean;
-};
-
-type EditorGesture =
-  | PanGesture
-  | MoveGesture
-  | TransformGesture
-  | WallEndpointGesture
-  | WallGesture
-  | PlaceGesture
-  | MotionRangeGesture
-  | MarqueeGesture;
-
-export type WallDraft = { start: Vec2; end: Vec2; thickness: number };
-export type SelectionMarquee = { start: Vec2; end: Vec2 };
-export type WallEndpointFeedback = {
-  objectId: string;
-  endpoint: "start" | "end";
-  position: Vec2;
-  kind: "snap" | "edit";
-};
-export type PusherPlacementPreview = { tool: PusherTool; position: Vec2 };
+export type {
+  PusherPlacementPreview,
+  SelectionMarquee,
+  WallDraft,
+  WallEndpointFeedback,
+} from "./levelEditorGestures";
 
 type WallObject = Extract<LevelObjectData, { prefab: "wall" }>;
 type WallEndpointTarget = Omit<WallEndpointFeedback, "kind"> & {
@@ -157,18 +84,6 @@ const MIN_WALL_LENGTH = GRID_SIZE * 0.4;
 const MIN_ZOOM = 0.1;
 const MAX_ZOOM = 4;
 
-const isPusherTool = (tool: SelectedTool): tool is PusherTool =>
-  tool === SelectedTool.Slider ||
-  tool === SelectedTool.Spinner ||
-  tool === SelectedTool.Sweeper;
-
-const isKeyboardControlTarget = (target: EventTarget | null) =>
-  target instanceof HTMLElement &&
-  (target.isContentEditable ||
-    target.matches(
-      'button, a[href], input, textarea, select, summary, [role="button"], [role="menuitem"]'
-    ));
-
 const boundsFromPoints = (first: Vec2, second: Vec2): Bounds => ({
   min: [Math.min(first[0], second[0]), Math.min(first[1], second[1])],
   max: [Math.max(first[0], second[0]), Math.max(first[1], second[1])],
@@ -183,11 +98,9 @@ export class LevelEditorController {
   private gesture: EditorGesture | null = null;
   private activeTool = SelectedTool.Pointer;
   private readOnly = false;
-  private spaceHeld = false;
-  private selectionModifierHeld = false;
+  private readonly keyboard: LevelEditorKeyboard;
   private lastPointerScreen: Vec2 | null = null;
-  private readonly selectedIds = new Set<string>();
-  private hoveredId: string | null = null;
+  private readonly selection: LevelEditorSelection;
   private wallAnchor: Vec2 | null = null;
   private wallPreviewEnd: Vec2 | null = null;
   private endpointFeedback: WallEndpointFeedback | null = null;
@@ -213,6 +126,7 @@ export class LevelEditorController {
     this.getDefaultWallThickness = getDefaultWallThickness;
     this.getGridSnapEnabled = getGridSnapEnabled;
     this.callbacks = callbacks;
+    this.selection = new LevelEditorSelection(getObjects);
 
     stage.canvas.addEventListener("pointerdown", this.pointerDown, { signal });
     stage.canvas.addEventListener("pointermove", this.pointerMove, { signal });
@@ -227,9 +141,39 @@ export class LevelEditorController {
       signal,
       passive: false,
     });
-    window.addEventListener("keydown", this.keyDown, { signal });
-    window.addEventListener("keyup", this.keyUp, { signal });
-    window.addEventListener("blur", this.windowBlur, { signal });
+    this.keyboard = new LevelEditorKeyboard(
+      {
+        undo: () => {
+          this.cancelGesture();
+          this.callbacks.onUndo();
+        },
+        redo: () => {
+          this.cancelGesture();
+          this.callbacks.onRedo();
+        },
+        selectAll: this.selectAll,
+        escape: this.handleEscape,
+        finishWall: this.finishWall,
+        reset: () => {
+          if (!this.readOnly) {
+            return false;
+          }
+          this.callbacks.onReset();
+          return true;
+        },
+        requestTool: (tool) => {
+          if (!this.readOnly || tool === SelectedTool.Pan) {
+            this.callbacks.onToolRequest(tool);
+          }
+        },
+        deleteSelection: this.deleteSelection,
+        nudgeSelection: this.nudgeSelection,
+        modifierChanged: this.handleSelectionModifierChange,
+        spaceChanged: () => this.updateCursor(),
+        blur: this.handleWindowBlur,
+      },
+      signal
+    );
   }
 
   setActiveTool(tool: SelectedTool) {
@@ -238,7 +182,7 @@ export class LevelEditorController {
       this.clearWallAnchor();
     }
     this.activeTool = tool;
-    this.hoveredId = null;
+    this.selection.setHovered(null);
     this.endpointFeedback = null;
     this.placementPreviewPosition = null;
     this.updateCursor();
@@ -248,7 +192,7 @@ export class LevelEditorController {
     if (readOnly && !this.readOnly) {
       this.cancelGesture();
       this.clearWallAnchor();
-      this.hoveredId = null;
+      this.selection.setHovered(null);
       this.endpointFeedback = null;
       this.placementPreviewPosition = null;
     }
@@ -257,14 +201,13 @@ export class LevelEditorController {
   }
 
   clearSelection() {
-    this.selectedIds.clear();
-    this.hoveredId = null;
+    this.selection.clearAll();
   }
 
   get isActive() {
     return (
       this.activeTool === SelectedTool.Pointer ||
-      this.selectedIds.size > 0 ||
+      this.selection.size > 0 ||
       this.wallAnchor !== null ||
       this.endpointFeedback !== null ||
       this.pusherPlacementPreview !== null ||
@@ -274,18 +217,15 @@ export class LevelEditorController {
   }
 
   get selectedObjects() {
-    return this.getObjects().filter((object) =>
-      this.selectedIds.has(object.id)
-    );
+    return this.selection.selectedObjects;
   }
 
   get selectedObject() {
-    const selected = this.selectedObjects;
-    return selected.length === 1 ? selected[0] : null;
+    return this.selection.selectedObject;
   }
 
   get hoveredObject() {
-    return this.findObject(this.hoveredId);
+    return this.selection.hoveredObject;
   }
 
   get wallDraft(): WallDraft | null {
@@ -412,10 +352,7 @@ export class LevelEditorController {
     }
 
     if (gesture.kind === "marquee") {
-      this.selectedIds.clear();
-      for (const id of gesture.initialSelection) {
-        this.selectedIds.add(id);
-      }
+      this.selection.replaceAll(gesture.initialSelection);
     }
   }
 
@@ -661,7 +598,7 @@ export class LevelEditorController {
   private readonly pointerDown = (event: PointerEvent) => {
     const screenPoint = this.screenPoint(event);
     this.lastPointerScreen = screenPoint;
-    const temporaryPan = this.spaceHeld && event.button === 0;
+    const temporaryPan = this.keyboard.spaceHeld && event.button === 0;
     if (
       event.button === 1 ||
       temporaryPan ||
@@ -764,8 +701,7 @@ export class LevelEditorController {
       (endpointObject ? this.endpointAt(endpointObject, screenPoint) : null);
     if (endpointObject && endpoint && !this.readOnly) {
       if (directEndpointTarget) {
-        this.selectedIds.clear();
-        this.selectedIds.add(endpointObject.id);
+        this.selection.replace(endpointObject.id);
       }
       const { start, end } = getWallEndpoints(endpointObject);
       this.gesture = {
@@ -815,18 +751,17 @@ export class LevelEditorController {
     );
     if (pickedObject) {
       if (event.shiftKey) {
-        if (this.selectedIds.has(pickedObject.id)) {
-          this.selectedIds.delete(pickedObject.id);
+        if (this.selection.has(pickedObject.id)) {
+          this.selection.delete(pickedObject.id);
           this.updateIdleState(screenPoint);
           event.preventDefault();
           return;
         }
-        this.selectedIds.add(pickedObject.id);
-      } else if (!this.selectedIds.has(pickedObject.id)) {
-        this.selectedIds.clear();
-        this.selectedIds.add(pickedObject.id);
+        this.selection.add(pickedObject.id);
+      } else if (!this.selection.has(pickedObject.id)) {
+        this.selection.replace(pickedObject.id);
       }
-      this.hoveredId = pickedObject.id;
+      this.selection.setHovered(pickedObject.id);
       if (!this.readOnly) {
         this.beginMove(event, screenPoint);
       }
@@ -834,9 +769,9 @@ export class LevelEditorController {
       return;
     }
 
-    const initialSelection = new Set(this.selectedIds);
+    const initialSelection = this.selection.snapshot();
     if (!event.shiftKey) {
-      this.selectedIds.clear();
+      this.selection.clear();
     }
     const worldPoint = this.worldPoint(screenPoint);
     this.gesture = {
@@ -987,10 +922,7 @@ export class LevelEditorController {
             nextSelection.add(object.id);
           }
         }
-        this.selectedIds.clear();
-        for (const id of nextSelection) {
-          this.selectedIds.add(id);
-        }
+        this.selection.replaceAll(nextSelection);
       }
       event.preventDefault();
       return;
@@ -1161,8 +1093,7 @@ export class LevelEditorController {
       );
       if ((gesture.changed || gesture.anchored) && length >= MIN_WALL_LENGTH) {
         const object = this.callbacks.onCreateWall(gesture.start, gesture.end);
-        this.selectedIds.clear();
-        this.selectedIds.add(object.id);
+        this.selection.replace(object.id);
         if (gesture.anchored) {
           this.wallAnchor = [...gesture.end];
           this.wallPreviewEnd = [...gesture.end];
@@ -1183,8 +1114,7 @@ export class LevelEditorController {
           event.altKey
         );
         const object = this.callbacks.onPlaceObject(gesture.tool, position);
-        this.selectedIds.clear();
-        this.selectedIds.add(object.id);
+        this.selection.replace(object.id);
         this.placementPreviewPosition = null;
         this.callbacks.onToolComplete(gesture.tool);
       }
@@ -1215,7 +1145,7 @@ export class LevelEditorController {
     this.lastPointerScreen = null;
     this.placementPreviewPosition = null;
     if (!this.gesture) {
-      this.hoveredId = null;
+      this.selection.setHovered(null);
       this.endpointFeedback = null;
       this.updateCursor();
     }
@@ -1238,20 +1168,20 @@ export class LevelEditorController {
   private updateIdleState(
     screenPoint: Vec2,
     {
-      temporarySelection = this.selectionModifierHeld &&
+      temporarySelection = this.keyboard.selectionModifierHeld &&
         this.creationToolActive,
     }: { temporarySelection?: boolean } = {}
   ) {
     if (this.gesture) {
       return;
     }
-    if (this.spaceHeld || this.activeTool === SelectedTool.Pan) {
-      this.hoveredId = null;
+    if (this.keyboard.spaceHeld || this.activeTool === SelectedTool.Pan) {
+      this.selection.setHovered(null);
       this.stage.canvas.style.cursor = "grab";
       return;
     }
     if (this.creationToolActive && !temporarySelection) {
-      this.hoveredId = null;
+      this.selection.setHovered(null);
       this.stage.canvas.style.cursor = this.readOnly
         ? "not-allowed"
         : "crosshair";
@@ -1264,7 +1194,7 @@ export class LevelEditorController {
         })
       : null;
     if (directEndpointTarget) {
-      this.hoveredId = directEndpointTarget.objectId;
+      this.selection.setHovered(directEndpointTarget.objectId);
       this.showEndpointFeedback(directEndpointTarget, "edit");
       this.stage.canvas.style.cursor = this.readOnly ? "default" : "crosshair";
       return;
@@ -1276,7 +1206,7 @@ export class LevelEditorController {
       selectedObject &&
       this.motionRangeHandleAt(selectedObject, screenPoint)
     ) {
-      this.hoveredId = selectedObject.id;
+      this.selection.setHovered(selectedObject.id);
       this.stage.canvas.style.cursor = this.readOnly ? "default" : "crosshair";
       return;
     }
@@ -1285,7 +1215,7 @@ export class LevelEditorController {
       : null;
     if (selectedObject?.prefab === "wall" && selectedEndpoint) {
       const { start, end } = getWallEndpoints(selectedObject);
-      this.hoveredId = selectedObject.id;
+      this.selection.setHovered(selectedObject.id);
       this.showEndpointFeedback(
         {
           object: selectedObject,
@@ -1299,7 +1229,7 @@ export class LevelEditorController {
       return;
     }
     if (selectedObject && this.rotationHandleAt(selectedObject, screenPoint)) {
-      this.hoveredId = selectedObject.id;
+      this.selection.setHovered(selectedObject.id);
       this.stage.canvas.style.cursor = this.readOnly ? "default" : "grab";
       return;
     }
@@ -1307,7 +1237,7 @@ export class LevelEditorController {
       ? this.resizeHandleAt(selectedObject, screenPoint)
       : null;
     if (handle) {
-      this.hoveredId = selectedObject?.id ?? null;
+      this.selection.setHovered(selectedObject?.id ?? null);
       this.stage.canvas.style.cursor = this.readOnly
         ? "default"
         : resizeHandleCursor(handle);
@@ -1319,7 +1249,7 @@ export class LevelEditorController {
       4 / Math.max(this.stage.zoom, 0.001),
       this.getDefaultWallThickness()
     );
-    this.hoveredId = hoveredObject?.id ?? null;
+    this.selection.setHovered(hoveredObject?.id ?? null);
     this.stage.canvas.style.cursor =
       hoveredObject && !this.readOnly ? "grab" : "default";
   }
@@ -1327,9 +1257,12 @@ export class LevelEditorController {
   private updateCursor() {
     if (this.gesture?.kind === "pan") {
       this.stage.canvas.style.cursor = "grabbing";
-    } else if (this.spaceHeld || this.activeTool === SelectedTool.Pan) {
+    } else if (
+      this.keyboard.spaceHeld ||
+      this.activeTool === SelectedTool.Pan
+    ) {
       this.stage.canvas.style.cursor = "grab";
-    } else if (this.selectionModifierHeld && this.creationToolActive) {
+    } else if (this.keyboard.selectionModifierHeld && this.creationToolActive) {
       this.stage.canvas.style.cursor = "default";
     } else if (this.creationToolActive) {
       this.stage.canvas.style.cursor = this.readOnly
@@ -1340,125 +1273,56 @@ export class LevelEditorController {
     }
   }
 
-  private readonly keyDown = (event: KeyboardEvent) => {
-    if (isKeyboardControlTarget(event.target)) {
-      return;
+  private readonly selectAll = () => {
+    if (this.readOnly) {
+      return false;
     }
+    this.selection.replaceAll(
+      this.getObjects()
+        .filter((object) => !object.locked)
+        .map((object) => object.id)
+    );
+    return true;
+  };
 
-    if ((event.key === "Meta" || event.key === "Control") && !event.repeat) {
-      this.selectionModifierHeld = true;
-      if (this.lastPointerScreen) {
-        this.updateIdleState(this.lastPointerScreen, {
-          temporarySelection: this.creationToolActive,
-        });
-      } else {
-        this.updateCursor();
-      }
-      return;
-    }
-
-    if (event.key === " " && !event.repeat) {
-      this.spaceHeld = true;
-      this.updateCursor();
-      event.preventDefault();
-      return;
-    }
-
-    const modifier = event.metaKey || event.ctrlKey;
-    if (modifier && event.key.toLowerCase() === "z") {
+  private readonly handleEscape = () => {
+    if (this.gesture) {
       this.cancelGesture();
-      if (event.shiftKey) {
-        this.callbacks.onRedo();
-      } else {
-        this.callbacks.onUndo();
-      }
-      event.preventDefault();
-      return;
-    }
-    if (modifier && event.key.toLowerCase() === "y") {
-      this.cancelGesture();
-      this.callbacks.onRedo();
-      event.preventDefault();
-      return;
-    }
-    if (modifier && event.key.toLowerCase() === "a") {
-      this.selectedIds.clear();
-      for (const object of this.getObjects()) {
-        if (!object.locked) {
-          this.selectedIds.add(object.id);
-        }
-      }
-      event.preventDefault();
-      return;
-    }
-
-    if (event.key === "Escape") {
-      if (this.gesture) {
-        this.cancelGesture();
-      } else if (this.wallAnchor) {
-        this.clearWallAnchor();
-      } else if (this.activeTool !== SelectedTool.Pointer) {
-        this.callbacks.onToolRequest(SelectedTool.Pointer);
-      } else if (this.selectedIds.size > 0) {
-        this.clearSelection();
-      }
-      event.preventDefault();
-      return;
-    }
-
-    if (event.key === "Enter" && this.wallAnchor) {
+    } else if (this.wallAnchor) {
       this.clearWallAnchor();
-      this.updateCursor();
-      event.preventDefault();
-      return;
+    } else if (this.activeTool !== SelectedTool.Pointer) {
+      this.callbacks.onToolRequest(SelectedTool.Pointer);
+    } else if (this.selection.size > 0) {
+      this.clearSelection();
     }
+    return true;
+  };
 
-    if (!modifier && !event.altKey) {
-      if (event.key.toLowerCase() === "r" && this.readOnly) {
-        this.callbacks.onReset();
-        event.preventDefault();
-        return;
-      }
-      const toolByKey: Partial<Record<string, SelectedTool>> = {
-        v: SelectedTool.Pointer,
-        h: SelectedTool.Pan,
-        w: SelectedTool.Wall,
-        l: SelectedTool.Wall,
-        s: SelectedTool.SpawnPoint,
-      };
-      const requestedTool = toolByKey[event.key.toLowerCase()];
-      if (requestedTool !== undefined) {
-        if (!this.readOnly || requestedTool === SelectedTool.Pan) {
-          this.callbacks.onToolRequest(requestedTool);
-        }
-        event.preventDefault();
-        return;
-      }
+  private readonly finishWall = () => {
+    if (!this.wallAnchor) {
+      return false;
     }
+    this.clearWallAnchor();
+    this.updateCursor();
+    return true;
+  };
 
+  private readonly deleteSelection = () => {
     const selected = this.selectedObjects;
     if (selected.length === 0 || this.readOnly) {
-      return;
+      return false;
     }
-    if (event.key === "Delete" || event.key === "Backspace") {
-      this.cancelGesture();
-      this.callbacks.onDelete(selected);
-      this.clearSelection();
-      event.preventDefault();
-      return;
-    }
+    this.cancelGesture();
+    this.callbacks.onDelete(selected);
+    this.clearSelection();
+    return true;
+  };
 
-    const directionByKey: Partial<Record<string, Vec2>> = {
-      ArrowLeft: [-1, 0],
-      ArrowRight: [1, 0],
-      ArrowUp: [0, -1],
-      ArrowDown: [0, 1],
-    };
-    const direction = directionByKey[event.key];
-    if (!direction) {
-      return;
+  private readonly nudgeSelection = (direction: Vec2, distance: number) => {
+    const selected = this.selectedObjects;
+    if (selected.length === 0 || this.readOnly) {
+      return false;
     }
-    const distance = event.shiftKey ? 10 : 1;
     for (const object of selected) {
       if (object.prefab === "wall") {
         const { start, end } = getWallEndpoints(object);
@@ -1486,32 +1350,21 @@ export class LevelEditorController {
     }
     this.callbacks.onObjectsChange(selected);
     this.callbacks.onObjectsCommit(selected);
-    event.preventDefault();
+    return true;
   };
 
-  private readonly keyUp = (event: KeyboardEvent) => {
-    if (event.key === "Meta" || event.key === "Control") {
-      this.selectionModifierHeld = false;
-      this.endpointFeedback = null;
-      if (this.lastPointerScreen) {
-        this.updateIdleState(this.lastPointerScreen, {
-          temporarySelection: false,
-        });
-      } else {
-        this.updateCursor();
-      }
-      return;
-    }
-    if (event.key === " ") {
-      this.spaceHeld = false;
+  private readonly handleSelectionModifierChange = (held: boolean) => {
+    this.endpointFeedback = null;
+    if (this.lastPointerScreen) {
+      this.updateIdleState(this.lastPointerScreen, {
+        temporarySelection: held && this.creationToolActive,
+      });
+    } else {
       this.updateCursor();
-      event.preventDefault();
     }
   };
 
-  private readonly windowBlur = () => {
-    this.spaceHeld = false;
-    this.selectionModifierHeld = false;
+  private readonly handleWindowBlur = () => {
     this.endpointFeedback = null;
     if (this.gesture) {
       this.cancelGesture();

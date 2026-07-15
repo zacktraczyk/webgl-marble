@@ -35,7 +35,7 @@ import "../styles/global.css";
   try {
     mountScene(createScene(), { showFps: true });
   } catch (error) {
-    const errorElem = document.getElementById("#error");
+    const errorElem = document.getElementById("error");
     if (errorElem) {
       errorElem.textContent = `${error}`;
     }

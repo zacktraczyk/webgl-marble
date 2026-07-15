@@ -1,4 +1,5 @@
 import type Stage from ".";
+import type { Entity } from "../core/entity";
 import { VDU } from "../vdu/vdu";
 import {
   calculateStageFit,
@@ -17,15 +18,9 @@ export interface EventHandlers {
 }
 
 export interface DragAndDroppable {
-  position: [number, number];
+  entity: Entity;
   grabHandleRadius: number;
-  grabHandleColor: [number, number, number, number];
 }
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const isDragAndDroppable = (object: any): object is DragAndDroppable => {
-  return "grabHandleRadius" in object;
-};
 
 export class DragAndDropHandlers implements EventHandlers {
   private readonly _stage: Stage;
@@ -37,13 +32,13 @@ export class DragAndDropHandlers implements EventHandlers {
 
   pointerdown(event: PointerEvent) {
     const [x, y] = this._stage.mouseWorldPosition(event);
-    const draggingObject = this._stage.objects.find((object) => {
-      if (isDragAndDroppable(object)) {
-        const [x1, y1] = object.position;
+    const draggingObject = [...this._stage.draggableEntities]
+      .reverse()
+      .find(({ entity, grabHandleRadius }) => {
+        const [x1, y1] = entity.position;
         const distance = Math.sqrt((x1 - x) ** 2 + (y1 - y) ** 2);
-        return distance < object.grabHandleRadius;
-      }
-    }) as DragAndDroppable | undefined;
+        return distance < grabHandleRadius;
+      });
     if (!draggingObject) {
       this._draggingObject = null;
       return false;
@@ -60,7 +55,7 @@ export class DragAndDropHandlers implements EventHandlers {
       return;
     }
     const [x, y] = this._stage.mouseWorldPosition(event);
-    this._draggingObject.position = [x, y];
+    this._draggingObject.entity.position = [x, y];
   }
 
   pointerup() {

@@ -24,7 +24,7 @@ import "../styles/global.css";
   try {
     mountScene(createScene());
   } catch (error) {
-    const errorElem = document.getElementById("#error");
+    const errorElem = document.getElementById("error");
     if (errorElem) {
       errorElem.textContent = `${error}`;
     }

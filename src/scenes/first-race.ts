@@ -190,7 +190,7 @@ function init() {
 }
 
 // Debug info
-const debugInfoElem = document.getElementById("#debug-info");
+const debugInfoElem = document.getElementById("debug-info");
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 const updateDebugInfo = (obj: any) => {
   if (debugInfoElem) {

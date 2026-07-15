@@ -1,13 +1,12 @@
 import type { Scene } from "../../engine/runtime/scene";
 import { LevelBuilderRuntime } from "./runtime";
-import type { BuilderElements } from "./types";
 
-function createScene(elementSelectors: BuilderElements): Scene {
+function createScene(rootElement: HTMLElement | null): Scene {
   let runtime: LevelBuilderRuntime | null = null;
 
   return {
     load: ({ signal }) => {
-      runtime = new LevelBuilderRuntime(elementSelectors, signal);
+      runtime = new LevelBuilderRuntime(rootElement, signal);
     },
     fixedUpdate: (deltaMs) => runtime?.fixedUpdate(deltaMs),
     update: () => runtime?.updateInterface(),
@@ -19,5 +18,4 @@ function createScene(elementSelectors: BuilderElements): Scene {
   };
 }
 
-export type { BuilderElements } from "./types";
 export default createScene;

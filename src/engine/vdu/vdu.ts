@@ -3,10 +3,10 @@ import type { EntityId } from "../core/entity";
 import { createTransform, type Transform } from "../core/transform";
 import {
   type BufferInfo,
-  type Drawable,
   type ProgramInfo,
   DrawEntity,
   createCircle,
+  createPolygon,
   createRectangle,
   createRightTriangle,
 } from "./entity";
@@ -19,7 +19,7 @@ import vertShader from "./glsl/vert.glsl";
 import * as WebglUtils from "./webglUtils";
 
 /**
- * Renders Drawable objects using WebGL
+ * Renders World-owned entity components using WebGL.
  */
 export class VDU {
   readonly canvas: HTMLCanvasElement;
@@ -105,16 +105,6 @@ export class VDU {
     return this._drawMode;
   }
 
-  add({ drawEntities }: Drawable) {
-    for (const entity of drawEntities) {
-      entity.init({
-        gl: this._gl,
-        programInfo: this._programInfo,
-      });
-      this._drawEntities.push(entity);
-    }
-  }
-
   addEntity(
     ownerId: EntityId,
     transform: Transform,
@@ -155,15 +145,13 @@ export class VDU {
   private _createPart(part: RenderPartDefinition) {
     switch (part.primitive.type) {
       case "circle":
-        return createCircle(null, part.primitive.radius);
+        return createCircle(part.primitive.radius);
       case "rectangle":
-        return createRectangle({ parent: null, ...part.primitive });
+        return createRectangle(part.primitive);
       case "right-triangle":
-        return createRightTriangle(
-          null,
-          part.primitive.width,
-          part.primitive.height
-        );
+        return createRightTriangle(part.primitive.width, part.primitive.height);
+      case "polygon":
+        return createPolygon(part.primitive.vertices);
     }
   }
 
@@ -176,6 +164,8 @@ export class VDU {
         return `rectangle:${primitive.width}:${primitive.height}`;
       case "right-triangle":
         return `right-triangle:${primitive.width}:${primitive.height}`;
+      case "polygon":
+        return `polygon:${primitive.vertices.flat().join(":")}`;
     }
   }
 

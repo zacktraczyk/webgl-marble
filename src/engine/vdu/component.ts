@@ -1,11 +1,12 @@
-import type { TransformInput } from "../core/transform";
+import type { TransformInput, Vec2 } from "../core/transform";
 
 export type Color = [number, number, number, number];
 
 export type RenderPrimitive =
   | { type: "circle"; radius: number }
   | { type: "rectangle"; width: number; height: number }
-  | { type: "right-triangle"; width: number; height: number };
+  | { type: "right-triangle"; width: number; height: number }
+  | { type: "polygon"; vertices: Vec2[] };
 
 export interface RenderPartDefinition {
   primitive: RenderPrimitive;

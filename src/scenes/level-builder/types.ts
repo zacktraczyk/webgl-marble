@@ -1,55 +1,3 @@
-export type BuilderElements = {
-  root: HTMLElement | null;
-  toolbar: HTMLElement | null;
-  raceControls: HTMLElement | null;
-  toolHint: HTMLElement | null;
-  pan: HTMLElement | null;
-  pointer: HTMLElement | null;
-  wall: HTMLElement | null;
-  spawnPoint: HTMLElement | null;
-  pusherMenuToggle: HTMLElement | null;
-  pusherLibrary: HTMLElement | null;
-  slider: HTMLElement | null;
-  spinner: HTMLElement | null;
-  sweeper: HTMLElement | null;
-  gridSnapToggle: HTMLElement | null;
-  majorGridToggle: HTMLElement | null;
-  minorGridToggle: HTMLElement | null;
-  gridOverlay: HTMLElement | null;
-  editorOverlay: HTMLElement | null;
-  play: HTMLElement | null;
-  reset: HTMLElement | null;
-  raceOutcome: HTMLElement | null;
-  zoomIn: HTMLElement | null;
-  zoomOut: HTMLElement | null;
-  zoomReset: HTMLElement | null;
-  zoomLevel: HTMLElement | null;
-  undo: HTMLElement | null;
-  redo: HTMLElement | null;
-  teamCount: HTMLElement | null;
-  teamCountOutput: HTMLElement | null;
-  marblesPerTeam: HTMLElement | null;
-  marblesPerTeamOutput: HTMLElement | null;
-  releaseInterval: HTMLElement | null;
-  releaseIntervalOutput: HTMLElement | null;
-  courseWidth: HTMLElement | null;
-  courseHeight: HTMLElement | null;
-  wallThickness: HTMLElement | null;
-  objectInspector: HTMLElement | null;
-  objectInspectorTitle: HTMLElement | null;
-  motionType: HTMLElement | null;
-  motionControls: HTMLElement | null;
-  motionRangeRow: HTMLElement | null;
-  motionRange: HTMLElement | null;
-  motionRangeOutput: HTMLElement | null;
-  motionReverse: HTMLElement | null;
-  motionSpeedSlow: HTMLElement | null;
-  motionSpeedMedium: HTMLElement | null;
-  motionSpeedFast: HTMLElement | null;
-  status: HTMLElement | null;
-  debugInfo: HTMLElement | null;
-};
-
 export enum SelectedTool {
   Pan,
   Pointer,
@@ -64,6 +12,16 @@ export type PusherTool =
   | SelectedTool.Slider
   | SelectedTool.Spinner
   | SelectedTool.Sweeper;
+
+export const isPusherTool = (tool: SelectedTool): tool is PusherTool =>
+  tool === SelectedTool.Slider ||
+  tool === SelectedTool.Spinner ||
+  tool === SelectedTool.Sweeper;
+
+export const isCreationTool = (tool: SelectedTool) =>
+  tool === SelectedTool.Wall ||
+  tool === SelectedTool.SpawnPoint ||
+  isPusherTool(tool);
 
 export type RacePhase = "ready" | "running" | "paused" | "complete";
 

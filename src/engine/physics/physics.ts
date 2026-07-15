@@ -14,7 +14,7 @@ import {
   SequentialImpulseSolver,
 } from "./collision";
 import { assertValidConvexPolygon } from "./collision/geometry";
-import { type Physical, PhysicsEntity } from "./entity";
+import { PhysicsEntity } from "./entity";
 import type {
   ColliderDefinition,
   PhysicsComponentDefinition,
@@ -88,10 +88,6 @@ class Physics {
     );
 
     this._entities = filteredEntities;
-  }
-
-  add({ physicsEntity }: Physical) {
-    this._entities.push(physicsEntity);
   }
 
   addEntity(

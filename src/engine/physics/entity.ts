@@ -18,20 +18,7 @@ export type BoundingCircle = {
 
 export type BoundingShape = BoundingConvexPolygon | BoundingCircle;
 
-export interface Physical {
-  id: number;
-  physicsEntity: PhysicsEntity;
-
-  delete(): void;
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const isPhysical = (object: any): object is Physical => {
-  return object && "physicsEntity" in object;
-};
-
 export class PhysicsEntity {
-  readonly parent: Physical;
   readonly ownerId: EntityId;
   readonly id: number;
   readonly type: PhysicsEntityType;
@@ -53,7 +40,6 @@ export class PhysicsEntity {
   markedForDeletion: boolean = false;
 
   constructor({
-    parent,
     ownerId,
     transform,
     type,
@@ -70,8 +56,7 @@ export class PhysicsEntity {
     restitution,
     fixedRotation,
   }: {
-    parent?: Physical;
-    ownerId?: EntityId;
+    ownerId: EntityId;
     transform?: Transform;
     type: PhysicsEntityType;
     sensor?: boolean;
@@ -87,10 +72,7 @@ export class PhysicsEntity {
     restitution?: number;
     fixedRotation?: boolean;
   }) {
-    // parent remains as a compatibility bridge for the collision-debug scenes.
-    // New game code uses ownerId exclusively.
-    this.parent = parent as Physical;
-    this.ownerId = ownerId ?? parent?.id ?? id.getNext();
+    this.ownerId = ownerId;
     this.id = id.getNext();
     this.type = type;
     this.sensor = sensor ?? false;

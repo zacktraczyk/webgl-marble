@@ -1,497 +1,149 @@
-import { Arrow } from "../engine/object/arrow";
-import { Graph } from "../engine/object/graph";
-import { Line } from "../engine/object/line";
-import { Point } from "../engine/object/point";
-import { TriangleOutline } from "../engine/object/triangle";
+import type { Entity } from "../engine/core/entity";
+import type { Vec2 } from "../engine/core/transform";
+import {
+  debugArrowDefinition,
+  debugPointDefinition,
+  debugPolylineDefinitions,
+} from "../engine/debug/definitions";
 import {
   GJKNarrowPhase,
   SequentialImpulseSolver,
+  type Collision,
 } from "../engine/physics/collision";
 import Physics from "../engine/physics/physics";
-import Stage, { type StageObject } from "../engine/stage";
-import { type Drawable } from "../engine/vdu/entity";
-import {
-  DragAndDropCircle,
-  DragAndDropHexagon,
-  DragAndDropRectangle,
-} from "../engine/object/dragAndDrop";
 import type { Scene } from "../engine/runtime/scene";
+import Stage from "../engine/stage";
+import {
+  collisionDebugData,
+  deleteEntities,
+  spawnCollisionDemoShapes,
+  spawnCollisionDiagnostics,
+} from "./collisionDemoSupport";
+
+type GjkDebugEvent = {
+  furthestPoint1?: Vec2;
+  furthestPoint2?: Vec2;
+  supportPoint?: Vec2;
+  simplex?: Vec2[];
+  direction?: Vec2;
+  isColliding?: boolean;
+  inconclusiveSimplex?: boolean;
+};
+
+const spawnGjkDiagnostics = (
+  stage: Stage,
+  events: readonly GjkDebugEvent[]
+) => {
+  const visuals: Entity[] = [];
+  const points = new Map<
+    string,
+    { position: Vec2; color: [number, number, number, number] }
+  >();
+  let latestSimplex: Vec2[] | null = null;
+  let latestDirection: Vec2 | null = null;
+
+  for (const event of events) {
+    for (const position of [event.furthestPoint1, event.furthestPoint2]) {
+      if (position) {
+        points.set(position.join(":"), { position, color: [1, 1, 1, 1] });
+      }
+    }
+    if (event.supportPoint) {
+      points.set(event.supportPoint.join(":"), {
+        position: event.supportPoint,
+        color: [0.8, 0, 0.6, 1],
+      });
+    }
+    if (event.simplex?.length) {
+      latestSimplex = event.simplex;
+      latestDirection = event.direction ?? null;
+    }
+  }
+
+  for (const { position, color } of points.values()) {
+    visuals.push(stage.spawn(debugPointDefinition({ position, color })));
+  }
+  if (latestSimplex) {
+    for (const definition of debugPolylineDefinitions({
+      vertices: latestSimplex,
+      closed: latestSimplex.length > 2,
+      color: [0, 0.8, 0.6, 1],
+    })) {
+      visuals.push(stage.spawn(definition));
+    }
+    if (latestDirection && latestSimplex.length > 0) {
+      const start: Vec2 = latestSimplex.reduce(
+        (sum, point) => [
+          sum[0] + point[0] / latestSimplex.length,
+          sum[1] + point[1] / latestSimplex.length,
+        ],
+        [0, 0]
+      );
+      visuals.push(
+        stage.spawn(
+          debugArrowDefinition({
+            start,
+            end: [
+              start[0] + latestDirection[0] * 50,
+              start[1] + latestDirection[1] * 50,
+            ],
+            color: [0.8, 0, 0.6, 1],
+          })
+        )
+      );
+    }
+  }
+  return visuals;
+};
 
 function createScene(): Scene {
-  const { stage, debugCleanup } = init();
-
-  const centerX = 0;
-  const centerY = 0;
-  const offset = 200;
-
-  const circle1 = new DragAndDropCircle({
-    position: [centerX + offset, centerY],
-    radius: 50,
-    color: [34 / 255, 197 / 255, 94 / 255, 1],
-    handleRadius: 15,
-    handleColor: [0.4, 0.4, 0.4, 1],
+  const narrowPhase = new GJKNarrowPhase();
+  const stage = new Stage({
+    physics: new Physics({
+      narrowPhase,
+      contactSolver: new SequentialImpulseSolver(),
+    }),
   });
-  stage.add(circle1);
+  stage.dragAndDrop = true;
+  stage.panAndZoom = true;
+  stage.drawMode = "TRIANGLES";
+  spawnCollisionDemoShapes(stage);
 
-  const circle2 = new DragAndDropCircle({
-    position: [centerX, centerY + offset],
-    radius: 70,
-    color: [167 / 255, 139 / 255, 250 / 255, 1],
-    handleRadius: 15,
-    handleColor: [0.4, 0.4, 0.4, 1],
+  let collisions: Collision[] = [];
+  let debugEvents: GjkDebugEvent[] = [];
+  let diagnostics: Entity[] = [];
+  stage.registerPhysicsObserver((event) => {
+    collisions = event.collisions;
   });
-  stage.add(circle2);
-
-  const hexagon1 = new DragAndDropHexagon({
-    sideLength: 80,
-    position: [centerX, centerY - offset],
-    scale: [1, 1],
-    color: [56 / 255, 189 / 255, 248 / 255, 1],
-    handleRadius: 15,
-    handleColor: [0.4, 0.4, 0.4, 1],
+  narrowPhase.addDebugObserver((event: GjkDebugEvent) => {
+    debugEvents.push(event);
   });
-  stage.add(hexagon1);
-
-  const square1 = new DragAndDropRectangle({
-    position: [centerX - offset, centerY],
-    width: 100,
-    height: 100,
-    scale: [1, 1],
-    rotation: Math.PI / 8,
-    color: [239 / 255, 68 / 255, 68 / 255, 1],
-    handleRadius: 15,
-    handleColor: [0.4, 0.4, 0.4, 1],
-  });
-  stage.add(square1);
-
-  // Origin
-  const centerPoint = new Point({
-    radius: 5,
-    position: [0, 0],
-    color: [0, 1, 0, 1],
-  });
-  stage.add(centerPoint);
-
-  let currentCollisions: {
-    entity1: number;
-    entity2: number;
-    manifold: {
-      normal: [number, number];
-      penetrationDepth: number;
-    };
-  }[] = [];
-  let collisionEdges: Record<string, Line> = {};
-  let contactNormalArrows: Record<string, [Arrow, Arrow]> = {};
-  stage.registerPhysicsObserver(async ({ collisions }) => {
-    for (const collision of collisions) {
-      const {
-        entity1,
-        entity2,
-        diagnostics,
-        manifold: { normal, penetrationDepth: magnitude },
-      } = collision;
-      const edge = diagnostics?.referenceEdge;
-      const collisionKey = [entity1, entity2].sort().join("-");
-
-      if (edge && edge.length === 2) {
-        if (!collisionEdges[collisionKey]) {
-          const line = new Line({
-            startPosition: edge[0],
-            endPosition: edge[1],
-            color: [252 / 255, 0 / 255, 147 / 255, 1],
-          });
-          stage.add(line);
-
-          collisionEdges[collisionKey] = line;
-        }
-
-        collisionEdges[collisionKey].startPosition = edge[0];
-        collisionEdges[collisionKey].endPosition = edge[1];
-      }
-
-      if (normal && magnitude) {
-        if (!contactNormalArrows[collisionKey]) {
-          const arrow = new Arrow({
-            basePosition: [0, 0],
-            tipPosition: [1, 0],
-            tipLength: 10,
-            stroke: 4,
-            color: [1, 1, 1, 1],
-          });
-          stage.add(arrow);
-
-          const arrow2 = new Arrow({
-            basePosition: [0, 0],
-            tipPosition: [1, 0],
-            tipLength: 10,
-            stroke: 4,
-            color: [1, 1, 1, 1],
-          });
-          stage.add(arrow2);
-          contactNormalArrows[collisionKey] = [arrow, arrow2];
-        }
-
-        contactNormalArrows[collisionKey][0].basePosition = [
-          entity2.position[0],
-          entity2.position[1],
-        ];
-        contactNormalArrows[collisionKey][0].tipPosition = [
-          entity2.position[0] + normal[0] * magnitude,
-          entity2.position[1] + normal[1] * magnitude,
-        ];
-
-        contactNormalArrows[collisionKey][1].basePosition = [
-          entity1.position[0],
-          entity1.position[1],
-        ];
-        contactNormalArrows[collisionKey][1].tipPosition = [
-          entity1.position[0] - normal[0] * magnitude,
-          entity1.position[1] - normal[1] * magnitude,
-        ];
-      }
-    }
-
-    currentCollisions = collisions.map((collision) => {
-      const collisionDebug = {
-        entity1: collision.entity1.parent.id,
-        entity2: collision.entity2.parent.id,
-        referenceEdge: collision.diagnostics?.referenceEdge,
-        manifold: collision.manifold,
-      };
-
-      return collisionDebug;
-    });
-  });
-
-  const cleanupCollision = () => {
-    if (currentCollisions.length > 0) {
-      for (const collisionKey in collisionEdges) {
-        collisionEdges[collisionKey].delete();
-      }
-
-      for (const collisionKey in contactNormalArrows) {
-        contactNormalArrows[collisionKey][0].delete();
-        contactNormalArrows[collisionKey][1].delete();
-      }
-
-      collisionEdges = {};
-      contactNormalArrows = {};
-      currentCollisions = [];
-    }
-  };
 
   return {
     fixedUpdate: (deltaMs) => {
-      debugCleanup();
-      cleanupCollision();
+      deleteEntities(diagnostics);
+      collisions = [];
+      debugEvents = [];
       stage.update(deltaMs);
+      diagnostics = [
+        ...spawnCollisionDiagnostics(stage, collisions),
+        ...spawnGjkDiagnostics(stage, debugEvents),
+      ];
     },
-    update: () => {
-      updateDebugInfo({ collisions: currentCollisions });
-    },
+    update: () =>
+      updateDebugInfo({
+        collisions: collisionDebugData(collisions),
+        gjkDiagnosticEvents: debugEvents.length,
+      }),
     render: () => stage.render(),
     dispose: () => stage.dispose(),
   };
 }
 
-function init() {
-  // Stage
-  const gjkNarrowPhase = new GJKNarrowPhase();
-  const contactSolver = new SequentialImpulseSolver();
-  const physics = new Physics({
-    narrowPhase: gjkNarrowPhase,
-    contactSolver,
-  });
-  const stage = new Stage({ physics: physics });
-  stage.dragAndDrop = true;
-  stage.panAndZoom = true;
-  stage.centerCameraOnResize = false;
-  stage.drawMode = "TRIANGLES";
-
-  // Grid
-  const numMajorGridColumns = 8;
-  const numMajorGridRows = 8;
-  const gridLines: Record<string, Line> = {};
-  const createGridLines = () => {
-    const gridSizeY = stage.canvas.clientHeight / numMajorGridRows;
-    for (let i = 1; i < numMajorGridRows; i++) {
-      const id = "row-" + i;
-      if (!gridLines[id]) {
-        const line = new Line({
-          startPosition: [
-            0 - stage.canvas.clientWidth / 2,
-            i * gridSizeY - stage.canvas.clientHeight / 2,
-          ],
-          endPosition: [
-            stage.canvas.clientWidth / 2,
-            i * gridSizeY - stage.canvas.clientHeight / 2,
-          ],
-          color: [0.1, 0.1, 0.1, 0.5],
-          stroke: 2,
-        });
-        stage.add(line);
-        gridLines[id] = line;
-      }
-    }
-
-    const gridSizeX = stage.canvas.clientWidth / numMajorGridColumns;
-    for (let i = 1; i < numMajorGridColumns; i++) {
-      const id = "column-" + i;
-      if (!gridLines[id]) {
-        const line = new Line({
-          startPosition: [
-            i * gridSizeX - stage.canvas.clientWidth / 2,
-            0 - stage.canvas.clientHeight / 2,
-          ],
-          endPosition: [
-            i * gridSizeX - stage.canvas.clientWidth / 2,
-            stage.canvas.clientHeight / 2,
-          ],
-          color: [0.1, 0.1, 0.1, 0.5],
-          stroke: 2,
-        });
-        stage.add(line);
-        gridLines[id] = line;
-      }
-    }
-  };
-
-  createGridLines();
-
-  // Debug Graphs
-  let debugGraphs: Graph[] = [];
-  const addDebugGraph = (objects: (StageObject & Drawable)[]) => {
-    const MIN_PADDING = 20;
-    const GRAPH_WIDTH = 200;
-    const GRAPH_HEIGHT = 200;
-    const NUM_COLS = Math.floor(
-      (stage.canvas.clientWidth - MIN_PADDING) / (GRAPH_WIDTH + MIN_PADDING)
-    );
-    const COL_SPACING = stage.canvas.clientWidth / NUM_COLS;
-    const START_X = -stage.canvas.clientWidth / 2 + COL_SPACING / 2;
-    const START_Y =
-      stage.canvas.clientHeight / 2 -
-      GRAPH_HEIGHT / 2 -
-      (COL_SPACING - GRAPH_WIDTH);
-
-    const i = debugGraphs.length;
-    const x = START_X + (i % NUM_COLS) * COL_SPACING;
-    const y = START_Y + Math.floor(i / NUM_COLS) * COL_SPACING;
-    const graph = new Graph({
-      objects: objects,
-      scale: 0.4,
-      position: [x, y],
-      width: GRAPH_WIDTH,
-      height: GRAPH_HEIGHT,
-    });
-    debugGraphs.push(graph);
-    stage.add(graph);
-  };
-
-  const clearDebugGraphs = () => {
-    debugGraphs.forEach((graph) => {
-      graph.delete();
-    });
-    debugGraphs = [];
-  };
-
-  // Debug data
-  let currentFarthestPoints: Record<string, Point> = {};
-  let currentSupportPoints: Record<string, Point> = {};
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let currentIsCollidingDebug: Record<string, any> = {};
-  let inconclusiveSimplexes: Record<string, StageObject> = {};
-  let inconclusiveSimplexesDirections: Record<string, Arrow> = {};
-  let isCollidingSimplex: (StageObject & Drawable) | null = null;
-
-  gjkNarrowPhase.addDebugObserver((data) => {
-    const debugGraphObjects: (StageObject & Drawable)[] = [];
-
-    const furthestPoint1 = data.furthestPoint1;
-    if (furthestPoint1) {
-      const id = furthestPoint1[0] + "-" + furthestPoint1[1];
-      if (!currentFarthestPoints[id]) {
-        const entity = new Point({
-          radius: 5,
-          position: furthestPoint1,
-          color: [1, 1, 1, 1],
-        });
-        stage.add(entity);
-        currentFarthestPoints[id] = entity;
-      }
-    }
-
-    const furthestPoint2 = data.furthestPoint2;
-    if (furthestPoint2) {
-      const id = furthestPoint2[0] + "-" + furthestPoint2[1];
-      if (!currentFarthestPoints[id]) {
-        const entity = new Point({
-          radius: 5,
-          position: furthestPoint2,
-          color: [1, 1, 1, 1],
-        });
-        stage.add(entity);
-        currentFarthestPoints[id] = entity;
-      }
-    }
-
-    if (data.isColliding) {
-      if (!data.simplex || data.simplex.length === 0) {
-        return;
-      }
-
-      const id = data.direction[0] + "-" + data.direction[1];
-      if (!currentIsCollidingDebug[id]) {
-        currentIsCollidingDebug[id] = data;
-      }
-
-      const simplex = data.simplex;
-      if (simplex) {
-        if (simplex.length === 2) {
-          console.log("Creating isCollidingSimplex line");
-          isCollidingSimplex = new Line({
-            startPosition: simplex[0],
-            endPosition: simplex[1],
-            color: [0.8, 0.0, 0.6, 1],
-          });
-        } else if (simplex.length === 3) {
-          isCollidingSimplex = new TriangleOutline({
-            vertices: simplex,
-            color: [0.0, 0.8, 0.6, 1],
-          });
-        }
-
-        if (isCollidingSimplex) {
-          stage.add(isCollidingSimplex);
-          debugGraphObjects.push(isCollidingSimplex);
-        }
-      }
-    }
-
-    if (data.inconclusiveSimplex) {
-      if (!data.simplex || data.simplex.length === 0) {
-        return;
-      }
-
-      const id = (data.simplex as [number, number][])
-        .map((vertex) => vertex[0] + "-" + vertex[1])
-        .join("-");
-      if (!inconclusiveSimplexes[id]) {
-        let inconclusiveSimplex: StageObject | null = null;
-        if (data.simplex.length === 2) {
-          inconclusiveSimplex = new Line({
-            startPosition: data.simplex[0],
-            endPosition: data.simplex[1],
-            color: [0.0, 0.3, 0.3, 1],
-          });
-        } else if (data.simplex.length === 3) {
-          inconclusiveSimplex = new TriangleOutline({
-            vertices: data.simplex,
-            color: [0.0, 0.3, 0.3, 1],
-          });
-        }
-
-        if (inconclusiveSimplex) {
-          stage.add(inconclusiveSimplex);
-          debugGraphObjects.push(inconclusiveSimplex);
-          inconclusiveSimplexes[id] = inconclusiveSimplex;
-        }
-      }
-
-      if (data.direction) {
-        if (!inconclusiveSimplexesDirections[id]) {
-          const MAGNITUDE = 50;
-          const [A, B] = data.simplex;
-          const directionStart: [number, number] = [
-            (A[0] + B[0]) / 2,
-            (A[1] + B[1]) / 2,
-          ];
-          const directionEnd: [number, number] = [
-            directionStart[0] + data.direction[0] * MAGNITUDE,
-            directionStart[1] + data.direction[1] * MAGNITUDE,
-          ];
-
-          inconclusiveSimplexesDirections[id] = new Arrow({
-            basePosition: directionStart,
-            tipPosition: directionEnd,
-            tipLength: 10,
-            stroke: 4,
-            color: [0.8, 0.0, 0.6, 1],
-          });
-          stage.add(inconclusiveSimplexesDirections[id]);
-          debugGraphObjects.push(inconclusiveSimplexesDirections[id]);
-        }
-      }
-    }
-
-    const supportPoint = data.supportPoint;
-    if (supportPoint) {
-      const id = supportPoint[0] + "-" + supportPoint[1];
-      if (!currentSupportPoints[id]) {
-        const entity = new Point({
-          radius: 5,
-          position: supportPoint,
-          color: [0.8, 0.0, 0.6, 1],
-        });
-        stage.add(entity);
-        debugGraphObjects.push(entity);
-        currentSupportPoints[id] = entity;
-      }
-    }
-
-    if (debugGraphObjects.length > 1) {
-      addDebugGraph(debugGraphObjects);
-    }
-  });
-
-  const debugCleanup = () => {
-    if (!currentFarthestPoints.length) {
-      for (const id in currentFarthestPoints) {
-        currentFarthestPoints[id].delete();
-      }
-      currentFarthestPoints = {};
-    }
-
-    if (!currentSupportPoints.length) {
-      for (const id in currentSupportPoints) {
-        currentSupportPoints[id].delete();
-      }
-      currentSupportPoints = {};
-    }
-
-    if (Object.keys(inconclusiveSimplexes).length > 0) {
-      for (const id in inconclusiveSimplexes) {
-        inconclusiveSimplexes[id].delete();
-      }
-      inconclusiveSimplexes = {};
-    }
-
-    if (!inconclusiveSimplexesDirections.length) {
-      for (const id in inconclusiveSimplexesDirections) {
-        inconclusiveSimplexesDirections[id].delete();
-      }
-      inconclusiveSimplexesDirections = {};
-    }
-
-    if (isCollidingSimplex) {
-      isCollidingSimplex.delete();
-      isCollidingSimplex = null;
-    }
-
-    currentIsCollidingDebug = {};
-
-    clearDebugGraphs();
-  };
-
-  return { stage, debugCleanup };
-}
-
-// Debug info
-const debugInfoElem = document.getElementById("#debug-info");
-/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-const updateDebugInfo = (obj: any) => {
+const debugInfoElem = document.getElementById("debug-info");
+const updateDebugInfo = (value: unknown) => {
   if (debugInfoElem) {
-    debugInfoElem.textContent = JSON.stringify(obj, null, 2);
+    debugInfoElem.textContent = JSON.stringify(value, null, 2);
   }
 };
 

@@ -33,11 +33,13 @@ import "../styles/global.css";
 
     <nav
       id="builder-toolbar"
+      data-role="toolbar"
       aria-label="Level tools"
       class="absolute inset-x-0 top-3 z-30 mx-auto flex w-max items-center gap-1 rounded-lg border border-zinc-700 bg-zinc-800/90 p-1 shadow-lg backdrop-blur"
     >
       <button
         id="tool-pan"
+        data-role="tool-pan"
         type="button"
         aria-label="Pan and zoom"
         title="Pan and zoom (H)"
@@ -64,6 +66,7 @@ import "../styles/global.css";
       </button>
       <button
         id="tool-pointer"
+        data-role="tool-pointer"
         type="button"
         aria-label="Select objects"
         title="Select objects (V)"
@@ -88,6 +91,7 @@ import "../styles/global.css";
       </button>
       <button
         id="tool-wall"
+        data-role="tool-wall"
         type="button"
         aria-label="Place a wall"
         title="Place walls (W or L)"
@@ -114,6 +118,7 @@ import "../styles/global.css";
       <div class="relative">
         <button
           id="tool-pusher-menu"
+          data-role="pusher-menu-toggle"
           type="button"
           aria-label="Open pusher library"
           aria-haspopup="menu"
@@ -139,6 +144,7 @@ import "../styles/global.css";
         </button>
         <div
           id="pusher-library"
+          data-role="pusher-library"
           role="menu"
           aria-label="Pusher library"
           hidden
@@ -151,6 +157,7 @@ import "../styles/global.css";
           </p>
           <button
             id="tool-slider"
+            data-role="tool-slider"
             role="menuitem"
             type="button"
             data-active="false"
@@ -174,6 +181,7 @@ import "../styles/global.css";
           </button>
           <button
             id="tool-spinner"
+            data-role="tool-spinner"
             role="menuitem"
             type="button"
             data-active="false"
@@ -200,6 +208,7 @@ import "../styles/global.css";
           </button>
           <button
             id="tool-sweeper"
+            data-role="tool-sweeper"
             role="menuitem"
             type="button"
             data-active="false"
@@ -231,6 +240,7 @@ import "../styles/global.css";
       </div>
       <button
         id="tool-spawn-point"
+        data-role="tool-spawn-point"
         type="button"
         aria-label="Move the spawn point"
         title="Move the marble spawn point (S)"
@@ -255,6 +265,7 @@ import "../styles/global.css";
 
     <p
       id="tool-hint"
+      data-role="tool-hint"
       aria-live="polite"
       class="pointer-events-none absolute inset-x-0 top-16 z-20 mx-auto w-max whitespace-nowrap text-center text-xs text-zinc-500"
     >
@@ -269,6 +280,7 @@ import "../styles/global.css";
       >
         <button
           id="zoom-out"
+          data-role="zoom-out"
           type="button"
           aria-label="Zoom out"
           title="Zoom out"
@@ -288,15 +300,19 @@ import "../styles/global.css";
         </button>
         <button
           id="zoom-reset"
+          data-role="zoom-reset"
           type="button"
           aria-label="Reset zoom to 100%"
           title="Reset zoom to 100%"
           class="flex min-w-14 items-center justify-center px-2 text-center font-mono text-xs text-zinc-300 hover:bg-zinc-700"
         >
-          <output id="zoom-level" aria-live="polite">100%</output>
+          <output id="zoom-level" data-role="zoom-level" aria-live="polite"
+            >100%</output
+          >
         </button>
         <button
           id="zoom-in"
+          data-role="zoom-in"
           type="button"
           aria-label="Zoom in"
           title="Zoom in"
@@ -323,6 +339,7 @@ import "../styles/global.css";
       >
         <button
           id="undo-level"
+          data-role="undo"
           type="button"
           aria-label="Undo"
           title="Undo (Ctrl/⌘ Z)"
@@ -345,6 +362,7 @@ import "../styles/global.css";
         </button>
         <button
           id="redo-level"
+          data-role="redo"
           type="button"
           aria-label="Redo"
           title="Redo (Ctrl/⌘ Shift Z)"
@@ -370,11 +388,13 @@ import "../styles/global.css";
 
     <nav
       id="builder-race-controls"
+      data-role="race-controls"
       aria-label="Race controls"
       class="absolute bottom-3 left-1/2 z-30 flex -translate-x-1/2 items-center gap-1 rounded-lg border border-zinc-700 bg-zinc-800/90 p-1 shadow-lg backdrop-blur"
     >
       <button
         id="run-race"
+        data-role="race-play"
         type="button"
         aria-label="Run race"
         title="Run race"
@@ -417,6 +437,7 @@ import "../styles/global.css";
       </button>
       <button
         id="reset-race"
+        data-role="race-reset"
         type="button"
         aria-label="End preview and return to editor"
         title="End preview and return to editor"
@@ -436,6 +457,7 @@ import "../styles/global.css";
 
     <div
       id="race-outcome"
+      data-role="race-outcome"
       role="status"
       aria-live="polite"
       aria-atomic="true"
@@ -493,6 +515,7 @@ import "../styles/global.css";
 
     <section
       id="object-inspector"
+      data-role="object-inspector"
       aria-label="Selected wall properties"
       hidden
       class="absolute right-3 top-16 z-20 w-64 rounded-lg border border-zinc-700 bg-zinc-800/95 p-3 shadow-xl backdrop-blur transition-[right] duration-200"
@@ -506,6 +529,7 @@ import "../styles/global.css";
           </p>
           <h2
             id="object-inspector-title"
+            data-role="object-inspector-title"
             class="mt-0.5 text-sm font-medium text-zinc-100"
           >
             Wall
@@ -522,6 +546,7 @@ import "../styles/global.css";
         Motion
         <select
           id="motion-type"
+          data-role="motion-type"
           class="mt-1.5 w-full rounded-md border border-zinc-600 bg-zinc-900 px-2 py-2 text-xs text-zinc-100 outline-none focus:border-cyan-400"
         >
           <option value="none">None</option>
@@ -533,6 +558,7 @@ import "../styles/global.css";
 
       <div
         id="motion-controls"
+        data-role="motion-controls"
         class="mt-3 border-t border-zinc-700 pt-3"
         hidden
       >
@@ -541,6 +567,7 @@ import "../styles/global.css";
           <div class="flex overflow-hidden rounded-md border border-zinc-600">
             <button
               id="motion-speed-slow"
+              data-role="motion-speed-slow"
               type="button"
               data-speed="slow"
               data-active="false"
@@ -549,6 +576,7 @@ import "../styles/global.css";
             >
             <button
               id="motion-speed-medium"
+              data-role="motion-speed-medium"
               type="button"
               data-speed="medium"
               data-active="true"
@@ -557,6 +585,7 @@ import "../styles/global.css";
             >
             <button
               id="motion-speed-fast"
+              data-role="motion-speed-fast"
               type="button"
               data-speed="fast"
               data-active="false"
@@ -568,6 +597,7 @@ import "../styles/global.css";
 
         <label
           id="motion-range-row"
+          data-role="motion-range-row"
           class="mt-3 block text-xs text-zinc-400"
           for="motion-range"
         >
@@ -575,12 +605,14 @@ import "../styles/global.css";
             <span>Distance each way</span>
             <output
               id="motion-range-output"
+              data-role="motion-range-output"
               for="motion-range"
               class="font-mono text-[11px] text-cyan-200">90</output
             >
           </span>
           <input
             id="motion-range"
+            data-role="motion-range"
             type="range"
             min="15"
             max="240"
@@ -592,6 +624,7 @@ import "../styles/global.css";
 
         <button
           id="motion-reverse"
+          data-role="motion-reverse"
           type="button"
           class="mt-3 flex w-full items-center justify-center gap-2 rounded-md border border-zinc-600 px-3 py-2 text-xs text-zinc-200 hover:border-cyan-400 hover:bg-cyan-400/10"
         >
@@ -627,6 +660,7 @@ import "../styles/global.css";
               >
               <input
                 id="course-width"
+                data-role="course-width"
                 type="number"
                 min={MIN_STAGE_WIDTH}
                 max={MAX_STAGE_WIDTH}
@@ -644,6 +678,7 @@ import "../styles/global.css";
               >
               <input
                 id="course-height"
+                data-role="course-height"
                 type="number"
                 min={MIN_STAGE_HEIGHT}
                 max={MAX_STAGE_HEIGHT}
@@ -675,6 +710,7 @@ import "../styles/global.css";
           <span class="text-sm">Wall thickness</span>
           <input
             id="wall-thickness"
+            data-role="wall-thickness"
             type="number"
             min={MIN_WALL_THICKNESS}
             max={MAX_WALL_THICKNESS}
@@ -714,6 +750,7 @@ import "../styles/global.css";
             <span class="sr-only">Teams</span>
             <input
               id="team-count"
+              data-role="team-count"
               class="min-w-0 flex-1 accent-zinc-100"
               type="range"
               min="2"
@@ -722,6 +759,7 @@ import "../styles/global.css";
             />
             <output
               id="team-count-output"
+              data-role="team-count-output"
               class="w-7 text-right font-mono text-xs text-zinc-400"
               for="team-count">12</output
             >
@@ -747,6 +785,7 @@ import "../styles/global.css";
             <span class="sr-only">Marbles per team</span>
             <input
               id="marbles-per-team"
+              data-role="marbles-per-team"
               class="min-w-0 flex-1 accent-zinc-100"
               type="range"
               min="1"
@@ -755,6 +794,7 @@ import "../styles/global.css";
             />
             <output
               id="marbles-per-team-output"
+              data-role="marbles-per-team-output"
               class="w-7 text-right font-mono text-xs text-zinc-400"
               for="marbles-per-team">100</output
             >
@@ -781,6 +821,7 @@ import "../styles/global.css";
             <span class="sr-only">Release interval</span>
             <input
               id="release-interval"
+              data-role="release-interval"
               class="min-w-0 flex-1 accent-zinc-100"
               type="range"
               min="10"
@@ -790,6 +831,7 @@ import "../styles/global.css";
             />
             <output
               id="release-interval-output"
+              data-role="release-interval-output"
               class="w-14 text-right font-mono text-xs text-zinc-400"
               for="release-interval">20 ms</output
             >
@@ -809,6 +851,7 @@ import "../styles/global.css";
 
           <button
             id="toggle-grid-snap"
+            data-role="grid-snap-toggle"
             type="button"
             role="switch"
             aria-checked="true"
@@ -841,6 +884,7 @@ import "../styles/global.css";
 
           <button
             id="toggle-major-grid"
+            data-role="major-grid-toggle"
             type="button"
             role="switch"
             aria-checked="true"
@@ -870,6 +914,7 @@ import "../styles/global.css";
 
           <button
             id="toggle-minor-grid"
+            data-role="minor-grid-toggle"
             type="button"
             role="switch"
             aria-checked="false"
@@ -900,7 +945,13 @@ import "../styles/global.css";
         </section>
       </div>
 
-      <p id="race-status" class="mt-3 text-xs text-zinc-400">Ready to race</p>
+      <p
+        id="race-status"
+        data-role="race-status"
+        class="mt-3 text-xs text-zinc-400"
+      >
+        Ready to race
+      </p>
       <details
         class="mt-auto border-t border-zinc-700 pt-3 text-xs text-zinc-400"
       >
@@ -909,6 +960,7 @@ import "../styles/global.css";
         </summary>
         <pre
           id="builder-debug"
+          data-role="debug-info"
           class="mt-3 max-h-64 overflow-auto font-mono text-[11px]">
         </pre>
       </details>
@@ -921,9 +973,10 @@ import "../styles/global.css";
       >
         Canvas not supported
       </canvas>
-      <div id="builder-grid" aria-hidden="true"></div>
+      <div id="builder-grid" data-role="grid-overlay" aria-hidden="true"></div>
       <canvas
         id="editor-overlay"
+        data-role="editor-overlay"
         class="pointer-events-none absolute inset-0 z-10 size-full"
         aria-hidden="true"></canvas>
     </div>
@@ -1102,8 +1155,7 @@ import "../styles/global.css";
 
   #race-outcome:not([hidden]):not([data-exiting="true"]) {
     transform-origin: 50% 100%;
-    animation: race-outcome-slam 560ms cubic-bezier(0.22, 1.35, 0.36, 1)
-      both;
+    animation: race-outcome-slam 560ms cubic-bezier(0.22, 1.35, 0.36, 1) both;
   }
 
   #race-outcome:not([hidden]):not([data-exiting="true"])
@@ -1114,8 +1166,7 @@ import "../styles/global.css";
 
   #race-outcome[data-exiting="true"] {
     transform-origin: 50% 100%;
-    animation: race-outcome-exit 420ms cubic-bezier(0.55, 0, 0.85, 0.45)
-      both;
+    animation: race-outcome-exit 420ms cubic-bezier(0.55, 0, 0.85, 0.45) both;
   }
 
   @keyframes race-outcome-slam {
@@ -1234,64 +1285,11 @@ import "../styles/global.css";
   });
 
   try {
-    mountScene(
-      createScene({
-        root: byId("level-builder"),
-        toolbar: byId("builder-toolbar"),
-        raceControls: byId("builder-race-controls"),
-        toolHint: byId("tool-hint"),
-        pan: byId("tool-pan"),
-        pointer: byId("tool-pointer"),
-        wall: byId("tool-wall"),
-        spawnPoint: byId("tool-spawn-point"),
-        pusherMenuToggle: byId("tool-pusher-menu"),
-        pusherLibrary: byId("pusher-library"),
-        slider: byId("tool-slider"),
-        spinner: byId("tool-spinner"),
-        sweeper: byId("tool-sweeper"),
-        gridSnapToggle: byId("toggle-grid-snap"),
-        majorGridToggle: byId("toggle-major-grid"),
-        minorGridToggle: byId("toggle-minor-grid"),
-        gridOverlay: byId("builder-grid"),
-        editorOverlay: byId("editor-overlay"),
-        play: byId("run-race"),
-        reset: byId("reset-race"),
-        raceOutcome: byId("race-outcome"),
-        zoomIn: byId("zoom-in"),
-        zoomOut: byId("zoom-out"),
-        zoomReset: byId("zoom-reset"),
-        zoomLevel: byId("zoom-level"),
-        undo: byId("undo-level"),
-        redo: byId("redo-level"),
-        teamCount: byId("team-count"),
-        teamCountOutput: byId("team-count-output"),
-        marblesPerTeam: byId("marbles-per-team"),
-        marblesPerTeamOutput: byId("marbles-per-team-output"),
-        releaseInterval: byId("release-interval"),
-        releaseIntervalOutput: byId("release-interval-output"),
-        courseWidth: byId("course-width"),
-        courseHeight: byId("course-height"),
-        wallThickness: byId("wall-thickness"),
-        objectInspector: byId("object-inspector"),
-        objectInspectorTitle: byId("object-inspector-title"),
-        motionType: byId("motion-type"),
-        motionControls: byId("motion-controls"),
-        motionRangeRow: byId("motion-range-row"),
-        motionRange: byId("motion-range"),
-        motionRangeOutput: byId("motion-range-output"),
-        motionReverse: byId("motion-reverse"),
-        motionSpeedSlow: byId("motion-speed-slow"),
-        motionSpeedMedium: byId("motion-speed-medium"),
-        motionSpeedFast: byId("motion-speed-fast"),
-        status: byId("race-status"),
-        debugInfo: byId("builder-debug"),
-      }),
-      {
-        showFps: true,
-        fpsElement: byId("builder-fps"),
-        errorElement,
-      }
-    );
+    mountScene(createScene(builder), {
+      showFps: true,
+      fpsElement: byId("builder-fps"),
+      errorElement,
+    });
   } catch (error) {
     if (errorElement) {
       errorElement.textContent = `${error}`;

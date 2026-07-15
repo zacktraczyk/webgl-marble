@@ -8,20 +8,8 @@ export type ProgramInfo = WebglUtils.ProgramInfo;
 export type BufferInfo = WebglUtils.BufferInfo;
 export type Uniform = WebglUtils.Uniform;
 
-export interface Drawable {
-  drawEntities: DrawEntity[];
-
-  delete(): void;
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const isDrawable = (object: any): object is Drawable => {
-  return "drawEntities" in object;
-};
-
 export class DrawEntity {
   readonly id;
-  parent: Drawable | null;
   ownerId?: EntityId;
   rootTransform?: Transform;
   gl?: WebGLRenderingContext;
@@ -43,14 +31,12 @@ export class DrawEntity {
   markedForDeletion: boolean = false;
 
   constructor({
-    parent,
     position,
     rotation,
     scale,
     color,
     ...bufferParams
   }: {
-    parent: Drawable | null;
     position: [number, number];
     rotation: number;
     scale: [number, number];
@@ -64,7 +50,6 @@ export class DrawEntity {
       }
   )) {
     this.id = id.getNext();
-    this.parent = parent;
 
     this.position = position;
     this.rotation = rotation;
@@ -206,10 +191,7 @@ export class DrawEntity {
 }
 
 // TODO: Use instanced rendering
-export const createCircle = (
-  parent: Drawable | null,
-  radius: number
-): DrawEntity => {
+export const createCircle = (radius: number): DrawEntity => {
   const segments = 32;
   const thetaStart = 0;
   const thetaLength = 2 * Math.PI;
@@ -231,7 +213,6 @@ export const createCircle = (
   }
 
   const drawEntity = new DrawEntity({
-    parent,
     position: [0, 0],
     rotation: 0,
     scale: [1, 1],
@@ -242,64 +223,37 @@ export const createCircle = (
   return drawEntity;
 };
 
-export const createHexagon = (
-  parent: Drawable | null,
-  sideLength: number
+export const createPolygon = (
+  vertices: readonly [number, number][]
 ): DrawEntity => {
+  if (vertices.length < 3) {
+    throw new Error("A render polygon requires at least three vertices");
+  }
   const indicies: number[] = [];
-
-  const vertices = [
-    [sideLength, 0],
-    [sideLength * (1 / 2), sideLength * (Math.sqrt(3) / 2)],
-    [sideLength * -(1 / 2), sideLength * (Math.sqrt(3) / 2)],
-    [-sideLength, 0],
-    [sideLength * -(1 / 2), -sideLength * (Math.sqrt(3) / 2)],
-    [sideLength * (1 / 2), -sideLength * (Math.sqrt(3) / 2)],
-  ];
-
-  indicies.push(0, 0);
-  indicies.push(vertices[0][0], vertices[0][1]);
-  indicies.push(vertices[1][0], vertices[1][1]);
-
-  indicies.push(0, 0);
-  indicies.push(vertices[1][0], vertices[1][1]);
-  indicies.push(vertices[2][0], vertices[2][1]);
-
-  indicies.push(0, 0);
-  indicies.push(vertices[2][0], vertices[2][1]);
-  indicies.push(vertices[3][0], vertices[3][1]);
-
-  indicies.push(0, 0);
-  indicies.push(vertices[3][0], vertices[3][1]);
-  indicies.push(vertices[4][0], vertices[4][1]);
-
-  indicies.push(0, 0);
-  indicies.push(vertices[4][0], vertices[4][1]);
-  indicies.push(vertices[5][0], vertices[5][1]);
-
-  indicies.push(0, 0);
-  indicies.push(vertices[5][0], vertices[5][1]);
-  indicies.push(vertices[0][0], vertices[0][1]);
-
-  const drawEntity = new DrawEntity({
-    parent,
+  for (let index = 1; index < vertices.length - 1; index++) {
+    indicies.push(
+      vertices[0][0],
+      vertices[0][1],
+      vertices[index][0],
+      vertices[index][1],
+      vertices[index + 1][0],
+      vertices[index + 1][1]
+    );
+  }
+  return new DrawEntity({
     position: [0, 0],
     rotation: 0,
     scale: [1, 1],
     color: [1, 1, 1, 1],
     indicies,
   });
-
-  return drawEntity;
 };
 
 // TODO: Use instanced rendering
 export const createRectangle = ({
-  parent,
   width,
   height,
 }: {
-  parent: Drawable | null;
   width: number;
   height: number;
 }): DrawEntity => {
@@ -314,39 +268,6 @@ export const createRectangle = ({
   indicies.push(width * (1 / 2), height * (1 / 2));
 
   const drawEntity = new DrawEntity({
-    parent,
-    position: [0, 0],
-    rotation: 0,
-    scale: [1, 1],
-    color: [1, 1, 1, 1],
-    indicies,
-  });
-
-  return drawEntity;
-};
-
-// TODO: FIXME hacky and weird
-export const createRectangleOriginLeftCenter = ({
-  parent,
-  width,
-  height,
-}: {
-  parent: Drawable | null;
-  width: number;
-  height: number;
-}): DrawEntity => {
-  const indicies: number[] = [];
-
-  indicies.push(width * 1, height * -(1 / 2));
-  indicies.push(width * 0, height * -(1 / 2));
-  indicies.push(width * 1, height * (1 / 2));
-
-  indicies.push(width * 0, height * -(1 / 2));
-  indicies.push(width * 0, height * (1 / 2));
-  indicies.push(width * 1, height * (1 / 2));
-
-  const drawEntity = new DrawEntity({
-    parent,
     position: [0, 0],
     rotation: 0,
     scale: [1, 1],
@@ -358,7 +279,6 @@ export const createRectangleOriginLeftCenter = ({
 };
 
 export const createRightTriangle = (
-  parent: Drawable | null,
   width: number,
   height: number
 ): DrawEntity => {
@@ -370,7 +290,6 @@ export const createRightTriangle = (
   indicies2.push(width * (-1 / 2), height * (1 / 2));
 
   const drawEntity = new DrawEntity({
-    parent,
     position: [0, 0],
     rotation: 0,
     scale: [1, 1],

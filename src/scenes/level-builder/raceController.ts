@@ -53,10 +53,7 @@ export class RaceController {
   private releasedMarbles = 0;
   private finishTracker: RoundFinishTracker;
   private motionElapsedMs = 0;
-  private readonly finishPlacementCache = new Map<
-    string,
-    ReturnType<typeof createFinishGridPlacements>
-  >();
+  private finishPlacements: ReturnType<typeof createFinishGridPlacements> = [];
 
   constructor(
     private readonly stage: Stage,
@@ -79,9 +76,6 @@ export class RaceController {
 
   get snapshot(): RaceSnapshot {
     const queuedMarbles = this.releaseQueue?.remaining ?? 0;
-    const lostMarbles =
-      this.raceMarbles.filter((marble) => marble.markedForDeletion).length -
-      this.finishTracker.finishedMarbles;
 
     return {
       phase: this.phase,
@@ -94,7 +88,7 @@ export class RaceController {
       eliminatedTeamIndex: this.finishTracker.eliminatedTeamIndex,
       marbleRadius: this.marbleRadius,
       physicsActive: this.physicsActive,
-      lostMarbles: Math.max(0, lostMarbles),
+      lostMarbles: this.finishTracker.lostMarbles,
       courseIssue: this.courseIssue,
     };
   }
@@ -140,6 +134,7 @@ export class RaceController {
 
     const finish = this.level.find("finish-zone");
     const finishBayCount = this.configuration.teamCount;
+    this.finishPlacements = [];
     if (!finish) {
       this.marbleRadius = MAX_MARBLE_RADIUS;
     } else {
@@ -155,7 +150,18 @@ export class RaceController {
         minimumRadius: MIN_MARBLE_RADIUS,
         gap: STAGING_MARBLE_GAP,
       }).marbleRadius;
-      this.getFrozenFinishPlacements(finish);
+      this.finishPlacements = createFinishGridPlacements({
+        position: finish.transform.position,
+        rotation: finish.transform.rotation,
+        width: finish.properties.width,
+        height: finish.properties.height,
+        wallThickness: this.level.wallThickness,
+        teamCount: finishBayCount,
+        marblesPerTeam: this.configuration.marblesPerTeam,
+        gap: STAGING_MARBLE_GAP,
+        maximumRadius: this.marbleRadius,
+        minimumRadius: this.marbleRadius,
+      });
     }
     this.level.setRaceMarbleRadius(this.marbleRadius);
 
@@ -184,7 +190,7 @@ export class RaceController {
 
     if (this.phase !== "paused" && this.phase !== "complete") {
       this.stage.update(deltaMs);
-      this.stage.clearOutOfBoundsObjects();
+      this.recordOutOfBoundsMarbles(this.stage.clearOutOfBoundsEntities());
     }
 
     if (this.phase === "running") {
@@ -209,45 +215,6 @@ export class RaceController {
     this.stage.world.flushDestruction();
   }
 
-  private getFrozenFinishPlacements(
-    finish: NonNullable<ReturnType<AuthoredLevel["find"]>>
-  ) {
-    if (finish.prefab !== "finish-zone") {
-      throw new Error("Finish placements require a finish rack");
-    }
-    const finishBayCount = this.configuration.teamCount;
-    const cacheKey = [
-      "finish-grid",
-      ...finish.transform.position,
-      finish.transform.rotation,
-      finish.properties.width,
-      finish.properties.height,
-      this.level.wallThickness,
-      finishBayCount,
-      this.configuration.marblesPerTeam,
-      this.marbleRadius,
-      STAGING_MARBLE_GAP,
-    ].join(":");
-    const cachedPlacements = this.finishPlacementCache.get(cacheKey);
-    if (cachedPlacements) {
-      return cachedPlacements;
-    }
-    const placements = createFinishGridPlacements({
-      position: finish.transform.position,
-      rotation: finish.transform.rotation,
-      width: finish.properties.width,
-      height: finish.properties.height,
-      wallThickness: this.level.wallThickness,
-      teamCount: finishBayCount,
-      marblesPerTeam: this.configuration.marblesPerTeam,
-      gap: STAGING_MARBLE_GAP,
-      maximumRadius: this.marbleRadius,
-      minimumRadius: this.marbleRadius,
-    });
-    this.finishPlacementCache.set(cacheKey, placements);
-    return placements;
-  }
-
   private activatePhysics() {
     if (this.physicsActive) {
       return;
@@ -257,12 +224,8 @@ export class RaceController {
   }
 
   private getFinishPlacement(bayIndex: number, slotIndex: number) {
-    const finish = this.level.find("finish-zone");
-    if (!finish) {
-      return null;
-    }
     const placement =
-      this.getFrozenFinishPlacements(finish)[
+      this.finishPlacements[
         bayIndex * this.configuration.marblesPerTeam + slotIndex
       ];
     return placement?.teamIndex === bayIndex &&
@@ -272,10 +235,11 @@ export class RaceController {
   }
 
   private freezeIfLastMarbleRemains() {
+    const finalRemainingMarbles = this.finishTracker.lostMarbles > 0 ? 0 : 1;
     if (
       this.phase !== "running" ||
       this.releaseQueue?.remaining !== 0 ||
-      this.finishTracker.remainingMarbles !== 1
+      this.finishTracker.remainingMarbles !== finalRemainingMarbles
     ) {
       return false;
     }
@@ -283,6 +247,18 @@ export class RaceController {
     this.physicsActive = false;
     this.stage.physicsEnabled = false;
     return true;
+  }
+
+  private recordOutOfBoundsMarbles(entities: readonly Entity[]) {
+    for (const marble of entities) {
+      if (!marble.hasTag("released-marble")) {
+        continue;
+      }
+      const teamIndex = this.teamIndexForMarble(marble);
+      if (teamIndex !== null) {
+        this.finishTracker.recordLost(teamIndex);
+      }
+    }
   }
 
   private collectFinishedMarble(

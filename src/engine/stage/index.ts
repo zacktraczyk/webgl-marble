@@ -1,11 +1,9 @@
-import { isPhysical, type Physical } from "../physics/entity";
 import type { EntityDefinition } from "../core/definition";
 import { Entity, type EntityId } from "../core/entity";
 import type { Vec2 } from "../core/transform";
 import { World } from "../core/world";
 import Physics, { type CollisionEvents } from "../physics/physics";
 import { debounce } from "../utils/utils";
-import { isDrawable, type Drawable } from "../vdu/entity";
 import { VDU } from "../vdu/vdu";
 import {
   CenterCameraOnResizeHandlers,
@@ -22,14 +20,6 @@ import {
   uniformStageFitInsets,
 } from "./fit";
 
-export type StageObject = {
-  id: number;
-  position: [number, number];
-  markedForDeletion: boolean;
-  sync(): void;
-  delete(): void;
-} & (Drawable | Physical | DragAndDroppable);
-
 export class Stage {
   private readonly _vdu: VDU;
 
@@ -39,8 +29,8 @@ export class Stage {
   height: number;
   width: number;
 
-  private _objects: StageObject[];
   readonly world: World;
+  private readonly _draggableEntities = new Map<EntityId, number>();
 
   // event handlers
   private readonly _panAndZoomHandlers: PanAndZoomHandlers;
@@ -82,11 +72,11 @@ export class Stage {
     this._vdu = vdu;
 
     this._physics = physics ?? new Physics();
-    this._objects = [];
     this.world = new World();
     this.world.onDestroy((entity) => {
       this._physics.removeEntity(entity.id);
       this._vdu.removeEntity(entity.id);
+      this._draggableEntities.delete(entity.id);
     });
     this._panAndZoomHandlers = new PanAndZoomHandlers(vdu);
     this._dragAndDropHandlers = new DragAndDropHandlers(this);
@@ -94,16 +84,6 @@ export class Stage {
     this._fitStageToWindowOnResizeHandlers =
       new FitStageToWindowOnResizeHandlers(vdu, this);
     this.centerStage();
-  }
-
-  add(object: StageObject) {
-    if (isDrawable(object)) {
-      this._vdu.add(object);
-    }
-    if (isPhysical(object)) {
-      this._physics.add(object);
-    }
-    this._objects.push(object);
   }
 
   /**
@@ -131,26 +111,11 @@ export class Stage {
     );
   }
 
-  private _cleanup() {
-    const filteredObjects = this._objects.filter(
-      (object) => !object.markedForDeletion
-    );
-    this._objects = filteredObjects;
-  }
-
-  private _sync() {
-    for (const object of this._objects) {
-      object.sync();
-    }
-  }
-
   update(elapsed: number) {
-    this._cleanup();
     this.world.updateHierarchy();
     if (this.physicsEnabled) {
       this._physics.update(elapsed);
     }
-    this._sync();
     this.world.updateHierarchy();
     this.world.flushDestruction();
   }
@@ -436,22 +401,12 @@ export class Stage {
     ];
   }
 
-  clearOutOfBoundsObjects() {
-    // TODO: Set as parameter
-    const outOfBoundsPadding = 1000;
-
-    for (const object of this._objects) {
-      if (
-        object.position[0] < -this.width / 2 - outOfBoundsPadding ||
-        object.position[0] > this.width / 2 + outOfBoundsPadding ||
-        object.position[1] < -this.height / 2 - outOfBoundsPadding ||
-        object.position[1] > this.height / 2 + outOfBoundsPadding
-      ) {
-        object.delete();
-      }
-    }
-
+  clearOutOfBoundsEntities(outOfBoundsPadding = 1000) {
+    const removed: Entity[] = [];
     for (const entity of this.world.entities) {
+      if (entity.markedForDeletion) {
+        continue;
+      }
       if (
         entity.position[0] < -this.width / 2 - outOfBoundsPadding ||
         entity.position[0] > this.width / 2 + outOfBoundsPadding ||
@@ -459,16 +414,32 @@ export class Stage {
         entity.position[1] > this.height / 2 + outOfBoundsPadding
       ) {
         entity.delete();
+        removed.push(entity);
       }
     }
-  }
-
-  get objects() {
-    return this._objects;
+    return removed;
   }
 
   get entities() {
     return this.world.entities;
+  }
+
+  setDraggable(entity: EntityId | Entity, grabHandleRadius: number) {
+    if (!Number.isFinite(grabHandleRadius) || grabHandleRadius <= 0) {
+      throw new Error("A draggable entity requires a positive handle radius");
+    }
+    const id = typeof entity === "number" ? entity : entity.id;
+    if (!this.world.has(id)) {
+      throw new Error("Cannot make an entity draggable outside this stage");
+    }
+    this._draggableEntities.set(id, grabHandleRadius);
+  }
+
+  get draggableEntities(): readonly DragAndDroppable[] {
+    return [...this._draggableEntities].flatMap(([id, grabHandleRadius]) => {
+      const entity = this.world.get(id);
+      return entity ? [{ entity, grabHandleRadius }] : [];
+    });
   }
 
   get canvas() {
@@ -499,10 +470,7 @@ export class Stage {
       entity.delete();
     }
     this.world.flushDestruction();
-    for (const object of this._objects) {
-      object.delete();
-    }
-    this._objects = [];
+    this._draggableEntities.clear();
     this._physics.dispose();
     this._vdu.dispose();
   }

@@ -1,111 +1,81 @@
-import Stage from "../engine/stage";
-import { Ball } from "../engine/object/ball";
+import type { Entity } from "../engine/core/entity";
+import type { PhysicsEntity } from "../engine/physics/entity";
 import type { Scene } from "../engine/runtime/scene";
+import Stage from "../engine/stage";
+import { circleDefinition } from "../game/prefabs/primitives/circle";
 
 function createScene(): Scene {
   const stage = new Stage();
   stage.panAndZoom = true;
 
-  // const spawnX = -250;
-  // const spawnY = -stage.canvas.clientHeight / 2 + 100;
-
-  const CENTER_X = 0;
-  const CENTER_Y = -stage.canvas.clientHeight / 4;
-  const OFFSET = 100;
-  const INITIAL_VELOCITY_1 = 70;
-  const INITIAL_VELOCITY_2 = -70 + 50;
-
-  const circle1 = new Ball({
-    position: [CENTER_X - OFFSET, CENTER_Y],
-    velocity: [INITIAL_VELOCITY_1, 0],
-    radius: 40,
-    color: [1, 0, 0, 1],
-    physicsType: "dynamic",
-  });
-  stage.add(circle1);
-
-  const circle2 = new Ball({
-    position: [CENTER_X + OFFSET, CENTER_Y],
-    velocity: [INITIAL_VELOCITY_2, 0],
-    radius: 40,
-    color: [1, 0, 0, 1],
-    physicsType: "dynamic",
-  });
-  stage.add(circle2);
-
-  // const square1 = new Rectangle({
-  //   position: [spawnX - 40, 0],
-  //   width: 100,
-  //   height: 100,
-  //   rotation: Math.PI / 8,
-  //   physicsType: "kinematic",
-  //   color: [0, 1, 0, 1],
-  // });
-  // stage.add(square1);
-
-  const shouldReset = () => {
-    const circle1Outside =
-      circle1.position[0] > stage.canvas.clientWidth / 2 ||
-      circle1.position[0] < -stage.canvas.clientWidth / 2 ||
-      circle1.position[1] > stage.canvas.clientHeight / 2 ||
-      circle1.position[1] < -stage.canvas.clientHeight / 2;
-    const circle2Outside =
-      circle2.position[0] > stage.canvas.clientWidth / 2 ||
-      circle2.position[0] < -stage.canvas.clientWidth / 2 ||
-      circle2.position[1] > stage.canvas.clientHeight / 2 ||
-      circle2.position[1] < -stage.canvas.clientHeight / 2;
-
-    return circle1Outside || circle2Outside;
+  const center: [number, number] = [0, -stage.canvas.clientHeight / 4];
+  const offset = 100;
+  const initialVelocity1 = 70;
+  const initialVelocity2 = -20;
+  const spawnCircle = (x: number, velocity: number) => {
+    const entity = stage.spawn(
+      circleDefinition({
+        position: [x, center[1]],
+        velocity: [velocity, 0],
+        radius: 40,
+        color: [1, 0, 0, 1],
+      })
+    );
+    const body = stage.getPhysicsEntity(entity);
+    if (!body) {
+      throw new Error("Collision resolution demo requires physical circles");
+    }
+    return { entity, body };
   };
+  const first = spawnCircle(center[0] - offset, initialVelocity1);
+  const second = spawnCircle(center[0] + offset, initialVelocity2);
 
-  const resetObjects = () => {
-    circle1.position[0] = CENTER_X - OFFSET;
-    circle1.position[1] = CENTER_Y;
-    circle1.velocity[0] = INITIAL_VELOCITY_1;
-    circle1.velocity[1] = 0;
-
-    circle2.position[0] = CENTER_X + OFFSET;
-    circle2.position[1] = CENTER_Y;
-    circle2.velocity[0] = INITIAL_VELOCITY_2;
-    circle2.velocity[1] = 0;
+  const outsideViewport = (entity: Entity) =>
+    entity.position[0] > stage.canvas.clientWidth / 2 ||
+    entity.position[0] < -stage.canvas.clientWidth / 2 ||
+    entity.position[1] > stage.canvas.clientHeight / 2 ||
+    entity.position[1] < -stage.canvas.clientHeight / 2;
+  const reset = (
+    entity: Entity,
+    body: PhysicsEntity,
+    x: number,
+    velocity: number
+  ) => {
+    entity.position = [x, center[1]];
+    body.velocity = [velocity, 0];
   };
 
   const collisions: [number, number][] = [];
   stage.registerPhysicsObserver(({ entityCollisions }) => {
-    for (const collision of entityCollisions) {
-      const { entity1, entity2 } = collision;
-      const alreadyCollided = collisions.some(
-        (pair) => pair[0] === entity1 && pair[1] === entity2
-      );
-      if (alreadyCollided) {
-        continue;
+    for (const { entity1, entity2 } of entityCollisions) {
+      if (
+        !collisions.some(
+          ([firstId, secondId]) => firstId === entity1 && secondId === entity2
+        )
+      ) {
+        collisions.push([entity1, entity2]);
       }
-
-      collisions.push([entity1, entity2]);
     }
   });
 
   return {
     fixedUpdate: (deltaMs) => {
-      if (shouldReset()) {
-        resetObjects();
+      if (outsideViewport(first.entity) || outsideViewport(second.entity)) {
+        reset(first.entity, first.body, center[0] - offset, initialVelocity1);
+        reset(second.entity, second.body, center[0] + offset, initialVelocity2);
       }
       stage.update(deltaMs);
     },
-    update: () => {
-      updateDebugInfo({ collisions });
-    },
+    update: () => updateDebugInfo({ collisions }),
     render: () => stage.render(),
     dispose: () => stage.dispose(),
   };
 }
 
-// Debug info
-const debugInfoElem = document.getElementById("#debug-info");
-/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-const updateDebugInfo = (obj: any) => {
+const debugInfoElem = document.getElementById("debug-info");
+const updateDebugInfo = (value: unknown) => {
   if (debugInfoElem) {
-    debugInfoElem.textContent = JSON.stringify(obj, null, 2);
+    debugInfoElem.textContent = JSON.stringify(value, null, 2);
   }
 };
 

@@ -1,4 +1,3 @@
-import type { BuilderElements } from "./types";
 import { requireElement } from "./utils";
 
 export type BuilderUi = {
@@ -55,41 +54,55 @@ export type BuilderUi = {
   debugInfo: HTMLElement;
 };
 
-export const resolveBuilderUi = (selectors: BuilderElements): BuilderUi => {
-  const playButton = requireElement<HTMLButtonElement>(selectors.play, "play");
-  const raceOutcome = requireElement(selectors.raceOutcome, "race outcome");
+export const resolveBuilderUi = (
+  rootElement: HTMLElement | null
+): BuilderUi => {
+  const root = requireElement(rootElement, "level builder");
+  const role = <Element extends HTMLElement = HTMLElement>(
+    name: string,
+    label = name
+  ) =>
+    requireElement<Element>(
+      root.querySelector<HTMLElement>(`[data-role="${name}"]`),
+      label
+    );
+  const playButton = role<HTMLButtonElement>("race-play", "play");
+  const raceOutcome = role("race-outcome", "race outcome");
   return {
-    root: requireElement(selectors.root, "level builder"),
-    toolbar: requireElement(selectors.toolbar, "builder toolbar"),
-    raceControls: requireElement(selectors.raceControls, "race controls"),
-    toolHintOutput: requireElement(selectors.toolHint, "tool hint"),
-    panButton: requireElement(selectors.pan, "pan tool"),
-    pointerButton: requireElement(selectors.pointer, "pointer tool"),
-    wallButton: requireElement(selectors.wall, "wall tool"),
-    spawnPointButton: requireElement(selectors.spawnPoint, "spawn point tool"),
-    pusherMenuToggleButton: requireElement(
-      selectors.pusherMenuToggle,
+    root,
+    toolbar: role("toolbar", "builder toolbar"),
+    raceControls: role("race-controls", "race controls"),
+    toolHintOutput: role("tool-hint", "tool hint"),
+    panButton: role<HTMLButtonElement>("tool-pan", "pan tool"),
+    pointerButton: role<HTMLButtonElement>("tool-pointer", "pointer tool"),
+    wallButton: role<HTMLButtonElement>("tool-wall", "wall tool"),
+    spawnPointButton: role<HTMLButtonElement>(
+      "tool-spawn-point",
+      "spawn point tool"
+    ),
+    pusherMenuToggleButton: role<HTMLButtonElement>(
+      "pusher-menu-toggle",
       "pusher library toggle"
     ),
-    pusherLibrary: requireElement(selectors.pusherLibrary, "pusher library"),
-    sliderButton: requireElement(selectors.slider, "slider pusher"),
-    spinnerButton: requireElement(selectors.spinner, "spinner pusher"),
-    sweeperButton: requireElement(selectors.sweeper, "sweeper pusher"),
-    gridSnapToggleButton: requireElement(
-      selectors.gridSnapToggle,
+    pusherLibrary: role("pusher-library", "pusher library"),
+    sliderButton: role<HTMLButtonElement>("tool-slider", "slider pusher"),
+    spinnerButton: role<HTMLButtonElement>("tool-spinner", "spinner pusher"),
+    sweeperButton: role<HTMLButtonElement>("tool-sweeper", "sweeper pusher"),
+    gridSnapToggleButton: role<HTMLButtonElement>(
+      "grid-snap-toggle",
       "grid snap toggle"
     ),
-    majorGridToggleButton: requireElement(
-      selectors.majorGridToggle,
+    majorGridToggleButton: role<HTMLButtonElement>(
+      "major-grid-toggle",
       "major grid toggle"
     ),
-    minorGridToggleButton: requireElement(
-      selectors.minorGridToggle,
+    minorGridToggleButton: role<HTMLButtonElement>(
+      "minor-grid-toggle",
       "minor grid toggle"
     ),
-    gridOverlay: requireElement(selectors.gridOverlay, "grid overlay"),
-    editorOverlayCanvas: requireElement(
-      selectors.editorOverlay,
+    gridOverlay: role("grid-overlay", "grid overlay"),
+    editorOverlayCanvas: role<HTMLCanvasElement>(
+      "editor-overlay",
       "editor overlay"
     ),
     playButton,
@@ -97,7 +110,7 @@ export const resolveBuilderUi = (selectors: BuilderElements): BuilderUi => {
     playButtonIcons: Array.from(
       playButton.querySelectorAll<SVGElement>("[data-race-icon]")
     ),
-    resetButton: requireElement(selectors.reset, "reset"),
+    resetButton: role<HTMLButtonElement>("race-reset", "reset"),
     raceOutcome,
     raceOutcomeSwatch: requireElement(
       raceOutcome.querySelector("[data-race-outcome-swatch]"),
@@ -107,77 +120,62 @@ export const resolveBuilderUi = (selectors: BuilderElements): BuilderUi => {
       raceOutcome.querySelector("[data-race-outcome-label]"),
       "race outcome label"
     ),
-    zoomInButton: requireElement(selectors.zoomIn, "zoom in"),
-    zoomOutButton: requireElement(selectors.zoomOut, "zoom out"),
-    zoomResetButton: requireElement(selectors.zoomReset, "reset zoom"),
-    zoomLevelOutput: requireElement(selectors.zoomLevel, "zoom level"),
-    undoButton: requireElement(selectors.undo, "undo"),
-    redoButton: requireElement(selectors.redo, "redo"),
-    teamCountInput: requireElement(selectors.teamCount, "team count"),
-    teamCountOutput: requireElement(
-      selectors.teamCountOutput,
+    zoomInButton: role<HTMLButtonElement>("zoom-in", "zoom in"),
+    zoomOutButton: role<HTMLButtonElement>("zoom-out", "zoom out"),
+    zoomResetButton: role<HTMLButtonElement>("zoom-reset", "reset zoom"),
+    zoomLevelOutput: role<HTMLOutputElement>("zoom-level", "zoom level"),
+    undoButton: role<HTMLButtonElement>("undo", "undo"),
+    redoButton: role<HTMLButtonElement>("redo", "redo"),
+    teamCountInput: role<HTMLInputElement>("team-count", "team count"),
+    teamCountOutput: role<HTMLOutputElement>(
+      "team-count-output",
       "team count output"
     ),
-    marblesPerTeamInput: requireElement(
-      selectors.marblesPerTeam,
+    marblesPerTeamInput: role<HTMLInputElement>(
+      "marbles-per-team",
       "marbles per team"
     ),
-    marblesPerTeamOutput: requireElement(
-      selectors.marblesPerTeamOutput,
+    marblesPerTeamOutput: role<HTMLOutputElement>(
+      "marbles-per-team-output",
       "marbles per team output"
     ),
-    releaseIntervalInput: requireElement(
-      selectors.releaseInterval,
+    releaseIntervalInput: role<HTMLInputElement>(
+      "release-interval",
       "release interval"
     ),
-    releaseIntervalOutput: requireElement(
-      selectors.releaseIntervalOutput,
+    releaseIntervalOutput: role<HTMLOutputElement>(
+      "release-interval-output",
       "release interval output"
     ),
-    courseWidthInput: requireElement(selectors.courseWidth, "course width"),
-    courseHeightInput: requireElement(selectors.courseHeight, "course height"),
-    wallThicknessInput: requireElement(
-      selectors.wallThickness,
+    courseWidthInput: role<HTMLInputElement>("course-width", "course width"),
+    courseHeightInput: role<HTMLInputElement>("course-height", "course height"),
+    wallThicknessInput: role<HTMLInputElement>(
+      "wall-thickness",
       "wall thickness"
     ),
-    objectInspector: requireElement(
-      selectors.objectInspector,
-      "object inspector"
-    ),
-    objectInspectorTitle: requireElement(
-      selectors.objectInspectorTitle,
+    objectInspector: role("object-inspector", "object inspector"),
+    objectInspectorTitle: role(
+      "object-inspector-title",
       "object inspector title"
     ),
-    motionTypeSelect: requireElement(selectors.motionType, "motion type"),
-    motionControls: requireElement(selectors.motionControls, "motion controls"),
-    motionRangeRow: requireElement(
-      selectors.motionRangeRow,
-      "motion range row"
-    ),
-    motionRangeInput: requireElement(selectors.motionRange, "motion range"),
-    motionRangeOutput: requireElement(
-      selectors.motionRangeOutput,
+    motionTypeSelect: role<HTMLSelectElement>("motion-type", "motion type"),
+    motionControls: role("motion-controls", "motion controls"),
+    motionRangeRow: role("motion-range-row", "motion range row"),
+    motionRangeInput: role<HTMLInputElement>("motion-range", "motion range"),
+    motionRangeOutput: role<HTMLOutputElement>(
+      "motion-range-output",
       "motion range output"
     ),
-    motionReverseButton: requireElement(
-      selectors.motionReverse,
+    motionReverseButton: role<HTMLButtonElement>(
+      "motion-reverse",
       "reverse motion"
     ),
     motionSpeedButtons: [
-      requireElement<HTMLButtonElement>(
-        selectors.motionSpeedSlow,
-        "slow motion"
-      ),
-      requireElement<HTMLButtonElement>(
-        selectors.motionSpeedMedium,
-        "medium motion"
-      ),
-      requireElement<HTMLButtonElement>(
-        selectors.motionSpeedFast,
-        "fast motion"
-      ),
+      role<HTMLButtonElement>("motion-speed-slow", "slow motion"),
+      role<HTMLButtonElement>("motion-speed-medium", "medium motion"),
+      role<HTMLButtonElement>("motion-speed-fast", "fast motion"),
     ],
-    statusOutput: requireElement(selectors.status, "status"),
-    debugInfo: requireElement(selectors.debugInfo, "debug info"),
+    statusOutput: role("race-status", "status"),
+    debugInfo: role("debug-info", "debug info"),
   };
 };
