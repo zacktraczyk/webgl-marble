@@ -1,0 +1,129 @@
+import { LevelDocument } from "../editor/levelDocument";
+import type { Color } from "../engine/vdu/component";
+import { TEAM_COLORS, TEAM_NAMES } from "../game/race/staging";
+import {
+  COURSE_STROKE_WIDTH,
+  STAGE_HEIGHT,
+  STAGE_WIDTH,
+} from "../scenes/level-builder/constants";
+import { createDefaultCourse } from "../scenes/level-builder/level/objects";
+import type { RaceDocument, RaceLegDocument, RaceParticipant } from "./types";
+import { RACE_DOCUMENT_VERSION, RACE_MARBLES_PER_TEAM } from "./types";
+
+export const DEFAULT_PARTICIPANT_COUNT = 4;
+export const DEFAULT_RELEASE_INTERVAL_MS = 60;
+export const MAX_RACE_PARTICIPANTS = TEAM_COLORS.length;
+
+export type RaceFactoryDependencies = {
+  createId?: () => string;
+  now?: () => Date;
+};
+
+let fallbackId = 0;
+
+export const createLocalId = () => {
+  if (typeof globalThis.crypto?.randomUUID === "function") {
+    return globalThis.crypto.randomUUID();
+  }
+  fallbackId += 1;
+  return `local-${Date.now().toString(36)}-${fallbackId.toString(36)}`;
+};
+
+const copyColor = (color: readonly number[]): Color => [
+  color[0],
+  color[1],
+  color[2],
+  color[3],
+];
+
+export const createDefaultParticipants = (
+  count = DEFAULT_PARTICIPANT_COUNT,
+  createId = createLocalId
+): RaceParticipant[] => {
+  if (!Number.isInteger(count) || count < 2 || count > MAX_RACE_PARTICIPANTS) {
+    throw new Error(
+      `Team count must be between 2 and ${MAX_RACE_PARTICIPANTS}`
+    );
+  }
+
+  return Array.from({ length: count }, (_, index) => ({
+    id: createId(),
+    name: TEAM_NAMES[index] ?? `Team ${index + 1}`,
+    color: copyColor(TEAM_COLORS[index]),
+  }));
+};
+
+export type DefaultLegOptions = RaceFactoryDependencies & {
+  id?: string;
+  name?: string;
+  index?: number;
+};
+
+export const createDefaultLeg = ({
+  id,
+  name,
+  index = 0,
+  createId = createLocalId,
+}: DefaultLegOptions = {}): RaceLegDocument => {
+  const legName = name?.trim() || `Leg ${index + 1}`;
+  const document = new LevelDocument(legName, [STAGE_WIDTH, STAGE_HEIGHT], {
+    wallThickness: COURSE_STROKE_WIDTH,
+  });
+  for (const object of createDefaultCourse(
+    STAGE_WIDTH,
+    STAGE_HEIGHT,
+    COURSE_STROKE_WIDTH
+  )) {
+    document.add(object);
+  }
+
+  return {
+    id: id ?? createId(),
+    name: legName,
+    level: document.serialize(),
+  };
+};
+
+export type DefaultRaceOptions = RaceFactoryDependencies & {
+  id?: string;
+  name?: string;
+  participantCount?: number;
+  legCount?: number;
+  releaseIntervalMs?: number;
+};
+
+/** Creates a new editable race. A single leg keeps the first editing step small. */
+export const createDefaultRace = ({
+  id,
+  name,
+  participantCount = DEFAULT_PARTICIPANT_COUNT,
+  legCount = 1,
+  releaseIntervalMs = DEFAULT_RELEASE_INTERVAL_MS,
+  createId = createLocalId,
+  now = () => new Date(),
+}: DefaultRaceOptions = {}): RaceDocument => {
+  if (!Number.isInteger(legCount) || legCount < 0) {
+    throw new Error("Leg count must be a non-negative integer");
+  }
+  if (!Number.isFinite(releaseIntervalMs) || releaseIntervalMs <= 0) {
+    throw new Error("Release interval must be positive");
+  }
+
+  const timestamp = now().toISOString();
+  return {
+    version: RACE_DOCUMENT_VERSION,
+    id: id ?? createId(),
+    name: name?.trim() || "Untitled race",
+    createdAt: timestamp,
+    updatedAt: timestamp,
+    releaseIntervalMs,
+    rules: {
+      marblesPerTeam: RACE_MARBLES_PER_TEAM,
+      eliminatedPerLeg: 1,
+    },
+    participants: createDefaultParticipants(participantCount, createId),
+    legs: Array.from({ length: legCount }, (_, index) =>
+      createDefaultLeg({ index, createId })
+    ),
+  };
+};

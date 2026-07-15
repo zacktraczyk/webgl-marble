@@ -24,6 +24,14 @@ import "../styles/global.css";
     class="relative size-full overflow-hidden"
   >
     <HomeLink id="builder-home-link" />
+    <p
+      id="builder-save-status"
+      hidden
+      class="pointer-events-none absolute left-32 top-3 z-20 flex h-9 items-center rounded-md border border-zinc-700 bg-zinc-800/80 px-3 text-xs text-zinc-400 shadow-lg backdrop-blur"
+      aria-live="polite"
+    >
+      Saved to race
+    </p>
 
     <p
       id="builder-error"
@@ -1340,6 +1348,7 @@ import "../styles/global.css";
 
 <script>
   import { mountScene } from "../engine/runtime/mountScene";
+  import { RaceRepository } from "../races";
   import createScene from "../scenes/level-builder";
 
   const byId = (id: string) => document.getElementById(id);
@@ -1353,6 +1362,34 @@ import "../styles/global.css";
   const closeSidebarIcon = sidebarToggle?.querySelector<SVGElement>(
     '[data-sidebar-icon="close"]'
   );
+  const homeLink = byId("builder-home-link") as HTMLAnchorElement | null;
+  const saveStatus = byId("builder-save-status");
+  const params = new URLSearchParams(window.location.search);
+  const raceId = params.get("race");
+  const legId = params.get("leg");
+  const repository = new RaceRepository();
+  let race = raceId ? repository.get(raceId) : null;
+  let raceLeg = race?.legs.find((leg) => leg.id === legId) ?? null;
+
+  if (race && raceLeg && homeLink) {
+    homeLink.href = `/race-builder?race=${encodeURIComponent(race.id)}`;
+    const label = homeLink.querySelector("span");
+    if (label) {
+      label.textContent = "Race builder";
+    }
+    if (saveStatus) {
+      saveStatus.hidden = false;
+    }
+    for (const role of ["team-count", "marbles-per-team", "release-interval"]) {
+      const input = builder?.querySelector<HTMLInputElement>(
+        `[data-role="${role}"]`
+      );
+      if (input) {
+        input.disabled = true;
+        input.title = "This setting is controlled by the race builder";
+      }
+    }
+  }
 
   const setSidebarOpen = (open: boolean) => {
     if (!builder || !sidebar || !sidebarToggle) {
@@ -1377,7 +1414,32 @@ import "../styles/global.css";
   });
 
   try {
-    mountScene(createScene(builder), {
+    const scene = createScene(builder, {
+      ...(race && raceLeg
+        ? {
+            initialLevel: raceLeg.level,
+            roundConfiguration: {
+              teamCount: race.participants.length,
+              marblesPerTeam: race.rules.marblesPerTeam,
+              releaseIntervalMs: race.releaseIntervalMs,
+            },
+            onCommit: (level) => {
+              if (!race || !raceLeg) {
+                return;
+              }
+              raceLeg = {
+                ...raceLeg,
+                level: { ...level, name: raceLeg.name },
+              };
+              race = repository.saveLeg(race.id, raceLeg);
+              if (saveStatus) {
+                saveStatus.textContent = "Saved to race";
+              }
+            },
+          }
+        : {}),
+    });
+    mountScene(scene, {
       showFps: true,
       fpsElement: byId("builder-fps"),
       errorElement,

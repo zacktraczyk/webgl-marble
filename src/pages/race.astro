@@ -1,0 +1,270 @@
+---
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout title="Race · Marbel">
+  <main class="relative size-full overflow-hidden bg-zinc-950">
+    <section
+      id="race-error-state"
+      hidden
+      class="absolute inset-0 z-50 grid place-items-center bg-zinc-900 px-5 text-center"
+    >
+      <div>
+        <p
+          class="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500"
+        >
+          Unable to start
+        </p>
+        <h1
+          id="race-error-title"
+          class="mt-3 text-2xl font-semibold text-white"
+        >
+          Race not found
+        </h1>
+        <p id="race-error-copy" class="mt-3 text-sm text-zinc-400"></p>
+        <a
+          id="race-error-action"
+          href="/"
+          class="mt-6 inline-block rounded-md bg-zinc-100 px-4 py-2 text-sm font-semibold text-zinc-900"
+          >Return to library</a
+        >
+      </div>
+    </section>
+
+    <section
+      id="race-player"
+      hidden
+      data-race-state="loading"
+      class="relative size-full"
+    >
+      <canvas id="gl-canvas" class="absolute inset-0 size-full bg-zinc-950"
+        >Canvas not supported</canvas
+      >
+      <div
+        class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_35%,rgb(9_9_11/0.55)_100%)]"
+      >
+      </div>
+
+      <header
+        class="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between gap-4 p-4 sm:p-6"
+      >
+        <div
+          class="pointer-events-auto flex items-center gap-3 rounded-lg border border-zinc-700 bg-zinc-900/80 p-1.5 pr-4 shadow-xl backdrop-blur"
+        >
+          <a
+            href="/"
+            aria-label="Return to race library"
+            class="rounded-md px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-700 hover:text-white"
+            >←</a
+          >
+          <div>
+            <p
+              class="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500"
+            >
+              Now racing
+            </p>
+            <h1
+              data-role="race-name"
+              class="max-w-48 truncate text-sm font-semibold text-white sm:max-w-80"
+            >
+            </h1>
+          </div>
+        </div>
+
+        <div
+          class="rounded-lg border border-zinc-700 bg-zinc-900/80 px-4 py-3 text-right shadow-xl backdrop-blur"
+        >
+          <p
+            data-role="race-leg-progress"
+            class="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500"
+          >
+          </p>
+          <p
+            data-role="race-leg-name"
+            class="mt-0.5 max-w-48 truncate text-sm font-semibold text-white sm:max-w-72"
+          >
+          </p>
+        </div>
+      </header>
+
+      <div
+        class="pointer-events-none absolute inset-0 z-30 grid place-items-center px-5"
+      >
+        <div
+          id="elimination-card"
+          class="rounded-xl border border-rose-400/25 bg-zinc-950/90 px-7 py-5 text-center shadow-2xl backdrop-blur"
+        >
+          <p
+            class="text-[10px] font-bold uppercase tracking-[0.24em] text-rose-300"
+          >
+            Team eliminated
+          </p>
+          <p
+            data-role="race-eliminated"
+            class="mt-2 text-2xl font-semibold text-white"
+          >
+          </p>
+        </div>
+        <div
+          id="winner-card"
+          class="absolute rounded-2xl border border-emerald-300/25 bg-zinc-950/95 px-10 py-9 text-center shadow-2xl backdrop-blur"
+        >
+          <div
+            class="mx-auto grid size-12 place-items-center rounded-full bg-emerald-300 text-lg font-black text-emerald-950"
+          >
+            1
+          </div>
+          <p
+            class="mt-5 text-[10px] font-bold uppercase tracking-[0.28em] text-emerald-300"
+          >
+            Winning team
+          </p>
+          <p
+            data-role="race-winner"
+            class="mt-2 text-4xl font-semibold tracking-tight text-white"
+          >
+          </p>
+          <div class="pointer-events-auto mt-7 flex justify-center gap-2">
+            <button
+              data-role="race-restart"
+              type="button"
+              class="rounded-md border border-zinc-600 px-4 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800"
+              >Race again</button
+            >
+            <a
+              href="/"
+              class="rounded-md bg-zinc-100 px-4 py-2 text-sm font-semibold text-zinc-900 hover:bg-white"
+              >Library</a
+            >
+          </div>
+        </div>
+      </div>
+
+      <div
+        class="pointer-events-none absolute inset-x-0 bottom-4 z-20 flex flex-col items-center gap-3 px-4 sm:bottom-6"
+      >
+        <p
+          data-role="race-status"
+          class="max-w-xl rounded-full border border-zinc-700 bg-zinc-900/85 px-4 py-2 text-center text-xs text-zinc-300 shadow-lg backdrop-blur"
+          aria-live="polite"
+        >
+        </p>
+        <div
+          class="pointer-events-auto flex items-center gap-1 rounded-lg border border-zinc-700 bg-zinc-900/90 p-1.5 shadow-xl backdrop-blur"
+        >
+          <button
+            data-role="race-restart"
+            type="button"
+            class="rounded-md px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-700 hover:text-white"
+            >Restart</button
+          >
+          <button
+            data-role="race-pause-resume"
+            type="button"
+            class="min-w-20 rounded-md bg-zinc-100 px-4 py-2 text-sm font-semibold text-zinc-900 hover:bg-white"
+            >Pause</button
+          >
+          <button
+            data-role="race-skip-continue"
+            type="button"
+            class="rounded-md px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-700 hover:text-white"
+            >Skip leg</button
+          >
+        </div>
+        <p class="hidden text-[10px] text-zinc-600 sm:block">
+          <span data-role="race-finished-count">0</span> finished · <span
+            data-role="race-released-count">0</span
+          > released
+        </p>
+      </div>
+
+      <p
+        id="race-error"
+        class="pointer-events-none absolute left-1/2 top-24 z-40 -translate-x-1/2 rounded-md bg-rose-950/90 px-3 py-2 text-xs text-rose-200 empty:hidden"
+      >
+      </p>
+    </section>
+  </main>
+</Layout>
+
+<style>
+  #elimination-card,
+  #winner-card {
+    opacity: 0;
+    transform: translateY(1rem) scale(0.96);
+    pointer-events: none;
+    transition:
+      opacity 220ms ease,
+      transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  #race-player[data-race-state="transition"] #elimination-card,
+  #race-player[data-race-state="complete"] #winner-card {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  #race-player[data-race-state="complete"] #winner-card {
+    pointer-events: auto;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    #elimination-card,
+    #winner-card {
+      transition-duration: 0ms;
+    }
+  }
+</style>
+
+<script>
+  import { mountScene } from "../engine/runtime/mountScene";
+  import { RaceRepository, isRacePlayable } from "../races";
+  import createRacePlayerScene from "../scenes/race-player";
+
+  const params = new URLSearchParams(window.location.search);
+  const raceId = params.get("race") ?? "";
+  const repository = new RaceRepository();
+  const race = repository.get(raceId);
+  const player = document.querySelector<HTMLElement>("#race-player");
+  const errorState = document.querySelector<HTMLElement>("#race-error-state");
+  const errorTitle = document.querySelector<HTMLElement>("#race-error-title");
+  const errorCopy = document.querySelector<HTMLElement>("#race-error-copy");
+  const errorAction =
+    document.querySelector<HTMLAnchorElement>("#race-error-action");
+
+  const showError = (
+    title: string,
+    copy: string,
+    actionHref = "/",
+    actionLabel = "Return to library"
+  ) => {
+    if (errorState) errorState.hidden = false;
+    if (errorTitle) errorTitle.textContent = title;
+    if (errorCopy) errorCopy.textContent = copy;
+    if (errorAction) {
+      errorAction.href = actionHref;
+      errorAction.textContent = actionLabel;
+    }
+  };
+
+  if (!race) {
+    showError("Race not found", "It may have been deleted from this browser.");
+  } else if (!isRacePlayable(race)) {
+    showError(
+      "Race setup is incomplete",
+      "A race needs exactly one leg for each team that will be eliminated.",
+      `/race-builder?race=${encodeURIComponent(race.id)}`,
+      "Open race builder"
+    );
+  } else if (player) {
+    player.hidden = false;
+    try {
+      mountScene(createRacePlayerScene(race, player), {
+        errorElement: document.querySelector<HTMLElement>("#race-error"),
+      });
+    } catch (error) {
+      showError("Race could not start", `${error}`);
+      player.hidden = true;
+    }
+  }
+</script>

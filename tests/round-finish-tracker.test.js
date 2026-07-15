@@ -40,6 +40,22 @@ describe("round finish tracker", () => {
     expect(tracker.totalMarbles).toBe(12);
   });
 
+  test("eliminates the team with the final marble in a 100-marble field", () => {
+    const tracker = new RoundFinishTracker(2, 100);
+
+    for (let index = 0; index < 100; index++) {
+      tracker.record(0);
+    }
+    for (let index = 0; index < 99; index++) {
+      tracker.record(1);
+    }
+
+    expect(tracker.totalMarbles).toBe(200);
+    expect(tracker.finishedMarbles).toBe(199);
+    expect(tracker.remainingMarbles).toBe(1);
+    expect(tracker.eliminatedTeamIndex).toBe(1);
+  });
+
   test("assigns fallback completions to the team's fixed finish bay", () => {
     const tracker = new RoundFinishTracker(2, 2);
 

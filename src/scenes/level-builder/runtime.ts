@@ -36,6 +36,12 @@ import {
   type RoundConfiguration,
 } from "./types";
 
+export type LevelBuilderOptions = {
+  initialLevel?: SerializedLevel;
+  roundConfiguration?: RoundConfiguration;
+  onCommit?: (level: SerializedLevel) => void;
+};
+
 export class LevelBuilderRuntime {
   private readonly stage: Stage;
   private readonly ui: BuilderUi;
@@ -48,16 +54,31 @@ export class LevelBuilderRuntime {
   private readonly controls: BuilderControls;
   private readonly cameraController: BuilderCameraController;
   private readonly motionInspector: MotionInspectorController;
+  private readonly onCommit: LevelBuilderOptions["onCommit"];
   private configuration: RoundConfiguration;
   private selectedTool = SelectedTool.Pointer;
   private gridSnapEnabled = true;
   private playbackActive = false;
 
-  constructor(rootElement: HTMLElement | null, signal: AbortSignal) {
+  constructor(
+    rootElement: HTMLElement | null,
+    signal: AbortSignal,
+    options: LevelBuilderOptions = {}
+  ) {
     // DOM and engine
     this.ui = resolveBuilderUi(rootElement);
+    this.onCommit = options.onCommit;
+    if (options.initialLevel) {
+      this.syncLevelInputs(options.initialLevel);
+    }
+    if (options.roundConfiguration) {
+      this.syncRoundConfigurationInputs(options.roundConfiguration);
+    }
     new BuilderTooltipController(this.ui, signal);
-    this.stage = new Stage({ width: STAGE_WIDTH, height: STAGE_HEIGHT });
+    this.stage = new Stage({
+      width: options.initialLevel?.size[0] ?? STAGE_WIDTH,
+      height: options.initialLevel?.size[1] ?? STAGE_HEIGHT,
+    });
     this.cameraController = new BuilderCameraController(
       this.stage,
       this.ui,
@@ -66,7 +87,7 @@ export class LevelBuilderRuntime {
 
     // Level and race state
     this.configuration = readRoundConfiguration(this.ui);
-    this.level = this.createDefaultLevel();
+    this.level = this.createLevel(options.initialLevel);
     this.race = new RaceController(this.stage, this.level, this.configuration);
     this.history = new LevelHistory(this.level.document.serialize());
 
@@ -86,13 +107,18 @@ export class LevelBuilderRuntime {
     this.initializeView();
   }
 
-  private createDefaultLevel() {
-    const wallThickness = readWallThickness(this.ui);
+  private createLevel(initialLevel?: SerializedLevel) {
+    const wallThickness =
+      initialLevel?.settings.wallThickness ?? readWallThickness(this.ui);
     const level = new AuthoredLevel(
       this.stage,
       this.configuration,
       wallThickness
     );
+    if (initialLevel) {
+      level.restore(initialLevel);
+      return level;
+    }
     for (const object of createDefaultCourse(
       this.stage.width,
       this.stage.height,
@@ -210,6 +236,10 @@ export class LevelBuilderRuntime {
     this.race.fixedUpdate(deltaMs);
   }
 
+  get levelSnapshot(): SerializedLevel {
+    return this.level.document.serialize();
+  }
+
   updateInterface() {
     const race = this.race.snapshot;
     this.syncPlaybackState(race.phase !== "ready");
@@ -299,7 +329,10 @@ export class LevelBuilderRuntime {
 
   private commitLevelChange() {
     this.race.reset();
-    this.history.record(this.level.document.serialize());
+    const snapshot = this.levelSnapshot;
+    if (this.history.record(snapshot)) {
+      this.onCommit?.(snapshot);
+    }
   }
 
   private undo() {
@@ -309,6 +342,7 @@ export class LevelBuilderRuntime {
     const snapshot = this.history.undo();
     if (snapshot) {
       this.restoreLevel(snapshot);
+      this.onCommit?.(this.levelSnapshot);
     }
   }
 
@@ -319,6 +353,7 @@ export class LevelBuilderRuntime {
     const snapshot = this.history.redo();
     if (snapshot) {
       this.restoreLevel(snapshot);
+      this.onCommit?.(this.levelSnapshot);
     }
   }
 
@@ -336,6 +371,18 @@ export class LevelBuilderRuntime {
       this.cameraController.fitStage();
     }
     this.race.reset();
+  }
+
+  private syncLevelInputs(level: SerializedLevel) {
+    this.ui.courseWidthInput.value = `${level.size[0]}`;
+    this.ui.courseHeightInput.value = `${level.size[1]}`;
+    this.ui.wallThicknessInput.value = `${level.settings.wallThickness}`;
+  }
+
+  private syncRoundConfigurationInputs(configuration: RoundConfiguration) {
+    this.ui.teamCountInput.value = `${configuration.teamCount}`;
+    this.ui.marblesPerTeamInput.value = `${configuration.marblesPerTeam}`;
+    this.ui.releaseIntervalInput.value = `${configuration.releaseIntervalMs}`;
   }
 
   private readonly getGridWorldBounds = (): GridWorldBounds => {

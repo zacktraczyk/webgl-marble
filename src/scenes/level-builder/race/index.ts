@@ -44,8 +44,39 @@ export type RaceSnapshot = {
   courseIssue: string | null;
 };
 
+export type RaceControllerOptions = {
+  stableTeamIndices?: readonly number[];
+};
+
+const resolveStableTeamIndices = (
+  teamCount: number,
+  stableTeamIndices?: readonly number[]
+) => {
+  const indices =
+    stableTeamIndices ?? Array.from({ length: teamCount }, (_, index) => index);
+  if (indices.length !== teamCount) {
+    throw new Error(
+      `Stable team indices must include exactly ${teamCount} teams`
+    );
+  }
+
+  const uniqueIndices = new Set<number>();
+  for (const index of indices) {
+    if (!Number.isInteger(index) || index < 0 || index >= TEAM_COLORS.length) {
+      throw new Error(`Unknown stable team index: ${index}`);
+    }
+    if (uniqueIndices.has(index)) {
+      throw new Error(`Duplicate stable team index: ${index}`);
+    }
+    uniqueIndices.add(index);
+  }
+  return [...indices];
+};
+
 export class RaceController {
   private configuration: RoundConfiguration;
+  private stableTeamIndices: number[];
+  private readonly usesCustomStableTeamIndices: boolean;
   private phase: RacePhase = "ready";
   private raceMarbles: Entity[] = [];
   private finishMarbles: Entity[] = [];
@@ -62,9 +93,15 @@ export class RaceController {
   constructor(
     private readonly stage: Stage,
     private readonly level: AuthoredLevel,
-    configuration: RoundConfiguration
+    configuration: RoundConfiguration,
+    { stableTeamIndices }: RaceControllerOptions = {}
   ) {
     this.configuration = { ...configuration };
+    this.usesCustomStableTeamIndices = stableTeamIndices !== undefined;
+    this.stableTeamIndices = resolveStableTeamIndices(
+      configuration.teamCount,
+      stableTeamIndices
+    );
     this.finishTracker = new RoundFinishTracker(
       configuration.teamCount,
       configuration.marblesPerTeam
@@ -73,6 +110,10 @@ export class RaceController {
   }
 
   setConfiguration(configuration: RoundConfiguration) {
+    this.stableTeamIndices = resolveStableTeamIndices(
+      configuration.teamCount,
+      this.usesCustomStableTeamIndices ? this.stableTeamIndices : undefined
+    );
     this.configuration = { ...configuration };
     this.level.setRoundConfiguration(configuration);
     this.reset();
@@ -80,6 +121,7 @@ export class RaceController {
 
   get snapshot(): RaceSnapshot {
     const queuedMarbles = this.releaseQueue?.remaining ?? 0;
+    const eliminatedLocalTeamIndex = this.finishTracker.eliminatedTeamIndex;
 
     return {
       phase: this.phase,
@@ -89,7 +131,10 @@ export class RaceController {
       releasedMarbles: this.releasedMarbles,
       finishedMarbles: this.finishTracker.finishedMarbles,
       remainingMarbles: this.finishTracker.remainingMarbles,
-      eliminatedTeamIndex: this.finishTracker.eliminatedTeamIndex,
+      eliminatedTeamIndex:
+        eliminatedLocalTeamIndex === null
+          ? null
+          : this.stableTeamIndices[eliminatedLocalTeamIndex],
       marbleRadius: this.marbleRadius,
       physicsActive: this.physicsActive,
       outOfBoundsMarbles: this.outOfBoundsMarbles,
@@ -300,7 +345,7 @@ export class RaceController {
         marbleDefinition({
           position: [...position],
           radius: this.marbleRadius,
-          color: TEAM_COLORS[teamIndex],
+          color: TEAM_COLORS[this.stableTeamIndices[teamIndex]],
           team: `${teamIndex + 1}`,
           tags: ["finished-marble"],
           physical: false,
@@ -387,7 +432,7 @@ export class RaceController {
             spawnOffset[1] * cosine,
         ],
         radius: this.marbleRadius,
-        color: TEAM_COLORS[stagedMarble.teamIndex],
+        color: TEAM_COLORS[this.stableTeamIndices[stagedMarble.teamIndex]],
         team: `${stagedMarble.teamIndex + 1}`,
         tags: ["race-marble", "released-marble"],
         velocity: [
