@@ -6,6 +6,7 @@ import type {
   SerializedLevel,
 } from "../../editor/levelDocument";
 import Stage from "../../engine/stage";
+import { createGridLayout, type GridWorldBounds } from "./grid";
 import { AuthoredLevel } from "./level";
 import { BuilderCameraController } from "./ui/cameraController";
 import { BuilderControls } from "./ui/controls";
@@ -24,7 +25,7 @@ import {
 } from "./level/objects";
 import { RaceController } from "./race";
 import { resolveBuilderUi, type BuilderUi } from "./ui";
-import { GridOverlay, type GridWorldBounds } from "./ui/gridOverlay";
+import { GridOverlay } from "./ui/gridOverlay";
 import { MotionInspectorController } from "./ui/motionInspector";
 import { updateBuilderInterface } from "./ui/presenter";
 import { BuilderTooltipController } from "./ui/tooltip";
@@ -119,6 +120,7 @@ export class LevelBuilderRuntime {
       getObjects: () => this.level.objects,
       getDefaultWallThickness: () => this.level.wallThickness,
       getGridSnapEnabled: () => this.gridSnapEnabled,
+      getGridLayout: () => createGridLayout(this.getGridWorldBounds()),
       callbacks: {
         onObjectsChange: (objects) => this.refreshAuthoredObjects(objects),
         onObjectsCommit: () => this.commitLevelChange(),

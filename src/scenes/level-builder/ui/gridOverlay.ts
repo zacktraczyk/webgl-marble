@@ -1,29 +1,5 @@
-import type { Vec2 } from "../../../engine/core/transform";
 import type Stage from "../../../engine/stage";
-import { GRID_MAJOR_INTERVAL, GRID_SIZE } from "../constants";
-
-export type GridWorldBounds = {
-  min: Vec2;
-  max: Vec2;
-};
-
-const positiveModulo = (value: number, divisor: number) =>
-  ((value % divisor) + divisor) % divisor;
-
-const centeredMajorOffset = (
-  length: number,
-  minorOffset: number,
-  majorGridSize: number
-) => {
-  const target = positiveModulo(length, majorGridSize) / 2;
-  return Array.from({ length: GRID_MAJOR_INTERVAL }, (_, index) =>
-    positiveModulo(minorOffset + GRID_SIZE * index, majorGridSize)
-  ).reduce((closest, candidate) =>
-    Math.abs(candidate - target) < Math.abs(closest - target)
-      ? candidate
-      : closest
-  );
-};
+import { createGridLayout, type GridWorldBounds } from "../grid";
 
 export class GridOverlay {
   private majorVisible = true;
@@ -69,47 +45,44 @@ export class GridOverlay {
     const [left, top] = this.stage.camera.worldToScreen(...bounds.min);
     const width = Math.max(0, bounds.max[0] - bounds.min[0]);
     const height = Math.max(0, bounds.max[1] - bounds.min[1]);
-    const majorGridSize = GRID_SIZE * GRID_MAJOR_INTERVAL;
-    const minorOffsetX = positiveModulo(-bounds.min[0], GRID_SIZE);
-    const minorOffsetY = positiveModulo(-bounds.min[1], GRID_SIZE);
-    const majorOffsetX = centeredMajorOffset(
-      width,
-      minorOffsetX,
-      majorGridSize
-    );
-    const majorOffsetY = centeredMajorOffset(
-      height,
-      minorOffsetY,
-      majorGridSize
-    );
+    const layout = createGridLayout(bounds);
+    const zoom = this.stage.camera.zoom;
+    const [stepX, stepY] = layout.step;
+    const [majorStepX, majorStepY] = layout.majorStep;
 
     this.overlay.style.left = `${left}px`;
     this.overlay.style.top = `${top}px`;
-    this.overlay.style.width = `${width * this.stage.camera.zoom}px`;
-    this.overlay.style.height = `${height * this.stage.camera.zoom}px`;
+    this.overlay.style.width = `${width * zoom}px`;
+    this.overlay.style.height = `${height * zoom}px`;
+    this.overlay.style.setProperty("--grid-step-x", `${stepX * zoom}px`);
+    this.overlay.style.setProperty("--grid-step-y", `${stepY * zoom}px`);
     this.overlay.style.setProperty(
-      "--grid-step",
-      `${GRID_SIZE * this.stage.camera.zoom}px`
+      "--grid-major-step-x",
+      `${majorStepX * zoom}px`
     );
     this.overlay.style.setProperty(
-      "--grid-major-step",
-      `${majorGridSize * this.stage.camera.zoom}px`
+      "--grid-major-step-y",
+      `${majorStepY * zoom}px`
     );
     this.overlay.style.setProperty(
-      "--grid-minor-offset-x",
-      `${minorOffsetX * this.stage.camera.zoom}px`
+      "--grid-minor-background-x",
+      `${(-stepX * zoom) / 2}px`
     );
     this.overlay.style.setProperty(
-      "--grid-minor-offset-y",
-      `${minorOffsetY * this.stage.camera.zoom}px`
+      "--grid-minor-background-y",
+      `${(-stepY * zoom) / 2}px`
     );
     this.overlay.style.setProperty(
-      "--grid-major-offset-x",
-      `${majorOffsetX * this.stage.camera.zoom}px`
+      "--grid-major-background-x",
+      `${(-majorStepX * zoom) / 2}px`
     );
     this.overlay.style.setProperty(
-      "--grid-major-offset-y",
-      `${majorOffsetY * this.stage.camera.zoom}px`
+      "--grid-major-background-y",
+      `${(-majorStepY * zoom) / 2}px`
+    );
+    this.overlay.style.setProperty(
+      "--grid-zoom-opacity",
+      `${Math.min(1, Math.max(0.78, zoom))}`
     );
   }
 }

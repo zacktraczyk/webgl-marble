@@ -2,6 +2,11 @@ import type { Vec2 } from "../../engine/core/transform";
 import type Stage from "../../engine/stage";
 import { GRID_SIZE } from "../../scenes/level-builder/constants";
 import {
+  snapDeltaToGrid,
+  snapPointToGrid,
+  type GridLayout,
+} from "../../scenes/level-builder/grid";
+import {
   isPusherTool,
   SelectedTool,
   type PusherTool,
@@ -37,7 +42,6 @@ import {
   resizeShape,
   rotateShape,
   setWallEndpoints,
-  snapPoint,
   type Bounds,
   type LevelObjectShape,
   type ResizeHandle,
@@ -78,7 +82,6 @@ type WallEndpointTarget = Omit<WallEndpointFeedback, "kind"> & {
 };
 type WallEndpointExclusion = Pick<WallEndpointTarget, "objectId" | "endpoint">;
 
-const POSITION_SNAP_STEP = GRID_SIZE;
 const SIZE_SNAP_STEP = GRID_SIZE / 5;
 const ROTATION_SNAP_STEP = Math.PI / 12;
 const ROTATION_HANDLE_OFFSET = 28;
@@ -99,6 +102,7 @@ export class LevelEditorController {
   private readonly getObjects: () => readonly LevelObjectData[];
   private readonly getDefaultWallThickness: () => number;
   private readonly getGridSnapEnabled: () => boolean;
+  private readonly getGridLayout: () => GridLayout;
   private readonly callbacks: EditorCallbacks;
   private gesture: EditorGesture | null = null;
   private activeTool = SelectedTool.Pointer;
@@ -117,6 +121,7 @@ export class LevelEditorController {
     getObjects,
     getDefaultWallThickness,
     getGridSnapEnabled,
+    getGridLayout,
     callbacks,
     signal,
   }: {
@@ -125,6 +130,7 @@ export class LevelEditorController {
     getObjects: () => readonly LevelObjectData[];
     getDefaultWallThickness: () => number;
     getGridSnapEnabled: () => boolean;
+    getGridLayout: () => GridLayout;
     callbacks: EditorCallbacks;
     signal: AbortSignal;
   }) {
@@ -133,6 +139,7 @@ export class LevelEditorController {
     this.getObjects = getObjects;
     this.getDefaultWallThickness = getDefaultWallThickness;
     this.getGridSnapEnabled = getGridSnapEnabled;
+    this.getGridLayout = getGridLayout;
     this.callbacks = callbacks;
     this.selection = new LevelEditorSelection(getObjects);
 
@@ -535,7 +542,7 @@ export class LevelEditorController {
       return [...target.position] as Vec2;
     }
     return this.getGridSnapEnabled()
-      ? snapPoint(point, POSITION_SNAP_STEP)
+      ? snapPointToGrid(point, this.getGridLayout())
       : ([...point] as Vec2);
   }
 
@@ -551,11 +558,12 @@ export class LevelEditorController {
     }
     if (constrain) {
       this.endpointFeedback = null;
+      const gridStep = this.getGridLayout().step;
       return constrainPointToAngle(
         fixed,
         point,
         ROTATION_SNAP_STEP,
-        this.getGridSnapEnabled() ? POSITION_SNAP_STEP : 0
+        this.getGridSnapEnabled() ? (gridStep[0] + gridStep[1]) / 2 : 0
       );
     }
     return this.snapPlacementPoint(point, false, exclude);
@@ -878,7 +886,7 @@ export class LevelEditorController {
         vector = constrainDeltaToAxis(vector);
       }
       if (!event.altKey && this.getGridSnapEnabled()) {
-        vector = snapPoint(vector, POSITION_SNAP_STEP);
+        vector = snapDeltaToGrid(vector, this.getGridLayout());
       }
       if (Math.hypot(...vector) >= MIN_OBJECT_SIZE) {
         object.motion.periodMs = oscillationPeriodForRange(
@@ -959,7 +967,7 @@ export class LevelEditorController {
       const delta =
         event.altKey || !this.getGridSnapEnabled()
           ? rawDelta
-          : snapPoint(rawDelta, POSITION_SNAP_STEP);
+          : snapDeltaToGrid(rawDelta, this.getGridLayout());
       const changed: LevelObjectData[] = [];
       for (const [id, original] of this.gesture.originals) {
         const object = this.findObject(id);

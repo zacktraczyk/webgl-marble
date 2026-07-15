@@ -920,9 +920,26 @@ import "../styles/global.css";
               class="size-5 shrink-0"
               aria-hidden="true"
             >
-              <path d="M4 4h16v16H4zM12 4v16M4 12h16"></path>
+              <circle cx="5" cy="5" r="1" fill="currentColor" stroke="none"
+              ></circle>
+              <circle cx="12" cy="5" r="1" fill="currentColor" stroke="none"
+              ></circle>
+              <circle cx="19" cy="5" r="1" fill="currentColor" stroke="none"
+              ></circle>
+              <circle cx="5" cy="12" r="1" fill="currentColor" stroke="none"
+              ></circle>
+              <circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"
+              ></circle>
+              <circle cx="19" cy="12" r="1" fill="currentColor" stroke="none"
+              ></circle>
+              <circle cx="5" cy="19" r="1" fill="currentColor" stroke="none"
+              ></circle>
+              <circle cx="12" cy="19" r="1" fill="currentColor" stroke="none"
+              ></circle>
+              <circle cx="19" cy="19" r="1" fill="currentColor" stroke="none"
+              ></circle>
             </svg>
-            <span class="text-sm">Major grid lines</span>
+            <span class="text-sm">Major dots</span>
             <span
               aria-hidden="true"
               class="relative ml-auto h-5 w-9 rounded-full bg-zinc-600 transition-colors group-data-[active=true]:bg-fuchsia-400"
@@ -950,10 +967,26 @@ import "../styles/global.css";
               class="size-5 shrink-0"
               aria-hidden="true"
             >
-              <path d="M4 4h16v16H4zM9.33 4v16M14.67 4v16M4 9.33h16M4 14.67h16"
-              ></path>
+              <circle cx="5" cy="5" r="1" fill="currentColor" stroke="none"
+              ></circle>
+              <circle cx="12" cy="5" r="1" fill="currentColor" stroke="none"
+              ></circle>
+              <circle cx="19" cy="5" r="1" fill="currentColor" stroke="none"
+              ></circle>
+              <circle cx="5" cy="12" r="1" fill="currentColor" stroke="none"
+              ></circle>
+              <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"
+              ></circle>
+              <circle cx="19" cy="12" r="1" fill="currentColor" stroke="none"
+              ></circle>
+              <circle cx="5" cy="19" r="1" fill="currentColor" stroke="none"
+              ></circle>
+              <circle cx="12" cy="19" r="1" fill="currentColor" stroke="none"
+              ></circle>
+              <circle cx="19" cy="19" r="1" fill="currentColor" stroke="none"
+              ></circle>
             </svg>
-            <span class="text-sm">Minor grid lines</span>
+            <span class="text-sm">Minor dots</span>
             <span
               aria-hidden="true"
               class="relative ml-auto h-5 w-9 rounded-full bg-zinc-600 transition-colors group-data-[active=true]:bg-fuchsia-400"
@@ -1006,41 +1039,48 @@ import "../styles/global.css";
 
 <style>
   #builder-grid {
-    --grid-step: 15px;
-    --grid-major-step: 30px;
-    --grid-minor-offset-x: 0px;
-    --grid-minor-offset-y: 0px;
-    --grid-major-offset-x: 0px;
-    --grid-major-offset-y: 0px;
+    --grid-step-x: 15px;
+    --grid-step-y: 15px;
+    --grid-major-step-x: 75px;
+    --grid-major-step-y: 75px;
+    --grid-minor-background-x: -7.5px;
+    --grid-minor-background-y: -7.5px;
+    --grid-major-background-x: -37.5px;
+    --grid-major-background-y: -37.5px;
     --grid-minor-color: transparent;
     --grid-major-color: transparent;
+    --grid-zoom-opacity: 1;
     position: absolute;
     pointer-events: none;
     box-sizing: border-box;
     border: 1px solid rgb(161 161 170 / 35%);
+    opacity: var(--grid-zoom-opacity);
+    background-origin: border-box;
     background-image:
-      linear-gradient(to right, var(--grid-minor-color) 1px, transparent 1px),
-      linear-gradient(to bottom, var(--grid-minor-color) 1px, transparent 1px),
-      linear-gradient(to right, var(--grid-major-color) 1px, transparent 1px),
-      linear-gradient(to bottom, var(--grid-major-color) 1px, transparent 1px);
+      radial-gradient(
+        circle at center,
+        var(--grid-major-color) 0 3px,
+        transparent 3.4px
+      ),
+      radial-gradient(
+        circle at center,
+        var(--grid-minor-color) 0 1.5px,
+        transparent 1.85px
+      );
     background-size:
-      var(--grid-step) var(--grid-step),
-      var(--grid-step) var(--grid-step),
-      var(--grid-major-step) var(--grid-major-step),
-      var(--grid-major-step) var(--grid-major-step);
+      var(--grid-major-step-x) var(--grid-major-step-y),
+      var(--grid-step-x) var(--grid-step-y);
     background-position:
-      var(--grid-minor-offset-x) 0,
-      0 var(--grid-minor-offset-y),
-      var(--grid-major-offset-x) 0,
-      0 var(--grid-major-offset-y);
+      var(--grid-major-background-x) var(--grid-major-background-y),
+      var(--grid-minor-background-x) var(--grid-minor-background-y);
   }
 
   #builder-grid[data-minor-visible="true"] {
-    --grid-minor-color: rgb(232 121 249 / 22%);
+    --grid-minor-color: rgb(205 184 216 / 38%);
   }
 
   #builder-grid[data-major-visible="true"] {
-    --grid-major-color: rgb(232 121 249 / 42%);
+    --grid-major-color: rgb(221 200 232 / 64%);
   }
 
   #builder-grid[hidden] {

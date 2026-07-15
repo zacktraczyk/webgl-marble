@@ -7,10 +7,12 @@ const createGridOverlay = (bounds = { min: [-177, -57], max: [169, 81] }) => {
   const stage = {
     width: 400,
     height: 200,
-    zoom: 2,
-    worldToScreen: (x, y) => {
-      worldPoints.push([x, y]);
-      return [x * 2 + 400, y * 2 + 200];
+    camera: {
+      zoom: 2,
+      worldToScreen: (x, y) => {
+        worldPoints.push([x, y]);
+        return [x * 2 + 400, y * 2 + 200];
+      },
     },
   };
   const majorToggle = { dataset: {} };
@@ -40,7 +42,7 @@ const createGridOverlay = (bounds = { min: [-177, -57], max: [169, 81] }) => {
 };
 
 describe("level builder grid overlay", () => {
-  test("aligns its bounds to the playable course while preserving snap coordinates", () => {
+  test("aligns its visual dots to the shared boundary-aware snap grid", () => {
     const { grid, majorToggle, minorToggle, overlay, properties, worldPoints } =
       createGridOverlay();
 
@@ -58,15 +60,22 @@ describe("level builder grid overlay", () => {
     expect(overlay.style.top).toBe("86px");
     expect(overlay.style.width).toBe("692px");
     expect(overlay.style.height).toBe("276px");
-    expect(properties.get("--grid-step")).toBe("30px");
-    expect(properties.get("--grid-major-step")).toBe("60px");
-    expect(properties.get("--grid-minor-offset-x")).toBe("24px");
-    expect(properties.get("--grid-minor-offset-y")).toBe("24px");
-    expect(properties.get("--grid-major-offset-x")).toBe("24px");
-    expect(properties.get("--grid-major-offset-y")).toBe("24px");
+    expect(Number.parseFloat(properties.get("--grid-step-x"))).toBeCloseTo(
+      27.68
+    );
+    expect(Number.parseFloat(properties.get("--grid-step-y"))).toBeCloseTo(
+      27.6
+    );
+    expect(properties.get("--grid-major-step-x")).toBe("138.4px");
+    expect(properties.get("--grid-major-step-y")).toBe("138px");
+    expect(properties.get("--grid-minor-background-x")).toBe("-13.84px");
+    expect(properties.get("--grid-minor-background-y")).toBe("-13.8px");
+    expect(properties.get("--grid-major-background-x")).toBe("-69.2px");
+    expect(properties.get("--grid-major-background-y")).toBe("-69px");
+    expect(properties.get("--grid-zoom-opacity")).toBe("1");
   });
 
-  test("aligns major columns and rows with every default course boundary", () => {
+  test("subdivides the playable course evenly between opposite walls", () => {
     const { grid, properties } = createGridOverlay({
       min: [-705, -390],
       max: [705, 270],
@@ -74,10 +83,22 @@ describe("level builder grid overlay", () => {
 
     grid.update();
 
-    expect(properties.get("--grid-minor-offset-x")).toBe("0px");
-    expect(properties.get("--grid-minor-offset-y")).toBe("0px");
-    expect(properties.get("--grid-major-offset-x")).toBe("0px");
-    expect(properties.get("--grid-major-offset-y")).toBe("0px");
+    const minorStepX = Number.parseFloat(properties.get("--grid-step-x"));
+    const minorStepY = Number.parseFloat(properties.get("--grid-step-y"));
+    const majorStepX = Number.parseFloat(properties.get("--grid-major-step-x"));
+    const majorStepY = Number.parseFloat(properties.get("--grid-major-step-y"));
+    expect(minorStepX * 95).toBeCloseTo(1410 * 2);
+    expect(minorStepY * 45).toBeCloseTo(660 * 2);
+    expect(majorStepX).toBeCloseTo(minorStepX * 5);
+    expect(majorStepY).toBeCloseTo(minorStepY * 5);
+    expect(majorStepX * 19).toBeCloseTo(1410 * 2);
+    expect(majorStepY * 9).toBeCloseTo(660 * 2);
+    expect(
+      Number.parseFloat(properties.get("--grid-major-background-x")) * -2
+    ).toBeCloseTo(majorStepX);
+    expect(
+      Number.parseFloat(properties.get("--grid-major-background-y")) * -2
+    ).toBeCloseTo(majorStepY);
   });
 
   test("toggles each grid layer independently and suppresses both in playback", () => {
