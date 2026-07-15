@@ -27,6 +27,7 @@ import { resolveBuilderUi, type BuilderUi } from "./ui";
 import { GridOverlay, type GridWorldBounds } from "./ui/gridOverlay";
 import { MotionInspectorController } from "./ui/motionInspector";
 import { updateBuilderInterface } from "./ui/presenter";
+import { BuilderTooltipController } from "./ui/tooltip";
 import {
   isCreationTool,
   isPusherTool,
@@ -54,6 +55,7 @@ export class LevelBuilderRuntime {
   constructor(rootElement: HTMLElement | null, signal: AbortSignal) {
     // DOM and engine
     this.ui = resolveBuilderUi(rootElement);
+    new BuilderTooltipController(this.ui, signal);
     this.stage = new Stage({ width: STAGE_WIDTH, height: STAGE_HEIGHT });
     this.cameraController = new BuilderCameraController(
       this.stage,

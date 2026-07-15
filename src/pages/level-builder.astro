@@ -42,7 +42,7 @@ import "../styles/global.css";
         data-role="tool-pan"
         type="button"
         aria-label="Pan and zoom"
-        title="Pan and zoom (H)"
+        data-tooltip="Pan and zoom (H)"
         data-active="false"
         class="flex size-9 items-center justify-center rounded-md hover:bg-zinc-600 data-[active=true]:bg-zinc-500"
       >
@@ -69,7 +69,7 @@ import "../styles/global.css";
         data-role="tool-pointer"
         type="button"
         aria-label="Select objects"
-        title="Select objects (V)"
+        data-tooltip="Select objects (V)"
         data-active="false"
         class="flex size-9 items-center justify-center rounded-md hover:bg-zinc-600 data-[active=true]:bg-zinc-500 disabled:cursor-not-allowed disabled:text-zinc-600 disabled:opacity-50 disabled:hover:bg-transparent"
       >
@@ -94,7 +94,7 @@ import "../styles/global.css";
         data-role="tool-wall"
         type="button"
         aria-label="Place a wall"
-        title="Place walls (W or L)"
+        data-tooltip="Place walls (W or L)"
         data-active="false"
         class="flex size-9 items-center justify-center rounded-md hover:bg-zinc-600 data-[active=true]:bg-zinc-500 disabled:cursor-not-allowed disabled:text-zinc-600 disabled:opacity-50 disabled:hover:bg-transparent"
       >
@@ -123,7 +123,7 @@ import "../styles/global.css";
           aria-label="Open pusher library"
           aria-haspopup="menu"
           aria-expanded="false"
-          title="Pushers"
+          data-tooltip="Pushers"
           data-active="false"
           class="flex size-9 items-center justify-center rounded-md text-white hover:bg-zinc-600 data-[active=true]:bg-zinc-500 disabled:cursor-not-allowed disabled:text-zinc-600 disabled:opacity-50 disabled:hover:bg-transparent"
         >
@@ -243,7 +243,7 @@ import "../styles/global.css";
         data-role="tool-spawn-point"
         type="button"
         aria-label="Move the spawn point"
-        title="Move the marble spawn point (S)"
+        data-tooltip="Move the marble spawn point (S)"
         data-active="false"
         class="flex size-9 items-center justify-center rounded-md hover:bg-zinc-600 data-[active=true]:bg-zinc-500 disabled:cursor-not-allowed disabled:text-zinc-600 disabled:opacity-50 disabled:hover:bg-transparent"
       >
@@ -283,7 +283,7 @@ import "../styles/global.css";
           data-role="zoom-out"
           type="button"
           aria-label="Zoom out"
-          title="Zoom out"
+          data-tooltip="Zoom out"
           class="flex w-9 items-center justify-center text-zinc-100 hover:bg-zinc-700 disabled:cursor-not-allowed disabled:text-zinc-600 disabled:hover:bg-transparent"
         >
           <svg
@@ -303,7 +303,7 @@ import "../styles/global.css";
           data-role="zoom-reset"
           type="button"
           aria-label="Reset zoom to 100%"
-          title="Reset zoom to 100%"
+          data-tooltip="Reset zoom to 100%"
           class="flex min-w-14 items-center justify-center px-2 text-center font-mono text-xs text-zinc-300 hover:bg-zinc-700"
         >
           <output id="zoom-level" data-role="zoom-level" aria-live="polite"
@@ -315,7 +315,7 @@ import "../styles/global.css";
           data-role="zoom-in"
           type="button"
           aria-label="Zoom in"
-          title="Zoom in"
+          data-tooltip="Zoom in"
           class="flex w-9 items-center justify-center text-zinc-100 hover:bg-zinc-700 disabled:cursor-not-allowed disabled:text-zinc-600 disabled:hover:bg-transparent"
         >
           <svg
@@ -342,7 +342,7 @@ import "../styles/global.css";
           data-role="undo"
           type="button"
           aria-label="Undo"
-          title="Undo (Ctrl/⌘ Z)"
+          data-tooltip="Undo (Ctrl/⌘ Z)"
           disabled
           class="flex w-9 items-center justify-center text-zinc-100 hover:bg-zinc-700 disabled:cursor-not-allowed disabled:text-zinc-600 disabled:hover:bg-transparent"
         >
@@ -365,7 +365,7 @@ import "../styles/global.css";
           data-role="redo"
           type="button"
           aria-label="Redo"
-          title="Redo (Ctrl/⌘ Shift Z)"
+          data-tooltip="Redo (Ctrl/⌘ Shift Z)"
           disabled
           class="flex w-9 items-center justify-center text-zinc-100 hover:bg-zinc-700 disabled:cursor-not-allowed disabled:text-zinc-600 disabled:hover:bg-transparent"
         >
@@ -397,15 +397,15 @@ import "../styles/global.css";
         data-role="race-play"
         type="button"
         aria-label="Run race"
-        title="Run race"
+        data-tooltip="Run race"
         data-previewing="false"
-        class="flex size-14 items-center justify-center rounded-lg bg-green-400 text-green-950 hover:bg-green-300 data-[previewing=true]:bg-red-300 data-[previewing=true]:text-red-950 data-[previewing=true]:hover:bg-red-200 disabled:cursor-not-allowed disabled:bg-zinc-600 disabled:text-zinc-400 disabled:hover:bg-zinc-600"
+        class="flex size-10 items-center justify-center rounded-lg bg-green-400 text-green-950 hover:bg-green-300 data-[previewing=true]:bg-red-300 data-[previewing=true]:text-red-950 data-[previewing=true]:hover:bg-red-200 disabled:cursor-not-allowed disabled:bg-zinc-600 disabled:text-zinc-400 disabled:hover:bg-zinc-600"
       >
         <svg
           data-race-icon="play"
           viewBox="0 0 24 24"
           fill="currentColor"
-          class="size-7"
+          class="size-5"
           aria-hidden="true"
         >
           <path d="M8 5v14l11-7z"></path>
@@ -414,7 +414,7 @@ import "../styles/global.css";
           data-race-icon="pause"
           viewBox="0 0 24 24"
           fill="currentColor"
-          class="hidden size-7"
+          class="hidden size-5"
           aria-hidden="true"
         >
           <path d="M6 5h4v14H6zM14 5h4v14h-4z"></path>
@@ -427,7 +427,7 @@ import "../styles/global.css";
           stroke-width="2"
           stroke-linecap="round"
           stroke-linejoin="round"
-          class="hidden size-7"
+          class="hidden size-5"
           aria-hidden="true"
         >
           <path d="M3 12a9 9 0 1 0 3-6.7L3 8"></path>
@@ -440,14 +440,14 @@ import "../styles/global.css";
         data-role="race-reset"
         type="button"
         aria-label="End preview and return to editor"
-        title="End preview"
+        data-tooltip="End preview"
         disabled
-        class="flex size-14 items-center justify-center rounded-lg text-zinc-100 hover:bg-zinc-700 disabled:cursor-not-allowed disabled:text-zinc-600 disabled:hover:bg-transparent"
+        class="flex size-10 items-center justify-center rounded-lg text-zinc-100 hover:bg-zinc-700 disabled:cursor-not-allowed disabled:text-zinc-600 disabled:hover:bg-transparent"
       >
         <svg
           viewBox="0 0 24 24"
           fill="currentColor"
-          class="size-7"
+          class="size-5"
           aria-hidden="true"
         >
           <rect x="6" y="6" width="12" height="12" rx="1"></rect>
@@ -462,7 +462,7 @@ import "../styles/global.css";
       aria-live="polite"
       aria-atomic="true"
       hidden
-      class="pointer-events-none absolute inset-x-0 bottom-24 z-20 mx-auto flex w-max items-center gap-2.5 rounded-xl border border-zinc-600 bg-zinc-800/95 px-3.5 py-2.5 shadow-xl backdrop-blur"
+      class="pointer-events-none absolute inset-x-0 bottom-20 z-20 mx-auto flex w-max items-center gap-2.5 rounded-xl border border-zinc-600 bg-zinc-800/95 px-3.5 py-2.5 shadow-xl backdrop-blur"
     >
       <span
         data-race-outcome-swatch
@@ -475,13 +475,34 @@ import "../styles/global.css";
       >
     </div>
 
+    <div
+      id="builder-tooltip"
+      data-role="tooltip"
+      data-side="top"
+      data-open="false"
+      role="tooltip"
+      hidden
+      class="pointer-events-none fixed z-50 flex max-w-72 items-center gap-1.5 whitespace-nowrap rounded-md bg-zinc-50 px-2.5 py-1.5 text-xs font-medium text-zinc-950 shadow-xl ring-1 ring-black/10"
+    >
+      <span data-role="tooltip-label"></span>
+      <kbd
+        data-role="tooltip-shortcut"
+        hidden
+        class="rounded bg-zinc-200 px-1 py-0.5 font-mono text-[10px] font-semibold leading-none text-zinc-700"
+      ></kbd>
+      <span
+        data-role="tooltip-arrow"
+        aria-hidden="true"
+        class="absolute size-2 rotate-45 bg-zinc-50"></span>
+    </div>
+
     <button
       id="toggle-sidebar"
       type="button"
       aria-controls="level-options-sidebar"
       aria-expanded="false"
       aria-label="Open options sidebar"
-      title="Open options sidebar"
+      data-tooltip="Open Sidebar"
       class="absolute right-3 top-3 z-30 flex size-9 items-center justify-center rounded-md border border-zinc-700 bg-zinc-800 text-zinc-200 shadow-lg hover:bg-zinc-700 hover:text-white"
     >
       <svg
@@ -693,7 +714,7 @@ import "../styles/global.css";
         <label
           class="flex items-center gap-3 py-3 text-zinc-300"
           for="wall-thickness"
-          title="Default wall thickness"
+          data-tooltip="Default wall thickness"
         >
           <svg
             viewBox="0 0 24 24"
@@ -731,7 +752,7 @@ import "../styles/global.css";
           <label
             class="flex items-center gap-3 py-2.5 text-zinc-300"
             for="team-count"
-            title="Teams"
+            data-tooltip="Teams"
           >
             <svg
               viewBox="0 0 24 24"
@@ -768,7 +789,7 @@ import "../styles/global.css";
           <label
             class="flex items-center gap-3 py-2.5 text-zinc-300"
             for="marbles-per-team"
-            title="Marbles per team"
+            data-tooltip="Marbles per team"
           >
             <svg
               viewBox="0 0 24 24"
@@ -803,7 +824,7 @@ import "../styles/global.css";
           <label
             class="flex items-center gap-3 py-2.5 text-zinc-300"
             for="release-interval"
-            title="Release interval"
+            data-tooltip="Release interval"
           >
             <svg
               viewBox="0 0 24 24"
@@ -1043,6 +1064,35 @@ import "../styles/global.css";
     line-height: 1;
   }
 
+  #builder-tooltip {
+    --tooltip-enter-y: 0.2rem;
+    opacity: 0;
+    transform: translateY(var(--tooltip-enter-y)) scale(0.96);
+    transform-origin: 50% 100%;
+    transition:
+      opacity 120ms ease-out,
+      transform 120ms ease-out;
+    will-change: opacity, transform;
+  }
+
+  #builder-tooltip[data-side="bottom"] {
+    --tooltip-enter-y: -0.2rem;
+    transform-origin: 50% 0;
+  }
+
+  #builder-tooltip[data-open="true"] {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  #builder-tooltip[data-side="top"] [data-role="tooltip-arrow"] {
+    bottom: -0.25rem;
+  }
+
+  #builder-tooltip[data-side="bottom"] [data-role="tooltip-arrow"] {
+    top: -0.25rem;
+  }
+
   #builder-toolbar button:focus,
   #toggle-sidebar:focus,
   #viewport-controls button:focus,
@@ -1149,7 +1199,8 @@ import "../styles/global.css";
   #object-inspector[hidden],
   #motion-controls[hidden],
   #motion-range-row[hidden],
-  #race-outcome[hidden] {
+  #race-outcome[hidden],
+  #builder-tooltip[hidden] {
     display: none;
   }
 
@@ -1231,6 +1282,7 @@ import "../styles/global.css";
     #viewport-controls,
     #edit-history-controls,
     #level-options-sidebar,
+    #builder-tooltip,
     :global(#builder-home-link) {
       transition-duration: 0ms;
     }
@@ -1271,9 +1323,7 @@ import "../styles/global.css";
       "aria-label",
       open ? "Close options sidebar" : "Open options sidebar"
     );
-    sidebarToggle.title = open
-      ? "Close options sidebar"
-      : "Open options sidebar";
+    sidebarToggle.dataset.tooltip = open ? "Close Sidebar" : "Open Sidebar";
     sidebar.setAttribute("aria-hidden", `${!open}`);
     sidebar.toggleAttribute("inert", !open);
     openSidebarIcon?.classList.toggle("hidden", open);

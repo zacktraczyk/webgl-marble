@@ -159,7 +159,8 @@ export const updateBuilderInterface = ({
         motion.direction === 1
           ? "Reverse motion direction"
           : "Restore forward motion direction";
-      ui.motionReverseButton.title = ui.motionReverseButton.ariaLabel;
+      ui.motionReverseButton.dataset.tooltip =
+        ui.motionReverseButton.ariaLabel ?? "";
     }
   }
 
@@ -181,7 +182,7 @@ export const updateBuilderInterface = ({
   ui.playButton.disabled = Boolean(race.courseIssue);
   ui.playButton.dataset.previewing = `${race.phase !== "ready"}`;
   ui.playButton.ariaLabel = race.courseIssue ?? playButtonText;
-  ui.playButton.title = race.courseIssue ?? playButtonText;
+  ui.playButton.dataset.tooltip = race.courseIssue ?? playButtonText;
   if (ui.playButtonLabel) {
     ui.playButtonLabel.textContent = playButtonText;
   }

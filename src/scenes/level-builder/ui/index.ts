@@ -13,6 +13,10 @@ export type BuilderUi = {
   toolbar: HTMLElement;
   raceControls: HTMLElement;
   toolHintOutput: HTMLElement;
+  tooltip: HTMLElement;
+  tooltipLabel: HTMLElement;
+  tooltipShortcut: HTMLElement;
+  tooltipArrow: HTMLElement;
   panButton: HTMLButtonElement;
   pointerButton: HTMLButtonElement;
   wallButton: HTMLButtonElement;
@@ -81,6 +85,10 @@ export const resolveBuilderUi = (
     toolbar: role("toolbar", "builder toolbar"),
     raceControls: role("race-controls", "race controls"),
     toolHintOutput: role("tool-hint", "tool hint"),
+    tooltip: role("tooltip", "tooltip"),
+    tooltipLabel: role("tooltip-label", "tooltip label"),
+    tooltipShortcut: role("tooltip-shortcut", "tooltip shortcut"),
+    tooltipArrow: role("tooltip-arrow", "tooltip arrow"),
     panButton: role<HTMLButtonElement>("tool-pan", "pan tool"),
     pointerButton: role<HTMLButtonElement>("tool-pointer", "pointer tool"),
     wallButton: role<HTMLButtonElement>("tool-wall", "wall tool"),

@@ -74,11 +74,14 @@ export class BuilderCameraController {
     const margin = Math.max(0, toolbarBounds.top - canvasBounds.top);
     const toolbarInset = margin + toolbarBounds.height + margin;
     const toolHintInset = toolHintBounds.bottom - canvasBounds.top + margin;
+    const topInset = Math.max(toolbarInset, toolHintInset);
+    const bottomInset = margin + raceControlBounds.height + margin;
+    const verticalInset = Math.max(topInset, bottomInset);
 
     return {
-      top: Math.max(toolbarInset, toolHintInset),
+      top: verticalInset,
       right: margin,
-      bottom: margin + raceControlBounds.height + margin,
+      bottom: verticalInset,
       left: margin,
     };
   };
