@@ -371,7 +371,7 @@ import "../styles/global.css";
     <nav
       id="builder-race-controls"
       aria-label="Race controls"
-      class="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1 rounded-lg border border-zinc-700 bg-zinc-800/90 p-1 shadow-lg backdrop-blur"
+      class="absolute bottom-3 left-1/2 z-30 flex -translate-x-1/2 items-center gap-1 rounded-lg border border-zinc-700 bg-zinc-800/90 p-1 shadow-lg backdrop-blur"
     >
       <button
         id="run-race"
@@ -440,19 +440,18 @@ import "../styles/global.css";
       aria-live="polite"
       aria-atomic="true"
       hidden
-      class="pointer-events-none absolute bottom-16 left-1/2 z-20 flex -translate-x-1/2 items-center gap-3 rounded-xl border border-zinc-600 bg-zinc-900/95 px-4 py-2.5 shadow-xl backdrop-blur"
+      class="pointer-events-none absolute inset-x-0 bottom-16 z-20 mx-auto flex w-max items-center gap-3 rounded-xl border border-zinc-600 bg-zinc-800/95 px-4 py-2.5 shadow-xl backdrop-blur"
     >
       <span
         data-race-outcome-swatch
         aria-hidden="true"
-        class="size-4 shrink-0 rounded-full ring-2 ring-white/25"
-      ></span>
+        class="size-6 shrink-0 rounded-full ring-2 ring-white/25"></span>
       <span>
         <strong
           data-race-outcome-label
-          class="block text-sm font-semibold text-zinc-50"
-        >Round complete</strong>
-        <span class="block text-[11px] text-zinc-400"
+          class="block text font-semibold text-zinc-50">Round complete</strong
+        >
+        <span class="block text-sm text-zinc-400"
           >Final marble · time frozen</span
         >
       </span>
@@ -1085,6 +1084,69 @@ import "../styles/global.css";
     display: none;
   }
 
+  #race-outcome:not([hidden]):not([data-exiting="true"]) {
+    transform-origin: 50% 100%;
+    animation: race-outcome-slam 560ms cubic-bezier(0.22, 1.35, 0.36, 1)
+      both;
+  }
+
+  #race-outcome:not([hidden]):not([data-exiting="true"])
+    [data-race-outcome-swatch] {
+    animation: race-outcome-swatch-pop 380ms 170ms
+      cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+
+  #race-outcome[data-exiting="true"] {
+    transform-origin: 50% 100%;
+    animation: race-outcome-exit 420ms cubic-bezier(0.55, 0, 0.85, 0.45)
+      both;
+  }
+
+  @keyframes race-outcome-slam {
+    0% {
+      opacity: 0;
+      transform: translateY(-2.25rem) rotate(-2deg) scale(1.12);
+    }
+    48% {
+      opacity: 1;
+      transform: translateY(0.35rem) rotate(0.8deg) scale(0.96);
+    }
+    72% {
+      transform: translateY(-0.15rem) rotate(-0.3deg) scale(1.02);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) rotate(0deg) scale(1);
+    }
+  }
+
+  @keyframes race-outcome-swatch-pop {
+    0% {
+      transform: scale(0);
+    }
+    65% {
+      transform: scale(1.35);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  @keyframes race-outcome-exit {
+    0% {
+      opacity: 1;
+      transform: translateY(0) rotate(0deg) scale(1);
+    }
+    28% {
+      opacity: 1;
+      transform: translateY(-0.35rem) rotate(-1deg) scale(1.03);
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(3.5rem) rotate(5deg) scale(0.82);
+    }
+  }
+
   @media (max-width: 720px) {
     #level-builder[data-sidebar-open="true"] #object-inspector {
       right: 0.75rem;
@@ -1104,6 +1166,13 @@ import "../styles/global.css";
     #level-options-sidebar,
     :global(#builder-home-link) {
       transition-duration: 0ms;
+    }
+
+    #race-outcome:not([hidden]),
+    #race-outcome:not([hidden]) [data-race-outcome-swatch],
+    #race-outcome[data-exiting="true"] {
+      animation-duration: 0ms;
+      animation-delay: 0ms;
     }
   }
 </style>

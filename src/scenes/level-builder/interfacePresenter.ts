@@ -7,6 +7,38 @@ import { SelectedTool, type RoundConfiguration } from "./types";
 
 const key = (label: string) => `<kbd>${label}</kbd>`;
 
+const setRaceOutcomeVisible = (element: HTMLElement, visible: boolean) => {
+  if (visible) {
+    delete element.dataset.exiting;
+    element.hidden = false;
+    return;
+  }
+  if (element.hidden || element.dataset.exiting === "true") {
+    return;
+  }
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    element.hidden = true;
+    return;
+  }
+
+  element.dataset.exiting = "true";
+  const finishExit = () => {
+    element.removeEventListener("animationend", handleAnimationEnd);
+    if (element.dataset.exiting !== "true") {
+      return;
+    }
+    element.hidden = true;
+    delete element.dataset.exiting;
+  };
+  const handleAnimationEnd = (event: AnimationEvent) => {
+    if (event.target === element && event.animationName === "race-outcome-exit") {
+      finishExit();
+    }
+  };
+  element.addEventListener("animationend", handleAnimationEnd);
+  window.setTimeout(finishExit, 500);
+};
+
 const toolHint = ({
   selectedTool,
   phase,
@@ -158,12 +190,15 @@ export const updateBuilderInterface = ({
     race.eliminatedTeamIndex === null
       ? null
       : TEAM_NAMES[race.eliminatedTeamIndex];
-  ui.raceOutcome.hidden = race.phase !== "complete" || !eliminatedTeamName;
   if (eliminatedTeamName && race.eliminatedTeamIndex !== null) {
     const [red, green, blue] = TEAM_COLORS[race.eliminatedTeamIndex];
     ui.raceOutcomeSwatch.style.backgroundColor = `rgb(${Math.round(red * 255)} ${Math.round(green * 255)} ${Math.round(blue * 255)})`;
     ui.raceOutcomeLabel.textContent = `${eliminatedTeamName} marble eliminated`;
   }
+  setRaceOutcomeVisible(
+    ui.raceOutcome,
+    race.phase === "complete" && Boolean(eliminatedTeamName)
+  );
 
   ui.statusOutput.textContent = race.courseIssue
     ? race.courseIssue
