@@ -3,6 +3,7 @@ import type Stage from "../engine/stage";
 import { GRID_SIZE } from "../scenes/level-builder/constants";
 import { SelectedTool, type PusherTool } from "../scenes/level-builder/types";
 import type { LevelObjectData, LevelObjectMotion } from "./levelDocument";
+import { oscillationPeriodForRange } from "./levelMotion";
 import {
   applyLevelObjectShape,
   boundsIntersect,
@@ -934,6 +935,10 @@ export class LevelEditorController {
         vector = snapPoint(vector, POSITION_SNAP_STEP);
       }
       if (Math.hypot(...vector) >= MIN_OBJECT_SIZE) {
+        object.motion.periodMs = oscillationPeriodForRange(
+          object.motion,
+          Math.hypot(...vector)
+        );
         object.motion.vector = vector;
         this.gesture.changed = true;
         this.callbacks.onObjectsChange([object]);

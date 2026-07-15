@@ -33,6 +33,8 @@ import {
   createPusher,
   createSpawnPoint,
   createWall,
+  pusherPeriodForSpeed,
+  pusherSpeedForMotion,
   PUSHER_DEFAULT_RANGE,
   PUSHER_PERIODS,
 } from "./courseObjects";
@@ -450,8 +452,8 @@ export class LevelBuilderRuntime {
         return;
       }
       const current = object.motion;
+      const speed = current ? pusherSpeedForMotion(current) : "medium";
       const shared = {
-        periodMs: current?.periodMs ?? PUSHER_PERIODS.medium,
         phase: current?.phase ?? 0,
         direction: current?.direction ?? (1 as const),
       };
@@ -459,21 +461,32 @@ export class LevelBuilderRuntime {
       if (value === "slide") {
         const shape = getLevelObjectShape(object, this.level.wallThickness);
         const rotation = shape.kind === "rectangle" ? shape.rotation : 0;
+        const vector: Vec2 =
+          current?.type === "oscillate"
+            ? [...current.vector]
+            : [
+                -Math.sin(rotation) * PUSHER_DEFAULT_RANGE,
+                Math.cos(rotation) * PUSHER_DEFAULT_RANGE,
+              ];
         motion = {
           type: "oscillate",
-          vector:
-            current?.type === "oscillate"
-              ? [...current.vector]
-              : [
-                  -Math.sin(rotation) * PUSHER_DEFAULT_RANGE,
-                  Math.cos(rotation) * PUSHER_DEFAULT_RANGE,
-                ],
+          vector,
+          periodMs: pusherPeriodForSpeed(
+            {
+              type: "oscillate",
+              vector,
+              periodMs: 1,
+              ...shared,
+            },
+            speed
+          ),
           ...shared,
         };
       } else {
         motion = {
           type: "rotate",
           pivot: value === "sweep" ? "start" : "center",
+          periodMs: PUSHER_PERIODS[speed],
           ...shared,
         };
       }
@@ -488,6 +501,7 @@ export class LevelBuilderRuntime {
       if (object.motion?.type !== "oscillate") {
         return;
       }
+      const speed = pusherSpeedForMotion(object.motion);
       const magnitude = Math.hypot(...object.motion.vector);
       const direction: Vec2 =
         magnitude > Number.EPSILON
@@ -497,6 +511,7 @@ export class LevelBuilderRuntime {
             ]
           : [1, 0];
       object.motion.vector = [direction[0] * range, direction[1] * range];
+      object.motion.periodMs = pusherPeriodForSpeed(object.motion, speed);
     }, false);
   };
 
@@ -522,7 +537,7 @@ export class LevelBuilderRuntime {
     }
     this.updateSelectedMotion((object) => {
       if (object.motion) {
-        object.motion.periodMs = PUSHER_PERIODS[speed];
+        object.motion.periodMs = pusherPeriodForSpeed(object.motion, speed);
       }
     });
   };

@@ -2,6 +2,10 @@ import type {
   LevelObjectMotion,
   NewLevelObjectData,
 } from "../../editor/levelDocument";
+import {
+  getOscillationPeakSpeed,
+  oscillationPeriodForPeakSpeed,
+} from "../../editor/levelMotion";
 import type { Vec2 } from "../../engine/core/transform";
 import {
   STAGING_RACK_HEIGHT,
@@ -25,15 +29,53 @@ import { SelectedTool, type PusherTool } from "./types";
 
 export const PUSHER_WALL_LENGTH = 120;
 export const PUSHER_DEFAULT_RANGE = 90;
-export const PUSHER_PERIODS = {
-  slow: 4000,
-  medium: 2400,
-  fast: 1400,
+export const PUSHER_LINEAR_SPEEDS = {
+  slow: 120,
+  medium: 360,
+  fast: 600,
 } as const;
+export const PUSHER_PERIODS = {
+  slow: 9000,
+  medium: 6500,
+  fast: 4500,
+} as const;
+
+export type PusherSpeed = keyof typeof PUSHER_LINEAR_SPEEDS;
+
+export const sliderPeriodForRange = (range: number, speed: PusherSpeed) =>
+  oscillationPeriodForPeakSpeed(range, PUSHER_LINEAR_SPEEDS[speed]);
+
+export const pusherPeriodForSpeed = (
+  motion: LevelObjectMotion,
+  speed: PusherSpeed
+) =>
+  motion.type === "oscillate"
+    ? sliderPeriodForRange(Math.hypot(...motion.vector), speed)
+    : PUSHER_PERIODS[speed];
+
+export const pusherSpeedForMotion = (
+  motion: LevelObjectMotion
+): PusherSpeed => {
+  const speeds = Object.keys(PUSHER_LINEAR_SPEEDS) as PusherSpeed[];
+  if (motion.type === "oscillate") {
+    const linearSpeed = getOscillationPeakSpeed(motion);
+    return speeds.reduce((nearest, candidate) =>
+      Math.abs(PUSHER_LINEAR_SPEEDS[candidate] - linearSpeed) <
+      Math.abs(PUSHER_LINEAR_SPEEDS[nearest] - linearSpeed)
+        ? candidate
+        : nearest
+    );
+  }
+  return speeds.reduce((nearest, candidate) =>
+    Math.abs(PUSHER_PERIODS[candidate] - motion.periodMs) <
+    Math.abs(PUSHER_PERIODS[nearest] - motion.periodMs)
+      ? candidate
+      : nearest
+  );
+};
 
 const pusherMotion = (tool: PusherTool): LevelObjectMotion => {
   const shared = {
-    periodMs: PUSHER_PERIODS.medium,
     phase: 0,
     direction: 1 as const,
   };
@@ -41,12 +83,14 @@ const pusherMotion = (tool: PusherTool): LevelObjectMotion => {
     return {
       type: "oscillate",
       vector: [PUSHER_DEFAULT_RANGE, 0],
+      periodMs: sliderPeriodForRange(PUSHER_DEFAULT_RANGE, "medium"),
       ...shared,
     };
   }
   return {
     type: "rotate",
     pivot: tool === SelectedTool.Sweeper ? "start" : "center",
+    periodMs: PUSHER_PERIODS.medium,
     ...shared,
   };
 };

@@ -1,6 +1,7 @@
 import type Stage from "../engine/stage";
 import type { LevelObjectData } from "./levelDocument";
 import {
+  getOscillationPeakSpeed,
   getLevelObjectMotionPose,
   getOscillationEndpoints,
   getRotationPivot,
@@ -255,7 +256,7 @@ export class EditorOverlay {
           (firstScreen[0] + secondScreen[0]) / 2,
           (firstScreen[1] + secondScreen[1]) / 2,
         ],
-        `SLIDE · ${(motion.periodMs / 1000).toFixed(1)}s`,
+        `SLIDE · ${Math.round(getOscillationPeakSpeed(motion))} u/s`,
         color
       );
       return;

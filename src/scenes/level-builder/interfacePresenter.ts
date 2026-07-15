@@ -1,7 +1,7 @@
 import type { LevelObjectData } from "../../editor/levelDocument";
 import type { BuilderUi } from "./elements";
 import { TEAM_COLORS, TEAM_NAMES } from "../../game/race/staging";
-import { PUSHER_PERIODS } from "./courseObjects";
+import { pusherSpeedForMotion } from "./courseObjects";
 import type { RaceSnapshot } from "./raceController";
 import { SelectedTool, type RoundConfiguration } from "./types";
 
@@ -127,15 +127,7 @@ export const updateBuilderInterface = ({
       ui.motionRangeOutput.value = `${range}`;
     }
     if (motion) {
-      const periods = Object.entries(PUSHER_PERIODS) as Array<
-        [keyof typeof PUSHER_PERIODS, number]
-      >;
-      const activeSpeed = periods.reduce((nearest, candidate) =>
-        Math.abs(candidate[1] - motion.periodMs) <
-        Math.abs(nearest[1] - motion.periodMs)
-          ? candidate
-          : nearest
-      )[0];
+      const activeSpeed = pusherSpeedForMotion(motion);
       for (const button of ui.motionSpeedButtons) {
         button.dataset.active = `${button.dataset.speed === activeSpeed}`;
       }

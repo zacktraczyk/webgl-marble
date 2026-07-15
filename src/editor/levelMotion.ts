@@ -2,6 +2,11 @@ import type { Vec2 } from "../engine/core/transform";
 import type { LevelObjectData } from "./levelDocument";
 import { getLevelObjectShape, type LevelObjectShape } from "./levelGeometry";
 
+type OscillationMotion = Extract<
+  NonNullable<LevelObjectData["motion"]>,
+  { type: "oscillate" }
+>;
+
 export type LevelObjectPose = {
   position: Vec2;
   rotation: number;
@@ -25,6 +30,28 @@ const getBasePose = (
     },
     shape,
   };
+};
+
+export const oscillationPeriodForPeakSpeed = (
+  range: number,
+  peakSpeed: number
+) => (Math.PI * 2 * Math.max(0, range) * 1000) / peakSpeed;
+
+export const getOscillationPeakSpeed = (motion: OscillationMotion) => {
+  const range = Math.hypot(...motion.vector);
+  return motion.periodMs > 0
+    ? (Math.PI * 2 * range * 1000) / motion.periodMs
+    : 0;
+};
+
+export const oscillationPeriodForRange = (
+  motion: OscillationMotion,
+  nextRange: number
+) => {
+  const currentRange = Math.hypot(...motion.vector);
+  return currentRange > Number.EPSILON
+    ? motion.periodMs * (nextRange / currentRange)
+    : motion.periodMs;
 };
 
 export const getLevelObjectMotionPose = (
