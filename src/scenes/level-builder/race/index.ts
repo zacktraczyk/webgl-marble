@@ -40,7 +40,7 @@ export type RaceSnapshot = {
   eliminatedTeamIndex: number | null;
   marbleRadius: number;
   physicsActive: boolean;
-  lostMarbles: number;
+  outOfBoundsMarbles: number;
   courseIssue: string | null;
 };
 
@@ -54,6 +54,7 @@ export class RaceController {
   private marbleRadius = MAX_MARBLE_RADIUS;
   private releaseElapsedMs = 0;
   private releasedMarbles = 0;
+  private outOfBoundsMarbles = 0;
   private finishTracker: RoundFinishTracker;
   private motionElapsedMs = 0;
   private finishPlacements: ReturnType<typeof createFinishGridPlacements> = [];
@@ -91,7 +92,7 @@ export class RaceController {
       eliminatedTeamIndex: this.finishTracker.eliminatedTeamIndex,
       marbleRadius: this.marbleRadius,
       physicsActive: this.physicsActive,
-      lostMarbles: this.finishTracker.lostMarbles,
+      outOfBoundsMarbles: this.outOfBoundsMarbles,
       courseIssue: this.courseIssue,
     };
   }
@@ -127,6 +128,7 @@ export class RaceController {
     this.stage.physicsEnabled = false;
     this.releaseElapsedMs = 0;
     this.releasedMarbles = 0;
+    this.outOfBoundsMarbles = 0;
     this.finishTracker = new RoundFinishTracker(
       this.configuration.teamCount,
       this.configuration.marblesPerTeam
@@ -238,11 +240,10 @@ export class RaceController {
   }
 
   private freezeIfLastMarbleRemains() {
-    const finalRemainingMarbles = this.finishTracker.lostMarbles > 0 ? 0 : 1;
     if (
       this.phase !== "running" ||
       this.releaseQueue?.remaining !== 0 ||
-      this.finishTracker.remainingMarbles !== finalRemainingMarbles
+      this.finishTracker.remainingMarbles !== 1
     ) {
       return false;
     }
@@ -258,10 +259,31 @@ export class RaceController {
         continue;
       }
       const teamIndex = this.teamIndexForMarble(marble);
-      if (teamIndex !== null) {
-        this.finishTracker.recordLost(teamIndex);
+      if (
+        teamIndex !== null &&
+        this.completeMarble(marble, teamIndex, "out-of-bounds")
+      ) {
+        return;
       }
     }
+  }
+
+  private completeMarble(
+    marble: Entity,
+    teamIndex: number,
+    source: "finish" | "out-of-bounds" = "finish"
+  ) {
+    const finishRecord = this.finishTracker.record(teamIndex);
+    if (source === "out-of-bounds") {
+      this.outOfBoundsMarbles++;
+    }
+    marble.delete();
+    this.collectFinishedMarble(
+      teamIndex,
+      finishRecord.bayIndex,
+      finishRecord.slotIndex
+    );
+    return this.freezeIfLastMarbleRemains();
   }
 
   private collectFinishedMarble(
@@ -400,14 +422,7 @@ export class RaceController {
           if (teamIndex === null) {
             continue;
           }
-          const finishRecord = this.finishTracker.record(teamIndex);
-          marble.delete();
-          this.collectFinishedMarble(
-            teamIndex,
-            finishRecord.bayIndex,
-            finishRecord.slotIndex
-          );
-          if (this.freezeIfLastMarbleRemains()) {
+          if (this.completeMarble(marble, teamIndex)) {
             return;
           }
           break;

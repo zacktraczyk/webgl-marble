@@ -229,7 +229,7 @@ export const updateBuilderInterface = ({
       eliminatedTeam: eliminatedTeamName,
       marbleRadius: race.marbleRadius,
       physicsActive: race.physicsActive,
-      lostMarbles: race.lostMarbles,
+      outOfBoundsMarbles: race.outOfBoundsMarbles,
       authoredObjects,
       selectedObjects,
       hoveredObject,
