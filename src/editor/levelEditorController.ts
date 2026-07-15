@@ -40,7 +40,6 @@ type EditorCallbacks = {
   ): LevelObjectData;
   onToolRequest(tool: SelectedTool): void;
   onToolComplete(tool: SelectedTool): void;
-  onToggleToolLock(): void;
   onUndo(): void;
   onRedo(): void;
   onReset(): void;
@@ -1432,11 +1431,6 @@ export class LevelEditorController {
         if (!this.readOnly || requestedTool === SelectedTool.Pan) {
           this.callbacks.onToolRequest(requestedTool);
         }
-        event.preventDefault();
-        return;
-      }
-      if (event.key.toLowerCase() === "q") {
-        this.callbacks.onToggleToolLock();
         event.preventDefault();
         return;
       }

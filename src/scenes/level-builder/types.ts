@@ -1,7 +1,7 @@
 export type BuilderElements = {
+  root: HTMLElement | null;
   toolbar: HTMLElement | null;
   raceControls: HTMLElement | null;
-  toolLock: HTMLElement | null;
   toolHint: HTMLElement | null;
   pan: HTMLElement | null;
   pointer: HTMLElement | null;

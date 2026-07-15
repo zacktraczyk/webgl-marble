@@ -61,8 +61,6 @@ const isCreationTool = (tool: SelectedTool) =>
   tool === SelectedTool.Wall ||
   tool === SelectedTool.SpawnPoint ||
   isPusherTool(tool);
-const isRepeatableCreationTool = (tool: SelectedTool) =>
-  tool === SelectedTool.Wall;
 
 export class LevelBuilderRuntime {
   readonly stage: Stage;
@@ -75,7 +73,6 @@ export class LevelBuilderRuntime {
   private readonly gridOverlay: GridOverlay;
   private configuration: RoundConfiguration;
   private selectedTool = SelectedTool.Pointer;
-  private toolLocked = true;
   private gridSnapEnabled = true;
   private playbackActive = false;
 
@@ -145,15 +142,10 @@ export class LevelBuilderRuntime {
         },
         onToolRequest: (tool) => this.setActiveTool(tool),
         onToolComplete: (tool) => {
-          if (
-            tool === SelectedTool.SpawnPoint ||
-            isPusherTool(tool) ||
-            !this.toolLocked
-          ) {
+          if (tool === SelectedTool.SpawnPoint || isPusherTool(tool)) {
             this.setActiveTool(SelectedTool.Pointer);
           }
         },
-        onToggleToolLock: () => this.toggleToolLock(),
         onUndo: () => this.undo(),
         onRedo: () => this.redo(),
         onReset: () => this.resetRace(),
@@ -197,8 +189,6 @@ export class LevelBuilderRuntime {
       hoveredObject: this.editorController.hoveredObject?.id ?? null,
       wallThickness: this.level.wallThickness,
       selectedTool: this.selectedTool,
-      toolLocked:
-        this.toolLocked && isRepeatableCreationTool(this.selectedTool),
       canUndo: this.history.canUndo,
       canRedo: this.history.canRedo,
     });
@@ -281,12 +271,6 @@ export class LevelBuilderRuntime {
       },
       { signal }
     );
-    this.ui.toolLockButton.addEventListener(
-      "click",
-      () => this.toggleToolLock(),
-      { signal }
-    );
-
     this.ui.majorGridToggleButton.addEventListener(
       "click",
       () => this.gridOverlay.toggleMajor(),
@@ -404,13 +388,6 @@ export class LevelBuilderRuntime {
         : tool === SelectedTool.Pointer
           ? "select"
           : "shape";
-  }
-
-  private toggleToolLock() {
-    if (this.playbackActive || !isRepeatableCreationTool(this.selectedTool)) {
-      return;
-    }
-    this.toolLocked = !this.toolLocked;
   }
 
   private readonly toggleGridSnap = () => {
@@ -678,6 +655,7 @@ export class LevelBuilderRuntime {
       return;
     }
     this.playbackActive = playbackActive;
+    this.ui.root.dataset.previewing = `${playbackActive}`;
     this.editorController.setReadOnly(playbackActive);
     if (playbackActive) {
       this.setPusherLibraryOpen(false);

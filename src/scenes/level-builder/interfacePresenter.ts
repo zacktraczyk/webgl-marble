@@ -28,7 +28,7 @@ const toolHint = ({
     case SelectedTool.SpawnPoint:
       return `Hold ${key("Alt")} to place without snapping`;
     case SelectedTool.Slider:
-      return `Place a sliding wall · drag its violet path handle to aim and resize`;
+      return `Place a sliding wall · drag its blue path handle to aim and resize`;
     case SelectedTool.Spinner:
       return `Place a wall that spins around its center`;
     case SelectedTool.Sweeper:
@@ -48,7 +48,6 @@ export const updateBuilderInterface = ({
   hoveredObject,
   wallThickness,
   selectedTool,
-  toolLocked,
   canUndo,
   canRedo,
 }: {
@@ -61,7 +60,6 @@ export const updateBuilderInterface = ({
   hoveredObject: string | null;
   wallThickness: number;
   selectedTool: SelectedTool;
-  toolLocked: boolean;
   canUndo: boolean;
   canRedo: boolean;
 }) => {
@@ -78,16 +76,6 @@ export const updateBuilderInterface = ({
   ui.sliderButton.disabled = playbackActive;
   ui.spinnerButton.disabled = playbackActive;
   ui.sweeperButton.disabled = playbackActive;
-  ui.toolLockButton.disabled =
-    playbackActive || selectedTool !== SelectedTool.Wall;
-  ui.toolLockButton.dataset.active = `${toolLocked}`;
-  ui.toolLockButton.ariaPressed = `${toolLocked}`;
-  ui.toolLockButton.title = toolLocked
-    ? "Keep drawing is on (Q)"
-    : "Create once is on (Q)";
-  ui.toolLockButton.ariaLabel = toolLocked
-    ? "Keep drawing is on"
-    : "Create once is on";
   ui.toolHintOutput.innerHTML = toolHint({
     selectedTool,
     phase: race.phase,
@@ -145,7 +133,7 @@ export const updateBuilderInterface = ({
       : race.phase === "paused"
         ? "Resume"
         : race.phase === "complete"
-          ? "Run again"
+          ? "Instant replay"
           : "Run race";
   const playButtonIcon =
     race.phase === "running"
@@ -207,7 +195,6 @@ export const updateBuilderInterface = ({
       selectedObjects,
       hoveredObject,
       wallThickness,
-      toolLocked,
     },
     null,
     2

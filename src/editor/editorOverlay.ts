@@ -207,11 +207,11 @@ export class EditorOverlay {
       return;
     }
     const baseShape = getLevelObjectShape(object, defaultWallThickness);
-    const color = "rgb(196 181 253)";
-    const ghostColor = "rgb(196 181 253 / 55%)";
+    const color = "rgb(34 211 238)";
+    const ghostColor = "rgb(34 211 238 / 55%)";
 
     if (draft) {
-      this.fillShape(baseShape, "rgb(139 92 246 / 24%)");
+      this.fillShape(baseShape, "rgb(34 211 238 / 24%)");
       this.strokeShape(baseShape, color, 2, []);
     }
 
