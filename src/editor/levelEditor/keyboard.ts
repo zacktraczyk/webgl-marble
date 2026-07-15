@@ -16,12 +16,26 @@ export type LevelEditorKeyboardActions = {
   blur(): void;
 };
 
-const isKeyboardControlTarget = (target: EventTarget | null) =>
+const isKeyboardControlTarget = (
+  target: EventTarget | null
+): target is HTMLElement =>
   target instanceof HTMLElement &&
   (target.isContentEditable ||
     target.matches(
       'button, a[href], input, textarea, select, summary, [role="button"], [role="menuitem"]'
     ));
+
+const isTextEditingTarget = (
+  target: EventTarget | null
+): target is HTMLElement =>
+  target instanceof HTMLElement &&
+  (target.isContentEditable || target.matches("input, textarea, select"));
+
+const releaseKeyboardControlFocus = (target: EventTarget | null) => {
+  if (isKeyboardControlTarget(target)) {
+    target.blur();
+  }
+};
 
 /** Owns keyboard state and maps browser key events to editor commands. */
 export class LevelEditorKeyboard {
@@ -38,6 +52,25 @@ export class LevelEditorKeyboard {
   }
 
   private readonly keyDown = (event: KeyboardEvent) => {
+    if (event.key === "Escape") {
+      releaseKeyboardControlFocus(event.target);
+      if (this.actions.escape()) {
+        event.preventDefault();
+      }
+      return;
+    }
+
+    if (event.key === "Delete" || event.key === "Backspace") {
+      if (isTextEditingTarget(event.target)) {
+        return;
+      }
+      releaseKeyboardControlFocus(event.target);
+      if (this.actions.deleteSelection()) {
+        event.preventDefault();
+      }
+      return;
+    }
+
     if (isKeyboardControlTarget(event.target)) {
       return;
     }
@@ -76,12 +109,6 @@ export class LevelEditorKeyboard {
       }
       return;
     }
-    if (event.key === "Escape") {
-      if (this.actions.escape()) {
-        event.preventDefault();
-      }
-      return;
-    }
     if (event.key === "Enter") {
       if (this.actions.finishWall()) {
         event.preventDefault();
@@ -109,12 +136,6 @@ export class LevelEditorKeyboard {
       }
     }
 
-    if (event.key === "Delete" || event.key === "Backspace") {
-      if (this.actions.deleteSelection()) {
-        event.preventDefault();
-      }
-      return;
-    }
     const directionByKey: Partial<Record<string, Vec2>> = {
       ArrowLeft: [-1, 0],
       ArrowRight: [1, 0],
@@ -137,6 +158,9 @@ export class LevelEditorKeyboard {
       return;
     }
     if (event.key === " ") {
+      if (isKeyboardControlTarget(event.target)) {
+        return;
+      }
       this.spaceHeld = false;
       this.actions.spaceChanged(false);
       event.preventDefault();

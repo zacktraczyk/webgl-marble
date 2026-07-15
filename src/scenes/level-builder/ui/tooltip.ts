@@ -17,6 +17,7 @@ export class BuilderTooltipController {
   private showTimer: number | undefined;
   private hideTimer: number | undefined;
   private openFrame: number | undefined;
+  private keyboardFocus = false;
   private readonly observer: MutationObserver;
 
   constructor(
@@ -27,6 +28,10 @@ export class BuilderTooltipController {
     ui.root.addEventListener("pointerout", this.handlePointerOut, { signal });
     ui.root.addEventListener("focusin", this.handleFocusIn, { signal });
     ui.root.addEventListener("focusout", this.handleFocusOut, { signal });
+    document.addEventListener("pointerdown", this.handlePointerDown, {
+      capture: true,
+      signal,
+    });
     document.addEventListener("keydown", this.handleKeyDown, { signal });
     window.addEventListener("resize", this.reposition, { signal });
     window.addEventListener("scroll", this.reposition, {
@@ -69,7 +74,7 @@ export class BuilderTooltipController {
 
   private readonly handleFocusIn = (event: FocusEvent) => {
     const trigger = this.findTrigger(event.target);
-    if (trigger) {
+    if (trigger && this.keyboardFocus) {
       this.scheduleShow(trigger, 0);
     }
   };
@@ -83,6 +88,17 @@ export class BuilderTooltipController {
 
   private readonly handleKeyDown = (event: KeyboardEvent) => {
     if (event.key === "Escape") {
+      this.keyboardFocus = false;
+      this.hide();
+    } else if (event.key === "Tab") {
+      this.keyboardFocus = true;
+    }
+  };
+
+  private readonly handlePointerDown = (event: PointerEvent) => {
+    this.keyboardFocus = false;
+    const trigger = this.findTrigger(event.target);
+    if (trigger !== this.activeTrigger && trigger !== this.pendingTrigger) {
       this.hide();
     }
   };
@@ -145,7 +161,7 @@ export class BuilderTooltipController {
     window.setTimeout(() => {
       if (
         trigger.matches(":hover") ||
-        trigger.contains(document.activeElement)
+        (this.keyboardFocus && trigger.contains(document.activeElement))
       ) {
         return;
       }

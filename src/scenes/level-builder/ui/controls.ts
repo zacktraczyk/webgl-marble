@@ -88,6 +88,8 @@ export class BuilderControls {
         if (event.key === "Escape" && !ui.pusherLibrary.hidden) {
           this.setPusherLibraryOpen(false);
           ui.pusherMenuToggleButton.focus();
+          event.preventDefault();
+          event.stopPropagation();
         }
       },
       { signal }
