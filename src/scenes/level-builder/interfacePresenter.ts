@@ -69,6 +69,7 @@ export const updateBuilderInterface = ({
   const playbackActive = race.phase !== "ready";
   ui.undoButton.disabled = playbackActive || !canUndo;
   ui.redoButton.disabled = playbackActive || !canRedo;
+  ui.resetButton.disabled = !playbackActive;
   ui.pointerButton.disabled = playbackActive;
   ui.wallButton.disabled = playbackActive;
   ui.spawnPointButton.disabled = playbackActive;

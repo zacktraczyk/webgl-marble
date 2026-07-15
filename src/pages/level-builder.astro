@@ -371,7 +371,7 @@ import "../styles/global.css";
     <nav
       id="builder-race-controls"
       aria-label="Race controls"
-      class="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 items-center gap-3 rounded-lg border border-zinc-700 bg-zinc-800/90 p-1 shadow-lg backdrop-blur"
+      class="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 items-center gap-1 rounded-lg border border-zinc-700 bg-zinc-800/90 p-1 shadow-lg backdrop-blur"
     >
       <button
         id="run-race"
@@ -412,30 +412,24 @@ import "../styles/global.css";
         >
           <path d="M3 12a9 9 0 1 0 3-6.7L3 8"></path>
           <path d="M3 3v5h5"></path>
-          <path d="m10 8.5 5.5 3.5-5.5 3.5z" fill="currentColor" stroke="none"
-          ></path>
         </svg>
         <span data-race-button-label class="sr-only">Run race</span>
       </button>
       <button
         id="reset-race"
         type="button"
-        aria-label="Reset race"
-        title="Reset race"
-        class="flex size-9 items-center justify-center rounded-md text-zinc-100 hover:bg-zinc-700"
+        aria-label="End preview and return to editor"
+        title="End preview and return to editor"
+        disabled
+        class="flex size-9 items-center justify-center rounded-md text-zinc-100 hover:bg-zinc-700 disabled:cursor-not-allowed disabled:text-zinc-600 disabled:hover:bg-transparent"
       >
         <svg
           viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
+          fill="currentColor"
           class="size-5"
           aria-hidden="true"
         >
-          <path d="M3 12a9 9 0 1 0 3-6.7L3 8"></path>
-          <path d="M3 3v5h5"></path>
+          <rect x="6" y="6" width="12" height="12" rx="1"></rect>
         </svg>
       </button>
     </nav>
