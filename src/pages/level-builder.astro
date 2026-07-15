@@ -440,21 +440,17 @@ import "../styles/global.css";
       aria-live="polite"
       aria-atomic="true"
       hidden
-      class="pointer-events-none absolute inset-x-0 bottom-16 z-20 mx-auto flex w-max items-center gap-3 rounded-xl border border-zinc-600 bg-zinc-800/95 px-4 py-2.5 shadow-xl backdrop-blur"
+      class="pointer-events-none absolute inset-x-0 bottom-16 z-20 mx-auto flex w-max items-center gap-2.5 rounded-xl border border-zinc-600 bg-zinc-800/95 px-3.5 py-2.5 shadow-xl backdrop-blur"
     >
       <span
         data-race-outcome-swatch
         aria-hidden="true"
-        class="size-6 shrink-0 rounded-full ring-2 ring-white/25"></span>
-      <span>
-        <strong
-          data-race-outcome-label
-          class="block text font-semibold text-zinc-50">Round complete</strong
-        >
-        <span class="block text-sm text-zinc-400"
-          >Final marble · time frozen</span
-        >
-      </span>
+        class="size-5 shrink-0 rounded-full ring-2 ring-white/25"></span>
+      <strong
+        data-race-outcome-label
+        class="whitespace-nowrap text-sm font-semibold text-zinc-50"
+        >Round complete</strong
+      >
     </div>
 
     <button
@@ -992,6 +988,26 @@ import "../styles/global.css";
       ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     font-size: 0.68rem;
     line-height: 1;
+  }
+
+  #builder-toolbar button:focus,
+  #toggle-sidebar:focus,
+  #viewport-controls button:focus,
+  #edit-history-controls button:focus,
+  #builder-race-controls button:focus,
+  :global(#builder-home-link:focus) {
+    outline: none;
+  }
+
+  #builder-toolbar button:focus-visible,
+  #toggle-sidebar:focus-visible,
+  #viewport-controls button:focus-visible,
+  #edit-history-controls button:focus-visible,
+  #builder-race-controls button:focus-visible,
+  :global(#builder-home-link:focus-visible) {
+    box-shadow:
+      0 0 0 2px rgb(24 24 27),
+      0 0 0 4px rgb(34 211 238);
   }
 
   #builder-toolbar,

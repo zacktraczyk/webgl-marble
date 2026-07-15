@@ -61,6 +61,11 @@ const isCreationTool = (tool: SelectedTool) =>
   tool === SelectedTool.Wall ||
   tool === SelectedTool.SpawnPoint ||
   isPusherTool(tool);
+const releasePointerFocus = (event: MouseEvent) => {
+  if (event.detail > 0 && event.currentTarget instanceof HTMLButtonElement) {
+    event.currentTarget.blur();
+  }
+};
 
 export class LevelBuilderRuntime {
   readonly stage: Stage;
@@ -239,13 +244,21 @@ export class LevelBuilderRuntime {
       [this.ui.sweeperButton, SelectedTool.Sweeper],
     ];
     for (const [button, tool] of toolBindings) {
-      button.addEventListener("click", () => this.setActiveTool(tool), {
-        signal,
-      });
+      button.addEventListener(
+        "click",
+        (event) => {
+          this.setActiveTool(tool);
+          releasePointerFocus(event);
+        },
+        { signal }
+      );
     }
     this.ui.pusherMenuToggleButton.addEventListener(
       "click",
-      () => this.setPusherLibraryOpen(this.ui.pusherLibrary.hidden),
+      (event) => {
+        this.setPusherLibraryOpen(this.ui.pusherLibrary.hidden);
+        releasePointerFocus(event);
+      },
       { signal }
     );
     document.addEventListener(

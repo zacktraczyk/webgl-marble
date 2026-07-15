@@ -162,12 +162,12 @@ const isPusherTool = (tool: SelectedTool): tool is PusherTool =>
   tool === SelectedTool.Spinner ||
   tool === SelectedTool.Sweeper;
 
-const isTypingTarget = (target: EventTarget | null) =>
+const isKeyboardControlTarget = (target: EventTarget | null) =>
   target instanceof HTMLElement &&
   (target.isContentEditable ||
-    target instanceof HTMLInputElement ||
-    target instanceof HTMLTextAreaElement ||
-    target instanceof HTMLSelectElement);
+    target.matches(
+      'button, a[href], input, textarea, select, summary, [role="button"], [role="menuitem"]'
+    ));
 
 const boundsFromPoints = (first: Vec2, second: Vec2): Bounds => ({
   min: [Math.min(first[0], second[0]), Math.min(first[1], second[1])],
@@ -1341,7 +1341,7 @@ export class LevelEditorController {
   }
 
   private readonly keyDown = (event: KeyboardEvent) => {
-    if (isTypingTarget(event.target)) {
+    if (isKeyboardControlTarget(event.target)) {
       return;
     }
 
