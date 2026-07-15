@@ -9,7 +9,6 @@ export type BuilderUi = {
   panButton: HTMLButtonElement;
   pointerButton: HTMLButtonElement;
   wallButton: HTMLButtonElement;
-  bumperButton: HTMLButtonElement;
   spawnPointButton: HTMLButtonElement;
   pusherMenuToggleButton: HTMLButtonElement;
   pusherLibrary: HTMLElement;
@@ -63,7 +62,6 @@ export const resolveBuilderUi = (selectors: BuilderElements): BuilderUi => {
     panButton: requireElement(selectors.pan, "pan tool"),
     pointerButton: requireElement(selectors.pointer, "pointer tool"),
     wallButton: requireElement(selectors.wall, "wall tool"),
-    bumperButton: requireElement(selectors.bumper, "bumper tool"),
     spawnPointButton: requireElement(selectors.spawnPoint, "spawn point tool"),
     pusherMenuToggleButton: requireElement(
       selectors.pusherMenuToggle,

@@ -6,7 +6,6 @@ export type BuilderElements = {
   pan: HTMLElement | null;
   pointer: HTMLElement | null;
   wall: HTMLElement | null;
-  bumper: HTMLElement | null;
   spawnPoint: HTMLElement | null;
   pusherMenuToggle: HTMLElement | null;
   pusherLibrary: HTMLElement | null;
@@ -54,7 +53,6 @@ export enum SelectedTool {
   Pan,
   Pointer,
   Wall,
-  Bumper,
   SpawnPoint,
   Slider,
   Spinner,

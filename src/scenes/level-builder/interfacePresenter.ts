@@ -21,8 +21,6 @@ const toolHint = ({
       return `${key("Ctrl/⌘")} + wheel to zoom`;
     case SelectedTool.Wall:
       return `Click points to create connected walls`;
-    case SelectedTool.Bumper:
-      return `Place bumpers · ${key("⌘/Ctrl")} edit · ${key("Alt")} no snap · ${key("Esc")} finish`;
     case SelectedTool.SpawnPoint:
       return `Hold ${key("Alt")} to place without snapping`;
     case SelectedTool.Slider:
@@ -71,16 +69,13 @@ export const updateBuilderInterface = ({
   ui.redoButton.disabled = playbackActive || !canRedo;
   ui.pointerButton.disabled = playbackActive;
   ui.wallButton.disabled = playbackActive;
-  ui.bumperButton.disabled = playbackActive;
   ui.spawnPointButton.disabled = playbackActive;
   ui.pusherMenuToggleButton.disabled = playbackActive;
   ui.sliderButton.disabled = playbackActive;
   ui.spinnerButton.disabled = playbackActive;
   ui.sweeperButton.disabled = playbackActive;
   ui.toolLockButton.disabled =
-    playbackActive ||
-    (selectedTool !== SelectedTool.Wall &&
-      selectedTool !== SelectedTool.Bumper);
+    playbackActive || selectedTool !== SelectedTool.Wall;
   ui.toolLockButton.dataset.active = `${toolLocked}`;
   ui.toolLockButton.ariaPressed = `${toolLocked}`;
   ui.toolLockButton.title = toolLocked

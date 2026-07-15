@@ -34,7 +34,7 @@ type EditorCallbacks = {
   onDelete(objects: readonly LevelObjectData[]): void;
   onCreateWall(start: Vec2, end: Vec2): LevelObjectData;
   onPlaceObject(
-    tool: SelectedTool.Bumper | SelectedTool.SpawnPoint | PusherTool,
+    tool: SelectedTool.SpawnPoint | PusherTool,
     position: Vec2
   ): LevelObjectData;
   onToolRequest(tool: SelectedTool): void;
@@ -95,7 +95,7 @@ type WallGesture = {
 type PlaceGesture = {
   kind: "place";
   pointerId: number;
-  tool: SelectedTool.Bumper | SelectedTool.SpawnPoint | PusherTool;
+  tool: SelectedTool.SpawnPoint | PusherTool;
   startScreen: Vec2;
 };
 
@@ -437,7 +437,6 @@ export class LevelEditorController {
   private get creationToolActive() {
     return (
       this.activeTool === SelectedTool.Wall ||
-      this.activeTool === SelectedTool.Bumper ||
       this.activeTool === SelectedTool.SpawnPoint ||
       isPusherTool(this.activeTool)
     );
@@ -711,8 +710,7 @@ export class LevelEditorController {
     }
 
     if (
-      (this.activeTool === SelectedTool.Bumper ||
-        this.activeTool === SelectedTool.SpawnPoint ||
+      (this.activeTool === SelectedTool.SpawnPoint ||
         isPusherTool(this.activeTool)) &&
       !temporarySelection &&
       !this.readOnly
@@ -1422,7 +1420,6 @@ export class LevelEditorController {
         h: SelectedTool.Pan,
         w: SelectedTool.Wall,
         l: SelectedTool.Wall,
-        b: SelectedTool.Bumper,
         s: SelectedTool.SpawnPoint,
       };
       const requestedTool = toolByKey[event.key.toLowerCase()];

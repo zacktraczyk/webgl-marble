@@ -28,7 +28,6 @@ import {
   STAGE_WIDTH,
 } from "./constants";
 import {
-  createBumper,
   createCourseBoundaries,
   createDefaultCourse,
   createPusher,
@@ -58,11 +57,10 @@ const isPusherTool = (tool: SelectedTool): tool is PusherTool =>
   tool === SelectedTool.Sweeper;
 const isCreationTool = (tool: SelectedTool) =>
   tool === SelectedTool.Wall ||
-  tool === SelectedTool.Bumper ||
   tool === SelectedTool.SpawnPoint ||
   isPusherTool(tool);
 const isRepeatableCreationTool = (tool: SelectedTool) =>
-  tool === SelectedTool.Wall || tool === SelectedTool.Bumper;
+  tool === SelectedTool.Wall;
 
 export class LevelBuilderRuntime {
   readonly stage: Stage;
@@ -132,9 +130,7 @@ export class LevelBuilderRuntime {
         },
         onPlaceObject: (tool, position) => {
           let object: LevelObjectData;
-          if (tool === SelectedTool.Bumper) {
-            object = this.level.add(createBumper(position));
-          } else if (isPusherTool(tool)) {
+          if (isPusherTool(tool)) {
             object = this.level.add(createPusher(tool, position));
           } else {
             object = this.level.replaceUnique(
@@ -245,7 +241,6 @@ export class LevelBuilderRuntime {
       [this.ui.panButton, SelectedTool.Pan],
       [this.ui.pointerButton, SelectedTool.Pointer],
       [this.ui.wallButton, SelectedTool.Wall],
-      [this.ui.bumperButton, SelectedTool.Bumper],
       [this.ui.spawnPointButton, SelectedTool.SpawnPoint],
       [this.ui.sliderButton, SelectedTool.Slider],
       [this.ui.spinnerButton, SelectedTool.Spinner],
@@ -388,7 +383,6 @@ export class LevelBuilderRuntime {
       [SelectedTool.Pan, this.ui.panButton],
       [SelectedTool.Pointer, this.ui.pointerButton],
       [SelectedTool.Wall, this.ui.wallButton],
-      [SelectedTool.Bumper, this.ui.bumperButton],
       [SelectedTool.SpawnPoint, this.ui.spawnPointButton],
       [SelectedTool.Slider, this.ui.sliderButton],
       [SelectedTool.Spinner, this.ui.spinnerButton],

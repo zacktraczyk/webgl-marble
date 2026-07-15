@@ -33,7 +33,7 @@ import "../styles/global.css";
     <nav
       id="builder-toolbar"
       aria-label="Level tools"
-      class="absolute left-1/2 top-3 z-20 flex -translate-x-1/2 items-center gap-1 rounded-lg border border-zinc-700 bg-zinc-800/90 p-1 shadow-lg backdrop-blur"
+      class="absolute left-1/2 top-3 z-30 flex -translate-x-1/2 items-center gap-1 rounded-lg border border-zinc-700 bg-zinc-800/90 p-1 shadow-lg backdrop-blur"
     >
       <button
         id="tool-lock"
@@ -136,26 +136,6 @@ import "../styles/global.css";
           ></circle>
         </svg>
       </button>
-      <button
-        id="tool-bumper"
-        type="button"
-        aria-label="Place a circular bumper"
-        title="Place circular bumpers (B)"
-        data-active="false"
-        class="flex size-9 items-center justify-center rounded-md hover:bg-zinc-600 data-[active=true]:bg-zinc-500 disabled:cursor-not-allowed disabled:text-zinc-600 disabled:opacity-50 disabled:hover:bg-transparent"
-      >
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          class="size-5"
-          aria-hidden="true"
-        >
-          <circle cx="12" cy="12" r="9"></circle>
-          <circle cx="12" cy="12" r="3"></circle>
-        </svg>
-      </button>
       <div class="relative">
         <button
           id="tool-pusher-menu"
@@ -186,7 +166,7 @@ import "../styles/global.css";
           role="menu"
           aria-label="Pusher library"
           hidden
-          class="absolute left-1/2 top-12 w-64 -translate-x-1/2 rounded-lg border border-zinc-700 bg-zinc-800 p-2 text-left shadow-xl"
+          class="absolute left-1/2 top-12 z-40 w-64 -translate-x-1/2 rounded-lg border border-zinc-700 bg-zinc-800 p-2 text-left shadow-xl"
         >
           <p
             class="px-2 pb-2 pt-1 text-[10px] font-semibold uppercase tracking-widest text-zinc-500"
@@ -1099,7 +1079,6 @@ import "../styles/global.css";
         pan: byId("tool-pan"),
         pointer: byId("tool-pointer"),
         wall: byId("tool-wall"),
-        bumper: byId("tool-bumper"),
         spawnPoint: byId("tool-spawn-point"),
         pusherMenuToggle: byId("tool-pusher-menu"),
         pusherLibrary: byId("pusher-library"),

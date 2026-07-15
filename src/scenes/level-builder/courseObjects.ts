@@ -9,7 +9,6 @@ import {
 } from "../../game/prefabs/stagingRack";
 import { DEFAULT_SPAWN_DIRECTION_VARIANCE } from "../../game/race/spawn";
 import {
-  BUMPER_COLOR,
   COURSE_STROKE_WIDTH,
   DEFAULT_LAUNCH_SPEED,
   FINISH_COLOR,
@@ -58,15 +57,6 @@ export const createWall = (
     end: [...end],
     ...(thickness === undefined ? {} : { thickness }),
     color: [...WALL_COLOR],
-  },
-});
-
-export const createBumper = (position: Vec2): NewLevelObjectData => ({
-  prefab: "bumper",
-  transform: { position },
-  properties: {
-    radius: 13.2,
-    color: [...BUMPER_COLOR],
   },
 });
 

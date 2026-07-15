@@ -20,6 +20,5 @@ export const STAGING_MARBLE_PADDING = 5 * LEVEL_WORLD_SCALE;
 export const DEFAULT_LAUNCH_SPEED = 70 * LEVEL_WORLD_SCALE;
 
 export const WALL_COLOR = [113 / 255, 113 / 255, 122 / 255, 1] as const;
-export const BUMPER_COLOR = [168 / 255, 85 / 255, 247 / 255, 1] as const;
 export const FINISH_COLOR = [239 / 255, 68 / 255, 68 / 255, 1] as const;
 export const SPAWN_COLOR = [34 / 255, 211 / 255, 238 / 255, 1] as const;
