@@ -54,14 +54,6 @@ export const spawnPointDefinition = ({
           },
         },
         {
-          primitive: { type: "rectangle", width: 1, height: 1 },
-          color,
-          localTransform: {
-            position: [areaRadius * 0.36, 0],
-            scale: [areaRadius * 0.72, Math.max(2.5, areaRadius * 0.09)],
-          },
-        },
-        {
           primitive: { type: "circle", radius: 1 },
           color,
           localTransform: {
