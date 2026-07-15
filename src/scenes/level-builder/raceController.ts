@@ -303,7 +303,6 @@ export class RaceController {
           team: `${teamIndex + 1}`,
           tags: ["finished-marble"],
           physical: false,
-          decorated: true,
         })
       )
     );
