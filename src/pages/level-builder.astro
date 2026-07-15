@@ -1054,8 +1054,10 @@ import "../styles/global.css";
     pointer-events: none;
     box-sizing: border-box;
     border: 1px solid rgb(161 161 170 / 35%);
+    padding: 3.5px;
     opacity: var(--grid-zoom-opacity);
     background-origin: border-box;
+    background-clip: content-box;
     background-image:
       radial-gradient(
         circle at center,
@@ -1076,11 +1078,11 @@ import "../styles/global.css";
   }
 
   #builder-grid[data-minor-visible="true"] {
-    --grid-minor-color: rgb(205 184 216 / 38%);
+    --grid-minor-color: rgb(205 184 216 / 32%);
   }
 
   #builder-grid[data-major-visible="true"] {
-    --grid-major-color: rgb(221 200 232 / 64%);
+    --grid-major-color: rgb(221 200 232 / 55%);
   }
 
   #builder-grid[hidden] {
