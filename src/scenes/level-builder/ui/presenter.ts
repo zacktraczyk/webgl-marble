@@ -1,9 +1,9 @@
-import type { LevelObjectData } from "../../editor/levelDocument";
-import type { BuilderUi } from "./elements";
-import { TEAM_COLORS, TEAM_NAMES } from "../../game/race/staging";
-import { pusherSpeedForMotion } from "./courseObjects";
-import type { RaceSnapshot } from "./raceController";
-import { SelectedTool, type RoundConfiguration } from "./types";
+import type { LevelObjectData } from "../../../editor/levelDocument";
+import { TEAM_COLORS, TEAM_NAMES } from "../../../game/race/staging";
+import { pusherSpeedForMotion } from "../level/objects";
+import type { RaceSnapshot } from "../race";
+import { SelectedTool, type RoundConfiguration } from "../types";
+import type { BuilderUi } from ".";
 
 const key = (label: string) => `<kbd>${label}</kbd>`;
 
@@ -31,7 +31,10 @@ const setRaceOutcomeVisible = (element: HTMLElement, visible: boolean) => {
     delete element.dataset.exiting;
   };
   const handleAnimationEnd = (event: AnimationEvent) => {
-    if (event.target === element && event.animationName === "race-outcome-exit") {
+    if (
+      event.target === element &&
+      event.animationName === "race-outcome-exit"
+    ) {
       finishExit();
     }
   };

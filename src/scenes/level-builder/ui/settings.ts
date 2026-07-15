@@ -1,5 +1,5 @@
-import type { Vec2 } from "../../engine/core/transform";
-import { MAX_TEAMS } from "../../game/race/staging";
+import type { Vec2 } from "../../../engine/core/transform";
+import { MAX_TEAMS } from "../../../game/race/staging";
 import {
   COURSE_STROKE_WIDTH,
   MAX_STAGE_HEIGHT,
@@ -9,10 +9,10 @@ import {
   MIN_STAGE_WIDTH,
   MIN_WALL_THICKNESS,
   STAGE_SIZE_STEP,
-} from "./constants";
-import type { BuilderUi } from "./elements";
-import type { RoundConfiguration } from "./types";
-import { clampInteger, clampStepInteger } from "./utils";
+} from "../constants";
+import type { RoundConfiguration } from "../types";
+import type { BuilderUi } from ".";
+import { clampInteger, clampStepInteger } from "./input";
 
 export const readCourseSize = (ui: BuilderUi): Vec2 => [
   clampStepInteger(

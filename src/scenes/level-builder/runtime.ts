@@ -1,20 +1,19 @@
-import { EditorOverlay } from "../../editor/editorOverlay";
 import { getLevelObjectBounds } from "../../editor/levelGeometry";
-import { LevelEditorController } from "../../editor/levelEditorController";
+import { EditorOverlay, LevelEditorController } from "../../editor/levelEditor";
 import { LevelHistory } from "../../editor/levelHistory";
 import type {
   LevelObjectData,
   SerializedLevel,
 } from "../../editor/levelDocument";
 import Stage from "../../engine/stage";
-import { AuthoredLevel } from "./authoredLevel";
-import { BuilderControls } from "./builderControls";
+import { AuthoredLevel } from "./level";
+import { BuilderCameraController } from "./ui/cameraController";
+import { BuilderControls } from "./ui/controls";
 import {
   readCourseSize,
   readRoundConfiguration,
   readWallThickness,
-} from "./builderSettings";
-import { BuilderViewport } from "./builderViewport";
+} from "./ui/settings";
 import { STAGE_HEIGHT, STAGE_WIDTH } from "./constants";
 import {
   createCourseBoundaries,
@@ -22,12 +21,12 @@ import {
   createPusher,
   createSpawnPoint,
   createWall,
-} from "./courseObjects";
-import { resolveBuilderUi, type BuilderUi } from "./elements";
-import { GridOverlay, type GridWorldBounds } from "./gridOverlay";
-import { updateBuilderInterface } from "./interfacePresenter";
-import { MotionInspectorController } from "./motionInspectorController";
-import { RaceController } from "./raceController";
+} from "./level/objects";
+import { RaceController } from "./race";
+import { resolveBuilderUi, type BuilderUi } from "./ui";
+import { GridOverlay, type GridWorldBounds } from "./ui/gridOverlay";
+import { MotionInspectorController } from "./ui/motionInspector";
+import { updateBuilderInterface } from "./ui/presenter";
 import {
   isCreationTool,
   isPusherTool,
@@ -36,7 +35,7 @@ import {
 } from "./types";
 
 export class LevelBuilderRuntime {
-  readonly stage: Stage;
+  private readonly stage: Stage;
   private readonly ui: BuilderUi;
   private readonly level: AuthoredLevel;
   private readonly race: RaceController;
@@ -45,7 +44,7 @@ export class LevelBuilderRuntime {
   private readonly editorOverlay: EditorOverlay;
   private readonly gridOverlay: GridOverlay;
   private readonly controls: BuilderControls;
-  private readonly viewport: BuilderViewport;
+  private readonly cameraController: BuilderCameraController;
   private readonly motionInspector: MotionInspectorController;
   private configuration: RoundConfiguration;
   private selectedTool = SelectedTool.Pointer;
@@ -53,17 +52,40 @@ export class LevelBuilderRuntime {
   private playbackActive = false;
 
   constructor(rootElement: HTMLElement | null, signal: AbortSignal) {
+    // DOM and engine
     this.ui = resolveBuilderUi(rootElement);
     this.stage = new Stage({ width: STAGE_WIDTH, height: STAGE_HEIGHT });
-    this.viewport = new BuilderViewport(this.stage, this.ui);
-    this.stage.centerCameraOnResize = true;
-    this.stage.fitStageToWindowOnResizeInsets = this.viewport.getFitInsets;
-    this.stage.fitStageToWindowOnResize = true;
-    this.stage.fitStageToWindow(this.viewport.getFitInsets());
+    this.cameraController = new BuilderCameraController(
+      this.stage,
+      this.ui,
+      signal
+    );
 
+    // Level and race state
     this.configuration = readRoundConfiguration(this.ui);
+    this.level = this.createDefaultLevel();
+    this.race = new RaceController(this.stage, this.level, this.configuration);
+    this.history = new LevelHistory(this.level.document.serialize());
+
+    // Editor layers
+    this.gridOverlay = this.createGridOverlay();
+    this.editorController = this.createEditorController(signal);
+    this.editorOverlay = new EditorOverlay(
+      this.ui.editorOverlayCanvas,
+      this.stage
+    );
+    this.motionInspector = this.createMotionInspector();
+
+    // User actions
+    this.controls = this.createControls(signal);
+
+    // Initial view
+    this.initializeView();
+  }
+
+  private createDefaultLevel() {
     const wallThickness = readWallThickness(this.ui);
-    this.level = new AuthoredLevel(
+    const level = new AuthoredLevel(
       this.stage,
       this.configuration,
       wallThickness
@@ -73,20 +95,25 @@ export class LevelBuilderRuntime {
       this.stage.height,
       wallThickness
     )) {
-      this.level.add(object);
+      level.add(object);
     }
+    return level;
+  }
 
-    this.race = new RaceController(this.stage, this.level, this.configuration);
-    this.history = new LevelHistory(this.level.document.serialize());
-    this.gridOverlay = new GridOverlay(
+  private createGridOverlay() {
+    return new GridOverlay(
       this.stage,
       this.ui.majorGridToggleButton,
       this.ui.minorGridToggleButton,
       this.ui.gridOverlay,
       this.getGridWorldBounds
     );
-    this.editorController = new LevelEditorController({
+  }
+
+  private createEditorController(signal: AbortSignal) {
+    return new LevelEditorController({
       stage: this.stage,
+      cameraControls: this.cameraController,
       getObjects: () => this.level.objects,
       getDefaultWallThickness: () => this.level.wallThickness,
       getGridSnapEnabled: () => this.gridSnapEnabled,
@@ -129,18 +156,20 @@ export class LevelBuilderRuntime {
       },
       signal,
     });
-    this.editorOverlay = new EditorOverlay(
-      this.ui.editorOverlayCanvas,
-      this.stage
-    );
-    this.motionInspector = new MotionInspectorController(
+  }
+
+  private createMotionInspector() {
+    return new MotionInspectorController(
       this.ui,
       this.editorController,
       this.level,
       () => this.playbackActive,
       () => this.commitLevelChange()
     );
-    this.controls = new BuilderControls(
+  }
+
+  private createControls(signal: AbortSignal) {
+    return new BuilderControls(
       this.ui,
       {
         selectTool: (tool) => this.setActiveTool(tool),
@@ -159,12 +188,14 @@ export class LevelBuilderRuntime {
         resetRace: this.resetRace,
         undo: () => this.undo(),
         redo: () => this.redo(),
-        adjustZoom: (delta) => this.viewport.adjustZoom(delta),
-        resetZoom: () => this.viewport.resetZoom(),
+        adjustZoom: (delta) => this.cameraController.adjustZoom(delta),
+        resetZoom: () => this.cameraController.resetZoom(),
       },
       signal
     );
+  }
 
+  private initializeView() {
     this.setActiveTool(SelectedTool.Pointer);
     this.controls.showGridSnapEnabled(this.gridSnapEnabled);
     this.gridOverlay.update();
@@ -184,7 +215,7 @@ export class LevelBuilderRuntime {
     }
     this.gridOverlay.setSuppressed(this.playbackActive);
     this.gridOverlay.update();
-    this.viewport.updateControls();
+    this.cameraController.updateControls();
     updateBuilderInterface({
       ui: this.ui,
       configuration: this.configuration,
@@ -298,7 +329,7 @@ export class LevelBuilderRuntime {
     this.ui.courseHeightInput.value = `${snapshot.size[1]}`;
     this.ui.wallThicknessInput.value = `${snapshot.settings.wallThickness}`;
     if (sizeChanged) {
-      this.stage.fitStageToWindow(this.viewport.getFitInsets());
+      this.cameraController.fitStage();
     }
     this.race.reset();
   }
@@ -383,7 +414,7 @@ export class LevelBuilderRuntime {
       [width, height],
       createCourseBoundaries(width, height, this.level.wallThickness)
     );
-    this.stage.fitStageToWindow(this.viewport.getFitInsets());
+    this.cameraController.fitStage();
     this.commitLevelChange();
   };
 

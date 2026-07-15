@@ -1,4 +1,5 @@
 import { mat3 } from "gl-matrix";
+import { Camera2D } from "../camera/camera2d";
 import type { EntityId } from "../core/entity";
 import { createTransform, type Transform } from "../core/transform";
 import {
@@ -27,12 +28,15 @@ export class VDU {
   // private readonly _shaderProgram: WebGLProgram;
   private readonly _programInfo: ProgramInfo;
   private _drawEntities: DrawEntity[];
-  private readonly _camera: Camera;
+  readonly camera: Camera2D;
   private readonly _meshBuffers = new Map<string, BufferInfo>();
 
   private _drawMode: "TRIANGLES" | "LINES" = "TRIANGLES";
 
-  constructor(canvasParam: HTMLCanvasElement | string) {
+  constructor(
+    canvasParam: HTMLCanvasElement | string,
+    camera: Camera2D = new Camera2D()
+  ) {
     // Get canvas element
     let canvas: HTMLCanvasElement;
     if (typeof canvasParam === "string") {
@@ -78,11 +82,7 @@ export class VDU {
     // Init draw objects
     this._drawEntities = [];
 
-    // Init camera
-    this._camera = new Camera({
-      position: [0, 0],
-      zoom: 1,
-    });
+    this.camera = camera;
   }
 
   private _cleanup() {
@@ -188,7 +188,7 @@ export class VDU {
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    const cameraMatrix = this._camera.matrix();
+    const cameraMatrix = this.camera.matrix();
 
     this._cleanup();
     this._drawEntities.forEach((object) => {
@@ -238,25 +238,6 @@ export class VDU {
     });
   }
 
-  // Camera
-
-  pan(delta: [number, number]) {
-    this._camera.position[0] += delta[0] / this._camera.zoom;
-    this._camera.position[1] += delta[1] / this._camera.zoom;
-  }
-
-  set zoom(value: number) {
-    this._camera.zoom = value;
-  }
-
-  get zoom() {
-    return this._camera.zoom;
-  }
-
-  get camera() {
-    return this._camera;
-  }
-
   dispose() {
     const deletedBuffers = new Set<WebGLBuffer>();
     for (const bufferInfo of this._meshBuffers.values()) {
@@ -276,36 +257,5 @@ export class VDU {
     this._drawEntities = [];
     this._meshBuffers.clear();
     this._gl.deleteProgram(this._programInfo.program);
-  }
-}
-
-class Camera {
-  // origin: [number, number];
-  position: [number, number];
-  // rotation: number;
-  zoom: number;
-
-  private _matrix: mat3;
-
-  constructor({
-    // origin = [0, 0],
-    position = [0, 0],
-    zoom = 1,
-  }: {
-    position?: [number, number];
-    zoom?: number;
-  }) {
-    this.position = position;
-    this.zoom = zoom;
-
-    this._matrix = mat3.create();
-  }
-
-  matrix(): mat3 {
-    const matrix = mat3.identity(this._matrix);
-    mat3.translate(matrix, matrix, [this.position[0], this.position[1]]);
-    mat3.scale(matrix, matrix, [this.zoom, this.zoom]);
-
-    return matrix;
   }
 }

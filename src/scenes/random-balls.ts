@@ -1,4 +1,5 @@
 import type { Scene } from "../engine/runtime/scene";
+import { FreeCameraController } from "../engine/input/freeCameraController";
 import Stage from "../engine/stage";
 import { marbleDefinition } from "../game/prefabs/marble";
 import { rectangleDefinition } from "../game/prefabs/primitives/rectangle";
@@ -7,6 +8,9 @@ function createScene(): Scene {
   const { stage } = init();
 
   return {
+    load: ({ signal }) => {
+      new FreeCameraController(stage.canvas, stage.camera, { signal });
+    },
     fixedUpdate: (deltaMs) => stage.update(deltaMs),
     render: () => stage.render(),
     dispose: () => stage.dispose(),
@@ -15,7 +19,6 @@ function createScene(): Scene {
 
 function init() {
   const stage = new Stage({ width: 1000, height: 1000 });
-  stage.panAndZoom = true;
 
   // Spawn area
   const spawnOriginx = 0;

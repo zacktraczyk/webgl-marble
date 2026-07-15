@@ -1,12 +1,12 @@
-import type { Vec2 } from "../engine/core/transform";
-import type Stage from "../engine/stage";
-import { GRID_SIZE } from "../scenes/level-builder/constants";
+import type { Vec2 } from "../../engine/core/transform";
+import type Stage from "../../engine/stage";
+import { GRID_SIZE } from "../../scenes/level-builder/constants";
 import {
   isPusherTool,
   SelectedTool,
   type PusherTool,
-} from "../scenes/level-builder/types";
-import type { LevelObjectData } from "./levelDocument";
+} from "../../scenes/level-builder/types";
+import type { LevelObjectData } from "../levelDocument";
 import type {
   EditorGesture,
   PusherPlacementPreview,
@@ -14,10 +14,10 @@ import type {
   TransformGesture,
   WallDraft,
   WallEndpointFeedback,
-} from "./levelEditorGestures";
-import { LevelEditorKeyboard } from "./levelEditorKeyboard";
-import { LevelEditorSelection } from "./levelEditorSelection";
-import { oscillationPeriodForRange } from "./levelMotion";
+} from "./gestures";
+import { LevelEditorKeyboard } from "./keyboard";
+import { LevelEditorSelection } from "./selection";
+import { oscillationPeriodForRange } from "../levelMotion";
 import {
   applyLevelObjectShape,
   boundsIntersect,
@@ -41,7 +41,7 @@ import {
   type Bounds,
   type LevelObjectShape,
   type ResizeHandle,
-} from "./levelGeometry";
+} from "../levelGeometry";
 
 type EditorCallbacks = {
   onObjectsChange(objects: readonly LevelObjectData[]): void;
@@ -59,12 +59,18 @@ type EditorCallbacks = {
   onReset(): void;
 };
 
+type EditorCameraControls = {
+  panByScreen(deltaX: number, deltaY: number): void;
+  handleWheel(screenPoint: Vec2, event: WheelEvent): void;
+};
+
 export type {
   PusherPlacementPreview,
   SelectionMarquee,
   WallDraft,
   WallEndpointFeedback,
-} from "./levelEditorGestures";
+} from "./gestures";
+export { EditorOverlay } from "./overlay";
 
 type WallObject = Extract<LevelObjectData, { prefab: "wall" }>;
 type WallEndpointTarget = Omit<WallEndpointFeedback, "kind"> & {
@@ -81,8 +87,6 @@ const ENDPOINT_SNAP_RADIUS = 12;
 const DRAG_THRESHOLD = 3;
 const MIN_OBJECT_SIZE = GRID_SIZE * 0.4;
 const MIN_WALL_LENGTH = GRID_SIZE * 0.4;
-const MIN_ZOOM = 0.1;
-const MAX_ZOOM = 4;
 
 const boundsFromPoints = (first: Vec2, second: Vec2): Bounds => ({
   min: [Math.min(first[0], second[0]), Math.min(first[1], second[1])],
@@ -91,6 +95,7 @@ const boundsFromPoints = (first: Vec2, second: Vec2): Bounds => ({
 
 export class LevelEditorController {
   private readonly stage: Stage;
+  private readonly cameraControls: EditorCameraControls;
   private readonly getObjects: () => readonly LevelObjectData[];
   private readonly getDefaultWallThickness: () => number;
   private readonly getGridSnapEnabled: () => boolean;
@@ -108,6 +113,7 @@ export class LevelEditorController {
 
   constructor({
     stage,
+    cameraControls,
     getObjects,
     getDefaultWallThickness,
     getGridSnapEnabled,
@@ -115,6 +121,7 @@ export class LevelEditorController {
     signal,
   }: {
     stage: Stage;
+    cameraControls: EditorCameraControls;
     getObjects: () => readonly LevelObjectData[];
     getDefaultWallThickness: () => number;
     getGridSnapEnabled: () => boolean;
@@ -122,6 +129,7 @@ export class LevelEditorController {
     signal: AbortSignal;
   }) {
     this.stage = stage;
+    this.cameraControls = cameraControls;
     this.getObjects = getObjects;
     this.getDefaultWallThickness = getDefaultWallThickness;
     this.getGridSnapEnabled = getGridSnapEnabled;
@@ -286,7 +294,7 @@ export class LevelEditorController {
   }
 
   private worldPoint(screenPoint: Vec2): Vec2 {
-    const [worldX, worldY] = this.stage.screenToWorld(...screenPoint);
+    const [worldX, worldY] = this.stage.camera.screenToWorld(...screenPoint);
     return [worldX, worldY];
   }
 
@@ -391,8 +399,8 @@ export class LevelEditorController {
       return null;
     }
     const { start, end } = getWallEndpoints(object);
-    const startScreen = this.stage.worldToScreen(...start);
-    const endScreen = this.stage.worldToScreen(...end);
+    const startScreen = this.stage.camera.worldToScreen(...start);
+    const endScreen = this.stage.camera.worldToScreen(...end);
     if (this.screenDistance(startScreen, screenPoint) <= HANDLE_HIT_RADIUS) {
       return "start" as const;
     }
@@ -432,7 +440,7 @@ export class LevelEditorController {
     });
     const nearestIndex = findNearestPointIndex(
       candidates.map((candidate) =>
-        this.stage.worldToScreen(...candidate.position)
+        this.stage.camera.worldToScreen(...candidate.position)
       ),
       screenPoint,
       maximumDistance
@@ -460,7 +468,7 @@ export class LevelEditorController {
     }
     const shape = getLevelObjectShape(object, this.getDefaultWallThickness());
     for (const anchor of getResizeAnchors(shape)) {
-      const anchorScreen = this.stage.worldToScreen(...anchor.position);
+      const anchorScreen = this.stage.camera.worldToScreen(...anchor.position);
       if (this.screenDistance(anchorScreen, screenPoint) <= HANDLE_HIT_RADIUS) {
         return anchor.handle;
       }
@@ -473,14 +481,15 @@ export class LevelEditorController {
       return false;
     }
     const offset =
-      ROTATION_HANDLE_OFFSET / Math.max(Math.abs(this.stage.zoom), 0.001);
+      ROTATION_HANDLE_OFFSET /
+      Math.max(Math.abs(this.stage.camera.zoom), 0.001);
     const handle = getRotationHandle(
       getLevelObjectShape(object, this.getDefaultWallThickness()),
       offset
     );
     return (
       this.screenDistance(
-        this.stage.worldToScreen(...handle.position),
+        this.stage.camera.worldToScreen(...handle.position),
         screenPoint
       ) <= HANDLE_HIT_RADIUS
     );
@@ -499,7 +508,10 @@ export class LevelEditorController {
       center[1] + object.motion.vector[1],
     ];
     return (
-      this.screenDistance(this.stage.worldToScreen(...handle), screenPoint) <=
+      this.screenDistance(
+        this.stage.camera.worldToScreen(...handle),
+        screenPoint
+      ) <=
       HANDLE_HIT_RADIUS + 2
     );
   }
@@ -514,7 +526,7 @@ export class LevelEditorController {
       return [...point] as Vec2;
     }
     const target = this.wallEndpointTargetAt(
-      this.stage.worldToScreen(...point),
+      this.stage.camera.worldToScreen(...point),
       ENDPOINT_SNAP_RADIUS,
       { exclude }
     );
@@ -746,7 +758,7 @@ export class LevelEditorController {
     const pickedObject = pickLevelObject(
       this.getObjects(),
       this.worldPoint(screenPoint),
-      4 / Math.max(this.stage.zoom, 0.001),
+      4 / Math.max(this.stage.camera.zoom, 0.001),
       this.getDefaultWallThickness()
     );
     if (pickedObject) {
@@ -834,7 +846,7 @@ export class LevelEditorController {
     }
 
     if (this.gesture.kind === "pan") {
-      this.stage.panByScreen(
+      this.cameraControls.panByScreen(
         screenPoint[0] - this.gesture.lastScreen[0],
         screenPoint[1] - this.gesture.lastScreen[1]
       );
@@ -1153,15 +1165,7 @@ export class LevelEditorController {
 
   private readonly wheel = (event: WheelEvent) => {
     const screenPoint = this.screenPoint(event);
-    if (event.ctrlKey || event.metaKey) {
-      const zoom = Math.min(
-        MAX_ZOOM,
-        Math.max(MIN_ZOOM, this.stage.zoom * Math.exp(-event.deltaY * 0.002))
-      );
-      this.stage.zoomAtScreenPoint(...screenPoint, zoom);
-    } else {
-      this.stage.panByScreen(-event.deltaX, -event.deltaY);
-    }
+    this.cameraControls.handleWheel(screenPoint, event);
     event.preventDefault();
   };
 
@@ -1246,7 +1250,7 @@ export class LevelEditorController {
     const hoveredObject = pickLevelObject(
       this.getObjects(),
       this.worldPoint(screenPoint),
-      4 / Math.max(this.stage.zoom, 0.001),
+      4 / Math.max(this.stage.camera.zoom, 0.001),
       this.getDefaultWallThickness()
     );
     this.selection.setHovered(hoveredObject?.id ?? null);

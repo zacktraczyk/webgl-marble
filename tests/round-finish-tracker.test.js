@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { RoundFinishTracker } from "../src/scenes/level-builder/roundFinishTracker.ts";
+import { RoundFinishTracker } from "../src/scenes/level-builder/race/roundFinishTracker.ts";
 
 describe("round finish tracker", () => {
   test("grids every marble into its team's fixed finish bay", () => {

@@ -1,31 +1,31 @@
-export type StageFitInsets = {
+export type CameraFitInsets = {
   top: number;
   right: number;
   bottom: number;
   left: number;
 };
 
-export type StageFitInsetSource = StageFitInsets | (() => StageFitInsets);
+export type CameraFitInsetSource = CameraFitInsets | (() => CameraFitInsets);
 
-export const uniformStageFitInsets = (padding: number): StageFitInsets => ({
+export const uniformCameraFitInsets = (padding: number): CameraFitInsets => ({
   top: padding,
   right: padding,
   bottom: padding,
   left: padding,
 });
 
-export const calculateStageFit = ({
+export const calculateCameraFit = ({
   viewportWidth,
   viewportHeight,
-  stageWidth,
-  stageHeight,
-  insets = uniformStageFitInsets(0),
+  contentWidth,
+  contentHeight,
+  insets = uniformCameraFitInsets(0),
 }: {
   viewportWidth: number;
   viewportHeight: number;
-  stageWidth: number;
-  stageHeight: number;
-  insets?: StageFitInsets;
+  contentWidth: number;
+  contentHeight: number;
+  insets?: CameraFitInsets;
 }) => {
   const availableWidth = Math.max(
     0,
@@ -37,8 +37,11 @@ export const calculateStageFit = ({
   );
 
   return {
-    zoom: Math.min(availableWidth / stageWidth, availableHeight / stageHeight),
-    cameraPosition: [
+    zoom: Math.min(
+      availableWidth / contentWidth,
+      availableHeight / contentHeight
+    ),
+    position: [
       insets.left + availableWidth / 2,
       insets.top + availableHeight / 2,
     ] as [number, number],

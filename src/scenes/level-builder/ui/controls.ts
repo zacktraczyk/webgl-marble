@@ -1,6 +1,6 @@
-import type { PusherSpeed } from "./courseObjects";
-import type { BuilderUi } from "./elements";
-import { isPusherTool, SelectedTool } from "./types";
+import type { PusherSpeed } from "../level/objects";
+import { isPusherTool, SelectedTool } from "../types";
+import type { BuilderUi } from ".";
 
 export type BuilderControlActions = {
   selectTool(tool: SelectedTool): void;

@@ -1,4 +1,5 @@
 import type { Entity } from "../engine/core/entity";
+import type { DraggableEntity } from "../engine/input/entityDragController";
 import {
   debugArrowDefinition,
   debugLineDefinition,
@@ -18,7 +19,7 @@ const regularPolygonVertices = (radius: number, sides: number): Vec2[] =>
     return [Math.cos(angle) * radius, Math.sin(angle) * radius];
   });
 
-export const spawnCollisionDemoShapes = (stage: Stage) => {
+export const spawnCollisionDemoShapes = (stage: Stage): DraggableEntity[] => {
   const definitions = [
     draggableCircleDefinition({
       position: [200, 0],
@@ -55,11 +56,10 @@ export const spawnCollisionDemoShapes = (stage: Stage) => {
       handleColor: HANDLE_COLOR,
     }),
   ];
-  return definitions.map((definition) => {
-    const entity = stage.spawn(definition);
-    stage.setDraggable(entity, HANDLE_RADIUS);
-    return entity;
-  });
+  return definitions.map((definition) => ({
+    entity: stage.spawn(definition),
+    grabHandleRadius: HANDLE_RADIUS,
+  }));
 };
 
 export const spawnCollisionDiagnostics = (

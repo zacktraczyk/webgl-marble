@@ -3,19 +3,19 @@ import {
   type LevelObjectData,
   type NewLevelObjectData,
   type SerializedLevel,
-} from "../../editor/levelDocument";
-import type { Entity } from "../../engine/core/entity";
-import type { Vec2 } from "../../engine/core/transform";
-import { millisecondsToSimulationSeconds } from "../../engine/physics/physics";
-import type Stage from "../../engine/stage";
-import { getLevelObjectMotionPose } from "../../editor/levelMotion";
-import { levelObjectDefinitions } from "../../game/prefabs/levelObject";
+} from "../../../editor/levelDocument";
+import type { Entity } from "../../../engine/core/entity";
+import type { Vec2 } from "../../../engine/core/transform";
+import { millisecondsToSimulationSeconds } from "../../../engine/physics/physics";
+import type Stage from "../../../engine/stage";
+import { getLevelObjectMotionPose } from "../../../editor/levelMotion";
+import { levelObjectDefinitions } from "../../../game/prefabs/levelObject";
 import {
   MAX_MARBLE_RADIUS,
   MIN_MARBLE_RADIUS,
   STAGING_MARBLE_GAP,
-} from "./constants";
-import type { RoundConfiguration } from "./types";
+} from "../constants";
+import type { RoundConfiguration } from "../types";
 
 type LevelPrefab = LevelObjectData["prefab"];
 

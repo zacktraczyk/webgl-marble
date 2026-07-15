@@ -1,4 +1,12 @@
-import { requireElement } from "./utils";
+const requireElement = <T extends HTMLElement>(
+  element: HTMLElement | null,
+  label: string
+) => {
+  if (!element) {
+    throw new Error(`Level builder element not found: ${label}`);
+  }
+  return element as T;
+};
 
 export type BuilderUi = {
   root: HTMLElement;

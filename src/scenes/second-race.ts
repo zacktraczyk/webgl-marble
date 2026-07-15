@@ -1,5 +1,8 @@
+import { CameraResizeController } from "../engine/camera/resizeController";
+import { uniformCameraFitInsets } from "../engine/camera/fit";
 import Stage from "../engine/stage";
 import type { Entity } from "../engine/core/entity";
+import { FreeCameraController } from "../engine/input/freeCameraController";
 import type { Scene } from "../engine/runtime/scene";
 import { finishZoneDefinition } from "../game/prefabs/finishZone";
 import { marbleDefinition } from "../game/prefabs/marble";
@@ -125,6 +128,14 @@ function createScene(): Scene {
   };
 
   return {
+    load: ({ signal }) => {
+      new FreeCameraController(stage.canvas, stage.camera, { signal });
+      new CameraResizeController(stage.canvas, stage.camera, {
+        getContentSize: () => [stage.width, stage.height],
+        insets: uniformCameraFitInsets(WINDOW_PADDING),
+        signal,
+      });
+    },
     fixedUpdate: (deltaMs) => {
       if (marbels.length < numMarbles) {
         spawnBall();
@@ -143,11 +154,6 @@ function init() {
     height: 1200,
     width: 2000,
   });
-  stage.panAndZoom = true;
-  stage.centerCameraOnResize = true;
-  stage.fitStageToWindowOnResizePadding = WINDOW_PADDING;
-  stage.fitStageToWindowOnResize = true;
-
   const gapWidth = stage.width / 6;
   const thirdHeight = stage.height / 6;
 

@@ -1,20 +1,20 @@
-import { getLevelObjectShape } from "../../editor/levelGeometry";
-import type { LevelEditorController } from "../../editor/levelEditorController";
+import { getLevelObjectShape } from "../../../editor/levelGeometry";
+import type { LevelEditorController } from "../../../editor/levelEditor";
 import type {
   LevelObjectData,
   LevelObjectMotion,
-} from "../../editor/levelDocument";
-import type { Vec2 } from "../../engine/core/transform";
+} from "../../../editor/levelDocument";
+import type { Vec2 } from "../../../engine/core/transform";
 import {
   pusherPeriodForSpeed,
   pusherSpeedForMotion,
   PUSHER_DEFAULT_RANGE,
   PUSHER_PERIODS,
   type PusherSpeed,
-} from "./courseObjects";
-import type { AuthoredLevel } from "./authoredLevel";
-import type { BuilderUi } from "./elements";
-import { clampInteger } from "./utils";
+} from "../level/objects";
+import type { AuthoredLevel } from "../level";
+import type { BuilderUi } from ".";
+import { clampInteger } from "./input";
 
 /** Owns editing of motion properties for the currently selected wall. */
 export class MotionInspectorController {

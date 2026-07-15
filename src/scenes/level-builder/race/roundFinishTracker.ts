@@ -5,7 +5,7 @@ export type FinishRecord = {
   lastMarbleRemaining: boolean;
 };
 
-/** Tracks finished and lost marbles while preserving fixed team finish bays. */
+/** Tracks finished and lost marbles while preserving team-specific finish bays. */
 export class RoundFinishTracker {
   private readonly finishCounts: number[];
   private readonly lostCounts: number[];

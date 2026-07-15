@@ -1,22 +1,22 @@
 import type {
   LevelObjectMotion,
   NewLevelObjectData,
-} from "../../editor/levelDocument";
+} from "../../../editor/levelDocument";
 import {
   getOscillationPeakSpeed,
   oscillationPeriodForPeakSpeed,
-} from "../../editor/levelMotion";
-import type { Vec2 } from "../../engine/core/transform";
+} from "../../../editor/levelMotion";
+import type { Vec2 } from "../../../engine/core/transform";
 import {
   STAGING_RACK_HEIGHT,
   STAGING_RACK_WIDTH,
-} from "../../game/prefabs/stagingRack";
-import { FINISH_RACK_HEIGHT } from "../../game/prefabs/finishZone";
+} from "../../../game/prefabs/stagingRack";
+import { FINISH_RACK_HEIGHT } from "../../../game/prefabs/finishZone";
 import {
   DEFAULT_SPAWN_DIRECTION_VARIANCE,
   spawnAreaRadius,
-} from "../../game/race/spawn";
-import { MAX_TEAMS } from "../../game/race/staging";
+} from "../../../game/race/spawn";
+import { MAX_TEAMS } from "../../../game/race/staging";
 import {
   COURSE_STROKE_WIDTH,
   DEFAULT_LAUNCH_SPEED,
@@ -24,8 +24,8 @@ import {
   MAX_MARBLE_RADIUS,
   SPAWN_COLOR,
   WALL_COLOR,
-} from "./constants";
-import { SelectedTool, type PusherTool } from "./types";
+} from "../constants";
+import { SelectedTool, type PusherTool } from "../types";
 
 export const PUSHER_WALL_LENGTH = 120;
 export const PUSHER_DEFAULT_RANGE = 90;

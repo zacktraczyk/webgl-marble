@@ -1,4 +1,5 @@
 import type { Scene } from "../engine/runtime/scene";
+import { FreeCameraController } from "../engine/input/freeCameraController";
 import Stage from "../engine/stage";
 import { finishZoneDefinition } from "../game/prefabs/finishZone";
 import { marbleDefinition } from "../game/prefabs/marble";
@@ -28,6 +29,9 @@ function createScene(): Scene {
   });
 
   return {
+    load: ({ signal }) => {
+      new FreeCameraController(stage.canvas, stage.camera, { signal });
+    },
     fixedUpdate: (deltaMs) => stage.update(deltaMs),
     update: () => {
       updateDebugInfo({ finishedBalls });
@@ -42,8 +46,6 @@ function init() {
     height: 1000,
     width: 1000,
   });
-  stage.panAndZoom = true;
-
   // Spawn area
   const spawnOriginx = 0;
   const spawnOriginy = 110 - stage.height / 2;

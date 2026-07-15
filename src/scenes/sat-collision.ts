@@ -3,6 +3,8 @@ import {
   SequentialImpulseSolver,
   type Collision,
 } from "../engine/physics/collision";
+import { EntityDragController } from "../engine/input/entityDragController";
+import { FreeCameraController } from "../engine/input/freeCameraController";
 import Physics from "../engine/physics/physics";
 import type { Scene } from "../engine/runtime/scene";
 import Stage from "../engine/stage";
@@ -20,10 +22,8 @@ function createScene(): Scene {
       contactSolver: new SequentialImpulseSolver(),
     }),
   });
-  stage.dragAndDrop = true;
-  stage.panAndZoom = true;
   stage.drawMode = "TRIANGLES";
-  spawnCollisionDemoShapes(stage);
+  const draggableEntities = spawnCollisionDemoShapes(stage);
 
   let collisions: Collision[] = [];
   let diagnostics = spawnCollisionDiagnostics(stage, collisions);
@@ -32,6 +32,13 @@ function createScene(): Scene {
   });
 
   return {
+    load: ({ signal }) => {
+      new EntityDragController(stage.canvas, stage.camera, {
+        getEntities: () => draggableEntities,
+        signal,
+      });
+      new FreeCameraController(stage.canvas, stage.camera, { signal });
+    },
     fixedUpdate: (deltaMs) => {
       deleteEntities(diagnostics);
       collisions = [];

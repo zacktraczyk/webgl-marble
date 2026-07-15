@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { GridOverlay } from "../src/scenes/level-builder/gridOverlay.ts";
+import { GridOverlay } from "../src/scenes/level-builder/ui/gridOverlay.ts";
 
 const createGridOverlay = (bounds = { min: [-177, -57], max: [169, 81] }) => {
   const properties = new Map();

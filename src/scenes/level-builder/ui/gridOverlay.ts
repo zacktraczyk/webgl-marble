@@ -1,6 +1,6 @@
-import type { Vec2 } from "../../engine/core/transform";
-import type Stage from "../../engine/stage";
-import { GRID_MAJOR_INTERVAL, GRID_SIZE } from "./constants";
+import type { Vec2 } from "../../../engine/core/transform";
+import type Stage from "../../../engine/stage";
+import { GRID_MAJOR_INTERVAL, GRID_SIZE } from "../constants";
 
 export type GridWorldBounds = {
   min: Vec2;
@@ -66,7 +66,7 @@ export class GridOverlay {
       min: [-this.stage.width / 2, -this.stage.height / 2],
       max: [this.stage.width / 2, this.stage.height / 2],
     };
-    const [left, top] = this.stage.worldToScreen(...bounds.min);
+    const [left, top] = this.stage.camera.worldToScreen(...bounds.min);
     const width = Math.max(0, bounds.max[0] - bounds.min[0]);
     const height = Math.max(0, bounds.max[1] - bounds.min[1]);
     const majorGridSize = GRID_SIZE * GRID_MAJOR_INTERVAL;
@@ -85,31 +85,31 @@ export class GridOverlay {
 
     this.overlay.style.left = `${left}px`;
     this.overlay.style.top = `${top}px`;
-    this.overlay.style.width = `${width * this.stage.zoom}px`;
-    this.overlay.style.height = `${height * this.stage.zoom}px`;
+    this.overlay.style.width = `${width * this.stage.camera.zoom}px`;
+    this.overlay.style.height = `${height * this.stage.camera.zoom}px`;
     this.overlay.style.setProperty(
       "--grid-step",
-      `${GRID_SIZE * this.stage.zoom}px`
+      `${GRID_SIZE * this.stage.camera.zoom}px`
     );
     this.overlay.style.setProperty(
       "--grid-major-step",
-      `${majorGridSize * this.stage.zoom}px`
+      `${majorGridSize * this.stage.camera.zoom}px`
     );
     this.overlay.style.setProperty(
       "--grid-minor-offset-x",
-      `${minorOffsetX * this.stage.zoom}px`
+      `${minorOffsetX * this.stage.camera.zoom}px`
     );
     this.overlay.style.setProperty(
       "--grid-minor-offset-y",
-      `${minorOffsetY * this.stage.zoom}px`
+      `${minorOffsetY * this.stage.camera.zoom}px`
     );
     this.overlay.style.setProperty(
       "--grid-major-offset-x",
-      `${majorOffsetX * this.stage.zoom}px`
+      `${majorOffsetX * this.stage.camera.zoom}px`
     );
     this.overlay.style.setProperty(
       "--grid-major-offset-y",
-      `${majorOffsetY * this.stage.zoom}px`
+      `${majorOffsetY * this.stage.camera.zoom}px`
     );
   }
 }

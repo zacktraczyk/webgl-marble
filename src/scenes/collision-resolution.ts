@@ -1,12 +1,12 @@
 import type { Entity } from "../engine/core/entity";
 import type { PhysicsEntity } from "../engine/physics/entity";
+import { FreeCameraController } from "../engine/input/freeCameraController";
 import type { Scene } from "../engine/runtime/scene";
 import Stage from "../engine/stage";
 import { circleDefinition } from "../game/prefabs/primitives/circle";
 
 function createScene(): Scene {
   const stage = new Stage();
-  stage.panAndZoom = true;
 
   const center: [number, number] = [0, -stage.canvas.clientHeight / 4];
   const offset = 100;
@@ -59,6 +59,9 @@ function createScene(): Scene {
   });
 
   return {
+    load: ({ signal }) => {
+      new FreeCameraController(stage.canvas, stage.camera, { signal });
+    },
     fixedUpdate: (deltaMs) => {
       if (outsideViewport(first.entity) || outsideViewport(second.entity)) {
         reset(first.entity, first.body, center[0] - offset, initialVelocity1);

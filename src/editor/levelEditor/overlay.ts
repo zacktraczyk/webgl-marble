@@ -1,11 +1,11 @@
-import type Stage from "../engine/stage";
-import type { LevelObjectData } from "./levelDocument";
+import type Stage from "../../engine/stage";
+import type { LevelObjectData } from "../levelDocument";
 import {
   getOscillationPeakSpeed,
   getLevelObjectMotionPose,
   getOscillationEndpoints,
   getRotationPivot,
-} from "./levelMotion";
+} from "../levelMotion";
 import {
   getLevelObjectBounds,
   getLevelObjectShape,
@@ -17,12 +17,12 @@ import {
   isLevelObjectResizable,
   type LevelObjectShape,
   type RectangleLevelShape,
-} from "./levelGeometry";
+} from "../levelGeometry";
 import type {
   SelectionMarquee,
   WallDraft,
   WallEndpointFeedback,
-} from "./levelEditorController";
+} from "./gestures";
 
 export type EditorOverlayState = {
   active: boolean;
@@ -174,17 +174,19 @@ export class EditorOverlay {
     context.beginPath();
 
     if (shape.kind === "circle") {
-      const [centerX, centerY] = this.stage.worldToScreen(...shape.position);
+      const [centerX, centerY] = this.stage.camera.worldToScreen(
+        ...shape.position
+      );
       context.arc(
         centerX,
         centerY,
-        Math.abs(shape.radius * this.stage.zoom),
+        Math.abs(shape.radius * this.stage.camera.zoom),
         0,
         Math.PI * 2
       );
     } else {
       const corners = getRectangleCorners(shape).map((corner) =>
-        this.stage.worldToScreen(...corner)
+        this.stage.camera.worldToScreen(...corner)
       );
       context.moveTo(corners[0][0], corners[0][1]);
       for (let index = 1; index < corners.length; index++) {
@@ -224,8 +226,8 @@ export class EditorOverlay {
       for (const position of endpoints) {
         this.strokeShape({ ...baseShape, position }, ghostColor, 1.5, [5, 4]);
       }
-      const firstScreen = this.stage.worldToScreen(...first);
-      const secondScreen = this.stage.worldToScreen(...second);
+      const firstScreen = this.stage.camera.worldToScreen(...first);
+      const secondScreen = this.stage.camera.worldToScreen(...second);
       const context = this.context;
       context.save();
       context.strokeStyle = color;
@@ -268,8 +270,8 @@ export class EditorOverlay {
     }
     const radiusWorld =
       motion.pivot === "start" ? baseShape.width : baseShape.width / 2;
-    const [pivotX, pivotY] = this.stage.worldToScreen(...pivot);
-    const radius = Math.max(18, Math.abs(radiusWorld * this.stage.zoom));
+    const [pivotX, pivotY] = this.stage.camera.worldToScreen(...pivot);
+    const radius = Math.max(18, Math.abs(radiusWorld * this.stage.camera.zoom));
     const context = this.context;
 
     for (const progress of [0.25, 0.75]) {
@@ -327,17 +329,17 @@ export class EditorOverlay {
     context.fillStyle = color;
     context.beginPath();
     if (shape.kind === "circle") {
-      const [x, y] = this.stage.worldToScreen(...shape.position);
+      const [x, y] = this.stage.camera.worldToScreen(...shape.position);
       context.arc(
         x,
         y,
-        Math.abs(shape.radius * this.stage.zoom),
+        Math.abs(shape.radius * this.stage.camera.zoom),
         0,
         Math.PI * 2
       );
     } else {
       const corners = getRectangleCorners(shape).map((corner) =>
-        this.stage.worldToScreen(...corner)
+        this.stage.camera.worldToScreen(...corner)
       );
       context.moveTo(...corners[0]);
       for (const corner of corners.slice(1)) {
@@ -404,7 +406,7 @@ export class EditorOverlay {
     context.strokeStyle = "rgb(34 211 238)";
     context.lineWidth = 2;
     for (const endpoint of [start, end]) {
-      const [x, y] = this.stage.worldToScreen(...endpoint);
+      const [x, y] = this.stage.camera.worldToScreen(...endpoint);
       context.beginPath();
       context.arc(x, y, 5, 0, Math.PI * 2);
       context.fill();
@@ -442,8 +444,8 @@ export class EditorOverlay {
         ],
       }
     );
-    const [left, top] = this.stage.worldToScreen(...bounds.min);
-    const [right, bottom] = this.stage.worldToScreen(...bounds.max);
+    const [left, top] = this.stage.camera.worldToScreen(...bounds.min);
+    const [right, bottom] = this.stage.camera.worldToScreen(...bounds.max);
     this.context.save();
     this.context.strokeStyle = "rgb(34 211 238 / 75%)";
     this.context.lineWidth = 1;
@@ -460,7 +462,7 @@ export class EditorOverlay {
     context.lineWidth = 2;
 
     if (shape.width < 1) {
-      const [x, y] = this.stage.worldToScreen(...draft.start);
+      const [x, y] = this.stage.camera.worldToScreen(...draft.start);
       context.beginPath();
       context.fillStyle = "rgb(24 24 27)";
       context.arc(x, y, 4, 0, Math.PI * 2);
@@ -471,7 +473,7 @@ export class EditorOverlay {
     }
 
     const corners = getRectangleCorners(shape).map((corner) =>
-      this.stage.worldToScreen(...corner)
+      this.stage.camera.worldToScreen(...corner)
     );
     context.fillStyle = "rgb(34 211 238 / 22%)";
     context.beginPath();
@@ -484,7 +486,7 @@ export class EditorOverlay {
     context.stroke();
 
     for (const endpoint of [draft.start, draft.end]) {
-      const [x, y] = this.stage.worldToScreen(...endpoint);
+      const [x, y] = this.stage.camera.worldToScreen(...endpoint);
       context.beginPath();
       context.fillStyle = "rgb(24 24 27)";
       context.arc(x, y, 4, 0, Math.PI * 2);
@@ -492,7 +494,7 @@ export class EditorOverlay {
       context.stroke();
     }
 
-    const midpoint = this.stage.worldToScreen(...shape.position);
+    const midpoint = this.stage.camera.worldToScreen(...shape.position);
     const angle = Math.round((shape.rotation * 180) / Math.PI);
     const label = `${Math.round(shape.width)} · ${angle}°`;
     context.font = "11px ui-monospace, SFMono-Regular, Menlo, monospace";
@@ -512,7 +514,7 @@ export class EditorOverlay {
   }
 
   private drawWallEndpointFeedback({ position, kind }: WallEndpointFeedback) {
-    const [x, y] = this.stage.worldToScreen(...position);
+    const [x, y] = this.stage.camera.worldToScreen(...position);
     const context = this.context;
     const color = kind === "snap" ? "rgb(250 204 21)" : "rgb(34 211 238)";
     const label = kind === "snap" ? "Snap to endpoint" : "Edit endpoint";
@@ -542,8 +544,8 @@ export class EditorOverlay {
   }
 
   private drawMarquee({ start, end }: SelectionMarquee) {
-    const startScreen = this.stage.worldToScreen(...start);
-    const endScreen = this.stage.worldToScreen(...end);
+    const startScreen = this.stage.camera.worldToScreen(...start);
+    const endScreen = this.stage.camera.worldToScreen(...end);
     const left = Math.min(startScreen[0], endScreen[0]);
     const top = Math.min(startScreen[1], endScreen[1]);
     const width = Math.abs(endScreen[0] - startScreen[0]);
@@ -565,7 +567,7 @@ export class EditorOverlay {
     context.strokeStyle = "rgb(34 211 238)";
     context.lineWidth = 2;
     for (const anchor of getResizeAnchors(shape)) {
-      const [x, y] = this.stage.worldToScreen(...anchor.position);
+      const [x, y] = this.stage.camera.worldToScreen(...anchor.position);
       context.fillRect(x - size / 2, y - size / 2, size, size);
       context.strokeRect(x - size / 2, y - size / 2, size, size);
     }
@@ -574,12 +576,14 @@ export class EditorOverlay {
 
   private drawRotationHandle(shape: LevelObjectShape) {
     const context = this.context;
-    const offset = 28 / Math.max(Math.abs(this.stage.zoom), 0.001);
+    const offset = 28 / Math.max(Math.abs(this.stage.camera.zoom), 0.001);
     const handle = getRotationHandle(shape, offset);
-    const [connectionX, connectionY] = this.stage.worldToScreen(
+    const [connectionX, connectionY] = this.stage.camera.worldToScreen(
       ...handle.connection
     );
-    const [handleX, handleY] = this.stage.worldToScreen(...handle.position);
+    const [handleX, handleY] = this.stage.camera.worldToScreen(
+      ...handle.position
+    );
 
     context.save();
     context.strokeStyle = "rgb(34 211 238)";

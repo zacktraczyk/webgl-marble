@@ -1,4 +1,5 @@
 import type { Entity } from "../engine/core/entity";
+import { FreeCameraController } from "../engine/input/freeCameraController";
 import type { Scene } from "../engine/runtime/scene";
 import Stage from "../engine/stage";
 import type { Color } from "../engine/vdu/component";
@@ -40,7 +41,6 @@ const safeSpawnPosition = (
 
 function createScene(): Scene {
   const stage = new Stage();
-  stage.panAndZoom = true;
   const spawnPosition = (balls: readonly Entity[]) => {
     const width = stage.canvas.clientWidth / 2 - 100;
     return safeSpawnPosition(
@@ -116,6 +116,9 @@ function createScene(): Scene {
 
   let simulationTime = 0;
   return {
+    load: ({ signal }) => {
+      new FreeCameraController(stage.canvas, stage.camera, { signal });
+    },
     fixedUpdate: (deltaMs) => {
       simulationTime += deltaMs;
       const magnitude = stage.canvas.clientWidth / 16;

@@ -1,4 +1,4 @@
-import type { LevelObjectData } from "./levelDocument";
+import type { LevelObjectData } from "../levelDocument";
 
 /** Owns selection and hover identity independently from gesture handling. */
 export class LevelEditorSelection {

@@ -1,11 +1,11 @@
 import type { Scene } from "../engine/runtime/scene";
+import { FreeCameraController } from "../engine/input/freeCameraController";
 import Stage from "../engine/stage";
 import { circleDefinition } from "../game/prefabs/primitives/circle";
 import { rectangleDefinition } from "../game/prefabs/primitives/rectangle";
 
 function createScene(): Scene {
   const stage = new Stage();
-  stage.panAndZoom = true;
 
   const spawnX = -250;
   const spawnY = -stage.canvas.clientHeight / 2 + 100;
@@ -46,6 +46,9 @@ function createScene(): Scene {
   });
 
   return {
+    load: ({ signal }) => {
+      new FreeCameraController(stage.canvas, stage.camera, { signal });
+    },
     fixedUpdate: (deltaMs) => {
       if (circle.position[1] > stage.canvas.clientHeight + 100) {
         circle.position = [spawnX, spawnY];

@@ -1,7 +1,10 @@
-import type { Vec2 } from "../engine/core/transform";
-import type { PusherTool, SelectedTool } from "../scenes/level-builder/types";
-import type { LevelObjectData, LevelObjectMotion } from "./levelDocument";
-import type { LevelObjectShape, ResizeHandle } from "./levelGeometry";
+import type { Vec2 } from "../../engine/core/transform";
+import type {
+  PusherTool,
+  SelectedTool,
+} from "../../scenes/level-builder/types";
+import type { LevelObjectData, LevelObjectMotion } from "../levelDocument";
+import type { LevelObjectShape, ResizeHandle } from "../levelGeometry";
 
 type PanGesture = {
   kind: "pan";
