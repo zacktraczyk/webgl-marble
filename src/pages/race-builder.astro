@@ -39,8 +39,13 @@ import Tooltip from "../components/Tooltip.astro";
             class="type-display mt-6 block w-full resize-none overflow-hidden border-0 bg-transparent p-0 text-[clamp(3rem,6vw,4.5rem)] text-ink caret-brand [text-shadow:0.08em_0.09em_0_var(--color-stamp)] placeholder:text-ink-faint focus:outline-none"
             placeholder="Untitled race"></textarea>
           <a id="play-race" class="pill pill-play mt-8 text-sm">Play race</a>
+        </div>
 
-          <aside class="card mt-10 p-6">
+        <section
+          id="race-legs"
+          class="min-w-0 lg:overflow-y-auto lg:overscroll-y-contain lg:px-6 lg:pb-16"
+        >
+          <aside class="card p-6 lg:mt-20">
             <p class="text-xs font-semibold text-ink-faint">Setup</p>
             <div class="mt-5 flex items-center justify-between gap-4">
               <div>
@@ -103,13 +108,13 @@ import Tooltip from "../components/Tooltip.astro";
               </div>
             </details>
           </aside>
-        </div>
 
-        <section
-          id="race-legs"
-          class="min-w-0 lg:overflow-y-auto lg:overscroll-y-contain lg:px-6 lg:pb-16 lg:pt-20"
-        >
-          <div class="flex items-baseline justify-between gap-4">
+          <hr id="legs-divider" class="mt-10 border-line" />
+
+          <div
+            id="legs-header"
+            class="sticky top-0 z-20 flex items-baseline justify-between gap-4 border-b border-transparent bg-canvas pb-4 pt-6 transition-colors duration-200"
+          >
             <div class="flex items-baseline gap-4">
               <h2 class="type-display text-2xl text-ink sm:text-3xl">
                 Race legs
@@ -127,7 +132,7 @@ import Tooltip from "../components/Tooltip.astro";
           </div>
 
           <p id="leg-move-status" class="sr-only" role="status"></p>
-          <ol id="leg-list" class="mt-8 flex flex-col gap-6"></ol>
+          <ol id="leg-list" class="mt-4 flex flex-col gap-6"></ol>
 
           <button
             id="add-leg"
@@ -509,6 +514,17 @@ import Tooltip from "../components/Tooltip.astro";
     if (playLink) playLink.hidden = true;
   } else {
     if (builder) builder.hidden = false;
+    const legsHeader = document.querySelector<HTMLElement>("#legs-header");
+    const legsDivider = document.querySelector<HTMLElement>("#legs-divider");
+    if (legsHeader && legsDivider) {
+      // The header is pinned exactly when the divider above it has scrolled
+      // out of view (of the column scroller on lg, the viewport on mobile).
+      new IntersectionObserver(([entry]) => {
+        const stuck = !entry.isIntersecting;
+        legsHeader.classList.toggle("border-line", stuck);
+        legsHeader.classList.toggle("border-transparent", !stuck);
+      }).observe(legsDivider);
+    }
     nameInput?.addEventListener("input", fitNameInput);
     nameInput?.addEventListener("keydown", (event) => {
       if (event.key === "Enter") {
