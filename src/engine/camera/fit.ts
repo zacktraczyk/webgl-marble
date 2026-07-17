@@ -1,8 +1,16 @@
+import type { Vec2 } from "../core/transform";
+
 export type CameraFitInsets = {
   top: number;
   right: number;
   bottom: number;
   left: number;
+};
+
+export type WorldRect = {
+  center: Vec2;
+  width: number;
+  height: number;
 };
 
 export type CameraFitInsetSource = CameraFitInsets | (() => CameraFitInsets);
@@ -46,4 +54,64 @@ export const calculateCameraFit = ({
       insets.top + availableHeight / 2,
     ] as [number, number],
   };
+};
+
+/**
+ * Fits an arbitrarily positioned world rect. Camera2D maps world (0,0) to the
+ * screen point `position`, so the origin-centered fit is shifted by
+ * `-rect.center * zoom` to bring the rect's center to the viewport center.
+ */
+export const calculateCameraFitForRect = ({
+  viewportWidth,
+  viewportHeight,
+  rect,
+  insets = uniformCameraFitInsets(0),
+}: {
+  viewportWidth: number;
+  viewportHeight: number;
+  rect: WorldRect;
+  insets?: CameraFitInsets;
+}): { zoom: number; position: Vec2 } => {
+  const fit = calculateCameraFit({
+    viewportWidth,
+    viewportHeight,
+    contentWidth: rect.width,
+    contentHeight: rect.height,
+    insets,
+  });
+
+  return {
+    zoom: fit.zoom,
+    position: [
+      fit.position[0] - rect.center[0] * fit.zoom,
+      fit.position[1] - rect.center[1] * fit.zoom,
+    ],
+  };
+};
+
+/**
+ * Fraction (0..1) of the rect's vertical extent currently inside the viewport.
+ * World Y is recovered from the camera transform (`worldY = (screenY -
+ * position.y) / zoom`); +Y is downward, so the screen top maps to the smaller
+ * world Y.
+ */
+export const visibleVerticalFraction = (
+  camera: { position: Vec2; zoom: number },
+  viewportHeight: number,
+  rect: WorldRect
+): number => {
+  if (rect.height <= 0 || camera.zoom <= 0) {
+    return 0;
+  }
+
+  const viewTop = (0 - camera.position[1]) / camera.zoom;
+  const viewBottom = (viewportHeight - camera.position[1]) / camera.zoom;
+
+  const rectTop = rect.center[1] - rect.height / 2;
+  const rectBottom = rect.center[1] + rect.height / 2;
+
+  const overlap =
+    Math.min(viewBottom, rectBottom) - Math.max(viewTop, rectTop);
+
+  return Math.max(0, Math.min(1, overlap / rect.height));
 };

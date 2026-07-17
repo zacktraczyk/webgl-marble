@@ -140,6 +140,131 @@ describe("race controller", () => {
     });
   });
 
+  test("external mode culls own marbles outside its bounds through the finish path", () => {
+    const spawned = [];
+    const marble = {
+      id: 7,
+      tags: new Set(["team:2", "race-marble", "released-marble"]),
+      hasTag: (tag) => marble.tags.has(tag),
+      markedForDeletion: false,
+      position: [9999, 0],
+      delete: () => {
+        marble.markedForDeletion = true;
+      },
+    };
+    const stage = {
+      registerPhysicsObserver: () => {},
+      spawn: (definition) => {
+        spawned.push(definition);
+        return { delete: () => {} };
+      },
+    };
+    const level = { has: () => true };
+    const race = new RaceController(
+      stage,
+      level,
+      { teamCount: 2, marblesPerTeam: 2, releaseIntervalMs: 100 },
+      { external: { bounds: { minX: -100, maxX: 100, minY: -100, maxY: 100 } } }
+    );
+    race.finishPlacements = [
+      { teamIndex: 0, slotIndex: 0, position: [10, 10] },
+      { teamIndex: 0, slotIndex: 1, position: [20, 10] },
+      { teamIndex: 1, slotIndex: 0, position: [10, 20] },
+      { teamIndex: 1, slotIndex: 1, position: [20, 20] },
+    ];
+    race.raceMarbles.push(marble);
+
+    race.fixedUpdate(1000 / 60);
+
+    expect(marble.markedForDeletion).toBe(true);
+    expect(race.snapshot).toMatchObject({
+      finishedMarbles: 1,
+      outOfBoundsMarbles: 1,
+    });
+    expect(spawned).toHaveLength(1);
+    expect(spawned[0]).toMatchObject({
+      transform: { position: [10, 20] },
+      physics: undefined,
+    });
+  });
+
+  test("external mode reports released marbles with their stable team index", () => {
+    const released = [];
+    const stage = {
+      registerPhysicsObserver: () => {},
+      spawn: () => ({ id: 1, delete: () => {} }),
+    };
+    const level = {
+      find: () => ({
+        transform: { position: [0, 0], rotation: 0 },
+        properties: { directionVariance: 0, launchSpeed: 0 },
+      }),
+    };
+    const race = new RaceController(
+      stage,
+      level,
+      { teamCount: 2, marblesPerTeam: 1, releaseIntervalMs: 100 },
+      {
+        stableTeamIndices: [5, 2],
+        external: {
+          bounds: { minX: -1, maxX: 1, minY: -1, maxY: 1 },
+          onMarbleReleased: (stableTeamIndex) => released.push(stableTeamIndex),
+        },
+      }
+    );
+    race.releaseQueue = { takeNext: () => ({ teamIndex: 1 }) };
+
+    race.releaseNextMarble([0, 0]);
+
+    expect(released).toEqual([2]);
+  });
+
+  test("external abandon freezes live marbles and removeFinishedMarble drains them", () => {
+    const spawned = [];
+    const makeMarble = (id, team) => ({
+      id,
+      tags: new Set([`team:${team}`, "race-marble", "released-marble"]),
+      hasTag: (tag) => tag !== undefined,
+      markedForDeletion: false,
+      position: [id, id],
+      delete: () => {},
+    });
+    const stage = {
+      registerPhysicsObserver: () => {},
+      spawn: (definition) => {
+        const entity = { definition, deleted: false, delete: () => {} };
+        entity.delete = () => {
+          entity.deleted = true;
+        };
+        spawned.push(entity);
+        return entity;
+      },
+    };
+    const level = { has: () => true };
+    const race = new RaceController(
+      stage,
+      level,
+      { teamCount: 2, marblesPerTeam: 2, releaseIntervalMs: 100 },
+      {
+        stableTeamIndices: [5, 2],
+        external: { bounds: { minX: -1, maxX: 1, minY: -1, maxY: 1 } },
+      }
+    );
+    race.raceMarbles.push(makeMarble(1, 1), makeMarble(2, 2));
+
+    race.abandon();
+
+    expect(spawned).toHaveLength(2);
+    expect(spawned.map((entity) => entity.definition.physics)).toEqual([
+      undefined,
+      undefined,
+    ]);
+    expect(race.removeFinishedMarble(5)).toBe(true);
+    expect(race.removeFinishedMarble(5)).toBe(false);
+    expect(race.removeFinishedMarble(2)).toBe(true);
+    expect(race.removeFinishedMarble(2)).toBe(false);
+  });
+
   test("rejects invalid stable team mappings", () => {
     const stage = {
       registerPhysicsObserver: () => {},

@@ -124,6 +124,13 @@ export class AuthoredLevel {
     }
   }
 
+  dispose() {
+    for (const object of [...this.objects]) {
+      this.clearRuntimeEntities(object.id);
+    }
+    this.hiddenObjects.clear();
+  }
+
   restore(serialized: SerializedLevel) {
     for (const object of [...this.objects]) {
       this.clearRuntimeEntities(object.id);

@@ -4,7 +4,6 @@ import { RacePlayerRuntime, type RacePlayerOptions } from "./runtime";
 
 export type { RacePlayerOptions } from "./runtime";
 export {
-  DEFAULT_LEG_TRANSITION_MS,
   DEFAULT_MAXIMUM_LEG_DURATION_MS,
   RacePlayerRuntime,
 } from "./runtime";
@@ -38,7 +37,7 @@ function createScene(
       );
     },
     fixedUpdate: (deltaMs) => runtime?.fixedUpdate(deltaMs),
-    update: () => runtime?.updateInterface(),
+    update: (deltaMs) => runtime?.update(deltaMs),
     render: () => runtime?.render(),
     togglePause: () => runtime?.togglePause(),
     restart: () => runtime?.restart(),

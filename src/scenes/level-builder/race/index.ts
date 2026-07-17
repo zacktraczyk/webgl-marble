@@ -1,4 +1,4 @@
-import type { Entity } from "../../../engine/core/entity";
+import type { Entity, EntityId } from "../../../engine/core/entity";
 import type { CollisionEvents } from "../../../engine/physics/physics";
 import type Stage from "../../../engine/stage";
 import { marbleDefinition } from "../../../game/prefabs/marble";
@@ -44,8 +44,19 @@ export type RaceSnapshot = {
   courseIssue: string | null;
 };
 
+export type ExternalRaceMode = {
+  bounds: { minX: number; maxX: number; minY: number; maxY: number };
+  onMarbleReleased?: (stableTeamIndex: number) => void;
+};
+
 export type RaceControllerOptions = {
   stableTeamIndices?: readonly number[];
+  external?: ExternalRaceMode;
+};
+
+type FinishedMarble = {
+  entity: Entity;
+  stableTeamIndex: number;
 };
 
 const resolveStableTeamIndices = (
@@ -79,7 +90,8 @@ export class RaceController {
   private readonly usesCustomStableTeamIndices: boolean;
   private phase: RacePhase = "ready";
   private raceMarbles: Entity[] = [];
-  private finishMarbles: Entity[] = [];
+  private readonly raceMarbleIds = new Set<EntityId>();
+  private finishMarbles: FinishedMarble[] = [];
   private releaseQueue: RoundRobinReleaseQueue<PendingMarble> | null = null;
   private physicsActive = false;
   private marbleRadius = MAX_MARBLE_RADIUS;
@@ -89,14 +101,16 @@ export class RaceController {
   private finishTracker: RoundFinishTracker;
   private motionElapsedMs = 0;
   private finishPlacements: ReturnType<typeof createFinishGridPlacements> = [];
+  private readonly external: ExternalRaceMode | undefined;
 
   constructor(
     private readonly stage: Stage,
     private readonly level: AuthoredLevel,
     configuration: RoundConfiguration,
-    { stableTeamIndices }: RaceControllerOptions = {}
+    { stableTeamIndices, external }: RaceControllerOptions = {}
   ) {
     this.configuration = { ...configuration };
+    this.external = external;
     this.usesCustomStableTeamIndices = stableTeamIndices !== undefined;
     this.stableTeamIndices = resolveStableTeamIndices(
       configuration.teamCount,
@@ -170,7 +184,9 @@ export class RaceController {
 
   reset() {
     this.phase = "ready";
-    this.stage.physicsEnabled = false;
+    if (!this.external) {
+      this.stage.physicsEnabled = false;
+    }
     this.releaseElapsedMs = 0;
     this.releasedMarbles = 0;
     this.outOfBoundsMarbles = 0;
@@ -226,6 +242,10 @@ export class RaceController {
   }
 
   fixedUpdate(deltaMs: number) {
+    const ticksMotion =
+      this.phase === "running" ||
+      (this.external !== undefined && this.phase === "complete");
+
     if (this.phase === "running") {
       this.level.prepareMotionStep(this.motionElapsedMs, deltaMs);
       this.releaseElapsedMs += deltaMs;
@@ -236,14 +256,20 @@ export class RaceController {
         this.releaseWave();
         this.releaseElapsedMs -= this.configuration.releaseIntervalMs;
       }
+    } else if (ticksMotion) {
+      this.level.prepareMotionStep(this.motionElapsedMs, deltaMs);
     }
 
     if (this.phase !== "paused" && this.phase !== "complete") {
-      this.stage.update(deltaMs);
-      this.recordOutOfBoundsMarbles(this.stage.clearOutOfBoundsEntities());
+      if (this.external) {
+        this.recordOutOfBoundsMarbles(this.collectOutOfBoundsMarbles());
+      } else {
+        this.stage.update(deltaMs);
+        this.recordOutOfBoundsMarbles(this.stage.clearOutOfBoundsEntities());
+      }
     }
 
-    if (this.phase === "running") {
+    if (ticksMotion) {
       this.motionElapsedMs += deltaMs;
     }
 
@@ -255,10 +281,14 @@ export class RaceController {
   }
 
   private clearRaceMarbles() {
-    for (const marble of [...this.raceMarbles, ...this.finishMarbles]) {
+    for (const marble of this.raceMarbles) {
       marble.delete();
     }
+    for (const { entity } of this.finishMarbles) {
+      entity.delete();
+    }
     this.raceMarbles = [];
+    this.raceMarbleIds.clear();
     this.finishMarbles = [];
     this.releaseQueue = null;
     this.physicsActive = false;
@@ -270,7 +300,9 @@ export class RaceController {
       return;
     }
     this.physicsActive = true;
-    this.stage.physicsEnabled = true;
+    if (!this.external) {
+      this.stage.physicsEnabled = true;
+    }
   }
 
   private getFinishPlacement(bayIndex: number, slotIndex: number) {
@@ -294,8 +326,84 @@ export class RaceController {
     }
     this.phase = "complete";
     this.physicsActive = false;
-    this.stage.physicsEnabled = false;
+    if (this.external) {
+      const survivor = this.raceMarbles.find(
+        (marble) => !marble.markedForDeletion
+      );
+      if (survivor) {
+        this.freezeMarbleInPlace(survivor);
+      }
+    } else {
+      this.stage.physicsEnabled = false;
+    }
     return true;
+  }
+
+  removeFinishedMarble(stableTeamIndex: number): boolean {
+    for (let index = this.finishMarbles.length - 1; index >= 0; index--) {
+      if (this.finishMarbles[index].stableTeamIndex === stableTeamIndex) {
+        const [removed] = this.finishMarbles.splice(index, 1);
+        removed.entity.delete();
+        return true;
+      }
+    }
+    return false;
+  }
+
+  abandon() {
+    for (const marble of [...this.raceMarbles]) {
+      if (marble.markedForDeletion) {
+        continue;
+      }
+      this.freezeMarbleInPlace(marble);
+    }
+    this.releaseQueue = null;
+  }
+
+  private freezeMarbleInPlace(marble: Entity) {
+    const teamIndex = this.teamIndexForMarble(marble);
+    if (teamIndex === null) {
+      return;
+    }
+    const position: [number, number] = [marble.position[0], marble.position[1]];
+    const stableTeamIndex = this.stableTeamIndices[teamIndex];
+    marble.delete();
+    this.finishMarbles.push({
+      stableTeamIndex,
+      entity: this.stage.spawn(
+        marbleDefinition({
+          position,
+          radius: this.marbleRadius,
+          color: TEAM_COLORS[stableTeamIndex],
+          team: `${teamIndex + 1}`,
+          tags: ["finished-marble"],
+          physical: false,
+        })
+      ),
+    });
+  }
+
+  private collectOutOfBoundsMarbles(): Entity[] {
+    const bounds = this.external?.bounds;
+    if (!bounds) {
+      return [];
+    }
+    const outOfBounds: Entity[] = [];
+    for (const marble of this.raceMarbles) {
+      if (marble.markedForDeletion || !marble.hasTag("released-marble")) {
+        continue;
+      }
+      const [x, y] = marble.position;
+      if (
+        x < bounds.minX ||
+        x > bounds.maxX ||
+        y < bounds.minY ||
+        y > bounds.maxY
+      ) {
+        outOfBounds.push(marble);
+      }
+    }
+    return outOfBounds;
   }
 
   private recordOutOfBoundsMarbles(entities: readonly Entity[]) {
@@ -340,18 +448,20 @@ export class RaceController {
     if (!position) {
       return;
     }
-    this.finishMarbles.push(
-      this.stage.spawn(
+    const stableTeamIndex = this.stableTeamIndices[teamIndex];
+    this.finishMarbles.push({
+      stableTeamIndex,
+      entity: this.stage.spawn(
         marbleDefinition({
           position: [...position],
           radius: this.marbleRadius,
-          color: TEAM_COLORS[this.stableTeamIndices[teamIndex]],
+          color: TEAM_COLORS[stableTeamIndex],
           team: `${teamIndex + 1}`,
           tags: ["finished-marble"],
           physical: false,
         })
-      )
-    );
+      ),
+    });
   }
 
   private teamIndexForMarble(marble: Entity) {
@@ -444,7 +554,11 @@ export class RaceController {
       })
     );
     this.raceMarbles.push(marble);
+    this.raceMarbleIds.add(marble.id);
     this.releasedMarbles++;
+    this.external?.onMarbleReleased?.(
+      this.stableTeamIndices[stagedMarble.teamIndex]
+    );
     return true;
   }
 
@@ -456,6 +570,9 @@ export class RaceController {
         [firstId, secondId],
         [secondId, firstId],
       ]) {
+        if (!this.raceMarbleIds.has(marbleId)) {
+          continue;
+        }
         const marble = this.stage.world.get(marbleId);
         const finish = this.stage.world.get(finishId);
         if (
