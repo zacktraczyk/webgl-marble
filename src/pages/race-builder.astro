@@ -3,29 +3,25 @@ import Layout from "../layouts/Layout.astro";
 ---
 
 <Layout title="Race Builder · Marbel">
-  <main class="min-h-full overflow-y-auto bg-zinc-900 text-zinc-100">
+  <main class="min-h-full overflow-y-auto bg-canvas text-ink">
     <header
-      class="sticky top-0 z-30 border-b border-zinc-800 bg-zinc-900/95 px-5 py-3 backdrop-blur sm:px-8"
+      class="sticky top-0 z-30 border-b border-line bg-canvas/95 px-5 backdrop-blur sm:px-8"
     >
       <div
-        class="mx-auto flex w-full max-w-7xl items-center justify-between gap-4"
+        class="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 py-4"
       >
         <a
           href="/"
-          class="rounded-md px-3 py-2 text-sm text-zinc-400 hover:bg-zinc-800 hover:text-white"
+          class="text-sm font-semibold text-ink-dim hover:text-ink"
           >← Library</a
         >
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-6">
           <span
             id="save-status"
-            class="hidden text-xs text-zinc-500 sm:block"
-            aria-live="polite">Saved locally</span
+            class="hidden text-xs font-medium text-ink-faint sm:block"
+            aria-live="polite">Saved</span
           >
-          <a
-            id="play-race"
-            class="rounded-md bg-zinc-100 px-4 py-2 text-sm font-semibold text-zinc-900 hover:bg-white"
-            >Play race</a
-          >
+          <a id="play-race" class="pill pill-play text-sm">Play race</a>
         </div>
       </div>
     </header>
@@ -33,203 +29,187 @@ import Layout from "../layouts/Layout.astro";
     <section
       id="missing-race"
       hidden
-      class="mx-auto max-w-xl px-5 py-24 text-center"
+      class="mx-auto w-full max-w-7xl px-5 py-28 sm:px-8"
     >
-      <h1 class="text-2xl font-semibold text-white">Race not found</h1>
-      <p class="mt-3 text-sm text-zinc-400">
+      <h1 class="type-display text-[clamp(2.5rem,7vw,5.5rem)] text-ink-faint">
+        Race not found
+      </h1>
+      <p class="mt-5 text-sm text-ink-dim">
         It may have been deleted from this browser.
       </p>
-      <a
-        href="/"
-        class="mt-6 inline-block rounded-md bg-zinc-100 px-4 py-2 text-sm font-semibold text-zinc-900"
-        >Return to library</a
-      >
+      <a href="/" class="pill pill-primary mt-8 text-sm">Return to library</a>
     </section>
 
     <section
       id="race-builder"
       hidden
-      class="mx-auto w-full max-w-7xl px-5 py-10 sm:px-8 sm:py-14"
+      class="mx-auto w-full max-w-7xl px-5 pb-24 pt-14 sm:px-8 sm:pt-20"
     >
-      <div class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_19rem]">
+      <div class="grid gap-10 lg:grid-cols-[minmax(0,1fr)_19rem]">
         <div class="min-w-0">
-          <p
-            class="text-xs font-semibold uppercase tracking-[0.22em] text-zinc-500"
-          >
-            Race builder
-          </p>
           <label for="race-name" class="sr-only">Race name</label>
           <input
             id="race-name"
             maxlength="80"
-            class="mt-2 w-full border-0 bg-transparent p-0 text-3xl font-semibold tracking-tight text-white placeholder:text-zinc-600 focus:outline-none sm:text-4xl"
+            class="type-display w-full border-0 bg-transparent p-0 text-[clamp(2.5rem,5vw,4.5rem)] text-ink caret-brand placeholder:text-ink-faint focus:outline-none"
             placeholder="Untitled race"
           />
-          <p class="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">
-            Each team starts a leg with 100 marbles. When only one marble is
-            left on the track, its team is eliminated.
-          </p>
         </div>
 
-        <aside class="rounded-xl border border-zinc-700 bg-zinc-800/70 p-5">
-          <p
-            class="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500"
-          >
-            Race setup
-          </p>
-          <div class="mt-4 flex items-center justify-between gap-4">
+        <aside class="card self-start p-6">
+          <p class="text-xs font-semibold text-ink-faint">Setup</p>
+          <div class="mt-5 flex items-center justify-between gap-4">
             <div>
-              <p class="text-sm font-medium text-zinc-200">Starting teams</p>
-              <p class="mt-1 text-xs text-zinc-500">
-                100 marbles each · one team eliminated per leg
+              <p class="text-sm font-bold text-ink">Starting teams</p>
+              <p class="mt-1 text-xs leading-4 text-ink-dim">
+                100 marbles each · one out per leg
               </p>
             </div>
-            <div
-              class="flex items-center overflow-hidden rounded-md border border-zinc-600 bg-zinc-900"
-            >
+            <div class="flex items-center rounded-full bg-canvas">
               <button
                 id="marbles-minus"
                 type="button"
                 aria-label="Remove a starting team"
-                class="size-8 text-zinc-300 hover:bg-zinc-700 disabled:text-zinc-700"
+                class="size-9 rounded-full text-ink-dim hover:bg-raise hover:text-ink disabled:text-ink-faint/50 disabled:hover:bg-transparent"
                 >−</button
               >
               <output
                 id="marble-count"
-                class="min-w-8 text-center text-sm font-semibold text-white"
+                class="min-w-9 text-center text-sm font-bold tabular-nums text-ink"
                 >4</output
               >
               <button
                 id="marbles-plus"
                 type="button"
                 aria-label="Add a starting team"
-                class="size-8 text-zinc-300 hover:bg-zinc-700 disabled:text-zinc-700"
+                class="size-9 rounded-full text-ink-dim hover:bg-raise hover:text-ink disabled:text-ink-faint/50 disabled:hover:bg-transparent"
                 >+</button
               >
             </div>
           </div>
-          <label
-            class="mt-5 block text-sm font-medium text-zinc-200"
-            for="release-speed">Release interval</label
-          >
-          <div class="mt-2 flex items-center gap-3">
-            <input
-              id="release-speed"
-              type="range"
-              min="20"
-              max="240"
-              step="20"
-              class="w-full accent-zinc-100"
-            />
-            <output
-              id="release-speed-output"
-              class="w-14 text-right text-xs tabular-nums text-zinc-400"
-            ></output>
-          </div>
+          <details class="group mt-6 border-t border-line pt-4">
+            <summary
+              class="flex cursor-pointer list-none items-center justify-between text-xs font-semibold text-ink-dim hover:text-ink"
+            >
+              Advanced
+              <span
+                class="text-ink-faint transition-transform group-open:rotate-90"
+                >→</span
+              >
+            </summary>
+            <label class="mt-4 block text-sm font-bold text-ink" for="release-speed"
+              >Release interval</label
+            >
+            <div class="mt-3 flex items-center gap-3">
+              <input
+                id="release-speed"
+                type="range"
+                min="20"
+                max="240"
+                step="20"
+                class="w-full accent-brand"
+              />
+              <output
+                id="release-speed-output"
+                class="w-16 text-right text-xs tabular-nums text-ink-dim"
+              ></output>
+            </div>
+          </details>
         </aside>
       </div>
 
-      <section id="race-legs" class="mt-12">
+      <section id="race-legs" class="mt-20">
         <div
-          class="flex flex-col justify-between gap-4 sm:flex-row sm:items-end"
+          class="flex flex-col justify-between gap-4 border-t border-line pt-8 sm:flex-row sm:items-end"
         >
           <div>
-            <div class="flex items-center gap-3">
-              <h2 class="text-xl font-semibold text-white">Race legs</h2>
+            <div class="flex items-baseline gap-4">
+              <h2 class="type-display text-3xl text-ink sm:text-4xl">
+                Race legs
+              </h2>
               <span
                 id="leg-count"
-                class="rounded-full bg-zinc-800 px-2.5 py-1 text-xs text-zinc-400"
+                class="text-sm font-medium tabular-nums text-ink-faint"
               ></span>
             </div>
             <p
               id="leg-guidance"
-              class="mt-2 text-sm text-zinc-500"
+              class="mt-3 text-xs font-semibold text-ink-dim"
               aria-live="polite"
             >
             </p>
           </div>
-          <div class="flex gap-2">
-            <button
-              id="complete-race"
-              type="button"
-              class="rounded-md border border-zinc-600 px-3 py-2 text-sm font-medium text-zinc-300 hover:bg-zinc-800 hover:text-white"
+          <div class="flex gap-3">
+            <button id="complete-race" type="button" class="pill pill-ghost text-sm"
               >Auto-fill legs</button
             >
-            <button
-              id="add-leg"
-              type="button"
-              class="rounded-md bg-zinc-100 px-4 py-2 text-sm font-semibold text-zinc-900 hover:bg-white"
+            <button id="add-leg" type="button" class="pill pill-primary text-sm"
               >Add leg</button
             >
           </div>
         </div>
 
-        <ol id="leg-list" class="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+        <ol
+          id="leg-list"
+          class="mt-10 grid gap-x-8 gap-y-14 md:grid-cols-2 xl:grid-cols-3"
+        >
         </ol>
       </section>
     </section>
   </main>
 
   <template id="leg-template">
-    <li
-      class="group relative overflow-hidden rounded-xl border border-zinc-700 bg-zinc-800/70"
-    >
-      <span
-        data-leg-number
-        class="absolute left-3 top-3 z-10 rounded-full border border-zinc-600 bg-zinc-900/90 px-2.5 py-1 text-[11px] font-semibold text-zinc-200 backdrop-blur"
-      ></span>
-      <canvas
-        data-leg-thumbnail
-        class="block aspect-[16/9] w-full border-b border-zinc-700 bg-zinc-950"
-      ></canvas>
-      <div class="p-4">
-        <label
-          class="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500"
-          >Leg name</label
-        >
+    <li class="group">
+      <div
+        class="card relative overflow-hidden group-focus-within:ring-2 group-focus-within:ring-guide"
+      >
+        <span
+          data-leg-number
+          class="absolute left-3 top-3 z-10 rounded-full bg-canvas/90 px-2.5 py-1 text-xs font-bold tabular-nums text-ink-dim"
+        ></span>
+        <canvas data-leg-thumbnail class="block aspect-[16/9] w-full"></canvas>
+      </div>
+      <label class="mt-4 block">
+        <span class="sr-only">Leg name</span>
         <input
           data-leg-name
           maxlength="60"
-          class="mt-1 w-full rounded-md border border-transparent bg-transparent px-0 py-1 font-medium text-white focus:border-zinc-600 focus:bg-zinc-900 focus:px-2 focus:outline-none"
+          class="w-full border-b border-transparent bg-transparent pb-1 text-xl font-extrabold tracking-tight text-ink caret-brand focus:border-brand focus:outline-none"
         />
-        <div
-          class="mt-4 flex items-center justify-between gap-3 border-t border-zinc-700 pt-4"
-        >
-          <div class="flex items-center gap-1">
-            <button
-              data-move-back
-              type="button"
-              aria-label="Move leg earlier"
-              class="size-8 rounded-md text-zinc-400 hover:bg-zinc-700 hover:text-white disabled:text-zinc-700"
-              >←</button
-            >
-            <button
-              data-move-forward
-              type="button"
-              aria-label="Move leg later"
-              class="size-8 rounded-md text-zinc-400 hover:bg-zinc-700 hover:text-white disabled:text-zinc-700"
-              >→</button
-            >
-          </div>
-          <div class="flex items-center gap-1">
-            <button
-              data-duplicate-leg
-              type="button"
-              class="rounded-md px-2 py-1.5 text-xs text-zinc-400 hover:bg-zinc-700 hover:text-white"
-              >Duplicate</button
-            >
-            <button
-              data-delete-leg
-              type="button"
-              class="rounded-md px-2 py-1.5 text-xs text-zinc-500 hover:bg-zinc-700 hover:text-rose-300"
-              >Delete</button
-            >
-            <a
-              data-edit-leg
-              class="rounded-md bg-zinc-100 px-3 py-1.5 text-xs font-semibold text-zinc-900 hover:bg-white"
-              >Edit leg</a
-            >
-          </div>
+      </label>
+      <div class="mt-3 flex items-center justify-between gap-3">
+        <div class="flex items-center">
+          <button
+            data-move-back
+            type="button"
+            aria-label="Move leg earlier"
+            class="size-8 rounded-full text-ink-dim hover:bg-raise hover:text-ink disabled:text-ink-faint/50 disabled:hover:bg-transparent"
+            >←</button
+          >
+          <button
+            data-move-forward
+            type="button"
+            aria-label="Move leg later"
+            class="size-8 rounded-full text-ink-dim hover:bg-raise hover:text-ink disabled:text-ink-faint/50 disabled:hover:bg-transparent"
+            >→</button
+          >
+        </div>
+        <div class="flex items-center gap-4">
+          <button
+            data-duplicate-leg
+            type="button"
+            class="text-xs font-semibold text-ink-dim hover:text-ink"
+            >Duplicate</button
+          >
+          <button
+            data-delete-leg
+            type="button"
+            class="text-xs font-semibold text-ink-faint hover:text-red-400"
+            >Delete</button
+          >
+          <a data-edit-leg class="pill pill-ghost px-3.5 py-1.5 text-xs"
+            >Edit leg</a
+          >
         </div>
       </div>
     </li>
@@ -284,7 +264,7 @@ import Layout from "../layouts/Layout.astro";
 
   const showSaved = () => {
     if (!saveStatus) return;
-    saveStatus.textContent = "Saved locally";
+    saveStatus.textContent = "Saved";
   };
 
   const saveRace = (next: RaceDocument) => {
@@ -321,14 +301,14 @@ import Layout from "../layouts/Layout.astro";
 
     const needed = requiredLegCount(race);
     const difference = needed - race.legs.length;
-    legCount.textContent = `${race.legs.length} of ${needed}`;
+    legCount.textContent = `${race.legs.length} / ${needed}`;
     legGuidance.textContent =
       difference === 0
-        ? "Ready to play — every leg will eliminate one team."
+        ? "Ready to play"
         : difference > 0
-          ? `Add ${difference} more ${difference === 1 ? "leg" : "legs"} to finish with one winner.`
-          : `Remove ${Math.abs(difference)} ${Math.abs(difference) === 1 ? "leg" : "legs"}; this race has more legs than eliminations.`;
-    legGuidance.className = `mt-2 text-sm ${difference === 0 ? "text-emerald-300" : "text-amber-300"}`;
+          ? `Add ${difference} ${difference === 1 ? "leg" : "legs"}`
+          : `Remove ${Math.abs(difference)} ${Math.abs(difference) === 1 ? "leg" : "legs"}`;
+    legGuidance.className = `mt-3 text-xs font-semibold ${difference === 0 ? "text-ink-dim" : "text-brand"}`;
     addLegButton.disabled = race.legs.length >= MAX_RACE_PARTICIPANTS - 1;
     addLegButton.classList.toggle("opacity-40", addLegButton.disabled);
     completeRaceButton.hidden = difference === 0;
@@ -374,7 +354,7 @@ import Layout from "../layouts/Layout.astro";
       )
         return;
 
-      number.textContent = `Leg ${index + 1}`;
+      number.textContent = `${index + 1}`.padStart(2, "0");
       legName.value = leg.name;
       moveBack.disabled = index === 0;
       moveForward.disabled = index === race!.legs.length - 1;
