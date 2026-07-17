@@ -25,15 +25,6 @@ import "../styles/global.css";
   >
     <HomeLink id="builder-home-link" />
     <p
-      id="builder-save-status"
-      hidden
-      class="pointer-events-none absolute left-32 top-3 z-20 flex h-9 items-center rounded-md border border-zinc-700 bg-zinc-800/80 px-3 text-xs text-zinc-400 shadow-lg backdrop-blur"
-      aria-live="polite"
-    >
-      Saved to race
-    </p>
-
-    <p
       id="builder-error"
       class="pointer-events-none absolute left-1/2 top-24 z-30 -translate-x-1/2 rounded-md border border-rose-900 bg-rose-950/90 px-3 py-2 font-mono text-xs text-rose-200 shadow-lg backdrop-blur empty:hidden"
     >
@@ -1363,7 +1354,6 @@ import "../styles/global.css";
     '[data-sidebar-icon="close"]'
   );
   const homeLink = byId("builder-home-link") as HTMLAnchorElement | null;
-  const saveStatus = byId("builder-save-status");
   const params = new URLSearchParams(window.location.search);
   const raceId = params.get("race");
   const legId = params.get("leg");
@@ -1376,9 +1366,6 @@ import "../styles/global.css";
     const label = homeLink.querySelector("span");
     if (label) {
       label.textContent = "Race builder";
-    }
-    if (saveStatus) {
-      saveStatus.hidden = false;
     }
     for (const role of ["team-count", "marbles-per-team", "release-interval"]) {
       const input = builder?.querySelector<HTMLInputElement>(
@@ -1432,9 +1419,6 @@ import "../styles/global.css";
                 level: { ...level, name: raceLeg.name },
               };
               race = repository.saveLeg(race.id, raceLeg);
-              if (saveStatus) {
-                saveStatus.textContent = "Saved to race";
-              }
             },
           }
         : {}),

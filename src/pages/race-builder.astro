@@ -3,29 +3,7 @@ import Layout from "../layouts/Layout.astro";
 ---
 
 <Layout title="Race Builder · Marbel">
-  <main class="min-h-full overflow-y-auto bg-canvas text-ink">
-    <header
-      class="sticky top-0 z-30 border-b border-line bg-canvas/95 px-5 backdrop-blur sm:px-8"
-    >
-      <div
-        class="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 py-4"
-      >
-        <a
-          href="/"
-          class="text-sm font-semibold text-ink-dim hover:text-ink"
-          >← Library</a
-        >
-        <div class="flex items-center gap-6">
-          <span
-            id="save-status"
-            class="hidden text-xs font-medium text-ink-faint sm:block"
-            aria-live="polite">Saved</span
-          >
-          <a id="play-race" class="pill pill-play text-sm">Play race</a>
-        </div>
-      </div>
-    </header>
-
+  <main class="min-h-full bg-canvas text-ink lg:h-full lg:overflow-hidden">
     <section
       id="missing-race"
       hidden
@@ -43,173 +21,188 @@ import Layout from "../layouts/Layout.astro";
     <section
       id="race-builder"
       hidden
-      class="mx-auto w-full max-w-7xl px-5 pb-24 pt-14 sm:px-8 sm:pt-20"
+      class="mx-auto w-full max-w-7xl px-5 pb-24 pt-14 sm:px-8 sm:pt-20 lg:h-full lg:pb-0 lg:pt-0"
     >
-      <div class="grid gap-10 lg:grid-cols-[minmax(0,1fr)_19rem]">
-        <div class="min-w-0">
+      <div
+        class="grid gap-12 lg:h-full lg:grid-cols-[minmax(0,24rem)_minmax(0,34rem)] lg:justify-center lg:gap-16"
+      >
+        <div class="min-w-0 lg:self-start lg:pt-20">
+          <a href="/" class="text-sm font-semibold text-ink-dim hover:text-ink"
+            >← Library</a
+          >
           <label for="race-name" class="sr-only">Race name</label>
-          <input
+          <textarea
             id="race-name"
             maxlength="80"
-            class="type-display w-full border-0 bg-transparent p-0 text-[clamp(2.5rem,5vw,4.5rem)] text-ink caret-brand placeholder:text-ink-faint focus:outline-none"
-            placeholder="Untitled race"
-          />
+            rows="1"
+            class="type-display mt-6 block w-full resize-none overflow-hidden border-0 bg-transparent p-0 text-[clamp(3rem,6vw,4.5rem)] text-ink caret-brand placeholder:text-ink-faint focus:outline-none"
+            placeholder="Untitled race"></textarea>
+          <a id="play-race" class="pill pill-play mt-8 text-sm">Play race</a>
+
+          <aside class="card mt-10 p-6">
+            <p class="text-xs font-semibold text-ink-faint">Setup</p>
+            <div class="mt-5 flex items-center justify-between gap-4">
+              <div>
+                <p class="text-sm font-bold text-ink">Starting teams</p>
+                <p class="mt-1 text-xs leading-4 text-ink-dim">
+                  100 marbles each · one out per leg
+                </p>
+              </div>
+              <div class="flex items-center rounded-full bg-canvas">
+                <button
+                  id="marbles-minus"
+                  type="button"
+                  aria-label="Remove a starting team"
+                  class="size-9 rounded-full text-ink-dim hover:bg-raise hover:text-ink disabled:text-ink-faint/50 disabled:hover:bg-transparent"
+                  >−</button
+                >
+                <output
+                  id="marble-count"
+                  class="min-w-9 text-center text-sm font-bold tabular-nums text-ink"
+                  >4</output
+                >
+                <button
+                  id="marbles-plus"
+                  type="button"
+                  aria-label="Add a starting team"
+                  class="size-9 rounded-full text-ink-dim hover:bg-raise hover:text-ink disabled:text-ink-faint/50 disabled:hover:bg-transparent"
+                  >+</button
+                >
+              </div>
+            </div>
+            <details class="group mt-6 border-t border-line pt-4">
+              <summary
+                class="flex cursor-pointer list-none items-center justify-between text-xs font-semibold text-ink-dim hover:text-ink"
+              >
+                Advanced
+                <span
+                  class="text-ink-faint transition-transform group-open:rotate-90"
+                  >→</span
+                >
+              </summary>
+              <label
+                class="mt-4 block text-sm font-bold text-ink"
+                for="release-speed">Release interval</label
+              >
+              <div class="mt-3 flex items-center gap-3">
+                <input
+                  id="release-speed"
+                  type="range"
+                  min="20"
+                  max="240"
+                  step="20"
+                  class="w-full accent-brand"
+                />
+                <output
+                  id="release-speed-output"
+                  class="w-16 text-right text-xs tabular-nums text-ink-dim"
+                ></output>
+              </div>
+            </details>
+          </aside>
         </div>
 
-        <aside class="card self-start p-6">
-          <p class="text-xs font-semibold text-ink-faint">Setup</p>
-          <div class="mt-5 flex items-center justify-between gap-4">
-            <div>
-              <p class="text-sm font-bold text-ink">Starting teams</p>
-              <p class="mt-1 text-xs leading-4 text-ink-dim">
-                100 marbles each · one out per leg
-              </p>
-            </div>
-            <div class="flex items-center rounded-full bg-canvas">
-              <button
-                id="marbles-minus"
-                type="button"
-                aria-label="Remove a starting team"
-                class="size-9 rounded-full text-ink-dim hover:bg-raise hover:text-ink disabled:text-ink-faint/50 disabled:hover:bg-transparent"
-                >−</button
-              >
-              <output
-                id="marble-count"
-                class="min-w-9 text-center text-sm font-bold tabular-nums text-ink"
-                >4</output
-              >
-              <button
-                id="marbles-plus"
-                type="button"
-                aria-label="Add a starting team"
-                class="size-9 rounded-full text-ink-dim hover:bg-raise hover:text-ink disabled:text-ink-faint/50 disabled:hover:bg-transparent"
-                >+</button
-              >
-            </div>
-          </div>
-          <details class="group mt-6 border-t border-line pt-4">
-            <summary
-              class="flex cursor-pointer list-none items-center justify-between text-xs font-semibold text-ink-dim hover:text-ink"
-            >
-              Advanced
-              <span
-                class="text-ink-faint transition-transform group-open:rotate-90"
-                >→</span
-              >
-            </summary>
-            <label class="mt-4 block text-sm font-bold text-ink" for="release-speed"
-              >Release interval</label
-            >
-            <div class="mt-3 flex items-center gap-3">
-              <input
-                id="release-speed"
-                type="range"
-                min="20"
-                max="240"
-                step="20"
-                class="w-full accent-brand"
-              />
-              <output
-                id="release-speed-output"
-                class="w-16 text-right text-xs tabular-nums text-ink-dim"
-              ></output>
-            </div>
-          </details>
-        </aside>
-      </div>
-
-      <section id="race-legs" class="mt-20">
-        <div
-          class="flex flex-col justify-between gap-4 border-t border-line pt-8 sm:flex-row sm:items-end"
+        <section
+          id="race-legs"
+          class="min-w-0 lg:overflow-y-auto lg:overscroll-y-contain lg:px-6 lg:pb-16 lg:pt-20"
         >
-          <div>
+          <div class="flex items-baseline justify-between gap-4">
             <div class="flex items-baseline gap-4">
-              <h2 class="type-display text-3xl text-ink sm:text-4xl">
+              <h2 class="type-display text-2xl text-ink sm:text-3xl">
                 Race legs
               </h2>
               <span
                 id="leg-count"
-                class="text-sm font-medium tabular-nums text-ink-faint"
-              ></span>
+                class="text-sm font-medium tabular-nums text-ink-faint"></span>
             </div>
             <p
               id="leg-guidance"
-              class="mt-3 text-xs font-semibold text-ink-dim"
+              class="text-xs font-semibold text-ink-dim"
               aria-live="polite"
             >
             </p>
           </div>
-          <div class="flex gap-3">
-            <button id="complete-race" type="button" class="pill pill-ghost text-sm"
-              >Auto-fill legs</button
+
+          <ol id="leg-list" class="mt-8 flex flex-col gap-6"></ol>
+
+          <div class="mt-10 flex justify-center gap-3">
+            <button
+              id="complete-race"
+              type="button"
+              class="pill pill-ghost text-sm">Auto-fill legs</button
             >
             <button id="add-leg" type="button" class="pill pill-primary text-sm"
               >Add leg</button
             >
           </div>
-        </div>
-
-        <ol
-          id="leg-list"
-          class="mt-10 grid gap-x-8 gap-y-14 md:grid-cols-2 xl:grid-cols-3"
-        >
-        </ol>
-      </section>
+        </section>
+      </div>
     </section>
   </main>
 
   <template id="leg-template">
-    <li class="group">
-      <div
-        class="card relative overflow-hidden group-focus-within:ring-2 group-focus-within:ring-guide"
-      >
-        <span
-          data-leg-number
-          class="absolute left-3 top-3 z-10 rounded-full bg-canvas/90 px-2.5 py-1 text-xs font-bold tabular-nums text-ink-dim"
-        ></span>
-        <canvas data-leg-thumbnail class="block aspect-[16/9] w-full"></canvas>
-      </div>
-      <label class="mt-4 block">
-        <span class="sr-only">Leg name</span>
-        <input
-          data-leg-name
-          maxlength="60"
-          class="w-full border-b border-transparent bg-transparent pb-1 text-xl font-extrabold tracking-tight text-ink caret-brand focus:border-brand focus:outline-none"
-        />
-      </label>
-      <div class="mt-3 flex items-center justify-between gap-3">
-        <div class="flex items-center">
-          <button
-            data-move-back
-            type="button"
-            aria-label="Move leg earlier"
-            class="size-8 rounded-full text-ink-dim hover:bg-raise hover:text-ink disabled:text-ink-faint/50 disabled:hover:bg-transparent"
-            >←</button
-          >
-          <button
-            data-move-forward
-            type="button"
-            aria-label="Move leg later"
-            class="size-8 rounded-full text-ink-dim hover:bg-raise hover:text-ink disabled:text-ink-faint/50 disabled:hover:bg-transparent"
-            >→</button
-          >
-        </div>
-        <div class="flex items-center gap-4">
+    <li>
+      <div class="group relative">
+        <a
+          data-edit-leg
+          class="card relative block overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-guide"
+        >
+          <span
+            data-leg-number
+            class="absolute left-3 top-3 z-10 rounded-full bg-canvas/90 px-2.5 py-1 text-xs font-bold tabular-nums text-ink-dim"
+          ></span>
+          <canvas data-leg-thumbnail class="block aspect-[16/9] w-full"
+          ></canvas>
+        </a>
+        <div
+          class="absolute right-3 top-3 z-10 flex gap-1.5 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
+        >
           <button
             data-duplicate-leg
             type="button"
-            class="text-xs font-semibold text-ink-dim hover:text-ink"
-            >Duplicate</button
+            aria-label="Duplicate leg"
+            class="grid size-8 place-items-center rounded-full bg-canvas/70 text-ink-dim backdrop-blur hover:bg-canvas hover:text-ink"
           >
+            <svg
+              class="size-4"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <rect x="9" y="9" width="12" height="12" rx="2.5"></rect>
+              <path
+                d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"
+              ></path>
+            </svg>
+          </button>
           <button
             data-delete-leg
             type="button"
-            class="text-xs font-semibold text-ink-faint hover:text-red-400"
-            >Delete</button
+            aria-label="Delete leg"
+            class="grid size-8 place-items-center rounded-full bg-canvas/70 text-ink-dim backdrop-blur hover:bg-canvas hover:text-red-400"
           >
-          <a data-edit-leg class="pill pill-ghost px-3.5 py-1.5 text-xs"
-            >Edit leg</a
-          >
+            <svg
+              class="size-4"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M3 6h18"></path>
+              <path
+                d="M19 6v13.5A1.5 1.5 0 0 1 17.5 21h-11A1.5 1.5 0 0 1 5 19.5V6"
+              ></path>
+              <path d="M8 6V4.5A1.5 1.5 0 0 1 9.5 3h5A1.5 1.5 0 0 1 16 4.5V6"
+              ></path>
+            </svg>
+          </button>
         </div>
       </div>
     </li>
@@ -236,9 +229,8 @@ import Layout from "../layouts/Layout.astro";
 
   const missing = document.querySelector<HTMLElement>("#missing-race");
   const builder = document.querySelector<HTMLElement>("#race-builder");
-  const nameInput = document.querySelector<HTMLInputElement>("#race-name");
+  const nameInput = document.querySelector<HTMLTextAreaElement>("#race-name");
   const playLink = document.querySelector<HTMLAnchorElement>("#play-race");
-  const saveStatus = document.querySelector<HTMLElement>("#save-status");
   const marbleCount =
     document.querySelector<HTMLOutputElement>("#marble-count");
   const marblesMinus =
@@ -260,17 +252,17 @@ import Layout from "../layouts/Layout.astro";
     document.querySelector<HTMLButtonElement>("#complete-race");
 
   const editLegUrl = (legId: string) =>
-    `/level-builder?race=${encodeURIComponent(raceId)}&leg=${encodeURIComponent(legId)}`;
-
-  const showSaved = () => {
-    if (!saveStatus) return;
-    saveStatus.textContent = "Saved";
-  };
+    `/leg-builder?race=${encodeURIComponent(raceId)}&leg=${encodeURIComponent(legId)}`;
 
   const saveRace = (next: RaceDocument) => {
     race = repository.save(next);
-    showSaved();
     render();
+  };
+
+  const fitNameInput = () => {
+    if (!nameInput) return;
+    nameInput.style.height = "auto";
+    nameInput.style.height = `${nameInput.scrollHeight}px`;
   };
 
   const render = () => {
@@ -293,6 +285,7 @@ import Layout from "../layouts/Layout.astro";
       return;
     }
     if (document.activeElement !== nameInput) nameInput.value = race.name;
+    fitNameInput();
     marbleCount.value = `${race.participants.length}`;
     marblesMinus.disabled = race.participants.length <= 2;
     marblesPlus.disabled = race.participants.length >= MAX_RACE_PARTICIPANTS;
@@ -308,17 +301,22 @@ import Layout from "../layouts/Layout.astro";
         : difference > 0
           ? `Add ${difference} ${difference === 1 ? "leg" : "legs"}`
           : `Remove ${Math.abs(difference)} ${Math.abs(difference) === 1 ? "leg" : "legs"}`;
-    legGuidance.className = `mt-3 text-xs font-semibold ${difference === 0 ? "text-ink-dim" : "text-brand"}`;
-    addLegButton.disabled = race.legs.length >= MAX_RACE_PARTICIPANTS - 1;
-    addLegButton.classList.toggle("opacity-40", addLegButton.disabled);
+    legGuidance.className = `text-xs font-semibold ${difference === 0 ? "text-ink-dim" : "text-brand"}`;
+    addLegButton.hidden = difference <= 0;
     completeRaceButton.hidden = difference === 0;
 
     const playable = isRacePlayable(race);
-    playLink.href = playable
-      ? `/race?race=${encodeURIComponent(race.id)}`
-      : "#race-legs";
-    playLink.textContent = playable ? "Play race" : "Finish setup";
+    if (playable) {
+      playLink.href = `/race?race=${encodeURIComponent(race.id)}`;
+      playLink.removeAttribute("title");
+    } else {
+      playLink.removeAttribute("href");
+      playLink.title = "Setup not finished";
+    }
     playLink.setAttribute("aria-disabled", `${!playable}`);
+    playLink.classList.toggle("opacity-40", !playable);
+    playLink.classList.toggle("cursor-not-allowed", !playable);
+    playLink.classList.toggle("hover:transform-none", !playable);
 
     legList.replaceChildren();
     race.legs.forEach((leg, index) => {
@@ -328,58 +326,18 @@ import Layout from "../layouts/Layout.astro";
       const thumbnail = fragment.querySelector<HTMLCanvasElement>(
         "[data-leg-thumbnail]"
       );
-      const legName =
-        fragment.querySelector<HTMLInputElement>("[data-leg-name]");
-      const moveBack =
-        fragment.querySelector<HTMLButtonElement>("[data-move-back]");
-      const moveForward = fragment.querySelector<HTMLButtonElement>(
-        "[data-move-forward]"
-      );
       const duplicate = fragment.querySelector<HTMLButtonElement>(
         "[data-duplicate-leg]"
       );
       const remove =
         fragment.querySelector<HTMLButtonElement>("[data-delete-leg]");
       const edit = fragment.querySelector<HTMLAnchorElement>("[data-edit-leg]");
-      if (
-        !item ||
-        !number ||
-        !thumbnail ||
-        !legName ||
-        !moveBack ||
-        !moveForward ||
-        !duplicate ||
-        !remove ||
-        !edit
-      )
+      if (!item || !number || !thumbnail || !duplicate || !remove || !edit)
         return;
 
       number.textContent = `${index + 1}`.padStart(2, "0");
-      legName.value = leg.name;
-      moveBack.disabled = index === 0;
-      moveForward.disabled = index === race!.legs.length - 1;
       edit.href = editLegUrl(leg.id);
-      legName.addEventListener("change", () => {
-        if (!race) return;
-        const value = legName.value.trim() || `Leg ${index + 1}`;
-        const updated: RaceLegDocument = {
-          ...leg,
-          name: value,
-          level: { ...leg.level, name: value },
-        };
-        race = repository.saveLeg(race.id, updated);
-        render();
-      });
-      moveBack.addEventListener("click", () => {
-        if (!race) return;
-        race = repository.moveLeg(race.id, leg.id, index - 1);
-        render();
-      });
-      moveForward.addEventListener("click", () => {
-        if (!race) return;
-        race = repository.moveLeg(race.id, leg.id, index + 1);
-        render();
-      });
+      edit.setAttribute("aria-label", `Edit “${leg.name}”`);
       duplicate.addEventListener("click", () => {
         if (!race || race.legs.length >= MAX_RACE_PARTICIPANTS - 1) return;
         const duplicateName = `${leg.name} copy`;
@@ -419,9 +377,17 @@ import Layout from "../layouts/Layout.astro";
     if (playLink) playLink.hidden = true;
   } else {
     if (builder) builder.hidden = false;
+    nameInput?.addEventListener("input", fitNameInput);
+    nameInput?.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        nameInput.blur();
+      }
+    });
     nameInput?.addEventListener("change", () => {
       if (!race || !nameInput) return;
-      saveRace({ ...race, name: nameInput.value.trim() || "Untitled race" });
+      const name = nameInput.value.replace(/\s+/g, " ").trim();
+      saveRace({ ...race, name: name || "Untitled race" });
     });
     marblesMinus?.addEventListener(
       "click",
@@ -440,7 +406,7 @@ import Layout from "../layouts/Layout.astro";
       saveRace({ ...race, releaseIntervalMs: Number(releaseSpeed.value) });
     });
     addLegButton?.addEventListener("click", () => {
-      if (!race || race.legs.length >= MAX_RACE_PARTICIPANTS - 1) return;
+      if (!race || race.legs.length >= requiredLegCount(race)) return;
       race = repository.addLeg(
         race.id,
         createDefaultLeg({ index: race.legs.length })
