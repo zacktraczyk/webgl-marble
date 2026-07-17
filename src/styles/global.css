@@ -14,7 +14,7 @@
   --color-ink-dim: oklch(66% 0.008 285);
   --color-ink-faint: oklch(48% 0.007 285);
 
-  /* Tangerine = brand + creation. White pills = per-race actions.
+  /* Tangerine = brand + play actions. White pills = creation/navigation.
      Cyan = construction/selection only. */
   --color-brand: oklch(70% 0.185 45);
   --color-brand-hot: oklch(74% 0.185 45);
@@ -73,14 +73,14 @@
       box-shadow 0.12s ease-out;
   }
   .pill-primary {
-    background: var(--color-brand);
-    color: var(--color-brand-ink);
-    box-shadow: 0 4px 0 var(--color-brand-shadow);
-  }
-  .pill-play {
     background: var(--color-ink);
     color: var(--color-canvas);
     box-shadow: 0 4px 0 oklch(58% 0.005 285);
+  }
+  .pill-play {
+    background: var(--color-brand);
+    color: var(--color-brand-ink);
+    box-shadow: 0 4px 0 var(--color-brand-shadow);
   }
   .pill-ghost {
     background: transparent;
@@ -91,10 +91,10 @@
     transform: translateY(2px);
   }
   .pill-primary:hover {
-    box-shadow: 0 2px 0 var(--color-brand-shadow);
+    box-shadow: 0 2px 0 oklch(58% 0.005 285);
   }
   .pill-play:hover {
-    box-shadow: 0 2px 0 oklch(58% 0.005 285);
+    box-shadow: 0 2px 0 var(--color-brand-shadow);
   }
 
   /* Raised tile */

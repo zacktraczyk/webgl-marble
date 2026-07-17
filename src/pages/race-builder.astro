@@ -35,7 +35,7 @@ import Layout from "../layouts/Layout.astro";
             id="race-name"
             maxlength="80"
             rows="1"
-            class="type-display mt-6 block w-full resize-none overflow-hidden border-0 bg-transparent p-0 text-[clamp(3rem,6vw,4.5rem)] text-ink caret-brand placeholder:text-ink-faint focus:outline-none"
+            class="type-display mt-6 block w-full resize-none overflow-hidden border-0 bg-transparent p-0 text-[clamp(3rem,6vw,4.5rem)] text-ink caret-brand [text-shadow:0.08em_0.09em_0_var(--color-shadow)] placeholder:text-ink-faint focus:outline-none"
             placeholder="Untitled race"></textarea>
           <a id="play-race" class="pill pill-play mt-8 text-sm">Play race</a>
 
@@ -123,6 +123,7 @@ import Layout from "../layouts/Layout.astro";
             </p>
           </div>
 
+          <p id="leg-move-status" class="sr-only" role="status"></p>
           <ol id="leg-list" class="mt-8 flex flex-col gap-6"></ol>
 
           <div class="mt-10 flex justify-center gap-3">
@@ -147,13 +148,31 @@ import Layout from "../layouts/Layout.astro";
           data-edit-leg
           class="card relative block overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-guide"
         >
-          <span
-            data-leg-number
-            class="absolute left-3 top-3 z-10 rounded-full bg-canvas/90 px-2.5 py-1 text-xs font-bold tabular-nums text-ink-dim"
-          ></span>
           <canvas data-leg-thumbnail class="block aspect-[16/9] w-full"
           ></canvas>
         </a>
+        <button
+          data-drag-leg
+          type="button"
+          draggable="true"
+          title="Drag to reorder"
+          class="absolute left-3 top-3 z-10 flex cursor-grab select-none items-center gap-1.5 rounded-full bg-canvas/90 px-2.5 py-1 text-xs font-bold tabular-nums text-ink-dim backdrop-blur hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-guide active:cursor-grabbing"
+        >
+          <svg
+            class="size-3 text-ink-faint"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            aria-hidden="true"
+          >
+            <circle cx="9" cy="5.5" r="2"></circle>
+            <circle cx="15" cy="5.5" r="2"></circle>
+            <circle cx="9" cy="12" r="2"></circle>
+            <circle cx="15" cy="12" r="2"></circle>
+            <circle cx="9" cy="18.5" r="2"></circle>
+            <circle cx="15" cy="18.5" r="2"></circle>
+          </svg>
+          <span data-leg-number></span>
+        </button>
         <div
           class="absolute right-3 top-3 z-10 flex gap-1.5 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
         >
@@ -250,6 +269,10 @@ import Layout from "../layouts/Layout.astro";
   const addLegButton = document.querySelector<HTMLButtonElement>("#add-leg");
   const completeRaceButton =
     document.querySelector<HTMLButtonElement>("#complete-race");
+  const legMoveStatus = document.querySelector<HTMLElement>("#leg-move-status");
+
+  let draggedItem: HTMLElement | null = null;
+  let pendingFocusLegId: string | null = null;
 
   const editLegUrl = (legId: string) =>
     `/leg-builder?race=${encodeURIComponent(raceId)}&leg=${encodeURIComponent(legId)}`;
@@ -301,7 +324,7 @@ import Layout from "../layouts/Layout.astro";
         : difference > 0
           ? `Add ${difference} ${difference === 1 ? "leg" : "legs"}`
           : `Remove ${Math.abs(difference)} ${Math.abs(difference) === 1 ? "leg" : "legs"}`;
-    legGuidance.className = `text-xs font-semibold ${difference === 0 ? "text-ink-dim" : "text-brand"}`;
+    legGuidance.className = `text-xs font-semibold ${difference === 0 ? "text-ink-dim" : "text-red-400"}`;
     addLegButton.hidden = difference <= 0;
     completeRaceButton.hidden = difference === 0;
 
@@ -319,6 +342,7 @@ import Layout from "../layouts/Layout.astro";
     playLink.classList.toggle("hover:transform-none", !playable);
 
     legList.replaceChildren();
+    let handleToFocus: HTMLButtonElement | null = null;
     race.legs.forEach((leg, index) => {
       const fragment = legTemplate.content.cloneNode(true) as DocumentFragment;
       const item = fragment.querySelector<HTMLElement>("li");
@@ -332,12 +356,68 @@ import Layout from "../layouts/Layout.astro";
       const remove =
         fragment.querySelector<HTMLButtonElement>("[data-delete-leg]");
       const edit = fragment.querySelector<HTMLAnchorElement>("[data-edit-leg]");
-      if (!item || !number || !thumbnail || !duplicate || !remove || !edit)
+      const handle =
+        fragment.querySelector<HTMLButtonElement>("[data-drag-leg]");
+      if (
+        !item ||
+        !number ||
+        !thumbnail ||
+        !duplicate ||
+        !remove ||
+        !edit ||
+        !handle
+      )
         return;
 
       number.textContent = `${index + 1}`.padStart(2, "0");
       edit.href = editLegUrl(leg.id);
       edit.setAttribute("aria-label", `Edit “${leg.name}”`);
+      handle.setAttribute(
+        "aria-label",
+        `Reorder “${leg.name}”, position ${index + 1} of ${race!.legs.length}. Press arrow keys to move.`
+      );
+      if (leg.id === pendingFocusLegId) handleToFocus = handle;
+      handle.addEventListener("keydown", (event) => {
+        const offset =
+          event.key === "ArrowUp" ? -1 : event.key === "ArrowDown" ? 1 : 0;
+        if (!offset || !race) return;
+        event.preventDefault();
+        const from = race.legs.findIndex((candidate) => candidate.id === leg.id);
+        const to = from + offset;
+        if (from < 0 || to < 0 || to >= race.legs.length) return;
+        race = repository.moveLeg(race.id, leg.id, to);
+        pendingFocusLegId = leg.id;
+        if (legMoveStatus) {
+          legMoveStatus.textContent = `“${leg.name}” moved to position ${to + 1} of ${race.legs.length}.`;
+        }
+        render();
+      });
+      handle.addEventListener("dragstart", (event) => {
+        if (!event.dataTransfer) return;
+        draggedItem = item;
+        event.dataTransfer.effectAllowed = "move";
+        event.dataTransfer.setData("text/plain", leg.id);
+        const rect = item.getBoundingClientRect();
+        event.dataTransfer.setDragImage(
+          item,
+          event.clientX - rect.left,
+          event.clientY - rect.top
+        );
+        // Fade after the browser captures the drag image, not before.
+        requestAnimationFrame(() => item.classList.add("opacity-40"));
+      });
+      handle.addEventListener("dragend", (event) => {
+        draggedItem = null;
+        item.classList.remove("opacity-40");
+        if (!race) return;
+        const to = Array.from(legList.children).indexOf(item);
+        const from = race.legs.findIndex((candidate) => candidate.id === leg.id);
+        if (event.dataTransfer?.dropEffect !== "none" && to >= 0 && to !== from) {
+          race = repository.moveLeg(race.id, leg.id, to);
+        }
+        // Re-render even when nothing moved to undo any live preview reordering.
+        render();
+      });
       duplicate.addEventListener("click", () => {
         if (!race || race.legs.length >= MAX_RACE_PARTICIPANTS - 1) return;
         const duplicateName = `${leg.name} copy`;
@@ -359,6 +439,8 @@ import Layout from "../layouts/Layout.astro";
       legList.append(fragment);
       renderLevelThumbnail(thumbnail, leg.level);
     });
+    pendingFocusLegId = null;
+    handleToFocus?.focus();
   };
 
   const setParticipantCount = (nextCount: number) => {
@@ -413,6 +495,28 @@ import Layout from "../layouts/Layout.astro";
       );
       render();
     });
+    legList?.addEventListener("dragover", (event) => {
+      if (!draggedItem || !legList) return;
+      event.preventDefault();
+      if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
+      const nextSibling = Array.from(legList.children)
+        .filter(
+          (child): child is HTMLElement =>
+            child instanceof HTMLElement && child !== draggedItem
+        )
+        .find((child) => {
+          const rect = child.getBoundingClientRect();
+          return event.clientY < rect.top + rect.height / 2;
+        });
+      if ((nextSibling ?? null) === draggedItem.nextElementSibling) return;
+      legList.insertBefore(draggedItem, nextSibling ?? null);
+      legList
+        .querySelectorAll("[data-leg-number]")
+        .forEach((numberBadge, position) => {
+          numberBadge.textContent = `${position + 1}`.padStart(2, "0");
+        });
+    });
+    legList?.addEventListener("drop", (event) => event.preventDefault());
     completeRaceButton?.addEventListener("click", () => {
       if (!race) return;
       const needed = requiredLegCount(race);

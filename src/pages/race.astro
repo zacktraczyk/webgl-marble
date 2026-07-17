@@ -45,6 +45,15 @@ import Layout from "../layouts/Layout.astro";
       >
       </div>
 
+      <div
+        id="race-countdown"
+        hidden
+        aria-hidden="true"
+        class="absolute inset-0 z-40 grid select-none place-items-center overflow-hidden"
+      >
+        <span id="race-countdown-value" class="type-display"></span>
+      </div>
+
       <header
         class="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between gap-4 p-4 sm:p-6"
       >
@@ -172,6 +181,103 @@ import Layout from "../layouts/Layout.astro";
 </Layout>
 
 <style>
+  /* 1 · 2 · 3 · GO — fullscreen stamped countdown */
+  #race-countdown {
+    --countdown-bg: oklch(96% 0.012 85);
+    --countdown-ink: var(--color-brand);
+    --countdown-pop: var(--color-brand-shadow);
+    --countdown-tilt: 0deg;
+    background: var(--countdown-bg);
+    opacity: 1;
+    transition: opacity 260ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  #race-countdown[data-step="1"] {
+    --countdown-tilt: -3deg;
+  }
+
+  #race-countdown[data-step="2"] {
+    --countdown-bg: var(--color-brand);
+    --countdown-ink: oklch(97% 0.014 85);
+    --countdown-tilt: 2.5deg;
+  }
+
+  #race-countdown[data-step="3"] {
+    --countdown-tilt: -2deg;
+  }
+
+  #race-countdown[data-step="go"],
+  #race-countdown[data-step="done"] {
+    --countdown-bg: oklch(66% 0.2 145);
+    --countdown-ink: oklch(97% 0.014 85);
+    --countdown-pop: oklch(44% 0.13 148);
+  }
+
+  #race-countdown[data-step="done"] {
+    opacity: 0;
+  }
+
+  #race-countdown-value {
+    font-size: clamp(10rem, 58vmin, 34rem);
+    line-height: 1;
+    color: var(--countdown-ink);
+    text-shadow: 0.04em 0.045em 0 var(--countdown-pop);
+    transform: rotate(var(--countdown-tilt));
+  }
+
+  #race-countdown[data-step="go"] #race-countdown-value,
+  #race-countdown[data-step="done"] #race-countdown-value {
+    font-size: clamp(7rem, 42vmin, 24rem);
+    letter-spacing: -0.02em;
+  }
+
+  /* Alternating animation names so each step restarts the stamp */
+  #race-countdown[data-step="1"] #race-countdown-value,
+  #race-countdown[data-step="3"] #race-countdown-value {
+    animation: countdown-stamp-a 460ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  #race-countdown[data-step="2"] #race-countdown-value {
+    animation: countdown-stamp-b 460ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  #race-countdown[data-step="go"] #race-countdown-value {
+    animation: countdown-burst 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  @keyframes countdown-stamp-a {
+    from {
+      opacity: 0;
+      transform: scale(1.4) rotate(var(--countdown-tilt));
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) rotate(var(--countdown-tilt));
+    }
+  }
+
+  @keyframes countdown-stamp-b {
+    from {
+      opacity: 0;
+      transform: scale(1.4) rotate(var(--countdown-tilt));
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) rotate(var(--countdown-tilt));
+    }
+  }
+
+  @keyframes countdown-burst {
+    from {
+      opacity: 0;
+      transform: scale(0.5);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
   #elimination-card,
   #winner-card {
     opacity: 0;
@@ -194,8 +300,13 @@ import Layout from "../layouts/Layout.astro";
 
   @media (prefers-reduced-motion: reduce) {
     #elimination-card,
-    #winner-card {
+    #winner-card,
+    #race-countdown {
       transition-duration: 0ms;
+    }
+
+    #race-countdown-value {
+      animation: none !important;
     }
   }
 </style>

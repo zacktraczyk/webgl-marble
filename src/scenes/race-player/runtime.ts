@@ -22,6 +22,16 @@ export type RacePlayerOptions = {
 
 type EliminationReason = "finished" | "skipped" | "timed-out";
 
+const COUNTDOWN_STEPS = [
+  { label: "1", step: "1" },
+  { label: "2", step: "2" },
+  { label: "3", step: "3" },
+  { label: "GO!", step: "go" },
+] as const;
+const COUNTDOWN_STEP_MS = 650;
+const COUNTDOWN_GO_HOLD_MS = 700;
+const COUNTDOWN_EXIT_MS = 300;
+
 const optionalButtons = (root: HTMLElement, roles: readonly string[]) =>
   roles.flatMap((role) => [
     ...root.querySelectorAll<HTMLButtonElement>(`[data-role="${role}"]`),
@@ -41,6 +51,8 @@ export class RacePlayerRuntime {
   private readonly skipContinueButtons: HTMLButtonElement[];
   private raceController: RaceController | null = null;
   private transitionTimer: number | null = null;
+  private countdownTimers: number[] = [];
+  private countdownActive = false;
   private pendingEliminationIndex: number | null = null;
   private legElapsedMs = 0;
   private playbackPaused = false;
@@ -138,6 +150,7 @@ export class RacePlayerRuntime {
   fixedUpdate(deltaMs: number) {
     if (
       this.disposed ||
+      this.countdownActive ||
       this.playbackPaused ||
       this.pendingEliminationIndex !== null ||
       this.progression.snapshot.winnerIndex !== null
@@ -192,6 +205,7 @@ export class RacePlayerRuntime {
   togglePause = () => {
     if (
       this.disposed ||
+      this.countdownActive ||
       this.pendingEliminationIndex !== null ||
       this.progression.snapshot.winnerIndex !== null
     ) {
@@ -222,7 +236,11 @@ export class RacePlayerRuntime {
   };
 
   skipOrContinue = () => {
-    if (this.disposed || this.progression.snapshot.winnerIndex !== null) {
+    if (
+      this.disposed ||
+      this.countdownActive ||
+      this.progression.snapshot.winnerIndex !== null
+    ) {
       return;
     }
     if (this.pendingEliminationIndex !== null) {
@@ -243,6 +261,7 @@ export class RacePlayerRuntime {
       return;
     }
     this.disposed = true;
+    this.clearCountdown();
     this.clearTransitionTimer();
     this.pendingEliminationIndex = null;
     this.disposeRaceController();
@@ -290,9 +309,72 @@ export class RacePlayerRuntime {
     this.updateActiveParticipants();
     this.resizeController.fit();
 
-    this.raceController.toggleRunning();
+    if (progression.legIndex === 0) {
+      this.beginCountdown();
+    } else {
+      this.launchLeg();
+    }
+  }
+
+  private launchLeg() {
+    this.raceController?.toggleRunning();
     this.statusMessage = this.runningStatus;
     this.updateInterface();
+  }
+
+  private beginCountdown() {
+    const overlay = this.root.querySelector<HTMLElement>("#race-countdown");
+    const value = this.root.querySelector<HTMLElement>("#race-countdown-value");
+    if (!overlay || !value) {
+      this.launchLeg();
+      return;
+    }
+
+    this.clearCountdown();
+    this.countdownActive = true;
+    this.statusMessage = "On your marks…";
+    overlay.hidden = false;
+    delete overlay.dataset.step;
+    value.textContent = "";
+    this.updateInterface();
+
+    COUNTDOWN_STEPS.forEach(({ label, step }, index) => {
+      this.countdownTimers.push(
+        window.setTimeout(() => {
+          overlay.dataset.step = step;
+          value.textContent = label;
+          if (step === "go") {
+            this.countdownActive = false;
+            this.launchLeg();
+          }
+        }, index * COUNTDOWN_STEP_MS)
+      );
+    });
+
+    const goShownAt = (COUNTDOWN_STEPS.length - 1) * COUNTDOWN_STEP_MS;
+    this.countdownTimers.push(
+      window.setTimeout(() => {
+        overlay.dataset.step = "done";
+      }, goShownAt + COUNTDOWN_GO_HOLD_MS)
+    );
+    this.countdownTimers.push(
+      window.setTimeout(() => {
+        overlay.hidden = true;
+      }, goShownAt + COUNTDOWN_GO_HOLD_MS + COUNTDOWN_EXIT_MS)
+    );
+  }
+
+  private clearCountdown() {
+    for (const timer of this.countdownTimers) {
+      window.clearTimeout(timer);
+    }
+    this.countdownTimers = [];
+    this.countdownActive = false;
+    const overlay = this.root.querySelector<HTMLElement>("#race-countdown");
+    if (overlay) {
+      overlay.hidden = true;
+      delete overlay.dataset.step;
+    }
   }
 
   private scheduleElimination(
@@ -383,7 +465,7 @@ export class RacePlayerRuntime {
     const winnerDeclared = this.progression.snapshot.winnerIndex !== null;
     const transitioning = this.pendingEliminationIndex !== null;
     for (const button of this.pauseButtons) {
-      button.disabled = winnerDeclared || transitioning;
+      button.disabled = winnerDeclared || transitioning || this.countdownActive;
       button.setAttribute(
         "aria-label",
         this.playbackPaused ? "Resume race" : "Pause race"
@@ -394,7 +476,7 @@ export class RacePlayerRuntime {
       button.disabled = false;
     }
     for (const button of this.skipContinueButtons) {
-      button.disabled = winnerDeclared;
+      button.disabled = winnerDeclared || this.countdownActive;
       button.textContent = transitioning ? "Continue" : "Skip leg";
     }
   }
@@ -447,6 +529,9 @@ export class RacePlayerRuntime {
     }
     if (this.pendingEliminationIndex !== null) {
       return "transition";
+    }
+    if (this.countdownActive) {
+      return "countdown";
     }
     if (this.playbackPaused) {
       return "paused";
