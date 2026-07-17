@@ -3,6 +3,7 @@
 // uniform 3-column grid, width-normalized leg previews behind a bottom fade)
 // wired to the real RaceRepository. Each card links to the race's builder,
 // which acts as the pre-launch screen until a dedicated preview page exists.
+import Tooltip from "../components/Tooltip.astro";
 ---
 
 <!doctype html>
@@ -27,27 +28,24 @@
     <main>
       <header>
         <h1>Races</h1>
-        <div class="header-end">
-          <p id="count" aria-live="polite"></p>
-          <button type="button" class="pill primary icon" data-create-race>
-            <!-- lucide: plus -->
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M5 12h14"></path>
-              <path d="M12 5v14"></path>
-            </svg>
-            New race
-          </button>
-        </div>
+        <button type="button" class="pill primary icon" data-create-race>
+          <!-- lucide: plus -->
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M5 12h14"></path>
+            <path d="M12 5v14"></path>
+          </svg>
+          New race
+        </button>
       </header>
 
       <section id="empty" hidden>
@@ -64,15 +62,17 @@
       <section id="grid" aria-label="Saved races"></section>
     </main>
 
+    <Tooltip />
+
     <!-- The whole card is one link to the race's pre-launch screen. -->
     <template id="tile">
       <a class="tile">
-        <div class="title-row">
-          <h2 data-name></h2>
-          <span class="legs" data-legs></span>
-        </div>
+        <h2 data-name></h2>
         <div class="preview" data-preview></div>
-        <span class="pill play" data-action></span>
+        <div class="footer">
+          <span class="legs" data-legs></span>
+          <span class="pill" data-action></span>
+        </div>
       </a>
     </template>
 
@@ -120,16 +120,8 @@
         line-height: 0.9;
         text-shadow: 0.08em 0.09em 0 var(--shadow);
       }
-      .header-end {
-        display: flex;
-        align-items: center;
-        gap: 1.25rem;
-        padding-bottom: 0.875rem;
-      }
-      #count {
-        font-size: 0.875rem;
-        font-weight: 600;
-        color: var(--dim);
+      header .pill {
+        margin-bottom: 0.875rem;
       }
       .pill {
         appearance: none;
@@ -204,11 +196,12 @@
         color: inherit;
         text-decoration: none;
       }
-      .title-row {
+      .footer {
         display: flex;
-        align-items: baseline;
+        align-items: center;
         justify-content: space-between;
         gap: 0.75rem;
+        margin-top: 1.25rem;
       }
       .tile h2 {
         min-width: 0;
@@ -244,8 +237,9 @@
         background: linear-gradient(transparent, var(--tile));
         pointer-events: none;
       }
+      /* Fixed width so every card's button matches regardless of label. */
       .tile .pill {
-        margin-top: 1.25rem;
+        width: 8rem;
         font-size: 0.875rem;
         padding: 0.5rem 0.75rem;
       }
@@ -254,6 +248,11 @@
       .tile:focus-visible .pill.play {
         transform: translateY(2px);
         box-shadow: 0 2px 0 var(--accent-shadow);
+      }
+      .tile:hover .pill.primary,
+      .tile:focus-visible .pill.primary {
+        transform: translateY(2px);
+        box-shadow: 0 2px 0 oklch(58% 0.005 285);
       }
 
       #empty {
@@ -299,12 +298,14 @@
         createDefaultRace,
         isRacePlayable,
         renderLevelThumbnail,
+        requiredLegCount,
       } from "../races";
+      import { attachTooltip } from "../components/tooltip";
 
+      attachTooltip(document.body);
       const repository = new RaceRepository();
       const grid = document.querySelector<HTMLElement>("#grid");
       const empty = document.querySelector<HTMLElement>("#empty");
-      const count = document.querySelector<HTMLElement>("#count");
       const template = document.querySelector<HTMLTemplateElement>("#tile");
 
       const builderUrl = (raceId: string) =>
@@ -316,11 +317,10 @@
       };
 
       const renderLibrary = () => {
-        if (!grid || !empty || !count || !template) return;
+        if (!grid || !empty || !template) return;
         const races = repository.list();
         grid.replaceChildren();
         empty.hidden = races.length > 0;
-        count.textContent = `${races.length} ${races.length === 1 ? "race" : "races"}`;
 
         const pending: (() => void)[] = [];
         for (const race of races) {
@@ -356,7 +356,15 @@
           });
 
           const action = fragment.querySelector<HTMLElement>("[data-action]")!;
-          action.textContent = playable ? "Preview race" : "Finish setup";
+          action.textContent = playable ? "Preview" : "Finish setup";
+          action.classList.add(playable ? "play" : "primary");
+          if (!playable) {
+            const difference = requiredLegCount(race) - race.legs.length;
+            action.dataset.tooltip =
+              difference > 0
+                ? `Add ${difference} ${difference === 1 ? "leg" : "legs"} to play`
+                : `Remove ${Math.abs(difference)} ${Math.abs(difference) === 1 ? "leg" : "legs"} to play`;
+          }
           grid.append(fragment);
         }
         for (const draw of pending) draw();

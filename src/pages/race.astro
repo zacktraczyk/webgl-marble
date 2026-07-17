@@ -181,10 +181,10 @@ import Layout from "../layouts/Layout.astro";
 </Layout>
 
 <style>
-  /* 3 · 2 · 1 · GO — fullscreen stamped countdown */
+  /* 3 · 2 · 1 · GO — fullscreen stamped countdown, orange/white/orange */
   #race-countdown {
-    --countdown-bg: oklch(96% 0.012 85);
-    --countdown-ink: var(--color-brand);
+    --countdown-bg: var(--color-brand);
+    --countdown-ink: oklch(97% 0.014 85);
     --countdown-pop: var(--color-brand-shadow);
     --countdown-tilt: 0deg;
     background: var(--countdown-bg);
@@ -192,18 +192,18 @@ import Layout from "../layouts/Layout.astro";
     transition: opacity 260ms cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  #race-countdown[data-step="1"] {
-    --countdown-tilt: -3deg;
+  #race-countdown[data-step="3"] {
+    --countdown-tilt: -2deg;
   }
 
   #race-countdown[data-step="2"] {
-    --countdown-bg: var(--color-brand);
-    --countdown-ink: oklch(97% 0.014 85);
+    --countdown-bg: oklch(96% 0.012 85);
+    --countdown-ink: var(--color-brand);
     --countdown-tilt: 2.5deg;
   }
 
-  #race-countdown[data-step="3"] {
-    --countdown-tilt: -2deg;
+  #race-countdown[data-step="1"] {
+    --countdown-tilt: -3deg;
   }
 
   #race-countdown[data-step="go"],

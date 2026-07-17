@@ -28,7 +28,7 @@ import { resolveBuilderUi, type BuilderUi } from "./ui";
 import { GridOverlay } from "./ui/gridOverlay";
 import { MotionInspectorController } from "./ui/motionInspector";
 import { updateBuilderInterface } from "./ui/presenter";
-import { BuilderTooltipController } from "./ui/tooltip";
+import { TooltipController } from "../../components/tooltip";
 import {
   isCreationTool,
   isPusherTool,
@@ -74,7 +74,7 @@ export class LevelBuilderRuntime {
     if (options.roundConfiguration) {
       this.syncRoundConfigurationInputs(options.roundConfiguration);
     }
-    new BuilderTooltipController(this.ui, signal);
+    new TooltipController(this.ui, signal);
     this.stage = new Stage({
       width: options.initialLevel?.size[0] ?? STAGE_WIDTH,
       height: options.initialLevel?.size[1] ?? STAGE_HEIGHT,

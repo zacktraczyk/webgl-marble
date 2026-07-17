@@ -1,5 +1,3 @@
-import type { BuilderUi } from ".";
-
 const SHOW_DELAY_MS = 350;
 const HIDE_DURATION_MS = 120;
 const EDGE_PADDING = 8;
@@ -9,8 +7,20 @@ const SHORTCUT_PATTERN = /^(.*?)\s+\(([^()]*)\)$/;
 const clamp = (value: number, minimum: number, maximum: number) =>
   Math.min(maximum, Math.max(minimum, value));
 
-/** Presents builder tooltips without relying on native browser titles. */
-export class BuilderTooltipController {
+export type TooltipUi = {
+  root: HTMLElement;
+  tooltip: HTMLElement;
+  tooltipLabel: HTMLElement;
+  tooltipShortcut: HTMLElement;
+  tooltipArrow: HTMLElement;
+};
+
+/**
+ * Presents tooltips for `[data-tooltip]` triggers without relying on native
+ * browser titles. Render the markup with `<Tooltip />` and wire it up with
+ * `attachTooltip(document.body)`.
+ */
+export class TooltipController {
   private activeTrigger: HTMLElement | null = null;
   private pendingTrigger: HTMLElement | null = null;
   private previousDescription: string | null = null;
@@ -21,7 +31,7 @@ export class BuilderTooltipController {
   private readonly observer: MutationObserver;
 
   constructor(
-    private readonly ui: BuilderUi,
+    private readonly ui: TooltipUi,
     signal: AbortSignal
   ) {
     ui.root.addEventListener("pointerover", this.handlePointerOver, { signal });
@@ -306,3 +316,27 @@ export class BuilderTooltipController {
     }
   }
 }
+
+/** Finds a `<Tooltip />` under `root` and starts presenting its triggers. */
+export const attachTooltip = (
+  root: HTMLElement,
+  signal: AbortSignal = new AbortController().signal
+) => {
+  const role = (name: string) => {
+    const element = root.querySelector<HTMLElement>(`[data-role="${name}"]`);
+    if (!element) {
+      throw new Error(`Tooltip element not found: ${name}`);
+    }
+    return element;
+  };
+  return new TooltipController(
+    {
+      root,
+      tooltip: role("tooltip"),
+      tooltipLabel: role("tooltip-label"),
+      tooltipShortcut: role("tooltip-shortcut"),
+      tooltipArrow: role("tooltip-arrow"),
+    },
+    signal
+  );
+};

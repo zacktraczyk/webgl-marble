@@ -1,6 +1,7 @@
 ---
 import HomeLink from "../components/HomeLink.astro";
 import Layout from "../layouts/Layout.astro";
+import Tooltip from "../components/Tooltip.astro";
 import {
   COURSE_STROKE_WIDTH,
   MAX_STAGE_HEIGHT,
@@ -474,26 +475,7 @@ import "../styles/global.css";
       >
     </div>
 
-    <div
-      id="builder-tooltip"
-      data-role="tooltip"
-      data-side="top"
-      data-open="false"
-      role="tooltip"
-      hidden
-      class="pointer-events-none fixed z-50 flex max-w-72 items-center gap-1.5 whitespace-nowrap rounded-md bg-zinc-50 px-2.5 py-1.5 text-xs font-medium text-zinc-950 shadow-xl ring-1 ring-black/10"
-    >
-      <span data-role="tooltip-label"></span>
-      <kbd
-        data-role="tooltip-shortcut"
-        hidden
-        class="rounded bg-zinc-200 px-1 py-0.5 font-mono text-[10px] font-semibold leading-none text-zinc-700"
-      ></kbd>
-      <span
-        data-role="tooltip-arrow"
-        aria-hidden="true"
-        class="absolute size-2 rotate-45 bg-zinc-50"></span>
-    </div>
+    <Tooltip id="builder-tooltip" />
 
     <button
       id="toggle-sidebar"
@@ -1105,35 +1087,6 @@ import "../styles/global.css";
     line-height: 1;
   }
 
-  #builder-tooltip {
-    --tooltip-enter-y: 0.2rem;
-    opacity: 0;
-    transform: translateY(var(--tooltip-enter-y)) scale(0.96);
-    transform-origin: 50% 100%;
-    transition:
-      opacity 120ms ease-out,
-      transform 120ms ease-out;
-    will-change: opacity, transform;
-  }
-
-  #builder-tooltip[data-side="bottom"] {
-    --tooltip-enter-y: -0.2rem;
-    transform-origin: 50% 0;
-  }
-
-  #builder-tooltip[data-open="true"] {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-
-  #builder-tooltip[data-side="top"] [data-role="tooltip-arrow"] {
-    bottom: -0.25rem;
-  }
-
-  #builder-tooltip[data-side="bottom"] [data-role="tooltip-arrow"] {
-    top: -0.25rem;
-  }
-
   #builder-toolbar button:focus,
   #toggle-sidebar:focus,
   #viewport-controls button:focus,
@@ -1240,8 +1193,7 @@ import "../styles/global.css";
   #object-inspector[hidden],
   #motion-controls[hidden],
   #motion-range-row[hidden],
-  #race-outcome[hidden],
-  #builder-tooltip[hidden] {
+  #race-outcome[hidden] {
     display: none;
   }
 
@@ -1323,7 +1275,6 @@ import "../styles/global.css";
     #viewport-controls,
     #edit-history-controls,
     #level-options-sidebar,
-    #builder-tooltip,
     :global(#builder-home-link) {
       transition-duration: 0ms;
     }

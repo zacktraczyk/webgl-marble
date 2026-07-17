@@ -1,5 +1,6 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import Tooltip from "../components/Tooltip.astro";
 ---
 
 <Layout title="Race Builder · Marbel">
@@ -53,6 +54,7 @@ import Layout from "../layouts/Layout.astro";
                   id="marbles-minus"
                   type="button"
                   aria-label="Remove a starting team"
+                  data-tooltip="Remove a starting team"
                   class="size-9 rounded-full text-ink-dim hover:bg-raise hover:text-ink disabled:text-ink-faint/50 disabled:hover:bg-transparent"
                   >−</button
                 >
@@ -65,6 +67,7 @@ import Layout from "../layouts/Layout.astro";
                   id="marbles-plus"
                   type="button"
                   aria-label="Add a starting team"
+                  data-tooltip="Add a starting team"
                   class="size-9 rounded-full text-ink-dim hover:bg-raise hover:text-ink disabled:text-ink-faint/50 disabled:hover:bg-transparent"
                   >+</button
                 >
@@ -139,6 +142,7 @@ import Layout from "../layouts/Layout.astro";
         </section>
       </div>
     </section>
+    <Tooltip />
   </main>
 
   <template id="leg-template">
@@ -155,7 +159,7 @@ import Layout from "../layouts/Layout.astro";
           data-drag-leg
           type="button"
           draggable="true"
-          title="Drag to reorder"
+          data-tooltip="Drag to reorder"
           class="absolute left-3 top-3 z-10 flex cursor-grab select-none items-center gap-1.5 rounded-full bg-canvas/90 px-2.5 py-1 text-xs font-bold tabular-nums text-ink-dim backdrop-blur hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-guide active:cursor-grabbing"
         >
           <svg
@@ -180,6 +184,7 @@ import Layout from "../layouts/Layout.astro";
             data-duplicate-leg
             type="button"
             aria-label="Duplicate leg"
+            data-tooltip="Duplicate leg"
             class="grid size-8 place-items-center rounded-full bg-canvas/70 text-ink-dim backdrop-blur hover:bg-canvas hover:text-ink"
           >
             <svg
@@ -202,6 +207,7 @@ import Layout from "../layouts/Layout.astro";
             data-delete-leg
             type="button"
             aria-label="Delete leg"
+            data-tooltip="Delete leg"
             class="grid size-8 place-items-center rounded-full bg-canvas/70 text-ink-dim backdrop-blur hover:bg-canvas hover:text-red-400"
           >
             <svg
@@ -240,7 +246,9 @@ import Layout from "../layouts/Layout.astro";
     requiredLegCount,
   } from "../races";
   import type { RaceDocument, RaceLegDocument } from "../races";
+  import { attachTooltip } from "../components/tooltip";
 
+  attachTooltip(document.body);
   const repository = new RaceRepository();
   const params = new URLSearchParams(window.location.search);
   const raceId = params.get("race") ?? "";
@@ -331,10 +339,13 @@ import Layout from "../layouts/Layout.astro";
     const playable = isRacePlayable(race);
     if (playable) {
       playLink.href = `/race?race=${encodeURIComponent(race.id)}`;
-      playLink.removeAttribute("title");
+      playLink.removeAttribute("data-tooltip");
     } else {
       playLink.removeAttribute("href");
-      playLink.title = "Setup not finished";
+      playLink.dataset.tooltip =
+        difference > 0
+          ? `Add ${difference} ${difference === 1 ? "leg" : "legs"} to play`
+          : `Remove ${Math.abs(difference)} ${Math.abs(difference) === 1 ? "leg" : "legs"} to play`;
     }
     playLink.setAttribute("aria-disabled", `${!playable}`);
     playLink.classList.toggle("opacity-40", !playable);
