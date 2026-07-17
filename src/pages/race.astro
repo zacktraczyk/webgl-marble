@@ -35,14 +35,13 @@ import Layout from "../layouts/Layout.astro";
       id="race-player"
       hidden
       data-race-state="loading"
+      data-chrome="hidden"
       class="relative size-full"
     >
       <canvas id="gl-canvas" class="absolute inset-0 size-full bg-zinc-950"
         >Canvas not supported</canvas
       >
-      <div
-        class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_35%,rgb(9_9_11/0.55)_100%)]"
-      >
+      <div id="race-vignette" class="pointer-events-none absolute inset-0">
       </div>
 
       <div
@@ -79,6 +78,7 @@ import Layout from "../layouts/Layout.astro";
         </a>
 
         <div
+          id="race-leg-pill"
           class="rounded-lg border border-zinc-700 bg-zinc-900/80 px-4 py-2.5 shadow-xl backdrop-blur"
         >
           <p
@@ -148,6 +148,7 @@ import Layout from "../layouts/Layout.astro";
       </div>
 
       <div
+        id="race-controls"
         class="pointer-events-none absolute inset-x-0 bottom-4 z-20 flex items-center justify-center gap-2.5 px-4 sm:bottom-6"
       >
         <button
@@ -289,6 +290,65 @@ import Layout from "../layouts/Layout.astro";
     }
   }
 
+  /* Edge vignette — top and bottom only, tied to the toolbar chrome so the
+     track reads full-bleed once the controls tuck away. */
+  #race-vignette {
+    background:
+      linear-gradient(to bottom, rgb(9 9 11 / 0.55), transparent 22%),
+      linear-gradient(to top, rgb(9 9 11 / 0.55), transparent 22%);
+    transition: opacity 260ms ease-out;
+  }
+
+  #race-player[data-chrome="hidden"] #race-vignette {
+    opacity: 0;
+  }
+
+  /* Video-player chrome: toolbars slide out on mouse activity and tuck away
+     after a beat of stillness — same spring in / ease-in out as the
+     leg-builder preview launch. */
+  #race-back-link,
+  #race-leg-pill,
+  #race-controls > * {
+    will-change: transform, opacity;
+    transition:
+      transform 560ms cubic-bezier(0.34, 1.56, 0.64, 1),
+      opacity 220ms ease-out;
+  }
+
+  #race-player[data-chrome="hidden"] #race-back-link {
+    transform: translateX(calc(-100% - 1.5rem)) rotate(-5deg);
+  }
+
+  #race-player[data-chrome="hidden"] #race-leg-pill {
+    transform: translateY(calc(-100% - 1.5rem)) scale(0.96);
+  }
+
+  #race-player[data-chrome="hidden"] #race-controls > :first-child {
+    transform: translateY(calc(100% + 1.5rem)) rotate(-4deg);
+  }
+
+  #race-player[data-chrome="hidden"] #race-controls > :last-child {
+    transform: translateY(calc(100% + 1.5rem)) rotate(4deg);
+  }
+
+  #race-player[data-chrome="hidden"] #race-back-link,
+  #race-player[data-chrome="hidden"] #race-leg-pill,
+  #race-player[data-chrome="hidden"] #race-controls > * {
+    pointer-events: none;
+    opacity: 0;
+    transition-duration: 500ms, 260ms;
+    transition-delay: 0ms, 120ms;
+    transition-timing-function: cubic-bezier(0.55, 0, 1, 0.45), ease-in;
+  }
+
+  #race-player[data-chrome="hidden"] #race-back-link {
+    transition-delay: 30ms, 150ms;
+  }
+
+  #race-player[data-chrome="hidden"] #race-controls > * {
+    transition-delay: 60ms, 180ms;
+  }
+
   #elimination-card {
     opacity: 0;
     transform: translateY(-0.75rem);
@@ -323,8 +383,13 @@ import Layout from "../layouts/Layout.astro";
   @media (prefers-reduced-motion: reduce) {
     #elimination-card,
     #winner-card,
-    #race-countdown {
+    #race-countdown,
+    #race-vignette,
+    #race-back-link,
+    #race-leg-pill,
+    #race-controls > * {
       transition-duration: 0ms;
+      transition-delay: 0ms;
     }
 
     #race-countdown-value {
@@ -384,9 +449,78 @@ import Layout from "../layouts/Layout.astro";
       mountScene(createRacePlayerScene(race, player), {
         errorElement: document.querySelector<HTMLElement>("#race-error"),
       });
+      setupChromeAutoHide(player);
     } catch (error) {
       showError("Race could not start", `${error}`);
       player.hidden = true;
     }
+  }
+
+  /**
+   * Video-player toolbar behavior: mouse activity slides the top/bottom chrome
+   * (and edge vignette) out; a beat of stillness tucks it away again. The
+   * chrome stays out while a control is hovered or focused, while paused, and
+   * on the winner screen.
+   */
+  function setupChromeAutoHide(root: HTMLElement) {
+    const CHROME_HIDE_DELAY_MS = 2600;
+    const chrome = [
+      "#race-back-link",
+      "#race-leg-pill",
+      "#race-controls",
+    ].flatMap((selector) => [
+      ...root.querySelectorAll<HTMLElement>(selector),
+    ]);
+    let hideTimer: number | undefined;
+
+    const chromeEngaged = () =>
+      root.dataset.raceState === "paused" ||
+      root.dataset.raceState === "complete" ||
+      chrome.some(
+        (element) =>
+          element.matches(":hover") ||
+          element.contains(document.activeElement)
+      );
+
+    const hideChrome = () => {
+      if (chromeEngaged()) {
+        scheduleHide();
+        return;
+      }
+      root.dataset.chrome = "hidden";
+    };
+
+    const scheduleHide = () => {
+      window.clearTimeout(hideTimer);
+      hideTimer = window.setTimeout(hideChrome, CHROME_HIDE_DELAY_MS);
+    };
+
+    const showChrome = () => {
+      root.dataset.chrome = "visible";
+      scheduleHide();
+    };
+
+    root.addEventListener("pointermove", showChrome);
+    root.addEventListener("pointerdown", showChrome);
+    window.addEventListener("keydown", showChrome);
+    document.addEventListener("focusin", showChrome);
+    root.addEventListener("pointerleave", () => {
+      window.clearTimeout(hideTimer);
+      hideChrome();
+    });
+
+    // Pausing and the winner screen re-reveal the chrome even without mouse
+    // movement (e.g. pause via keyboard, race finishing on its own).
+    new MutationObserver(() => {
+      if (
+        root.dataset.raceState === "paused" ||
+        root.dataset.raceState === "complete"
+      ) {
+        showChrome();
+      }
+    }).observe(root, {
+      attributes: true,
+      attributeFilter: ["data-race-state"],
+    });
   }
 </script>
