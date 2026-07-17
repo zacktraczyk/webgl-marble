@@ -1,4 +1,16 @@
 import type { LevelObjectData, SerializedLevel } from "../editor/levelDocument";
+import type {
+  FinishRackFrame,
+  FinishRackRect,
+} from "../game/prefabs/finishZone";
+import {
+  FINISH_DARK_COLOR,
+  FINISH_LIGHT_COLOR,
+  FINISH_RACK_BACKGROUND,
+  FINISH_RACK_WALL,
+  createFinishRackFrame,
+  finishLineCells,
+} from "../game/prefabs/finishZone";
 import type { Color } from "../engine/vdu/component";
 
 export type LevelThumbnailOptions = {
@@ -9,6 +21,16 @@ export type LevelThumbnailOptions = {
   background?: string;
   courseBackground?: string;
   border?: string;
+  /**
+   * Teams racing this leg. When set, finish zones render as the real finish
+   * rack (checkered line plus one bay per team) instead of a flat placeholder.
+   */
+  teamCount?: number;
+};
+
+type ObjectDrawSettings = {
+  wallThickness: number;
+  teamCount?: number;
 };
 
 const colorCss = ([red, green, blue, alpha]: Color) =>
@@ -77,17 +99,70 @@ const drawMotionGuide = (
   context.restore();
 };
 
+const fillRect = (context: CanvasRenderingContext2D, rect: FinishRackRect) => {
+  context.fillRect(
+    rect.position[0] - rect.width / 2,
+    rect.position[1] - rect.height / 2,
+    rect.width,
+    rect.height
+  );
+};
+
+const drawFinishZone = (
+  context: CanvasRenderingContext2D,
+  object: Extract<LevelObjectData, { prefab: "finish-zone" }>,
+  { wallThickness, teamCount }: ObjectDrawSettings
+) => {
+  const { width, height } = object.properties;
+  let frame: FinishRackFrame | null = null;
+  if (teamCount !== undefined) {
+    try {
+      frame = createFinishRackFrame({ width, height, wallThickness, teamCount });
+    } catch {
+      // The rack cannot fit this team count; fall back to the placeholder.
+    }
+  }
+  withTransform(context, object, () => {
+    if (!frame) {
+      context.fillStyle = colorCss(object.properties.color);
+      context.globalAlpha = 0.7;
+      context.fillRect(-width / 2, -height / 2, width, height);
+      context.globalAlpha = 1;
+      return;
+    }
+    context.fillStyle = colorCss(FINISH_RACK_BACKGROUND);
+    context.fillRect(-width / 2, -height / 2, width, height);
+    context.fillStyle = colorCss(FINISH_RACK_WALL);
+    for (const rect of [
+      frame.bottomWall,
+      ...frame.sideWalls,
+      ...frame.dividers,
+    ]) {
+      fillRect(context, rect);
+    }
+    context.save();
+    context.translate(...frame.finishLine.position);
+    for (const cell of finishLineCells(frame.finishLine)) {
+      context.fillStyle = colorCss(
+        cell.light ? FINISH_LIGHT_COLOR : FINISH_DARK_COLOR
+      );
+      fillRect(context, cell);
+    }
+    context.restore();
+  });
+};
+
 const drawObject = (
   context: CanvasRenderingContext2D,
   object: LevelObjectData,
-  defaultWallThickness: number
+  settings: ObjectDrawSettings
 ) => {
   if (object.prefab === "wall") {
     context.beginPath();
     context.moveTo(...object.properties.start);
     context.lineTo(...object.properties.end);
     context.strokeStyle = colorCss(object.properties.color);
-    context.lineWidth = object.properties.thickness ?? defaultWallThickness;
+    context.lineWidth = object.properties.thickness ?? settings.wallThickness;
     context.lineCap = "round";
     context.stroke();
     return;
@@ -100,6 +175,11 @@ const drawObject = (
       context.fillStyle = colorCss(object.properties.color);
       context.fill();
     });
+    return;
+  }
+
+  if (object.prefab === "finish-zone") {
+    drawFinishZone(context, object, settings);
     return;
   }
 
@@ -122,13 +202,6 @@ const drawObject = (
 
     const width = object.properties.width;
     const height = object.properties.height;
-    if (object.prefab === "finish-zone") {
-      context.globalAlpha = 0.7;
-      context.fillRect(-width / 2, -height / 2, width, height);
-      context.globalAlpha = 1;
-      return;
-    }
-
     context.lineWidth = object.properties.wallThickness;
     context.strokeStyle = colorCss(object.properties.color);
     context.strokeRect(
@@ -184,11 +257,15 @@ export const drawLevelThumbnail = (
     level.size[1]
   );
 
+  const settings: ObjectDrawSettings = {
+    wallThickness: level.settings.wallThickness,
+    teamCount: options.teamCount,
+  };
   for (const object of level.objects) {
     drawMotionGuide(context, object, level.settings.wallThickness);
   }
   for (const object of level.objects) {
-    drawObject(context, object, level.settings.wallThickness);
+    drawObject(context, object, settings);
   }
   context.restore();
 };

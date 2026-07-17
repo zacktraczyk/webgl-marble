@@ -324,7 +324,7 @@ import Layout from "../layouts/Layout.astro";
         : difference > 0
           ? `Add ${difference} ${difference === 1 ? "leg" : "legs"}`
           : `Remove ${Math.abs(difference)} ${Math.abs(difference) === 1 ? "leg" : "legs"}`;
-    legGuidance.className = `text-xs font-semibold ${difference === 0 ? "text-ink-dim" : "text-red-400"}`;
+    legGuidance.className = `text-xs font-semibold ${difference === 0 ? "text-green-400" : "text-red-400"}`;
     addLegButton.hidden = difference <= 0;
     completeRaceButton.hidden = difference === 0;
 
@@ -343,6 +343,7 @@ import Layout from "../layouts/Layout.astro";
 
     legList.replaceChildren();
     let handleToFocus: HTMLButtonElement | null = null;
+    const startingTeams = race.participants.length;
     race.legs.forEach((leg, index) => {
       const fragment = legTemplate.content.cloneNode(true) as DocumentFragment;
       const item = fragment.querySelector<HTMLElement>("li");
@@ -437,7 +438,10 @@ import Layout from "../layouts/Layout.astro";
       });
 
       legList.append(fragment);
-      renderLevelThumbnail(thumbnail, leg.level);
+      // One team is eliminated per leg, so later legs race with fewer teams.
+      renderLevelThumbnail(thumbnail, leg.level, {
+        teamCount: startingTeams - index,
+      });
     });
     pendingFocusLegId = null;
     handleToFocus?.focus();

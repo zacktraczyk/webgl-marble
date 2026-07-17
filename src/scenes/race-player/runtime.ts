@@ -23,14 +23,16 @@ export type RacePlayerOptions = {
 type EliminationReason = "finished" | "skipped" | "timed-out";
 
 const COUNTDOWN_STEPS = [
-  { label: "1", step: "1" },
-  { label: "2", step: "2" },
   { label: "3", step: "3" },
+  { label: "2", step: "2" },
+  { label: "1", step: "1" },
   { label: "GO!", step: "go" },
 ] as const;
 const COUNTDOWN_STEP_MS = 650;
 const COUNTDOWN_GO_HOLD_MS = 700;
 const COUNTDOWN_EXIT_MS = 300;
+/** Clear-track pause between the countdown overlay leaving and marble release. */
+const TRACK_REVEAL_HOLD_MS = 1_000;
 
 const optionalButtons = (root: HTMLElement, roles: readonly string[]) =>
   roles.flatMap((role) => [
@@ -343,15 +345,12 @@ export class RacePlayerRuntime {
         window.setTimeout(() => {
           overlay.dataset.step = step;
           value.textContent = label;
-          if (step === "go") {
-            this.countdownActive = false;
-            this.launchLeg();
-          }
         }, index * COUNTDOWN_STEP_MS)
       );
     });
 
     const goShownAt = (COUNTDOWN_STEPS.length - 1) * COUNTDOWN_STEP_MS;
+    const overlayGoneAt = goShownAt + COUNTDOWN_GO_HOLD_MS + COUNTDOWN_EXIT_MS;
     this.countdownTimers.push(
       window.setTimeout(() => {
         overlay.dataset.step = "done";
@@ -360,7 +359,15 @@ export class RacePlayerRuntime {
     this.countdownTimers.push(
       window.setTimeout(() => {
         overlay.hidden = true;
-      }, goShownAt + COUNTDOWN_GO_HOLD_MS + COUNTDOWN_EXIT_MS)
+      }, overlayGoneAt)
+    );
+    // Hold the marbles until the track has been visible for a beat, so the
+    // release is never hidden behind the countdown overlay.
+    this.countdownTimers.push(
+      window.setTimeout(() => {
+        this.countdownActive = false;
+        this.launchLeg();
+      }, overlayGoneAt + TRACK_REVEAL_HOLD_MS)
     );
   }
 

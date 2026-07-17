@@ -39,6 +39,41 @@ const gridDimensions = (marblesPerTeam: number) => {
   return { columns, rows };
 };
 
+export interface FinishBayOptions {
+  width: number;
+  height: number;
+  wallThickness: number;
+  teamCount: number;
+}
+
+export interface FinishBayInnerSize {
+  gridWidth: number;
+  gridHeight: number;
+}
+
+/** Inner size of each team bay once the rack walls are carved out. */
+export const finishBayInnerSize = ({
+  width,
+  height,
+  wallThickness,
+  teamCount,
+}: FinishBayOptions): FinishBayInnerSize => {
+  assertPositiveFinite(width, "Finish rack width");
+  assertPositiveFinite(height, "Finish rack height");
+  assertPositiveFinite(wallThickness, "Finish wall thickness");
+  if (!Number.isInteger(teamCount) || teamCount < 1) {
+    throw new Error("Team count must be a positive integer");
+  }
+  const gridWidth = (width - wallThickness * (teamCount + 1)) / teamCount;
+  const gridHeight = height - wallThickness * 2;
+  if (gridWidth <= 0 || gridHeight <= 0) {
+    throw new Error(
+      `A ${width}×${height} finish rack cannot fit ${teamCount} team bays`
+    );
+  }
+  return { gridWidth, gridHeight };
+};
+
 /** Sizes every team grid against the exact inner edges of its finish bay. */
 export const createFinishGridLayout = ({
   width,
@@ -50,14 +85,8 @@ export const createFinishGridLayout = ({
   minimumRadius = 1.2,
   gap = 0.6,
 }: FinishGridOptions): FinishGridLayout => {
-  assertPositiveFinite(width, "Finish rack width");
-  assertPositiveFinite(height, "Finish rack height");
-  assertPositiveFinite(wallThickness, "Finish wall thickness");
   assertPositiveFinite(maximumRadius, "Maximum marble radius");
   assertPositiveFinite(minimumRadius, "Minimum marble radius");
-  if (!Number.isInteger(teamCount) || teamCount < 1) {
-    throw new Error("Team count must be a positive integer");
-  }
   if (!Number.isInteger(marblesPerTeam) || marblesPerTeam < 1) {
     throw new Error("Marbles per team must be a positive integer");
   }
@@ -69,9 +98,8 @@ export const createFinishGridLayout = ({
   }
 
   const { columns, rows } = gridDimensions(marblesPerTeam);
-  const availableGridWidth =
-    (width - wallThickness * (teamCount + 1)) / teamCount;
-  const availableGridHeight = height - wallThickness * 2;
+  const { gridWidth: availableGridWidth, gridHeight: availableGridHeight } =
+    finishBayInnerSize({ width, height, wallThickness, teamCount });
   const diameter = Math.min(
     maximumRadius * 2,
     (availableGridWidth - gap * Math.max(0, columns - 1)) / columns,
