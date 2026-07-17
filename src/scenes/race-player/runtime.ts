@@ -384,7 +384,10 @@ export class RacePlayerRuntime {
     const transitioning = this.pendingEliminationIndex !== null;
     for (const button of this.pauseButtons) {
       button.disabled = winnerDeclared || transitioning;
-      button.textContent = this.playbackPaused ? "Resume" : "Pause";
+      button.setAttribute(
+        "aria-label",
+        this.playbackPaused ? "Resume race" : "Pause race"
+      );
       button.setAttribute("aria-pressed", `${this.playbackPaused}`);
     }
     for (const button of this.restartButtons) {

@@ -48,40 +48,33 @@ import Layout from "../layouts/Layout.astro";
       <header
         class="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between gap-4 p-4 sm:p-6"
       >
-        <div
-          class="pointer-events-auto flex items-center gap-3 rounded-lg border border-zinc-700 bg-zinc-900/80 p-1.5 pr-4 shadow-xl backdrop-blur"
+        <a
+          id="race-back-link"
+          href="/race-builder"
+          aria-label="Return to race builder"
+          class="pointer-events-auto grid size-10 place-items-center rounded-lg border border-zinc-700 bg-zinc-900/80 text-zinc-300 shadow-xl backdrop-blur hover:bg-zinc-800 hover:text-white"
         >
-          <a
-            href="/"
-            aria-label="Return to race library"
-            class="rounded-md px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-700 hover:text-white"
-            >←</a
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="size-5"
+            aria-hidden="true"
           >
-          <div>
-            <p
-              class="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500"
-            >
-              Now racing
-            </p>
-            <h1
-              data-role="race-name"
-              class="max-w-48 truncate text-sm font-semibold text-white sm:max-w-80"
-            >
-            </h1>
-          </div>
-        </div>
+            <path d="M19 12H5"></path>
+            <path d="m12 19-7-7 7-7"></path>
+          </svg>
+        </a>
 
         <div
-          class="rounded-lg border border-zinc-700 bg-zinc-900/80 px-4 py-3 text-right shadow-xl backdrop-blur"
+          class="rounded-lg border border-zinc-700 bg-zinc-900/80 px-4 py-2.5 shadow-xl backdrop-blur"
         >
           <p
             data-role="race-leg-progress"
-            class="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500"
-          >
-          </p>
-          <p
-            data-role="race-leg-name"
-            class="mt-0.5 max-w-48 truncate text-sm font-semibold text-white sm:max-w-72"
+            class="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-200"
           >
           </p>
         </div>
@@ -141,41 +134,32 @@ import Layout from "../layouts/Layout.astro";
       </div>
 
       <div
-        class="pointer-events-none absolute inset-x-0 bottom-4 z-20 flex flex-col items-center gap-3 px-4 sm:bottom-6"
+        class="pointer-events-none absolute inset-x-0 bottom-4 z-20 flex justify-center px-4 sm:bottom-6"
       >
-        <p
-          data-role="race-status"
-          class="max-w-xl rounded-full border border-zinc-700 bg-zinc-900/85 px-4 py-2 text-center text-xs text-zinc-300 shadow-lg backdrop-blur"
-          aria-live="polite"
+        <button
+          data-role="race-pause-resume"
+          type="button"
+          aria-label="Pause race"
+          aria-pressed="false"
+          class="group pointer-events-auto grid size-12 place-items-center rounded-lg border border-zinc-700 bg-zinc-900/90 text-zinc-100 shadow-xl backdrop-blur hover:bg-zinc-800 hover:text-white disabled:opacity-40"
         >
-        </p>
-        <div
-          class="pointer-events-auto flex items-center gap-1 rounded-lg border border-zinc-700 bg-zinc-900/90 p-1.5 shadow-xl backdrop-blur"
-        >
-          <button
-            data-role="race-restart"
-            type="button"
-            class="rounded-md px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-700 hover:text-white"
-            >Restart</button
+          <svg
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            class="size-5 group-aria-pressed:hidden"
+            aria-hidden="true"
           >
-          <button
-            data-role="race-pause-resume"
-            type="button"
-            class="min-w-20 rounded-md bg-zinc-100 px-4 py-2 text-sm font-semibold text-zinc-900 hover:bg-white"
-            >Pause</button
+            <path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"></path>
+          </svg>
+          <svg
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            class="hidden size-5 group-aria-pressed:block"
+            aria-hidden="true"
           >
-          <button
-            data-role="race-skip-continue"
-            type="button"
-            class="rounded-md px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-700 hover:text-white"
-            >Skip leg</button
-          >
-        </div>
-        <p class="hidden text-[10px] text-zinc-600 sm:block">
-          <span data-role="race-finished-count">0</span> finished · <span
-            data-role="race-released-count">0</span
-          > released
-        </p>
+            <path d="M8.5 5.5v13l10.5-6.5z"></path>
+          </svg>
+        </button>
       </div>
 
       <p
@@ -257,6 +241,11 @@ import Layout from "../layouts/Layout.astro";
       "Open race builder"
     );
   } else if (player) {
+    const backLink =
+      document.querySelector<HTMLAnchorElement>("#race-back-link");
+    if (backLink) {
+      backLink.href = `/race-builder?race=${encodeURIComponent(race.id)}`;
+    }
     player.hidden = false;
     try {
       mountScene(createRacePlayerScene(race, player), {
