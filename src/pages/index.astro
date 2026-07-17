@@ -73,16 +73,68 @@ import Tooltip from "../components/Tooltip.astro";
 
     <Tooltip />
 
-    <!-- The whole card is one link to the race's pre-launch screen. -->
+    <!-- The whole card is one link to the race's pre-launch screen. The
+         hover-revealed actions overlay is a sibling of the link so the
+         buttons aren't nested inside it. -->
     <template id="tile">
-      <a class="tile">
-        <h2 data-name></h2>
-        <div class="preview" data-preview></div>
-        <div class="footer">
-          <span class="legs" data-legs></span>
-          <span class="pill" data-action></span>
+      <div class="tile-wrap">
+        <a class="tile">
+          <h2 data-name></h2>
+          <div class="preview" data-preview></div>
+          <div class="footer">
+            <span class="legs" data-legs></span>
+            <span class="pill" data-action></span>
+          </div>
+        </a>
+        <div class="actions">
+          <button
+            type="button"
+            data-duplicate-race
+            aria-label="Duplicate race"
+            data-tooltip="Duplicate race"
+          >
+            <!-- lucide: copy -->
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <rect x="9" y="9" width="12" height="12" rx="2.5"></rect>
+              <path
+                d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"
+              ></path>
+            </svg>
+          </button>
+          <button
+            type="button"
+            data-delete-race
+            aria-label="Delete race"
+            data-tooltip="Delete race"
+          >
+            <!-- lucide: trash -->
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M3 6h18"></path>
+              <path
+                d="M19 6v13.5A1.5 1.5 0 0 1 17.5 21h-11A1.5 1.5 0 0 1 5 19.5V6"
+              ></path>
+              <path d="M8 6V4.5A1.5 1.5 0 0 1 9.5 3h5A1.5 1.5 0 0 1 16 4.5V6"
+              ></path>
+            </svg>
+          </button>
         </div>
-      </a>
+      </div>
     </template>
 
     <style>
@@ -191,6 +243,9 @@ import Tooltip from "../components/Tooltip.astro";
           grid-template-columns: 1fr;
         }
       }
+      .tile-wrap {
+        position: relative;
+      }
       .tile {
         display: flex;
         flex-direction: column;
@@ -202,6 +257,48 @@ import Tooltip from "../components/Tooltip.astro";
         color: inherit;
         text-decoration: none;
       }
+      /* Icon actions overlaid on the card, vertically centered with the
+         title and revealed on hover — same idiom as the builder's leg cards. */
+      .actions {
+        position: absolute;
+        top: calc(1.5rem - 0.25rem);
+        right: 1.5rem;
+        display: flex;
+        gap: 0.375rem;
+        opacity: 0;
+        transition: opacity 0.12s ease-out;
+      }
+      .tile-wrap:hover .actions,
+      .tile-wrap:focus-within .actions {
+        opacity: 1;
+      }
+      .actions button {
+        display: grid;
+        place-items: center;
+        width: 2rem;
+        height: 2rem;
+        padding: 0;
+        border: 0;
+        border-radius: 999px;
+        cursor: pointer;
+        background: oklch(17% 0.004 285 / 0.75);
+        backdrop-filter: blur(4px);
+        color: var(--dim);
+        transition:
+          color 0.12s ease-out,
+          background 0.12s ease-out;
+      }
+      .actions button:hover {
+        background: var(--canvas);
+        color: var(--ink);
+      }
+      .actions button[data-delete-race]:hover {
+        color: oklch(70% 0.19 25);
+      }
+      .actions svg {
+        width: 1rem;
+        height: 1rem;
+      }
       .footer {
         display: flex;
         align-items: center;
@@ -211,6 +308,8 @@ import Tooltip from "../components/Tooltip.astro";
       }
       .tile h2 {
         min-width: 0;
+        /* Keep long names clear of the hover actions. */
+        padding-right: 4.5rem;
         font-size: 1.375rem;
         font-weight: 800;
         letter-spacing: -0.01em;
@@ -396,6 +495,21 @@ import Tooltip from "../components/Tooltip.astro";
               });
             });
           });
+
+          fragment
+            .querySelector<HTMLButtonElement>("[data-duplicate-race]")!
+            .addEventListener("click", () => {
+              repository.duplicateRace(race.id);
+              renderLibrary();
+            });
+          fragment
+            .querySelector<HTMLButtonElement>("[data-delete-race]")!
+            .addEventListener("click", () => {
+              if (!confirm(`Delete "${race.name}"? This can't be undone.`))
+                return;
+              repository.delete(race.id);
+              renderLibrary();
+            });
 
           const action = fragment.querySelector<HTMLElement>("[data-action]")!;
           action.textContent = playable ? "Preview" : "Finish setup";
