@@ -32,7 +32,7 @@ const COUNTDOWN_STEP_MS = 650;
 const COUNTDOWN_GO_HOLD_MS = 700;
 const COUNTDOWN_EXIT_MS = 300;
 /** Clear-track pause between the countdown overlay leaving and marble release. */
-const TRACK_REVEAL_HOLD_MS = 1_000;
+const TRACK_REVEAL_HOLD_MS = 200;
 
 const optionalButtons = (root: HTMLElement, roles: readonly string[]) =>
   roles.flatMap((role) => [
