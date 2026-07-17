@@ -19,6 +19,7 @@
   --color-brand: oklch(70% 0.185 45);
   --color-brand-hot: oklch(74% 0.185 45);
   --color-brand-shadow: oklch(52% 0.15 45);
+  --color-stamp: oklch(32% 0.006 285);
   --color-brand-ink: oklch(18% 0.03 50);
   --color-guide: oklch(78% 0.115 210);
 }

@@ -36,7 +36,7 @@ import Tooltip from "../components/Tooltip.astro";
             id="race-name"
             maxlength="80"
             rows="1"
-            class="type-display mt-6 block w-full resize-none overflow-hidden border-0 bg-transparent p-0 text-[clamp(3rem,6vw,4.5rem)] text-ink caret-brand [text-shadow:0.08em_0.09em_0_var(--color-shadow)] placeholder:text-ink-faint focus:outline-none"
+            class="type-display mt-6 block w-full resize-none overflow-hidden border-0 bg-transparent p-0 text-[clamp(3rem,6vw,4.5rem)] text-ink caret-brand [text-shadow:0.08em_0.09em_0_var(--color-stamp)] placeholder:text-ink-faint focus:outline-none"
             placeholder="Untitled race"></textarea>
           <a id="play-race" class="pill pill-play mt-8 text-sm">Play race</a>
 
@@ -129,14 +129,41 @@ import Tooltip from "../components/Tooltip.astro";
           <p id="leg-move-status" class="sr-only" role="status"></p>
           <ol id="leg-list" class="mt-8 flex flex-col gap-6"></ol>
 
-          <div class="mt-10 flex justify-center gap-3">
+          <button
+            id="add-leg"
+            type="button"
+            class="group/add mt-6 flex aspect-[16/9] w-full cursor-pointer flex-col items-center justify-center gap-5 rounded-[1.25rem] border-2 border-dashed border-line px-6 transition-colors hover:border-ink-dim"
+          >
+            <span
+              class="max-w-56 text-balance text-center text-[1.375rem] font-extrabold leading-tight tracking-[-0.01em] text-ink-dim"
+              >One leg at a time…</span
+            >
+            <span
+              class="pill pill-primary text-sm group-hover/add:translate-y-0.5 group-hover/add:shadow-[0_2px_0_oklch(58%_0.005_285)]"
+            >
+              <!-- lucide: plus -->
+              <svg
+                class="size-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M5 12h14"></path>
+                <path d="M12 5v14"></path>
+              </svg>
+              Add leg
+            </span>
+          </button>
+
+          <div class="mt-6 flex justify-center">
             <button
               id="complete-race"
               type="button"
               class="pill pill-ghost text-sm">Auto-fill legs</button
-            >
-            <button id="add-leg" type="button" class="pill pill-primary text-sm"
-              >Add leg</button
             >
           </div>
         </section>

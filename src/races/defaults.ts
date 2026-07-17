@@ -92,12 +92,12 @@ export type DefaultRaceOptions = RaceFactoryDependencies & {
   releaseIntervalMs?: number;
 };
 
-/** Creates a new editable race. A single leg keeps the first editing step small. */
+/** Creates a new editable race. Legs start empty so the builder can guide the first add. */
 export const createDefaultRace = ({
   id,
   name,
   participantCount = DEFAULT_PARTICIPANT_COUNT,
-  legCount = 1,
+  legCount = 0,
   releaseIntervalMs = DEFAULT_RELEASE_INTERVAL_MS,
   createId = createLocalId,
   now = () => new Date(),
