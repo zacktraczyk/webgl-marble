@@ -54,7 +54,7 @@ import Tooltip from "../components/Tooltip.astro";
                   id="marbles-minus"
                   type="button"
                   aria-label="Remove a starting team"
-                  data-tooltip="Remove a starting team"
+                  data-tooltip="Remove a team"
                   class="size-9 rounded-full text-ink-dim hover:bg-raise hover:text-ink disabled:text-ink-faint/50 disabled:hover:bg-transparent"
                   >−</button
                 >
@@ -67,7 +67,7 @@ import Tooltip from "../components/Tooltip.astro";
                   id="marbles-plus"
                   type="button"
                   aria-label="Add a starting team"
-                  data-tooltip="Add a starting team"
+                  data-tooltip="Add a team"
                   class="size-9 rounded-full text-ink-dim hover:bg-raise hover:text-ink disabled:text-ink-faint/50 disabled:hover:bg-transparent"
                   >+</button
                 >
@@ -394,7 +394,9 @@ import Tooltip from "../components/Tooltip.astro";
           event.key === "ArrowUp" ? -1 : event.key === "ArrowDown" ? 1 : 0;
         if (!offset || !race) return;
         event.preventDefault();
-        const from = race.legs.findIndex((candidate) => candidate.id === leg.id);
+        const from = race.legs.findIndex(
+          (candidate) => candidate.id === leg.id
+        );
         const to = from + offset;
         if (from < 0 || to < 0 || to >= race.legs.length) return;
         race = repository.moveLeg(race.id, leg.id, to);
@@ -423,8 +425,14 @@ import Tooltip from "../components/Tooltip.astro";
         item.classList.remove("opacity-40");
         if (!race) return;
         const to = Array.from(legList.children).indexOf(item);
-        const from = race.legs.findIndex((candidate) => candidate.id === leg.id);
-        if (event.dataTransfer?.dropEffect !== "none" && to >= 0 && to !== from) {
+        const from = race.legs.findIndex(
+          (candidate) => candidate.id === leg.id
+        );
+        if (
+          event.dataTransfer?.dropEffect !== "none" &&
+          to >= 0 &&
+          to !== from
+        ) {
           race = repository.moveLeg(race.id, leg.id, to);
         }
         // Re-render even when nothing moved to undo any live preview reordering.
