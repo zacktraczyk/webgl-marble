@@ -27,25 +27,7 @@ import Tooltip from "../components/Tooltip.astro";
   <body>
     <main>
       <header>
-        <h1>Races</h1>
-        <button type="button" class="pill primary icon" data-create-race>
-          <!-- lucide: plus -->
-          <svg
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.5"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            aria-hidden="true"
-          >
-            <path d="M5 12h14"></path>
-            <path d="M12 5v14"></path>
-          </svg>
-          New race
-        </button>
+        <h1>Marble Races</h1>
       </header>
 
       <section id="empty" hidden>
@@ -59,7 +41,34 @@ import Tooltip from "../components/Tooltip.astro";
         </button>
       </section>
 
-      <section id="grid" aria-label="Saved races"></section>
+      <section id="grid" aria-label="Saved races">
+        <button
+          type="button"
+          id="create-tile"
+          class="tile create"
+          data-create-race
+        >
+          <span class="quip">Let's Get Rolling</span>
+          <span class="pill primary icon">
+            <!-- lucide: plus -->
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M5 12h14"></path>
+              <path d="M12 5v14"></path>
+            </svg>
+            New race
+          </span>
+        </button>
+      </section>
     </main>
 
     <Tooltip />
@@ -119,9 +128,6 @@ import Tooltip from "../components/Tooltip.astro";
         letter-spacing: -0.03em;
         line-height: 0.9;
         text-shadow: 0.08em 0.09em 0 var(--shadow);
-      }
-      header .pill {
-        margin-bottom: 0.875rem;
       }
       .pill {
         appearance: none;
@@ -255,6 +261,41 @@ import Tooltip from "../components/Tooltip.astro";
         box-shadow: 0 2px 0 oklch(58% 0.005 285);
       }
 
+      .tile.create {
+        appearance: none;
+        align-items: center;
+        justify-content: center;
+        gap: 1.25rem;
+        background: none;
+        border: 2px dashed var(--line);
+        box-shadow: none;
+        cursor: pointer;
+        font-family: inherit;
+        transition: border-color 0.12s ease-out;
+      }
+      .tile.create:hover {
+        border-color: var(--dim);
+      }
+      /* Match the sizing of a standalone pill, not the fixed-width tile ones. */
+      .tile.create .pill {
+        width: auto;
+        font-size: 0.9375rem;
+        padding: 0.625rem 1.375rem;
+      }
+      /* Same display treatment as tile titles — Bricolage's optical size
+         axis shifts to its display cut at this size — but dimmed so it
+         doesn't compete with real race names. */
+      .quip {
+        max-width: 14rem;
+        text-align: center;
+        text-wrap: balance;
+        font-size: 1.375rem;
+        font-weight: 800;
+        letter-spacing: -0.01em;
+        line-height: 1.2;
+        color: var(--dim);
+      }
+
       #empty {
         max-width: 24rem;
         padding-top: 2rem;
@@ -307,6 +348,7 @@ import Tooltip from "../components/Tooltip.astro";
       const grid = document.querySelector<HTMLElement>("#grid");
       const empty = document.querySelector<HTMLElement>("#empty");
       const template = document.querySelector<HTMLTemplateElement>("#tile");
+      const createTile = document.querySelector<HTMLElement>("#create-tile");
 
       const builderUrl = (raceId: string) =>
         `/race-builder?race=${encodeURIComponent(raceId)}`;
@@ -317,7 +359,7 @@ import Tooltip from "../components/Tooltip.astro";
       };
 
       const renderLibrary = () => {
-        if (!grid || !empty || !template) return;
+        if (!grid || !empty || !template || !createTile) return;
         const races = repository.list();
         grid.replaceChildren();
         empty.hidden = races.length > 0;
@@ -367,6 +409,9 @@ import Tooltip from "../components/Tooltip.astro";
           }
           grid.append(fragment);
         }
+        // The empty state has its own create button, so the dashed create
+        // tile only appears alongside actual races.
+        if (races.length > 0) grid.append(createTile);
         for (const draw of pending) draw();
       };
 
