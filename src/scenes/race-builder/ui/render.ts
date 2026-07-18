@@ -46,8 +46,6 @@ export const render = (context: RaceBuilderContext) => {
     !ui.marbleCount ||
     !ui.marblesMinus ||
     !ui.marblesPlus ||
-    !ui.releaseSpeed ||
-    !ui.releaseSpeedOutput ||
     !ui.legCount ||
     !ui.legGuidance ||
     !ui.legList ||
@@ -81,9 +79,6 @@ export const render = (context: RaceBuilderContext) => {
     ui.marblesPerTeamSlider.value = `${sliderIndex}`;
     ui.marblesPerTeamOutput.value = `${marblesPerTeam}`;
   }
-  ui.releaseSpeed.value = `${race.releaseIntervalMs}`;
-  ui.releaseSpeedOutput.value = `${race.releaseIntervalMs} ms`;
-
   const needed = requiredLegCount(race);
   const difference = needed - race.legs.length;
   ui.legCount.textContent = `${race.legs.length} / ${needed}`;

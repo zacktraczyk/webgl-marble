@@ -12,7 +12,7 @@ import { RACE_DOCUMENT_VERSION, isValidMarblesPerTeam } from "./types";
 
 export const DEFAULT_PARTICIPANT_COUNT = 4;
 export const DEFAULT_MARBLES_PER_TEAM = 60;
-export const DEFAULT_RELEASE_INTERVAL_MS = 60;
+export const DEFAULT_RELEASE_INTERVAL_MS = 15;
 export const MAX_RACE_PARTICIPANTS = TEAM_COLORS.length;
 
 export type RaceFactoryDependencies = {

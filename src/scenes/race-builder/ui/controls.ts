@@ -101,25 +101,6 @@ export const bindRaceBuilderControls = (
     },
     { signal }
   );
-  ui.releaseSpeed?.addEventListener(
-    "input",
-    () => {
-      if (ui.releaseSpeedOutput && ui.releaseSpeed)
-        ui.releaseSpeedOutput.value = `${ui.releaseSpeed.value} ms`;
-    },
-    { signal }
-  );
-  ui.releaseSpeed?.addEventListener(
-    "change",
-    () => {
-      if (!context.race || !ui.releaseSpeed) return;
-      context.saveRace({
-        ...context.race,
-        releaseIntervalMs: Number(ui.releaseSpeed.value),
-      });
-    },
-    { signal }
-  );
   ui.addLegButton?.addEventListener(
     "click",
     () => {

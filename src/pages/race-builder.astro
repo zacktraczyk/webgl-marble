@@ -54,7 +54,10 @@ import Tooltip from "../components/Tooltip.astro";
             <div class="mt-5 flex items-center justify-between gap-4">
               <div>
                 <p class="text-sm font-bold text-ink">Starting teams</p>
-                <p id="setup-summary" class="mt-1 text-xs leading-4 text-ink-dim">
+                <p
+                  id="setup-summary"
+                  class="mt-1 text-xs leading-4 text-ink-dim"
+                >
                   One out per leg
                 </p>
               </div>
@@ -102,35 +105,6 @@ import Tooltip from "../components/Tooltip.astro";
                 ></output>
               </div>
             </div>
-            <details class="group mt-6 border-t border-line pt-4">
-              <summary
-                class="flex cursor-pointer list-none items-center justify-between text-xs font-semibold text-ink-dim hover:text-ink"
-              >
-                Advanced
-                <span
-                  class="text-ink-faint transition-transform group-open:rotate-90"
-                  >→</span
-                >
-              </summary>
-              <label
-                class="mt-4 block text-sm font-bold text-ink"
-                for="release-speed">Release interval</label
-              >
-              <div class="mt-3 flex items-center gap-3">
-                <input
-                  id="release-speed"
-                  type="range"
-                  min="20"
-                  max="240"
-                  step="20"
-                  class="w-full accent-brand"
-                />
-                <output
-                  id="release-speed-output"
-                  class="w-16 text-right text-xs tabular-nums text-ink-dim"
-                ></output>
-              </div>
-            </details>
           </aside>
 
           <hr id="legs-divider" class="mt-10 border-line" />

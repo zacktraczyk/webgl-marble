@@ -9,8 +9,6 @@ export type RaceBuilderUi = {
   setupSummary: HTMLElement | null;
   marblesPerTeamSlider: HTMLInputElement | null;
   marblesPerTeamOutput: HTMLOutputElement | null;
-  releaseSpeed: HTMLInputElement | null;
-  releaseSpeedOutput: HTMLOutputElement | null;
   legCount: HTMLElement | null;
   legGuidance: HTMLElement | null;
   legList: HTMLOListElement | null;
@@ -36,10 +34,6 @@ export const resolveRaceBuilderUi = (): RaceBuilderUi => ({
     document.querySelector<HTMLInputElement>("#marbles-per-team"),
   marblesPerTeamOutput: document.querySelector<HTMLOutputElement>(
     "#marbles-per-team-output"
-  ),
-  releaseSpeed: document.querySelector<HTMLInputElement>("#release-speed"),
-  releaseSpeedOutput: document.querySelector<HTMLOutputElement>(
-    "#release-speed-output"
   ),
   legCount: document.querySelector<HTMLElement>("#leg-count"),
   legGuidance: document.querySelector<HTMLElement>("#leg-guidance"),

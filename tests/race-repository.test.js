@@ -36,6 +36,7 @@ describe("race repository", () => {
       marblesPerTeam: 60,
       eliminatedPerLeg: 1,
     });
+    expect(race.releaseIntervalMs).toBe(15);
     expect(isRacePlayable(race)).toBe(true);
   });
 
