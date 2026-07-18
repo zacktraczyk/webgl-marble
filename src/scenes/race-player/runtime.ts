@@ -1,4 +1,3 @@
-import { uniformCameraFitInsets } from "../../engine/camera/fit";
 import Stage from "../../engine/stage";
 import {
   computeEraSchedule,
@@ -23,7 +22,11 @@ import { RaceCameraController } from "./raceCamera";
 
 export const DEFAULT_MAXIMUM_LEG_DURATION_MS = null;
 
-/** Padding, in world units on each side, the scrolling camera keeps around the active leg. */
+/**
+ * Vertical padding, in screen pixels, the scrolling camera keeps around the
+ * active leg. Horizontal insets stay zero so the leg walls sit flush with the
+ * viewport edges.
+ */
 const CAMERA_INSET = 24;
 /**
  * Fraction of the incoming leg that must be on screen before its marbles start
@@ -162,7 +165,7 @@ export class RacePlayerRuntime {
     this.stage.physicsEnabled = true;
 
     this.cameraController = new RaceCameraController(canvas, this.stage.camera, {
-      insets: uniformCameraFitInsets(CAMERA_INSET),
+      insets: { top: CAMERA_INSET, bottom: CAMERA_INSET, left: 0, right: 0 },
     });
 
     this.pauseButtons = optionalButtons(this.root, [
