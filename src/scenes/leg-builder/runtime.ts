@@ -41,16 +41,16 @@ import { resolveBuilderUi, type BuilderUi } from "./ui";
 import { GridOverlay } from "./ui/gridOverlay";
 import { MotionInspectorController } from "./ui/motionInspector";
 import { updateBuilderInterface } from "./ui/presenter";
-import { TooltipController } from "../../components/tooltip";
+import { TooltipController } from "../../ui/tooltip";
 import { setDatasetFlag } from "../playbackTimers";
 
-export type LevelBuilderOptions = {
+export type LegBuilderOptions = {
   initialLevel?: SerializedLevel;
   roundConfiguration?: RoundConfiguration;
   onCommit?: (level: SerializedLevel) => void;
 };
 
-export class LevelBuilderRuntime {
+export class LegBuilderRuntime {
   private readonly stage: Stage;
   private readonly ui: BuilderUi;
   private readonly level: AuthoredLevel;
@@ -62,7 +62,7 @@ export class LevelBuilderRuntime {
   private readonly controls: BuilderControls;
   private readonly cameraController: BuilderCameraController;
   private readonly motionInspector: MotionInspectorController;
-  private readonly onCommit: LevelBuilderOptions["onCommit"];
+  private readonly onCommit: LegBuilderOptions["onCommit"];
   private configuration: RoundConfiguration;
   /**
    * Era finish plan handed in by the leg builder. The settings inputs cannot
@@ -78,7 +78,7 @@ export class LevelBuilderRuntime {
   constructor(
     rootElement: HTMLElement | null,
     signal: AbortSignal,
-    options: LevelBuilderOptions = {}
+    options: LegBuilderOptions = {}
   ) {
     // DOM and engine
     this.ui = resolveBuilderUi(rootElement);

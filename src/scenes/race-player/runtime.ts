@@ -22,6 +22,7 @@ import { fallbackEliminationIndex, RaceProgression } from "./progression";
 import { RaceCameraController } from "./raceCamera";
 import { RaceCountdown } from "./countdown";
 import { RacePlayerPresenter } from "./presenter";
+import { setupChromeAutoHide } from "./chromeAutoHide";
 import {
   NEXT_LEG_RELEASE_FRACTION,
   type EliminationReason,
@@ -160,6 +161,7 @@ export class RacePlayerRuntime {
     ]);
     this.bindControls(signal);
     this.presenter.setText("race-name", this.raceDocument.name);
+    setupChromeAutoHide(this.root, signal);
 
     try {
       this.startRace();

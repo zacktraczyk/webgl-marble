@@ -1,4 +1,4 @@
-import { attachTooltip } from "../../components/tooltip";
+import { attachTooltip } from "../../ui/tooltip";
 import { RaceRepository, type RaceDocument } from "../../races";
 import { bindRaceBuilderControls } from "./ui/controls";
 import { resolveRaceBuilderUi } from "./ui/elements";

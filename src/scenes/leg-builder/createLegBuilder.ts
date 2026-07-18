@@ -1,23 +1,23 @@
 import type { SerializedLevel } from "../../game/level/document";
 import type { Scene } from "../../engine/runtime/scene";
-import { LevelBuilderRuntime, type LevelBuilderOptions } from "./runtime";
+import { LegBuilderRuntime, type LegBuilderOptions } from "./runtime";
 
-export type { LevelBuilderOptions } from "./runtime";
+export type { LegBuilderOptions } from "./runtime";
 
-export interface LevelBuilderScene extends Scene {
+export interface LegBuilderScene extends Scene {
   getLevelSnapshot(): SerializedLevel | null;
 }
 
-/** Core level editor scene — mounts against a root element with optional race wiring. */
-export default function createLevelBuilder(
+/** Core leg editor scene — mounts against a root element with optional race wiring. */
+export default function createLegBuilder(
   rootElement: HTMLElement | null,
-  options: LevelBuilderOptions = {}
-): LevelBuilderScene {
-  let runtime: LevelBuilderRuntime | null = null;
+  options: LegBuilderOptions = {}
+): LegBuilderScene {
+  let runtime: LegBuilderRuntime | null = null;
 
   return {
     load: ({ signal }) => {
-      runtime = new LevelBuilderRuntime(rootElement, signal, options);
+      runtime = new LegBuilderRuntime(rootElement, signal, options);
     },
     fixedUpdate: (deltaMs) => runtime?.fixedUpdate(deltaMs),
     update: () => runtime?.updateInterface(),

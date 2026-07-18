@@ -15,31 +15,34 @@ import type {
   WallEndpointFeedback,
 } from "./gestures";
 import {
+  createGestureHost,
+  type GestureHostController,
+} from "./gestureHost";
+import {
+  findWallEndpointTarget,
+  type HandleTestDeps,
+  type WallEndpointTarget,
+} from "./handles";
+import {
+  isCreationToolActive,
+  updateCursor as applyIdleCursor,
+  updateIdleState as applyIdleState,
+  type IdleCursorContext,
+} from "./idleCursor";
+import { LevelEditorKeyboard } from "./keyboard";
+import {
   handlePointerDown,
   handlePointerMove,
   handlePointerUp,
   type PointerGestureHost,
 } from "./pointerGestures";
-import {
-  endpointAt,
-  findWallEndpointTarget,
-  motionRangeHandleAt,
-  resizeHandleAt,
-  rotationHandleAt,
-  type HandleTestDeps,
-  type WallEndpointTarget,
-} from "./handles";
-import { LevelEditorKeyboard } from "./keyboard";
 import { LevelEditorSelection } from "./selection";
 import { type SnapDeps } from "./snap";
-import { HANDLE_HIT_RADIUS } from "./constants";
 import {
   applyLevelObjectShape,
   getLevelObjectShape,
   getWallEndpoints,
   moveShape,
-  pickLevelObject,
-  resizeHandleCursor,
   setWallEndpoints,
 } from "../../game/level/geometry";
 
@@ -168,7 +171,10 @@ export class LevelEditorController {
       },
       signal
     );
-    this.gestureHost = this.createGestureHost();
+    // Private fields exist at runtime; TS can't see them across the module boundary.
+    this.gestureHost = createGestureHost(
+      this as unknown as GestureHostController
+    );
   }
 
   setActiveTool(tool: SelectedTool) {
@@ -316,96 +322,39 @@ export class LevelEditorController {
     };
   }
 
-  private createGestureHost(): PointerGestureHost {
-    // Bind live getters/setters to the controller without rebuilding per event.
-    // eslint-disable-next-line @typescript-eslint/no-this-alias -- host getters need the controller
-    const self = this;
+  private get cameraZoom() {
+    return this.stage.camera.zoom;
+  }
+
+  private get creationToolActive() {
+    return isCreationToolActive(this.activeTool);
+  }
+
+  private get idleCursorContext(): IdleCursorContext {
     return {
-      get gesture() {
-        return self.gesture;
-      },
-      set gesture(value) {
-        self.gesture = value;
-      },
-      get wallAnchor() {
-        return self.wallAnchor;
-      },
-      set wallAnchor(value) {
-        self.wallAnchor = value;
-      },
-      get wallPreviewEnd() {
-        return self.wallPreviewEnd;
-      },
-      set wallPreviewEnd(value) {
-        self.wallPreviewEnd = value;
-      },
-      get endpointFeedback() {
-        return self.endpointFeedback;
-      },
-      set endpointFeedback(value) {
-        self.endpointFeedback = value;
-      },
-      get placementPreviewPosition() {
-        return self.placementPreviewPosition;
-      },
-      set placementPreviewPosition(value) {
-        self.placementPreviewPosition = value;
-      },
-      get lastPointerScreen() {
-        return self.lastPointerScreen;
-      },
-      set lastPointerScreen(value) {
-        self.lastPointerScreen = value;
-      },
-      get activeTool() {
-        return self.activeTool;
-      },
-      get readOnly() {
-        return self.readOnly;
-      },
-      get handleDeps() {
-        return self.handleDeps;
-      },
-      get snapDeps() {
-        return self.snapDeps;
-      },
-      get dragDeps() {
-        return self.dragDeps;
-      },
-      selection: this.selection,
-      callbacks: this.callbacks,
-      cameraControls: this.cameraControls,
+      gesture: this.gesture,
       keyboard: this.keyboard,
-      get creationToolActive() {
-        return self.creationToolActive;
+      activeTool: this.activeTool,
+      creationToolActive: this.creationToolActive,
+      readOnly: this.readOnly,
+      selection: this.selection,
+      handleDeps: this.handleDeps,
+      selectedObject: this.selectedObject,
+      getObjects: this.getObjects,
+      worldPoint: (screenPoint) => this.worldPoint(screenPoint),
+      cameraZoom: this.cameraZoom,
+      getDefaultWallThickness: this.getDefaultWallThickness,
+      setCursor: (cursor) => this.setCursor(cursor),
+      setEndpointFeedback: (feedback) => {
+        this.endpointFeedback = feedback;
       },
-      get selectedObject() {
-        return self.selectedObject;
-      },
-      get selectedObjects() {
-        return self.selectedObjects;
-      },
-      get cameraZoom() {
-        return self.stage.camera.zoom;
-      },
-      screenPoint: (event) => self.screenPoint(event),
-      worldPoint: (screenPoint) => self.worldPoint(screenPoint),
-      screenDistance: (first, second) => self.screenDistance(first, second),
-      capturePointer: (pointerId) => self.capturePointer(pointerId),
-      releasePointer: (pointerId) => self.releasePointer(pointerId),
-      cancelGesture: () => self.cancelGesture(),
-      updateIdleState: (screenPoint, options) =>
-        self.updateIdleState(screenPoint, options),
       showEndpointFeedback: (target, kind) =>
-        self.showEndpointFeedback(target, kind),
-      isTemporarySelection: (modifier) => self.isTemporarySelection(modifier),
-      clearWallAnchor: () => self.clearWallAnchor(),
-      getObjects: () => self.getObjects(),
-      getDefaultWallThickness: () => self.getDefaultWallThickness(),
-      setCursor: (cursor) => {
-        self.stage.canvas.style.cursor = cursor;
-      },
+        this.showEndpointFeedback(target, kind),
     };
+  }
+
+  private setCursor(cursor: string) {
+    this.stage.canvas.style.cursor = cursor;
   }
 
   private screenPoint(event: PointerEvent | WheelEvent): Vec2 {
@@ -499,12 +448,6 @@ export class LevelEditorController {
     return Math.hypot(first[0] - second[0], first[1] - second[1]);
   }
 
-  private get creationToolActive() {
-    return (
-      this.activeTool === SelectedTool.Wall || isPusherTool(this.activeTool)
-    );
-  }
-
   private isTemporarySelection(modifier: {
     metaKey: boolean;
     ctrlKey: boolean;
@@ -524,6 +467,17 @@ export class LevelEditorController {
           kind,
         }
       : null;
+  }
+
+  private updateIdleState(
+    screenPoint: Vec2,
+    options?: { temporarySelection?: boolean }
+  ) {
+    applyIdleState(this.idleCursorContext, screenPoint, options);
+  }
+
+  private updateCursor() {
+    applyIdleCursor(this.idleCursorContext);
   }
 
   private readonly pointerDown = (event: PointerEvent) => {
@@ -559,118 +513,6 @@ export class LevelEditorController {
     this.cameraControls.handleWheel(screenPoint, event);
     event.preventDefault();
   };
-
-  private updateIdleState(
-    screenPoint: Vec2,
-    {
-      temporarySelection = this.keyboard.selectionModifierHeld &&
-        this.creationToolActive,
-    }: { temporarySelection?: boolean } = {}
-  ) {
-    if (this.gesture) {
-      return;
-    }
-    if (this.keyboard.spaceHeld || this.activeTool === SelectedTool.Pan) {
-      this.selection.setHovered(null);
-      this.stage.canvas.style.cursor = "grab";
-      return;
-    }
-    if (this.creationToolActive && !temporarySelection) {
-      this.selection.setHovered(null);
-      this.stage.canvas.style.cursor = this.readOnly
-        ? "not-allowed"
-        : "crosshair";
-      return;
-    }
-
-    const handleDeps = this.handleDeps;
-    const directEndpointTarget = temporarySelection
-      ? findWallEndpointTarget(handleDeps, screenPoint, HANDLE_HIT_RADIUS, {
-          selectableOnly: true,
-        })
-      : null;
-    if (directEndpointTarget) {
-      this.selection.setHovered(directEndpointTarget.objectId);
-      this.showEndpointFeedback(directEndpointTarget, "edit");
-      this.stage.canvas.style.cursor = this.readOnly ? "default" : "crosshair";
-      return;
-    }
-
-    this.endpointFeedback = null;
-    const selectedObject = this.selectedObject;
-    if (
-      selectedObject &&
-      motionRangeHandleAt(handleDeps, selectedObject, screenPoint)
-    ) {
-      this.selection.setHovered(selectedObject.id);
-      this.stage.canvas.style.cursor = this.readOnly ? "default" : "crosshair";
-      return;
-    }
-    const selectedEndpoint = selectedObject
-      ? endpointAt(handleDeps, selectedObject, screenPoint)
-      : null;
-    if (selectedObject?.prefab === "wall" && selectedEndpoint) {
-      const { start, end } = getWallEndpoints(selectedObject);
-      this.selection.setHovered(selectedObject.id);
-      this.showEndpointFeedback(
-        {
-          object: selectedObject,
-          objectId: selectedObject.id,
-          endpoint: selectedEndpoint,
-          position: selectedEndpoint === "start" ? start : end,
-        },
-        "edit"
-      );
-      this.stage.canvas.style.cursor = this.readOnly ? "default" : "crosshair";
-      return;
-    }
-    if (
-      selectedObject &&
-      rotationHandleAt(handleDeps, selectedObject, screenPoint)
-    ) {
-      this.selection.setHovered(selectedObject.id);
-      this.stage.canvas.style.cursor = this.readOnly ? "default" : "grab";
-      return;
-    }
-    const handle = selectedObject
-      ? resizeHandleAt(handleDeps, selectedObject, screenPoint)
-      : null;
-    if (handle) {
-      this.selection.setHovered(selectedObject?.id ?? null);
-      this.stage.canvas.style.cursor = this.readOnly
-        ? "default"
-        : resizeHandleCursor(handle);
-      return;
-    }
-    const hoveredObject = pickLevelObject(
-      this.getObjects(),
-      this.worldPoint(screenPoint),
-      4 / Math.max(this.stage.camera.zoom, 0.001),
-      this.getDefaultWallThickness()
-    );
-    this.selection.setHovered(hoveredObject?.id ?? null);
-    this.stage.canvas.style.cursor =
-      hoveredObject && !this.readOnly ? "grab" : "default";
-  }
-
-  private updateCursor() {
-    if (this.gesture?.kind === "pan") {
-      this.stage.canvas.style.cursor = "grabbing";
-    } else if (
-      this.keyboard.spaceHeld ||
-      this.activeTool === SelectedTool.Pan
-    ) {
-      this.stage.canvas.style.cursor = "grab";
-    } else if (this.keyboard.selectionModifierHeld && this.creationToolActive) {
-      this.stage.canvas.style.cursor = "default";
-    } else if (this.creationToolActive) {
-      this.stage.canvas.style.cursor = this.readOnly
-        ? "not-allowed"
-        : "crosshair";
-    } else {
-      this.stage.canvas.style.cursor = "default";
-    }
-  }
 
   private readonly selectAll = () => {
     if (this.readOnly) {

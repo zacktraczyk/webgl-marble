@@ -1,7 +1,6 @@
 import type { Collision, ContactPoint, ContactSolver } from "../types";
 import type { PhysicsEntity } from "../../entity";
-
-type Vec2 = [number, number];
+import type { Vec2 } from "../../../core/transform";
 
 type CachedImpulse = {
   normal: number;

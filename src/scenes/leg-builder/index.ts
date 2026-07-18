@@ -1,7 +1,7 @@
 import type { Scene, SceneContext } from "../../engine/runtime/scene";
 import { createLegRoundConfiguration } from "../../game/race/legRound";
 import { RaceRepository } from "../../races";
-import createLevelBuilder from "./createLevelBuilder";
+import createLegBuilder from "./createLegBuilder";
 
 const byId = (id: string) => document.getElementById(id);
 
@@ -97,7 +97,7 @@ const wireRaceHomeLink = () => {
   };
 };
 
-/** Page scene for `/leg-builder` — wires race persistence around the level editor. */
+/** Page scene for `/leg-builder` — wires race persistence around the leg editor. */
 export default function createScene(): Scene {
   let disposeChrome = () => {};
   let inner: Scene | null = null;
@@ -111,7 +111,7 @@ export default function createScene(): Scene {
       let currentRace = race;
       let currentLeg = raceLeg;
 
-      inner = createLevelBuilder(builder, {
+      inner = createLegBuilder(builder, {
         ...(currentRace && currentLeg && roundConfiguration
           ? {
               initialLevel: currentLeg.level,

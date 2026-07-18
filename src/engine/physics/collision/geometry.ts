@@ -1,6 +1,7 @@
 import type { BoundingConvexPolygon } from "../entity";
+import type { Vec2 } from "../../core/transform";
 
-export type Vec2 = [number, number];
+export type { Vec2 };
 
 export const GEOMETRY_EPSILON = 1e-8;
 

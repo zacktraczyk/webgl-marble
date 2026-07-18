@@ -4,7 +4,7 @@
 // real RaceRepository. Each card links to the race's builder, which acts as
 // the pre-launch screen until a dedicated preview page exists.
 import Layout from "../layouts/Layout.astro";
-import Tooltip from "../components/Tooltip.astro";
+import Tooltip from "../ui/Tooltip.astro";
 ---
 
 <Layout title="Race Library · Marbel">
@@ -154,7 +154,7 @@ import Tooltip from "../components/Tooltip.astro";
       renderLevelThumbnail,
       requiredLegCount,
     } from "../races";
-    import { attachTooltip } from "../components/tooltip";
+    import { attachTooltip } from "../ui/tooltip";
 
     attachTooltip(document.body);
     const repository = new RaceRepository();

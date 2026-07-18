@@ -10,9 +10,9 @@ export interface MountSceneOptions extends SceneHostOptions {
 export const mountScene = (
   scene: Scene,
   {
-    errorElement = "#error",
+    errorElement = "error",
     showFps = false,
-    fpsElement = "#fps",
+    fpsElement = "fps",
     ...hostOptions
   }: MountSceneOptions = {}
 ) => {

@@ -452,78 +452,9 @@ import Layout from "../layouts/Layout.astro";
       mountScene(createRacePlayerScene(race, player), {
         errorElement: document.querySelector<HTMLElement>("#race-error"),
       });
-      setupChromeAutoHide(player);
     } catch (error) {
       showError("Race could not start", `${error}`);
       player.hidden = true;
     }
-  }
-
-  /**
-   * Video-player toolbar behavior: mouse activity slides the top/bottom chrome
-   * (and edge vignette) out; a beat of stillness tucks it away again. The
-   * chrome stays out while a control is hovered or focused, while paused, and
-   * on the winner screen.
-   */
-  function setupChromeAutoHide(root: HTMLElement) {
-    const CHROME_HIDE_DELAY_MS = 2600;
-    const chrome = [
-      "#race-back-link",
-      "#race-leg-pill",
-      "#race-controls",
-    ].flatMap((selector) => [
-      ...root.querySelectorAll<HTMLElement>(selector),
-    ]);
-    let hideTimer: number | undefined;
-
-    const chromeEngaged = () =>
-      root.dataset.raceState === "paused" ||
-      root.dataset.raceState === "complete" ||
-      chrome.some(
-        (element) =>
-          element.matches(":hover") ||
-          element.contains(document.activeElement)
-      );
-
-    const hideChrome = () => {
-      if (chromeEngaged()) {
-        scheduleHide();
-        return;
-      }
-      root.dataset.chrome = "hidden";
-    };
-
-    const scheduleHide = () => {
-      window.clearTimeout(hideTimer);
-      hideTimer = window.setTimeout(hideChrome, CHROME_HIDE_DELAY_MS);
-    };
-
-    const showChrome = () => {
-      root.dataset.chrome = "visible";
-      scheduleHide();
-    };
-
-    root.addEventListener("pointermove", showChrome);
-    root.addEventListener("pointerdown", showChrome);
-    window.addEventListener("keydown", showChrome);
-    document.addEventListener("focusin", showChrome);
-    root.addEventListener("pointerleave", () => {
-      window.clearTimeout(hideTimer);
-      hideChrome();
-    });
-
-    // Pausing and the winner screen re-reveal the chrome even without mouse
-    // movement (e.g. pause via keyboard, race finishing on its own).
-    new MutationObserver(() => {
-      if (
-        root.dataset.raceState === "paused" ||
-        root.dataset.raceState === "complete"
-      ) {
-        showChrome();
-      }
-    }).observe(root, {
-      attributes: true,
-      attributeFilter: ["data-race-state"],
-    });
   }
 </script>
