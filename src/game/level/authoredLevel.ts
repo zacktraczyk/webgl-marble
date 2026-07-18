@@ -116,7 +116,7 @@ export class AuthoredLevel {
    * Saved documents may predate the current layout (different clearance or
    * color), so the document is rewritten before the spawn's entities exist.
    */
-  private syncSpawnPointGeometry() {
+  private syncSpawnPointGeometry(origin: Vec2 = [0, 0]) {
     const spawnPoint = this.find("spawn-point");
     if (
       !spawnPoint ||
@@ -127,7 +127,8 @@ export class AuthoredLevel {
     applyTopSliderSpawnLayout(
       spawnPoint,
       this.document.size,
-      this.wallThickness
+      this.wallThickness,
+      origin
     );
   }
 
@@ -199,7 +200,8 @@ export class AuthoredLevel {
     this.hiddenObjects.clear();
   }
 
-  restore(serialized: SerializedLevel) {
+  /** Restores a level, optionally re-pinning course-relative objects around a world-space origin. */
+  restore(serialized: SerializedLevel, origin: Vec2 = [0, 0]) {
     for (const object of [...this.objects]) {
       this.clearRuntimeEntities(object.id);
     }
@@ -208,7 +210,7 @@ export class AuthoredLevel {
     // Saved racks may predate the current packed layout; re-derive before
     // spawning so the frame matches where finished marbles will actually go.
     this.syncFinishZoneGeometry();
-    this.syncSpawnPointGeometry();
+    this.syncSpawnPointGeometry(origin);
     for (const object of this.objects) {
       this.spawn(object);
     }

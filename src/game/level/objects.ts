@@ -161,7 +161,8 @@ export const createStagingRack = (
 export const applyTopSliderSpawnLayout = (
   spawnPoint: Extract<LevelObjectData, { prefab: "spawn-point" }>,
   [stageWidth, stageHeight]: Vec2,
-  wallThickness: number
+  wallThickness: number,
+  [originX, originY]: Vec2 = [0, 0]
 ) => {
   const clearance = topSliderSpawnClearance(
     spawnPoint.properties.radius,
@@ -169,8 +170,8 @@ export const applyTopSliderSpawnLayout = (
   );
   const halfSpan = Math.max(0, stageWidth / 2 - wallThickness - clearance);
   spawnPoint.transform.position = [
-    0,
-    -stageHeight / 2 + wallThickness + clearance,
+    originX,
+    originY - stageHeight / 2 + wallThickness + clearance,
   ];
   spawnPoint.transform.rotation = Math.PI / 2;
   spawnPoint.properties.color = [...SPAWN_COLOR];

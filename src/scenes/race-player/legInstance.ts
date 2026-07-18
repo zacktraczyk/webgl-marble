@@ -78,7 +78,8 @@ export class LegInstance {
       this.frame.top + this.leg.level.size[1] / 2,
     ];
     this.level.restore(
-      translateSerializedLevel(this.resizedFinishRackLevel(), levelCenter)
+      translateSerializedLevel(this.resizedFinishRackLevel(), levelCenter),
+      levelCenter
     );
 
     // Hide the spawn-point visual exactly as the runtime does today — marbles

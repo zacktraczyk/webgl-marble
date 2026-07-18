@@ -4,6 +4,10 @@ import {
   LEG_BOTTOM_CULL_MARGIN,
   LEG_CULL_PADDING,
 } from "../src/scenes/race-player/legInstance.ts";
+import { AuthoredLevel } from "../src/game/level/authoredLevel.ts";
+import { translateSerializedLevel } from "../src/game/level/transform.ts";
+import { topSliderSpawnClearance } from "../src/game/prefabs/spawnPoint.ts";
+import { MAX_MARBLE_RADIUS } from "../src/game/level/constants.ts";
 
 const frame = (overrides = {}) => ({
   index: 0,
@@ -39,5 +43,61 @@ describe("computeLegCullBounds", () => {
     expect(bounds.maxY).toBe(120 + LEG_BOTTOM_CULL_MARGIN);
     expect(bounds.minX).toBe(-20 - LEG_CULL_PADDING);
     expect(bounds.maxX).toBe(20 + LEG_CULL_PADDING);
+  });
+});
+
+describe("translated leg spawn layout", () => {
+  test("keeps a top-slider spawn inside its translated playback leg", () => {
+    const stage = {
+      width: 100,
+      height: 300,
+      spawn: () => ({ scale: [1, 1], delete: () => {} }),
+      world: { flushDestruction: () => {} },
+    };
+    const level = new AuthoredLevel(
+      stage,
+      { teamCount: 2, marblesPerTeam: 1 },
+      5
+    );
+    const serialized = {
+      version: 3,
+      name: "slider",
+      size: [100, 100],
+      settings: { wallThickness: 5 },
+      objects: [
+        {
+          id: "spawn",
+          prefab: "spawn-point",
+          transform: { position: [0, -20], rotation: Math.PI / 2 },
+          properties: {
+            radius: 10,
+            color: [0, 1, 1, 1],
+            launchSpeed: 0,
+            variant: "top-slider",
+          },
+          motion: {
+            type: "oscillate",
+            vector: [20, 0],
+            periodMs: 1000,
+            phase: 0.75,
+            direction: 1,
+          },
+        },
+      ],
+    };
+    const playbackOrigin = [0, 150];
+
+    level.restore(
+      translateSerializedLevel(serialized, playbackOrigin),
+      playbackOrigin
+    );
+
+    expect(level.find("spawn-point").transform.position).toEqual([
+      0,
+      playbackOrigin[1] -
+        serialized.size[1] / 2 +
+        serialized.settings.wallThickness +
+        topSliderSpawnClearance(10, MAX_MARBLE_RADIUS),
+    ]);
   });
 });
