@@ -96,12 +96,6 @@ export class RaceController {
   private releaseQueue: RoundRobinReleaseQueue<PendingMarble> | null = null;
   private physicsActive = false;
   private marbleRadius = MAX_MARBLE_RADIUS;
-  /**
-   * Radius of marbles snapped into the finish grid. May exceed the racing
-   * radius: wide bays grow finish marbles to fill their width, but racing
-   * marbles stay at most MAX_MARBLE_RADIUS so authored tracks never jam.
-   */
-  private finishMarbleRadius = MAX_MARBLE_RADIUS;
   private releaseElapsedMs = 0;
   private releasedMarbles = 0;
   private outOfBoundsMarbles = 0;
@@ -211,7 +205,6 @@ export class RaceController {
     this.finishPlacements = [];
     if (!finish) {
       this.marbleRadius = MAX_MARBLE_RADIUS;
-      this.finishMarbleRadius = MAX_MARBLE_RADIUS;
     } else {
       const packedOptions = {
         position: finish.transform.position,
@@ -224,9 +217,7 @@ export class RaceController {
         minimumRadius: MIN_MARBLE_RADIUS,
         gap: STAGING_MARBLE_GAP,
       };
-      this.finishMarbleRadius =
-        createPackedFinishLayout(packedOptions).marbleRadius;
-      this.marbleRadius = Math.min(this.finishMarbleRadius, MAX_MARBLE_RADIUS);
+      this.marbleRadius = createPackedFinishLayout(packedOptions).marbleRadius;
       this.finishPlacements = createPackedFinishPlacements(packedOptions);
     }
     this.level.setRaceMarbleRadius(this.marbleRadius);
@@ -453,7 +444,7 @@ export class RaceController {
       entity: this.stage.spawn(
         marbleDefinition({
           position: [...position],
-          radius: this.finishMarbleRadius,
+          radius: this.marbleRadius,
           color: TEAM_COLORS[stableTeamIndex],
           team: `${teamIndex + 1}`,
           tags: ["finished-marble"],

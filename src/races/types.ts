@@ -6,12 +6,12 @@ export const RACE_LIBRARY_VERSION = 1 as const;
 /** Legacy marble count — older documents predate the selectable ladder. */
 export const RACE_MARBLES_PER_TEAM = 100 as const;
 /**
- * Selectable marbles-per-team values. Each is rich in divisors so the finish
- * bays can always pick a column count that divides the field exactly — a
- * finished team's bay fills completely, with no stray blank slots.
+ * Selectable starting marbles-per-team values (the slider's stops). Later
+ * legs redistribute eliminated teams' marbles, rounding each leg's count to
+ * whole finish-grid rows, so any starting value yields perfect grids.
  */
 export const MARBLES_PER_TEAM_OPTIONS = [
-  6, 12, 24, 36, 48, 60, 72, 96, 120,
+  6, 12, 24, 36, 48, 60, 72, 96, 120, 150, 180, 240, 300, 360,
 ] as const;
 
 export const isValidMarblesPerTeam = (value: unknown): value is number =>

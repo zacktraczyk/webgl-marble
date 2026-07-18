@@ -1396,7 +1396,9 @@ import "../styles/global.css";
               teamCount: legFinishPlan
                 ? legFinishPlan.activeTeams
                 : race.participants.length,
-              marblesPerTeam: race.rules.marblesPerTeam,
+              // Redistribution grows the per-team count on later legs.
+              marblesPerTeam:
+                legFinishPlan?.marblesPerTeam ?? race.rules.marblesPerTeam,
               releaseIntervalMs: race.releaseIntervalMs,
               ...(legFinishPlan
                 ? {

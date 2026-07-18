@@ -2,160 +2,70 @@ import { describe, expect, test } from "bun:test";
 
 import {
   MAX_FINISH_ROWS,
-  MIN_FINISH_ROWS,
-  MAX_FINISH_MARBLE_SCALE,
   createPackedFinishLayout,
   createPackedFinishPlacements,
   finishRackHeightFor,
-  largestFittingDivisor,
+  roundToFinishGrid,
 } from "../src/game/race/finishGrid";
 
-const MARBLE_LADDER = [6, 12, 24, 36, 48, 60, 72, 96, 120];
-
-describe("largestFittingDivisor", () => {
-  test("returns the largest divisor at or below the limit", () => {
-    expect(largestFittingDivisor(100, 10)).toBe(10);
-    expect(largestFittingDivisor(100, 24)).toBe(20);
-    expect(largestFittingDivisor(100, 49)).toBe(25);
-    expect(largestFittingDivisor(120, 16)).toBe(15);
-    expect(largestFittingDivisor(60, 7)).toBe(6);
-  });
-
-  test("caps at the value itself and floors fractional limits", () => {
-    expect(largestFittingDivisor(6, 100)).toBe(6);
-    expect(largestFittingDivisor(100, 10.9)).toBe(10);
-  });
-
-  test("returns null when not even one column fits", () => {
-    expect(largestFittingDivisor(100, 0.5)).toBe(null);
-  });
-});
-
 describe("createPackedFinishLayout", () => {
-  test("fills each bay exactly with a divisor column count", () => {
-    for (const marblesPerTeam of MARBLE_LADDER) {
-      for (const bayCount of [2, 4, 7, 12]) {
-        const layout = createPackedFinishLayout({
-          width: 1440,
-          wallThickness: 15,
-          bayCount,
-          marblesPerTeam,
-        });
-        expect(marblesPerTeam % layout.columns).toBe(0);
-        expect(layout.columns * layout.rows).toBe(marblesPerTeam);
-        expect(layout.shrunk).toBe(false);
-        // Wide bays grow the radius to fill, never past the cap.
-        expect(layout.marbleRadius).toBeGreaterThanOrEqual(4.8);
-        expect(layout.marbleRadius).toBeLessThanOrEqual(
-          4.8 * MAX_FINISH_MARBLE_SCALE
-        );
-        // Never loose: columns are exact-fill or crunched, except the
-        // degenerate single-row fallback when no divisor spans the bay.
-        const loose = layout.columnPitch > layout.pitch + 1e-6;
-        if (loose) {
-          expect(layout.columns).toBe(marblesPerTeam);
-        }
-        // The rows floor bends only when the radius cap forced a crunch.
-        if (marblesPerTeam >= MIN_FINISH_ROWS && layout.rows < MIN_FINISH_ROWS) {
-          expect(layout.marbleRadius).toBeCloseTo(
-            4.8 * MAX_FINISH_MARBLE_SCALE
-          );
-        }
-      }
+  test("fits the most columns that span the bay, crunching sub-pitch slack", () => {
+    for (const bayCount of [2, 4, 6, 12]) {
+      const layout = createPackedFinishLayout({
+        width: 1440,
+        wallThickness: 15,
+        bayCount,
+        marblesPerTeam: 60,
+      });
+      expect(layout.marbleRadius).toBe(4.8);
+      expect(layout.shrunk).toBe(false);
+      // Columns span at least the bay width; never loose.
+      expect(
+        layout.columns * 9.6 + (layout.columns - 1) * 0.6
+      ).toBeGreaterThanOrEqual(layout.bayInnerWidth - 1e-9);
+      expect(layout.columnPitch).toBeLessThanOrEqual(layout.pitch + 1e-9);
+      // One fewer column would leave loose slack.
+      expect((layout.columns - 1) * 10.2 - 0.6).toBeLessThan(
+        layout.bayInnerWidth
+      );
     }
   });
 
-  test("grows the radius slightly so columns fill the bay exactly", () => {
+  test("derives the rack height from the row count", () => {
     const layout = createPackedFinishLayout({
       width: 1440,
       wallThickness: 15,
       bayCount: 12,
-      marblesPerTeam: 100,
+      marblesPerTeam: 99,
     });
-    // Slack between divisor steps is absorbed by the radius, not spacing.
-    expect(layout.marbleRadius).toBeGreaterThan(4.8);
-    expect(layout.marbleRadius).toBeLessThan(6);
-    expect(layout.columnPitch).toBeCloseTo(layout.pitch);
-    // First and last columns touch the bay walls.
-    expect(
-      (layout.columns - 1) * layout.columnPitch + layout.marbleRadius * 2
-    ).toBeCloseTo(layout.bayInnerWidth);
-  });
-
-  test("crunches columns together when the radius cap cannot span the bay", () => {
-    const layout = createPackedFinishLayout({
-      width: 1440,
-      wallThickness: 15,
-      bayCount: 2,
-      marblesPerTeam: 100,
-    });
-    expect(layout.marbleRadius).toBeCloseTo(4.8 * MAX_FINISH_MARBLE_SCALE);
-    expect(layout.columns).toBe(25);
-    expect(layout.rows).toBe(4);
-    // Overlapping, never loose.
-    expect(layout.columnPitch).toBeLessThan(layout.pitch);
-    expect(
-      (layout.columns - 1) * layout.columnPitch + layout.marbleRadius * 2
-    ).toBeCloseTo(layout.bayInnerWidth);
-  });
-
-  test("caps columns and grows the radius when rows would drop below the floor", () => {
-    const layout = createPackedFinishLayout({
-      width: 1440,
-      wallThickness: 15,
-      bayCount: 4,
-      marblesPerTeam: 100,
-    });
-    // 25 columns would fit, but 100/25 = 4 rows is under the floor.
-    expect(layout.columns).toBe(20);
-    expect(layout.rows).toBe(MIN_FINISH_ROWS);
-    expect(layout.marbleRadius).toBeGreaterThan(4.8);
-    expect(layout.marbleRadius).toBeLessThanOrEqual(
-      4.8 * MAX_FINISH_MARBLE_SCALE
-    );
-    expect(layout.shrunk).toBe(false);
-  });
-
-  test("derives rack height from the row count", () => {
-    const layout = createPackedFinishLayout({
-      width: 1440,
-      wallThickness: 15,
-      bayCount: 12,
-      marblesPerTeam: 100,
-    });
-    expect(layout.columns).toBe(10);
-    expect(layout.rows).toBe(10);
-    expect(layout.gridHeight).toBeCloseTo(10 * layout.pitch - 0.6);
+    expect(layout.columns).toBe(11);
+    expect(layout.rows).toBe(9);
+    expect(layout.capacity).toBe(99);
+    expect(layout.gridHeight).toBeCloseTo(9 * layout.pitch - 0.6);
     expect(layout.rackHeight).toBeCloseTo(layout.gridHeight + 30);
     expect(
       finishRackHeightFor({
         width: 1440,
         wallThickness: 15,
         bayCount: 12,
-        marblesPerTeam: 100,
+        marblesPerTeam: 99,
       })
     ).toBeCloseTo(layout.rackHeight);
   });
 
-  test("wider bays step columns up and the rack height down", () => {
-    const tall = createPackedFinishLayout({
+  test("gives arbitrary counts a partial top row without changing geometry", () => {
+    const layout = createPackedFinishLayout({
       width: 1440,
       wallThickness: 15,
       bayCount: 12,
-      marblesPerTeam: 100,
+      marblesPerTeam: 95,
     });
-    const short = createPackedFinishLayout({
-      width: 1440,
-      wallThickness: 15,
-      bayCount: 6,
-      marblesPerTeam: 100,
-    });
-    expect(short.columns).toBe(20);
-    expect(short.rows).toBe(5);
-    expect(short.rackHeight).toBeLessThan(tall.rackHeight);
+    expect(layout.columns).toBe(11);
+    expect(layout.rows).toBe(9);
+    expect(layout.capacity).toBe(99);
   });
 
-  test("shrinks the radius as a last resort when rows would exceed the cap", () => {
+  test("shrinks the radius when marbles would stack deeper than the row cap", () => {
     const layout = createPackedFinishLayout({
       width: 480,
       wallThickness: 15,
@@ -166,7 +76,7 @@ describe("createPackedFinishLayout", () => {
     expect(layout.marbleRadius).toBeLessThan(4.8);
     expect(layout.marbleRadius).toBeGreaterThanOrEqual(1.2);
     expect(layout.rows).toBeLessThanOrEqual(MAX_FINISH_ROWS);
-    expect(layout.columns * layout.rows).toBe(120);
+    expect(layout.capacity).toBeGreaterThanOrEqual(120);
   });
 
   test("throws when marbles cannot fit even at the minimum radius", () => {
@@ -181,6 +91,51 @@ describe("createPackedFinishLayout", () => {
   });
 });
 
+describe("roundToFinishGrid", () => {
+  test("rounds an ideal count to whole rows of the fitted columns", () => {
+    // 6 bays on the default stage fit 22 columns; 60 rounds to 3 rows = 66.
+    expect(
+      roundToFinishGrid({
+        width: 1440,
+        wallThickness: 15,
+        bayCount: 6,
+        idealMarbles: 60,
+      })
+    ).toBe(66);
+    // 2 bays fit 69 columns; 180 rounds to 3 rows = 207.
+    expect(
+      roundToFinishGrid({
+        width: 1440,
+        wallThickness: 15,
+        bayCount: 2,
+        idealMarbles: 180,
+      })
+    ).toBe(207);
+  });
+
+  test("always yields a perfectly fillable grid of at least one row", () => {
+    for (const bayCount of [2, 3, 5, 8, 12]) {
+      for (const ideal of [6, 25, 60, 100, 333]) {
+        const count = roundToFinishGrid({
+          width: 1440,
+          wallThickness: 15,
+          bayCount,
+          idealMarbles: ideal,
+        });
+        const layout = createPackedFinishLayout({
+          width: 1440,
+          wallThickness: 15,
+          bayCount,
+          marblesPerTeam: count,
+        });
+        expect(count % layout.columns).toBe(0);
+        expect(layout.capacity).toBe(count);
+        expect(layout.rows).toBeLessThanOrEqual(MAX_FINISH_ROWS);
+      }
+    }
+  });
+});
+
 describe("createPackedFinishPlacements", () => {
   const options = {
     position: [0, 0],
@@ -192,7 +147,7 @@ describe("createPackedFinishPlacements", () => {
     gap: 1,
   };
 
-  test("emits slots for every bay, including unclaimed ones", () => {
+  test("emits slots for every bay", () => {
     const placements = createPackedFinishPlacements(options);
     expect(placements).toHaveLength(36);
     expect(new Set(placements.map(({ bayIndex }) => bayIndex)).size).toBe(3);
@@ -227,8 +182,9 @@ describe("createPackedFinishPlacements", () => {
     expect(maxY + layout.marbleRadius).toBeCloseTo(
       layout.rackHeight / 2 - options.wallThickness
     );
-    const minX = Math.min(...bay.map(({ position: [x] }) => x));
-    const maxX = Math.max(...bay.map(({ position: [x] }) => x));
+    const bottomRow = bay.slice(0, layout.columns);
+    const minX = Math.min(...bottomRow.map(({ position: [x] }) => x));
+    const maxX = Math.max(...bottomRow.map(({ position: [x] }) => x));
     const bayLeft = -options.width / 2 + options.wallThickness;
     expect(minX - layout.marbleRadius).toBeCloseTo(bayLeft);
     expect(maxX + layout.marbleRadius).toBeCloseTo(

@@ -590,9 +590,10 @@ export class RacePlayerRuntime {
     const plan = this.finishSchedule[legIndex];
     return {
       // Leg `i` runs with the field it inherits: N participants minus the `i`
-      // teams eliminated on the legs before it.
+      // teams eliminated on the legs before it. Eliminated teams' marbles are
+      // redistributed, so the per-team count grows leg over leg.
       teamCount: plan.activeTeams,
-      marblesPerTeam: this.raceDocument.rules.marblesPerTeam,
+      marblesPerTeam: plan.marblesPerTeam,
       releaseIntervalMs: this.raceDocument.releaseIntervalMs,
       finishPlan: {
         bayCount: plan.bayCount,
@@ -667,7 +668,10 @@ export class RacePlayerRuntime {
     }
     const progression = this.progression.snapshot;
     const leg = this.raceDocument.legs[progression.legIndex];
-    return `Racing leg ${progression.legIndex + 1}: ${leg.name} · ${progression.activeParticipantIndices.length} teams · ${this.raceDocument.rules.marblesPerTeam} marbles each`;
+    const marblesPerTeam =
+      this.finishSchedule[progression.legIndex]?.marblesPerTeam ??
+      this.raceDocument.rules.marblesPerTeam;
+    return `Racing leg ${progression.legIndex + 1}: ${leg.name} · ${progression.activeParticipantIndices.length} teams · ${marblesPerTeam} marbles each`;
   }
 
   private get currentState() {

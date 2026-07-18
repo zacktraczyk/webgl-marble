@@ -1,5 +1,5 @@
 import type { PackedFinishOptions } from "./finishGrid";
-import { createPackedFinishLayout } from "./finishGrid";
+import { createPackedFinishLayout, roundToFinishGrid } from "./finishGrid";
 
 export interface EraScheduleLeg {
   width: number;
@@ -8,6 +8,7 @@ export interface EraScheduleLeg {
 
 export interface EraScheduleOptions {
   participantCount: number;
+  /** Marbles each team starts the race with (leg counts grow from here). */
   marblesPerTeam: number;
   legs: readonly EraScheduleLeg[];
   marbleRadius?: number;
@@ -20,10 +21,15 @@ export interface LegFinishPlan {
   legIndex: number;
   /** Teams still racing this leg. */
   activeTeams: number;
-  /** Bays rendered — the era's team count, ≥ activeTeams. */
+  /** Bays rendered — always the active teams (bays reflow every leg). */
   bayCount: number;
-  /** Eliminated bays, rendered X'd out at the far right. */
+  /** Kept for rendering compatibility; redistribution never leaves X bays. */
   xBayCount: number;
+  /**
+   * Marbles each team races with this leg: eliminated teams' marbles are
+   * redistributed evenly to the survivors, rounded to whole grid rows.
+   */
+  marblesPerTeam: number;
   columns: number;
   rows: number;
   marbleRadius: number;
@@ -31,18 +37,12 @@ export interface LegFinishPlan {
 }
 
 /**
- * Reflowing almost always grows the fill-the-bay radius a little; only a
- * meaningful jump is worth clearing the X'd bays for.
- */
-const RADIUS_RESET_FACTOR = 1.2;
-
-/**
- * Precomputes every leg's finish-rack layout for a race. Bays span the full
- * rack width divided by the current era's team count; eliminated teams leave
- * X'd-out bays at the far right rather than reflowing every leg. An era only
- * resets when reflowing to the surviving team count visibly improves the
- * grid: strictly more columns per bay, or marbles at least
- * RADIUS_RESET_FACTOR larger (wide bays scale marbles up to fill).
+ * Precomputes every leg's finish-rack layout for a race. When a team is
+ * eliminated, its marbles are added evenly to the surviving teams, so each
+ * leg's per-team count is `participantCount · startingMarbles / activeTeams`
+ * — rounded to whole rows of the bay's fitted column count so every grid
+ * fills exactly. Bays always split the rack among the active teams, and the
+ * marble radius stays constant: wider bays simply hold more marbles.
  *
  * Deterministic: one team is eliminated per leg, so leg `i` races
  * `participantCount − i` teams.
@@ -65,45 +65,35 @@ export const computeEraSchedule = ({
     );
   }
 
-  const layoutFor = (leg: EraScheduleLeg, bayCount: number) =>
-    createPackedFinishLayout({
+  return legs.map((leg, legIndex) => {
+    const activeTeams = participantCount - legIndex;
+    const shared: Omit<PackedFinishOptions, "marblesPerTeam"> = {
       width: leg.width,
       wallThickness: leg.wallThickness,
-      bayCount,
-      marblesPerTeam,
+      bayCount: activeTeams,
       marbleRadius,
       minimumRadius,
       gap,
       maxRows,
-    } satisfies PackedFinishOptions);
-
-  const plans: LegFinishPlan[] = [];
-  let eraTeamCount = participantCount;
-
-  legs.forEach((leg, legIndex) => {
-    const activeTeams = participantCount - legIndex;
-    let layout = layoutFor(leg, eraTeamCount);
-    if (activeTeams < eraTeamCount) {
-      const reflow = layoutFor(leg, activeTeams);
-      if (
-        reflow.columns > layout.columns ||
-        reflow.marbleRadius > layout.marbleRadius * RADIUS_RESET_FACTOR
-      ) {
-        eraTeamCount = activeTeams;
-        layout = reflow;
-      }
-    }
-    plans.push({
+    };
+    const legMarbles = roundToFinishGrid({
+      ...shared,
+      idealMarbles: (participantCount * marblesPerTeam) / activeTeams,
+    });
+    const layout = createPackedFinishLayout({
+      ...shared,
+      marblesPerTeam: legMarbles,
+    });
+    return {
       legIndex,
       activeTeams,
-      bayCount: eraTeamCount,
-      xBayCount: eraTeamCount - activeTeams,
+      bayCount: activeTeams,
+      xBayCount: 0,
+      marblesPerTeam: legMarbles,
       columns: layout.columns,
       rows: layout.rows,
       marbleRadius: layout.marbleRadius,
       rackHeight: layout.rackHeight,
-    });
+    };
   });
-
-  return plans;
 };

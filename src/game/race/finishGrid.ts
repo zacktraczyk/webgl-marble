@@ -42,19 +42,11 @@ export const finishBayInnerSize = ({
 };
 
 /**
- * Row cap for packed finish grids. When a bay is so narrow that a perfect
- * grid would stack deeper than this, the layout falls back to shrinking the
- * marble radius instead of growing the rack without bound.
+ * Row cap for packed finish grids. When a bay is so narrow that a grid would
+ * stack deeper than this, the layout falls back to shrinking the marble
+ * radius instead of growing the rack without bound.
  */
 export const MAX_FINISH_ROWS = 24;
-/**
- * Row floor. Wide bays would otherwise flatten the grid into a strip a
- * marble or two tall; instead the column count is capped so at least this
- * many rows remain, and the marble radius grows uniformly to fill the width.
- */
-export const MIN_FINISH_ROWS = 5;
-/** Cap on fill-the-bay radius growth, as a multiple of the base radius. */
-export const MAX_FINISH_MARBLE_SCALE = 3;
 
 export interface PackedFinishOptions {
   width: number;
@@ -75,12 +67,13 @@ export interface PackedFinishLayout {
   pitch: number;
   /**
    * Horizontal center-to-center spacing between columns, edge-to-edge (the
-   * first and last columns touch the bay walls). Exact fills make this equal
-   * to `pitch`; crunched grids make it smaller (columns overlap slightly).
-   * Loose spacing (larger than `pitch`) only survives in degenerate configs
-   * where no divisor can span the bay.
+   * first and last columns touch the bay walls). At most `pitch`: sub-pitch
+   * slack is absorbed by crunching the columns together slightly, never by
+   * loose spacing.
    */
   columnPitch: number;
+  /** Total slots in the grid; equals marblesPerTeam when rows divide evenly. */
+  capacity: number;
   bayInnerWidth: number;
   gridHeight: number;
   rackHeight: number;
@@ -88,33 +81,13 @@ export interface PackedFinishLayout {
   shrunk: boolean;
 }
 
-/** Largest divisor of `value` that is at most `limit`, or null if none fit. */
-export const largestFittingDivisor = (
-  value: number,
-  limit: number
-): number | null => {
-  for (let candidate = Math.min(Math.floor(limit), value); candidate >= 1; candidate--) {
-    if (value % candidate === 0) {
-      return candidate;
-    }
-  }
-  return null;
-};
-
-const smallestDivisorAtLeast = (value: number, minimum: number): number => {
-  for (let candidate = Math.max(1, Math.ceil(minimum)); candidate < value; candidate++) {
-    if (value % candidate === 0) {
-      return candidate;
-    }
-  }
-  return value;
-};
-
 /**
- * Sizes a perfect-fill finish grid: a constant marble radius, tight packing,
- * and a column count that divides the team's marbles exactly so a finished
- * team's bay has zero blank slots. The rack height is an output — it grows
- * with the row count instead of squeezing marbles into a fixed frame.
+ * Sizes a packed finish grid at a constant marble radius: the column count
+ * is the most that span the bay (ceil — leftover sub-pitch slack crunches
+ * the columns together slightly rather than spreading them), and the rack
+ * height grows with the row count. Race legs pass marble counts already
+ * rounded to whole rows (see `roundToFinishGrid`), so their top row is
+ * always complete; arbitrary counts get a partial top row.
  */
 export const createPackedFinishLayout = ({
   width,
@@ -149,72 +122,37 @@ export const createPackedFinishLayout = ({
   }
 
   let radius = marbleRadius;
-  let columns = largestFittingDivisor(
-    marblesPerTeam,
-    (bayInnerWidth + gap) / (radius * 2 + gap)
-  );
-
   let shrunk = false;
-  if (columns === null || marblesPerTeam / columns > maxRows) {
-    // The bay is too narrow for a full-radius perfect grid within the row
-    // cap. Use the fewest columns that respect the cap (preserving as much
-    // radius as possible) and shrink marbles to fit that column count.
-    columns = smallestDivisorAtLeast(
-      marblesPerTeam,
-      marblesPerTeam / maxRows
-    );
-    const diameter = (bayInnerWidth - gap * (columns - 1)) / columns;
-    if (!Number.isFinite(diameter) || diameter < minimumRadius * 2) {
+  const columnsFor = (r: number) =>
+    Math.max(1, Math.ceil((bayInnerWidth + gap) / (r * 2 + gap)));
+
+  // Narrow guard: when the marbles would stack deeper than the row cap (or a
+  // single marble is wider than its bay), shrink the radius just enough.
+  const minimumColumns = Math.ceil(marblesPerTeam / maxRows);
+  const neededDiameter = Math.min(
+    bayInnerWidth,
+    (bayInnerWidth + gap) / minimumColumns - gap
+  );
+  if (neededDiameter < radius * 2) {
+    if (!Number.isFinite(neededDiameter) || neededDiameter < minimumRadius * 2) {
       throw new Error(
         `The finish rack cannot fit ${marblesPerTeam} marbles for each of ${bayCount} bays`
       );
     }
-    const fitted = Math.min(radius, diameter / 2);
-    shrunk = fitted < radius;
-    radius = fitted;
-  } else {
-    // Wide side: never leave loose spacing. Cap columns so the grid keeps at
-    // least MIN_FINISH_ROWS rows, then grow the radius so the columns span
-    // the bay exactly. If the growth cap binds before the bay is spanned,
-    // crunch instead: step up to the next divisor and let columns overlap.
-    if (marblesPerTeam / columns < MIN_FINISH_ROWS) {
-      const cappedColumns = largestFittingDivisor(
-        marblesPerTeam,
-        marblesPerTeam / MIN_FINISH_ROWS
-      );
-      if (cappedColumns !== null) {
-        columns = cappedColumns;
-      }
-    }
-    const radiusCap = marbleRadius * MAX_FINISH_MARBLE_SCALE;
-    const fillDiameter = (bayInnerWidth + gap) / columns - gap;
-    if (fillDiameter / 2 <= radiusCap) {
-      radius = fillDiameter / 2;
-    } else {
-      radius = radiusCap;
-      const diameter = radius * 2;
-      let crunched: number | null = null;
-      for (let candidate = columns + 1; candidate <= marblesPerTeam; candidate++) {
-        if (marblesPerTeam % candidate !== 0) {
-          continue;
-        }
-        if ((bayInnerWidth - diameter) / (candidate - 1) <= diameter + gap) {
-          crunched = candidate;
-          break;
-        }
-      }
-      // No divisor spans the bay even fully crunched (tiny fields in huge
-      // bays): fall back to a single spread row — the least-loose option.
-      columns = crunched ?? marblesPerTeam;
-    }
+    radius = neededDiameter / 2;
+    shrunk = true;
   }
 
+  const columns = columnsFor(radius);
+  const rows = Math.max(1, Math.ceil(marblesPerTeam / columns));
   const pitch = radius * 2 + gap;
-  const rows = marblesPerTeam / columns;
   const gridHeight = rows * pitch - gap;
   const columnPitch =
     columns > 1
-      ? radius * 2 + (bayInnerWidth - columns * radius * 2) / (columns - 1)
+      ? Math.min(
+          pitch,
+          radius * 2 + (bayInnerWidth - columns * radius * 2) / (columns - 1)
+        )
       : 0;
 
   return {
@@ -223,11 +161,37 @@ export const createPackedFinishLayout = ({
     marbleRadius: radius,
     pitch,
     columnPitch,
+    capacity: columns * rows,
     bayInnerWidth,
     gridHeight,
     rackHeight: gridHeight + wallThickness * 2,
     shrunk,
   };
+};
+
+/**
+ * Rounds an ideal marble count to fill this bay geometry with whole rows —
+ * the count teams actually race with. Redistribution targets rarely divide
+ * by the fitted column count, so the count snaps to the nearest full grid
+ * (at least one row, at most the row cap).
+ */
+export const roundToFinishGrid = (
+  options: Omit<PackedFinishOptions, "marblesPerTeam"> & {
+    idealMarbles: number;
+  }
+): number => {
+  const { idealMarbles, maxRows = MAX_FINISH_ROWS, ...rest } = options;
+  assertPositiveFinite(idealMarbles, "Ideal marble count");
+  const probe = createPackedFinishLayout({
+    ...rest,
+    maxRows,
+    marblesPerTeam: Math.max(1, Math.round(idealMarbles)),
+  });
+  const rows = Math.min(
+    maxRows,
+    Math.max(1, Math.round(idealMarbles / probe.columns))
+  );
+  return probe.columns * rows;
 };
 
 /**

@@ -38,6 +38,6 @@ export const readWallThickness = (ui: BuilderUi) =>
 
 export const readRoundConfiguration = (ui: BuilderUi): RoundConfiguration => ({
   teamCount: clampInteger(ui.teamCountInput.value, 2, MAX_TEAMS),
-  marblesPerTeam: clampInteger(ui.marblesPerTeamInput.value, 1, 120),
+  marblesPerTeam: clampInteger(ui.marblesPerTeamInput.value, 1, 360),
   releaseIntervalMs: clampInteger(ui.releaseIntervalInput.value, 10, 250),
 });
