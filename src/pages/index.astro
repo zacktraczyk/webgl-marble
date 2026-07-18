@@ -30,17 +30,6 @@ import Tooltip from "../components/Tooltip.astro";
         <h1>Marble Races</h1>
       </header>
 
-      <section id="empty" hidden>
-        <h2>No races yet!</h2>
-        <p>
-          Every team starts a leg with 100 marbles. The last marble on the
-          track knocks its team out.
-        </p>
-        <button type="button" class="pill primary" data-create-race>
-          Create a race
-        </button>
-      </section>
-
       <section id="grid" aria-label="Saved races">
         <button
           type="button"
@@ -396,22 +385,6 @@ import Tooltip from "../components/Tooltip.astro";
         color: var(--dim);
       }
 
-      #empty {
-        max-width: 24rem;
-        padding-top: 2rem;
-      }
-      #empty h2 {
-        font-size: 2.5rem;
-        font-weight: 800;
-        letter-spacing: -0.02em;
-      }
-      #empty p {
-        margin: 0.875rem 0 1.75rem;
-        font-size: 0.9375rem;
-        line-height: 1.65;
-        color: var(--dim);
-      }
-
       button:focus-visible,
       a:focus-visible {
         outline: 2px solid var(--accent);
@@ -446,7 +419,6 @@ import Tooltip from "../components/Tooltip.astro";
       attachTooltip(document.body);
       const repository = new RaceRepository();
       const grid = document.querySelector<HTMLElement>("#grid");
-      const empty = document.querySelector<HTMLElement>("#empty");
       const template = document.querySelector<HTMLTemplateElement>("#tile");
       const createTile = document.querySelector<HTMLElement>("#create-tile");
 
@@ -459,10 +431,9 @@ import Tooltip from "../components/Tooltip.astro";
       };
 
       const renderLibrary = () => {
-        if (!grid || !empty || !template || !createTile) return;
+        if (!grid || !template || !createTile) return;
         const races = repository.list();
         grid.replaceChildren();
-        empty.hidden = races.length > 0;
 
         const pending: (() => void)[] = [];
         for (const race of races) {
@@ -524,9 +495,7 @@ import Tooltip from "../components/Tooltip.astro";
           }
           grid.append(fragment);
         }
-        // The empty state has its own create button, so the dashed create
-        // tile only appears alongside actual races.
-        if (races.length > 0) grid.append(createTile);
+        grid.append(createTile);
         for (const draw of pending) draw();
       };
 
