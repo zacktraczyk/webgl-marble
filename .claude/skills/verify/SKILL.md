@@ -37,10 +37,11 @@ canvas thumbnails render crisply. A worked example from a past session:
 ## Flows worth driving
 
 - Library `/` → create race → `/race-builder?race=<id>`.
-- Builder: `#complete-race` auto-fills legs; `#marbles-plus/-minus`
-  changes team count (re-renders all leg previews); keyboard reorder =
-  focus `[data-drag-leg]`, dispatch ArrowUp/ArrowDown keydown; watch
-  `#leg-move-status` and `#leg-guidance` text.
+- Builder: `#complete-race` auto-fills legs; team count and marbles per
+  team live in the `#setup-popover` opened by `#setup-toggle` in the legs
+  header (`#marbles-plus/-minus` re-render all leg previews); keyboard
+  reorder = focus `[data-drag-leg]`, dispatch ArrowUp/ArrowDown keydown;
+  watch `#leg-move-status` and the `#setup-warning` pill.
 - Leg previews are 2D canvases (`renderLevelThumbnail`); leg at index i
   renders with `participants.length - i` teams.
 

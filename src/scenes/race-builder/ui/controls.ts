@@ -31,6 +31,45 @@ export const bindRaceBuilderControls = (
     stickyHeaderObserver.observe(ui.legsDivider);
   }
 
+  const setSetupPopoverOpen = (open: boolean) => {
+    if (!ui.setupToggle || !ui.setupPopover) return;
+    ui.setupPopover.hidden = !open;
+    ui.setupToggle.setAttribute("aria-expanded", `${open}`);
+  };
+  ui.setupToggle?.addEventListener(
+    "click",
+    () => setSetupPopoverOpen(ui.setupPopover?.hidden ?? false),
+    { signal }
+  );
+  document.addEventListener(
+    "pointerdown",
+    (event) => {
+      if (
+        !ui.setupPopover ||
+        ui.setupPopover.hidden ||
+        !(event.target instanceof Node)
+      )
+        return;
+      if (
+        ui.setupPopover.contains(event.target) ||
+        ui.setupToggle?.contains(event.target)
+      )
+        return;
+      setSetupPopoverOpen(false);
+    },
+    { signal }
+  );
+  document.addEventListener(
+    "keydown",
+    (event) => {
+      if (event.key !== "Escape" || !ui.setupPopover || ui.setupPopover.hidden)
+        return;
+      setSetupPopoverOpen(false);
+      ui.setupToggle?.focus();
+    },
+    { signal }
+  );
+
   const setParticipantCount = (nextCount: number) => {
     if (!context.race || nextCount < 2 || nextCount > MAX_RACE_PARTICIPANTS)
       return;

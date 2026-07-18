@@ -31,7 +31,9 @@ export const render = (context: RaceBuilderContext) => {
     !ui.marblesMinus ||
     !ui.marblesPlus ||
     !ui.legCount ||
-    !ui.legGuidance ||
+    !ui.setupSummaryPill ||
+    !ui.setupWarning ||
+    !ui.setupWarningText ||
     !ui.legList ||
     !ui.legTemplate ||
     !ui.addLegButton ||
@@ -45,9 +47,6 @@ export const render = (context: RaceBuilderContext) => {
   ui.marblesMinus.disabled = race.participants.length <= 2;
   ui.marblesPlus.disabled = race.participants.length >= MAX_RACE_PARTICIPANTS;
   const marblesPerTeam = race.rules.marblesPerTeam;
-  if (ui.setupSummary) {
-    ui.setupSummary.textContent = `${marblesPerTeam} marbles each to start · losers' marbles carry over`;
-  }
   if (ui.marblesPerTeamSlider && ui.marblesPerTeamOutput) {
     // Legacy races store 100, which sits between the 96 and 120 stops —
     // park the thumb at the nearest stop but show the true value until the
@@ -66,13 +65,14 @@ export const render = (context: RaceBuilderContext) => {
   const needed = requiredLegCount(race);
   const difference = needed - race.legs.length;
   ui.legCount.textContent = `${race.legs.length} / ${needed}`;
-  ui.legGuidance.textContent =
-    difference === 0
-      ? "Ready to play"
-      : difference > 0
-        ? `Add ${difference} ${difference === 1 ? "leg" : "legs"}`
-        : `Remove ${Math.abs(difference)} ${Math.abs(difference) === 1 ? "leg" : "legs"}`;
-  ui.legGuidance.className = `text-xs font-semibold ${difference === 0 ? "text-green-400" : "text-red-400"}`;
+  ui.setupSummaryPill.textContent = `${race.participants.length} teams · ${marblesPerTeam} each`;
+  const configured = difference === 0;
+  ui.setupWarning.hidden = configured;
+  ui.setupWarningText.textContent = configured
+    ? ""
+    : difference > 0
+      ? `Add ${difference} ${difference === 1 ? "leg" : "legs"}`
+      : `Remove ${Math.abs(difference)} ${Math.abs(difference) === 1 ? "leg" : "legs"}`;
   ui.addLegButton.hidden = difference <= 0;
   ui.completeRaceButton.hidden = difference === 0;
 

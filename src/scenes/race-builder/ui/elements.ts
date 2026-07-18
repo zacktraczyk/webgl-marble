@@ -6,11 +6,14 @@ export type RaceBuilderUi = {
   marbleCount: HTMLOutputElement | null;
   marblesMinus: HTMLButtonElement | null;
   marblesPlus: HTMLButtonElement | null;
-  setupSummary: HTMLElement | null;
+  setupToggle: HTMLButtonElement | null;
+  setupPopover: HTMLElement | null;
+  setupSummaryPill: HTMLElement | null;
+  setupWarning: HTMLElement | null;
+  setupWarningText: HTMLElement | null;
   marblesPerTeamSlider: HTMLInputElement | null;
   marblesPerTeamOutput: HTMLOutputElement | null;
   legCount: HTMLElement | null;
-  legGuidance: HTMLElement | null;
   legList: HTMLOListElement | null;
   legTemplate: HTMLTemplateElement | null;
   addLegButton: HTMLButtonElement | null;
@@ -29,14 +32,17 @@ export const resolveRaceBuilderUi = (): RaceBuilderUi => ({
   marbleCount: document.querySelector<HTMLOutputElement>("#marble-count"),
   marblesMinus: document.querySelector<HTMLButtonElement>("#marbles-minus"),
   marblesPlus: document.querySelector<HTMLButtonElement>("#marbles-plus"),
-  setupSummary: document.querySelector<HTMLElement>("#setup-summary"),
+  setupToggle: document.querySelector<HTMLButtonElement>("#setup-toggle"),
+  setupPopover: document.querySelector<HTMLElement>("#setup-popover"),
+  setupSummaryPill: document.querySelector<HTMLElement>("#setup-summary-pill"),
+  setupWarning: document.querySelector<HTMLElement>("#setup-warning"),
+  setupWarningText: document.querySelector<HTMLElement>("#setup-warning-text"),
   marblesPerTeamSlider:
     document.querySelector<HTMLInputElement>("#marbles-per-team"),
   marblesPerTeamOutput: document.querySelector<HTMLOutputElement>(
     "#marbles-per-team-output"
   ),
   legCount: document.querySelector<HTMLElement>("#leg-count"),
-  legGuidance: document.querySelector<HTMLElement>("#leg-guidance"),
   legList: document.querySelector<HTMLOListElement>("#leg-list"),
   legTemplate: document.querySelector<HTMLTemplateElement>("#leg-template"),
   addLegButton: document.querySelector<HTMLButtonElement>("#add-leg"),
