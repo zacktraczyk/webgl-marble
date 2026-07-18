@@ -164,11 +164,9 @@ export const bindRaceBuilderControls = (
         context.race.legs.length >= requiredLegCount(context.race)
       )
         return;
-      context.race = repository.addLeg(
-        context.race.id,
-        createDefaultLeg({ index: context.race.legs.length })
-      );
-      context.render();
+      const leg = createDefaultLeg({ index: context.race.legs.length });
+      repository.addLeg(context.race.id, leg);
+      window.location.assign(context.editLegUrl(leg.id));
     },
     { signal }
   );
