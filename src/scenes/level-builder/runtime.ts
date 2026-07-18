@@ -1,9 +1,14 @@
-import { getLevelObjectBounds } from "../../editor/levelGeometry";
+import {
+  getLevelObjectBounds,
+  hitTestLevelObject,
+} from "../../editor/levelGeometry";
+import type { Vec2 } from "../../engine/core/transform";
 import { EditorOverlay, LevelEditorController } from "../../editor/levelEditor";
 import { LevelHistory } from "../../editor/levelHistory";
 import type {
   LevelObjectData,
   SerializedLevel,
+  SpawnPointVariant,
 } from "../../editor/levelDocument";
 import Stage from "../../engine/stage";
 import { createGridLayout, type GridWorldBounds } from "./grid";
@@ -17,12 +22,14 @@ import {
 } from "./ui/settings";
 import { STAGE_HEIGHT, STAGE_WIDTH } from "./constants";
 import {
+  applyTopSliderSpawnLayout,
   createCourseBoundaries,
   createDefaultCourse,
   createPusher,
   createSpawnPoint,
   createWall,
 } from "./level/objects";
+import { MAX_MARBLE_RADIUS } from "./constants";
 import { RaceController } from "./race";
 import { resolveBuilderUi, type BuilderUi } from "./ui";
 import { GridOverlay } from "./ui/gridOverlay";
@@ -64,6 +71,8 @@ export class LevelBuilderRuntime {
   private selectedTool = SelectedTool.Pointer;
   private gridSnapEnabled = true;
   private playbackActive = false;
+  /** Last spawn position that cleared every wall, used to reject bad drags. */
+  private lastValidSpawnPosition: Vec2 | null = null;
 
   constructor(
     rootElement: HTMLElement | null,
@@ -97,6 +106,7 @@ export class LevelBuilderRuntime {
       finishPlan: this.finishPlan,
     };
     this.level = this.createLevel(options.initialLevel);
+    this.rememberSpawnPosition();
     this.race = new RaceController(this.stage, this.level, this.configuration);
     this.history = new LevelHistory(this.level.document.serialize());
 
@@ -126,6 +136,13 @@ export class LevelBuilderRuntime {
     );
     if (initialLevel) {
       level.restore(initialLevel);
+      // The spawn tool is gone, so a level missing its spawn point (older
+      // saves) gets the default one back — it is a permanent fixture now.
+      if (!level.find("spawn-point")) {
+        level.add(
+          createSpawnPoint([0, -this.stage.height / 2 + MAX_MARBLE_RADIUS * 10])
+        );
+      }
       return level;
     }
     for (const object of createDefaultCourse(
@@ -161,7 +178,14 @@ export class LevelBuilderRuntime {
         onObjectsChange: (objects) => this.refreshAuthoredObjects(objects),
         onObjectsCommit: () => this.commitLevelChange(),
         onDelete: (objects) => {
-          for (const object of objects) {
+          // The spawn point is a permanent course fixture.
+          const removable = objects.filter(
+            (object) => object.prefab !== "spawn-point"
+          );
+          if (removable.length === 0) {
+            return;
+          }
+          for (const object of removable) {
             this.level.remove(object.id);
           }
           this.commitLevelChange();
@@ -172,21 +196,13 @@ export class LevelBuilderRuntime {
           return object;
         },
         onPlaceObject: (tool, position) => {
-          let object: LevelObjectData;
-          if (isPusherTool(tool)) {
-            object = this.level.add(createPusher(tool, position));
-          } else {
-            object = this.level.replaceUnique(
-              "spawn-point",
-              createSpawnPoint(position)
-            );
-          }
+          const object = this.level.add(createPusher(tool, position));
           this.commitLevelChange();
           return object;
         },
         onToolRequest: (tool) => this.setActiveTool(tool),
         onToolComplete: (tool) => {
-          if (tool === SelectedTool.SpawnPoint || isPusherTool(tool)) {
+          if (isPusherTool(tool)) {
             this.setActiveTool(SelectedTool.Pointer);
           }
         },
@@ -216,6 +232,7 @@ export class LevelBuilderRuntime {
         toggleMajorGrid: () => this.gridOverlay.toggleMajor(),
         toggleMinorGrid: () => this.gridOverlay.toggleMinor(),
         toggleGridSnap: this.toggleGridSnap,
+        setSpawnVariant: this.setSpawnVariant,
         changeRoundConfiguration: this.handleRoundConfigurationChange,
         changeCourseSize: this.handleCourseSizeChange,
         changeWallThickness: this.handleWallThicknessChange,
@@ -254,8 +271,13 @@ export class LevelBuilderRuntime {
     const race = this.race.snapshot;
     this.syncPlaybackState(race.phase !== "ready");
     const spawnPoint = this.level.find("spawn-point");
+    const spawnVariant = spawnPoint?.properties.variant ?? "point";
     if (spawnPoint) {
-      this.level.setVisible(spawnPoint.id, !this.playbackActive);
+      // A top slider stays visible during playback — marbles drop from it.
+      this.level.setVisible(
+        spawnPoint.id,
+        !this.playbackActive || spawnVariant === "top-slider"
+      );
     }
     this.gridOverlay.setSuppressed(this.playbackActive);
     this.gridOverlay.update();
@@ -272,6 +294,7 @@ export class LevelBuilderRuntime {
       hoveredObject: this.editorController.hoveredObject?.id ?? null,
       wallThickness: this.level.wallThickness,
       selectedTool: this.selectedTool,
+      spawnVariant,
       canUndo: this.history.canUndo,
       canRedo: this.history.canRedo,
     });
@@ -333,8 +356,91 @@ export class LevelBuilderRuntime {
 
   private refreshAuthoredObjects(objects: readonly LevelObjectData[]) {
     for (const object of objects) {
+      if (object.prefab === "spawn-point") {
+        this.constrainSpawnPoint(object);
+      }
       this.level.refresh(object);
     }
+  }
+
+  /**
+   * Keeps the spawn point on the course: clamps it inside the boundary walls
+   * and rejects positions that overlap an authored wall.
+   */
+  private constrainSpawnPoint(
+    spawnPoint: Extract<LevelObjectData, { prefab: "spawn-point" }>
+  ) {
+    if ((spawnPoint.properties.variant ?? "point") === "top-slider") {
+      // The slider owns its layout; any drag or rotation snaps back to it.
+      applyTopSliderSpawnLayout(
+        spawnPoint,
+        [this.stage.width, this.stage.height],
+        this.level.wallThickness
+      );
+      return;
+    }
+    const radius = spawnPoint.properties.radius;
+    const wallThickness = this.level.wallThickness;
+    const maxX = Math.max(0, this.stage.width / 2 - wallThickness - radius);
+    const minY = -this.stage.height / 2 + wallThickness + radius;
+    const maxY = this.stage.height / 2 - radius;
+    const [x, y] = spawnPoint.transform.position;
+    const clamped: Vec2 = [
+      Math.min(Math.max(x, -maxX), maxX),
+      Math.min(Math.max(y, minY), Math.max(minY, maxY)),
+    ];
+    const overlapsWall = this.level.objects.some(
+      (object) =>
+        object.prefab === "wall" &&
+        !object.locked &&
+        hitTestLevelObject(object, clamped, radius, wallThickness)
+    );
+    if (overlapsWall && this.lastValidSpawnPosition) {
+      spawnPoint.transform.position = [...this.lastValidSpawnPosition];
+      return;
+    }
+    spawnPoint.transform.position = clamped;
+    this.lastValidSpawnPosition = [...clamped];
+  }
+
+  private syncSpawnPointToCourse() {
+    const spawnPoint = this.level.find("spawn-point");
+    if (!spawnPoint) {
+      return;
+    }
+    this.constrainSpawnPoint(spawnPoint);
+    this.level.refresh(spawnPoint);
+  }
+
+  private readonly setSpawnVariant = (variant: SpawnPointVariant) => {
+    if (this.playbackActive) {
+      return;
+    }
+    const spawnPoint = this.level.find("spawn-point");
+    if (!spawnPoint || (spawnPoint.properties.variant ?? "point") === variant) {
+      return;
+    }
+    spawnPoint.properties.variant = variant;
+    if (variant === "top-slider") {
+      applyTopSliderSpawnLayout(
+        spawnPoint,
+        [this.stage.width, this.stage.height],
+        this.level.wallThickness
+      );
+    } else {
+      delete spawnPoint.motion;
+      spawnPoint.transform.rotation = Math.PI / 2;
+      this.constrainSpawnPoint(spawnPoint);
+    }
+    this.level.refresh(spawnPoint);
+    this.commitLevelChange();
+  };
+
+  private rememberSpawnPosition() {
+    const spawnPoint = this.level.find("spawn-point");
+    this.lastValidSpawnPosition = spawnPoint
+      ? ([...spawnPoint.transform.position] as Vec2)
+      : null;
   }
 
   private commitLevelChange() {
@@ -373,6 +479,7 @@ export class LevelBuilderRuntime {
       snapshot.size[1] !== this.stage.height;
     this.stage.setSize(...snapshot.size);
     this.level.restore(snapshot);
+    this.rememberSpawnPosition();
     this.editorController.clearSelection();
     this.ui.courseWidthInput.value = `${snapshot.size[0]}`;
     this.ui.courseHeightInput.value = `${snapshot.size[1]}`;
@@ -483,6 +590,7 @@ export class LevelBuilderRuntime {
         this.configuration
       )
     );
+    this.syncSpawnPointToCourse();
     this.cameraController.fitStage();
     this.commitLevelChange();
   };
@@ -503,6 +611,7 @@ export class LevelBuilderRuntime {
         this.configuration
       )
     );
+    this.syncSpawnPointToCourse();
     this.commitLevelChange();
   };
 

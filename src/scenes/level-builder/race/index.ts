@@ -17,6 +17,7 @@ import {
   randomSpawnOffsetsInCircle,
   spawnAreaRadius,
 } from "../../../game/race/spawn";
+import { getLevelObjectMotionPose } from "../../../editor/levelMotion";
 import type { AuthoredLevel } from "../level";
 import {
   MAX_MARBLE_RADIUS,
@@ -476,6 +477,21 @@ export class RaceController {
     return this.level.find("spawn-point");
   }
 
+  /** Where marbles emerge right now — tracks an oscillating spawn slider. */
+  private getSpawnPosition(
+    spawnPoint: NonNullable<ReturnType<RaceController["getSpawnPoint"]>>
+  ): [number, number] {
+    if (!spawnPoint.motion) {
+      return [...spawnPoint.transform.position];
+    }
+    const pose = getLevelObjectMotionPose(
+      spawnPoint,
+      this.level.wallThickness,
+      this.motionElapsedMs
+    );
+    return [...pose.position];
+  }
+
   private releaseWave() {
     if (!this.releaseQueue) {
       return false;
@@ -515,6 +531,7 @@ export class RaceController {
     }
 
     const spawnRotation = spawnPoint.transform.rotation ?? 0;
+    const spawnPosition = this.getSpawnPosition(spawnPoint);
     const angle = randomSpawnAngle(
       spawnRotation,
       spawnPoint.properties.directionVariance ??
@@ -525,12 +542,8 @@ export class RaceController {
     const marble = this.stage.spawn(
       marbleDefinition({
         position: [
-          spawnPoint.transform.position[0] +
-            spawnOffset[0] * cosine -
-            spawnOffset[1] * sine,
-          spawnPoint.transform.position[1] +
-            spawnOffset[0] * sine +
-            spawnOffset[1] * cosine,
+          spawnPosition[0] + spawnOffset[0] * cosine - spawnOffset[1] * sine,
+          spawnPosition[1] + spawnOffset[0] * sine + spawnOffset[1] * cosine,
         ],
         radius: this.marbleRadius,
         color: TEAM_COLORS[this.stableTeamIndices[stagedMarble.teamIndex]],

@@ -10,6 +10,7 @@ import { millisecondsToSimulationSeconds } from "../../../engine/physics/physics
 import type Stage from "../../../engine/stage";
 import { getLevelObjectMotionPose } from "../../../editor/levelMotion";
 import { levelObjectDefinitions } from "../../../game/prefabs/levelObject";
+import { applyTopSliderSpawnLayout } from "./objects";
 import { finishRackHeightFor } from "../../../game/race/finishGrid";
 import {
   MAX_MARBLE_RADIUS,
@@ -110,6 +111,26 @@ export class AuthoredLevel {
     ];
   }
 
+  /**
+   * Re-derives a top-slider spawn's pinned track from the current course.
+   * Saved documents may predate the current layout (different clearance or
+   * color), so the document is rewritten before the spawn's entities exist.
+   */
+  private syncSpawnPointGeometry() {
+    const spawnPoint = this.find("spawn-point");
+    if (
+      !spawnPoint ||
+      (spawnPoint.properties.variant ?? "point") !== "top-slider"
+    ) {
+      return;
+    }
+    applyTopSliderSpawnLayout(
+      spawnPoint,
+      this.document.size,
+      this.wallThickness
+    );
+  }
+
   setRaceMarbleRadius(marbleRadius: number) {
     if (Math.abs(this.raceMarbleRadius - marbleRadius) < Number.EPSILON) {
       return;
@@ -187,17 +208,10 @@ export class AuthoredLevel {
     // Saved racks may predate the current packed layout; re-derive before
     // spawning so the frame matches where finished marbles will actually go.
     this.syncFinishZoneGeometry();
+    this.syncSpawnPointGeometry();
     for (const object of this.objects) {
       this.spawn(object);
     }
-  }
-
-  replaceUnique(prefab: "spawn-point", data: NewLevelObjectData) {
-    const current = this.find(prefab);
-    if (current) {
-      this.remove(current.id);
-    }
-    return this.add(data);
   }
 
   find<Prefab extends LevelPrefab>(prefab: Prefab) {

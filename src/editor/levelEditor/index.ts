@@ -52,10 +52,7 @@ type EditorCallbacks = {
   onObjectsCommit(objects: readonly LevelObjectData[]): void;
   onDelete(objects: readonly LevelObjectData[]): void;
   onCreateWall(start: Vec2, end: Vec2): LevelObjectData;
-  onPlaceObject(
-    tool: SelectedTool.SpawnPoint | PusherTool,
-    position: Vec2
-  ): LevelObjectData;
+  onPlaceObject(tool: PusherTool, position: Vec2): LevelObjectData;
   onToolRequest(tool: SelectedTool): void;
   onToolComplete(tool: SelectedTool): void;
   onUndo(): void;
@@ -388,9 +385,7 @@ export class LevelEditorController {
 
   private get creationToolActive() {
     return (
-      this.activeTool === SelectedTool.Wall ||
-      this.activeTool === SelectedTool.SpawnPoint ||
-      isPusherTool(this.activeTool)
+      this.activeTool === SelectedTool.Wall || isPusherTool(this.activeTool)
     );
   }
 
@@ -667,8 +662,7 @@ export class LevelEditorController {
     }
 
     if (
-      (this.activeTool === SelectedTool.SpawnPoint ||
-        isPusherTool(this.activeTool)) &&
+      isPusherTool(this.activeTool) &&
       !temporarySelection &&
       !this.readOnly
     ) {

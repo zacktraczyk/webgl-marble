@@ -1,8 +1,5 @@
 import type { Vec2 } from "../../engine/core/transform";
-import type {
-  PusherTool,
-  SelectedTool,
-} from "../../scenes/level-builder/types";
+import type { PusherTool } from "../../scenes/level-builder/types";
 import type { LevelObjectData, LevelObjectMotion } from "../levelDocument";
 import type { LevelObjectShape, ResizeHandle } from "../levelGeometry";
 
@@ -56,7 +53,7 @@ type WallGesture = {
 type PlaceGesture = {
   kind: "place";
   pointerId: number;
-  tool: SelectedTool.SpawnPoint | PusherTool;
+  tool: PusherTool;
   startScreen: Vec2;
 };
 

@@ -92,6 +92,7 @@ export const levelObjectDefinitions = (
           rotation: object.transform.rotation,
           marbleCount: teamCount,
           marbleRadius: raceMarbleRadius,
+          maximumMarbleRadius,
           ...object.properties,
         }),
       ];

@@ -1,3 +1,4 @@
+import type { SpawnPointVariant } from "../../../editor/levelDocument";
 import type { PusherSpeed } from "../level/objects";
 import { isPusherTool, SelectedTool } from "../types";
 import type { BuilderUi } from ".";
@@ -7,6 +8,7 @@ export type BuilderControlActions = {
   toggleMajorGrid(): void;
   toggleMinorGrid(): void;
   toggleGridSnap(): void;
+  setSpawnVariant(variant: SpawnPointVariant): void;
   changeRoundConfiguration(): void;
   changeCourseSize(): void;
   changeWallThickness(): void;
@@ -44,7 +46,6 @@ export class BuilderControls {
       [SelectedTool.Pan, ui.panButton],
       [SelectedTool.Pointer, ui.pointerButton],
       [SelectedTool.Wall, ui.wallButton],
-      [SelectedTool.SpawnPoint, ui.spawnPointButton],
       [SelectedTool.Slider, ui.sliderButton],
       [SelectedTool.Spinner, ui.spinnerButton],
       [SelectedTool.Sweeper, ui.sweeperButton],
@@ -112,6 +113,22 @@ export class BuilderControls {
     ui.gridSnapToggleButton.addEventListener("click", actions.toggleGridSnap, {
       signal,
     });
+    ui.spawnTypePointButton.addEventListener(
+      "click",
+      (event) => {
+        actions.setSpawnVariant("point");
+        releasePointerFocus(event);
+      },
+      { signal }
+    );
+    ui.spawnTypeTopSliderButton.addEventListener(
+      "click",
+      (event) => {
+        actions.setSpawnVariant("top-slider");
+        releasePointerFocus(event);
+      },
+      { signal }
+    );
     ui.teamCountInput.addEventListener(
       "input",
       actions.changeRoundConfiguration,

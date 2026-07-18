@@ -126,7 +126,6 @@ export class LevelEditorKeyboard {
         h: SelectedTool.Pan,
         w: SelectedTool.Wall,
         l: SelectedTool.Wall,
-        s: SelectedTool.SpawnPoint,
       };
       const requestedTool = toolByKey[key];
       if (requestedTool !== undefined) {

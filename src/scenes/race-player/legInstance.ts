@@ -4,10 +4,7 @@ import type Stage from "../../engine/stage";
 import type { SerializedLevel } from "../../editor/levelDocument";
 import type { RaceLegDocument } from "../../races/types";
 import { AuthoredLevel } from "../level-builder/level";
-import {
-  RaceController,
-  type ExternalRaceMode,
-} from "../level-builder/race";
+import { RaceController, type ExternalRaceMode } from "../level-builder/race";
 import type { RoundConfiguration } from "../level-builder/types";
 import type { LegFrame } from "./legStack";
 
@@ -86,8 +83,12 @@ export class LegInstance {
 
     // Hide the spawn-point visual exactly as the runtime does today — marbles
     // release from it but the ring itself should not be drawn during the race.
+    // A top slider stays visible: marbles drop from the moving triangle.
     const spawnPoint = this.level.find("spawn-point");
-    if (spawnPoint) {
+    if (
+      spawnPoint &&
+      (spawnPoint.properties.variant ?? "point") !== "top-slider"
+    ) {
       this.level.setVisible(spawnPoint.id, false);
     }
   }

@@ -20,13 +20,14 @@ export type BuilderUi = {
   panButton: HTMLButtonElement;
   pointerButton: HTMLButtonElement;
   wallButton: HTMLButtonElement;
-  spawnPointButton: HTMLButtonElement;
   pusherMenuToggleButton: HTMLButtonElement;
   pusherLibrary: HTMLElement;
   sliderButton: HTMLButtonElement;
   spinnerButton: HTMLButtonElement;
   sweeperButton: HTMLButtonElement;
   gridSnapToggleButton: HTMLButtonElement;
+  spawnTypePointButton: HTMLButtonElement;
+  spawnTypeTopSliderButton: HTMLButtonElement;
   majorGridToggleButton: HTMLButtonElement;
   minorGridToggleButton: HTMLButtonElement;
   gridOverlay: HTMLElement;
@@ -92,10 +93,6 @@ export const resolveBuilderUi = (
     panButton: role<HTMLButtonElement>("tool-pan", "pan tool"),
     pointerButton: role<HTMLButtonElement>("tool-pointer", "pointer tool"),
     wallButton: role<HTMLButtonElement>("tool-wall", "wall tool"),
-    spawnPointButton: role<HTMLButtonElement>(
-      "tool-spawn-point",
-      "spawn point tool"
-    ),
     pusherMenuToggleButton: role<HTMLButtonElement>(
       "pusher-menu-toggle",
       "pusher library toggle"
@@ -107,6 +104,14 @@ export const resolveBuilderUi = (
     gridSnapToggleButton: role<HTMLButtonElement>(
       "grid-snap-toggle",
       "grid snap toggle"
+    ),
+    spawnTypePointButton: role<HTMLButtonElement>(
+      "spawn-type-point",
+      "point spawn tab"
+    ),
+    spawnTypeTopSliderButton: role<HTMLButtonElement>(
+      "spawn-type-top-slider",
+      "top slider spawn tab"
     ),
     majorGridToggleButton: role<HTMLButtonElement>(
       "major-grid-toggle",

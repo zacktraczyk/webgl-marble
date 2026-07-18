@@ -1,4 +1,7 @@
-import type { LevelObjectData } from "../../../editor/levelDocument";
+import type {
+  LevelObjectData,
+  SpawnPointVariant,
+} from "../../../editor/levelDocument";
 import { TEAM_COLORS, TEAM_NAMES } from "../../../game/race/staging";
 import { pusherSpeedForMotion } from "../level/objects";
 import type { RaceSnapshot } from "../race";
@@ -60,8 +63,6 @@ const toolHint = ({
       return `${key("Ctrl/⌘")} + wheel to zoom`;
     case SelectedTool.Wall:
       return `Click points to create connected walls`;
-    case SelectedTool.SpawnPoint:
-      return `Hold ${key("Alt")} to place without snapping`;
     case SelectedTool.Slider:
       return `Place a sliding wall · drag its blue path handle to aim and resize`;
     case SelectedTool.Spinner:
@@ -83,6 +84,7 @@ export const updateBuilderInterface = ({
   hoveredObject,
   wallThickness,
   selectedTool,
+  spawnVariant,
   canUndo,
   canRedo,
 }: {
@@ -95,6 +97,7 @@ export const updateBuilderInterface = ({
   hoveredObject: string | null;
   wallThickness: number;
   selectedTool: SelectedTool;
+  spawnVariant: SpawnPointVariant;
   canUndo: boolean;
   canRedo: boolean;
 }) => {
@@ -107,8 +110,13 @@ export const updateBuilderInterface = ({
   ui.resetButton.disabled = !playbackActive;
   ui.pointerButton.disabled = playbackActive;
   ui.wallButton.disabled = playbackActive;
-  ui.spawnPointButton.disabled = playbackActive;
   ui.pusherMenuToggleButton.disabled = playbackActive;
+  ui.spawnTypePointButton.disabled = playbackActive;
+  ui.spawnTypeTopSliderButton.disabled = playbackActive;
+  ui.spawnTypePointButton.dataset.active = `${spawnVariant === "point"}`;
+  ui.spawnTypePointButton.ariaSelected = `${spawnVariant === "point"}`;
+  ui.spawnTypeTopSliderButton.dataset.active = `${spawnVariant === "top-slider"}`;
+  ui.spawnTypeTopSliderButton.ariaSelected = `${spawnVariant === "top-slider"}`;
   ui.sliderButton.disabled = playbackActive;
   ui.spinnerButton.disabled = playbackActive;
   ui.sweeperButton.disabled = playbackActive;

@@ -1,4 +1,5 @@
 import type {
+  LevelObjectData,
   LevelObjectMotion,
   NewLevelObjectData,
 } from "../../../editor/levelDocument";
@@ -17,6 +18,7 @@ import {
   DEFAULT_SPAWN_DIRECTION_VARIANCE,
   spawnAreaRadius,
 } from "../../../game/race/spawn";
+import { topSliderSpawnClearance } from "../../../game/prefabs/spawnPoint";
 import { MAX_TEAMS } from "../../../game/race/staging";
 import {
   COURSE_STROKE_WIDTH,
@@ -149,6 +151,37 @@ export const createStagingRack = (
     color: [...WALL_COLOR],
   },
 });
+
+/**
+ * Pins a top-slider spawn to its track just below the top wall: centered
+ * horizontally, oscillating wall-to-wall. The phase starts the sweep at the
+ * top-left edge. Existing phase/direction survive so playback stays smooth.
+ * Position and color are fully re-derived so saves from older layouts heal.
+ */
+export const applyTopSliderSpawnLayout = (
+  spawnPoint: Extract<LevelObjectData, { prefab: "spawn-point" }>,
+  [stageWidth, stageHeight]: Vec2,
+  wallThickness: number
+) => {
+  const clearance = topSliderSpawnClearance(
+    spawnPoint.properties.radius,
+    MAX_MARBLE_RADIUS
+  );
+  const halfSpan = Math.max(0, stageWidth / 2 - wallThickness - clearance);
+  spawnPoint.transform.position = [
+    0,
+    -stageHeight / 2 + wallThickness + clearance,
+  ];
+  spawnPoint.transform.rotation = Math.PI / 2;
+  spawnPoint.properties.color = [...SPAWN_COLOR];
+  spawnPoint.motion = {
+    type: "oscillate",
+    vector: [halfSpan, 0] as Vec2,
+    periodMs: sliderPeriodForRange(halfSpan, "medium"),
+    phase: spawnPoint.motion?.phase ?? 0.75,
+    direction: spawnPoint.motion?.direction ?? 1,
+  };
+};
 
 export const createSpawnPoint = (position: Vec2): NewLevelObjectData => ({
   prefab: "spawn-point",

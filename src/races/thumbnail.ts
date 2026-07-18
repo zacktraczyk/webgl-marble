@@ -12,6 +12,8 @@ import {
   finishLineCells,
 } from "../game/prefabs/finishZone";
 import type { Color } from "../engine/vdu/component";
+import { topSliderSpawnClearance } from "../game/prefabs/spawnPoint";
+import { MAX_MARBLE_RADIUS } from "../scenes/level-builder/constants";
 
 export type LevelThumbnailOptions = {
   width?: number;
@@ -200,6 +202,28 @@ const drawObject = (
 
   if (object.prefab === "finish-zone") {
     drawFinishZone(context, object, settings);
+    return;
+  }
+
+  if (
+    object.prefab === "spawn-point" &&
+    object.properties.variant === "top-slider"
+  ) {
+    // Axis-aligned solid triangle, top edge flush against the top wall; the
+    // authored rotation only aims the marbles.
+    const radius = object.properties.radius;
+    const topEdge = -topSliderSpawnClearance(radius, MAX_MARBLE_RADIUS);
+    context.save();
+    context.translate(...object.transform.position);
+    context.fillStyle = colorCss(object.properties.color);
+    context.globalAlpha = 0.82;
+    context.beginPath();
+    context.moveTo(-radius, topEdge);
+    context.lineTo(radius, topEdge);
+    context.lineTo(0, radius * 0.55);
+    context.closePath();
+    context.fill();
+    context.restore();
     return;
   }
 

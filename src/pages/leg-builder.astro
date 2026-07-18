@@ -238,29 +238,6 @@ import "../styles/global.css";
           </button>
         </div>
       </div>
-      <button
-        id="tool-spawn-point"
-        data-role="tool-spawn-point"
-        type="button"
-        aria-label="Move the spawn point"
-        data-tooltip="Move the marble spawn point (S)"
-        data-active="false"
-        class="flex size-9 items-center justify-center rounded-md hover:bg-zinc-600 data-[active=true]:bg-zinc-500 disabled:cursor-not-allowed disabled:text-zinc-600 disabled:opacity-50 disabled:hover:bg-transparent"
-      >
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          class="size-5"
-          aria-hidden="true"
-        >
-          <circle cx="12" cy="12" r="4"></circle>
-          <path d="M12 2v4M12 18v4M2 12h4M18 12h4"></path>
-        </svg>
-      </button>
     </nav>
 
     <p
@@ -730,6 +707,36 @@ import "../styles/global.css";
             Spawn settings
           </h2>
 
+          <div
+            role="tablist"
+            aria-label="Spawn type"
+            class="mb-1 mt-2 grid grid-cols-2 overflow-hidden rounded-md border border-zinc-600"
+          >
+            <button
+              id="spawn-type-point"
+              data-role="spawn-type-point"
+              type="button"
+              role="tab"
+              aria-selected="true"
+              data-active="true"
+              class="px-2 py-1.5 text-xs text-zinc-300 hover:bg-zinc-700 data-[active=true]:bg-cyan-400 data-[active=true]:font-medium data-[active=true]:text-cyan-950 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent"
+              >Point</button
+            >
+            <button
+              id="spawn-type-top-slider"
+              data-role="spawn-type-top-slider"
+              type="button"
+              role="tab"
+              aria-selected="false"
+              data-active="false"
+              class="border-l border-zinc-600 px-2 py-1.5 text-xs text-zinc-300 hover:bg-zinc-700 data-[active=true]:bg-cyan-400 data-[active=true]:font-medium data-[active=true]:text-cyan-950 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent"
+              >Top slider</button
+            >
+          </div>
+          <p class="mb-1 text-[10px] leading-4 text-zinc-500">
+            Top slider sweeps along the top edge and drops marbles as it moves.
+          </p>
+
           <label
             class="flex items-center gap-3 py-2.5 text-zinc-300"
             for="team-count"
@@ -876,7 +883,7 @@ import "../styles/global.css";
             <span class="text-sm">Snap to grid</span>
             <span
               aria-hidden="true"
-              class="relative ml-auto h-5 w-9 rounded-full bg-zinc-600 transition-colors group-data-[active=true]:bg-fuchsia-400"
+              class="relative ml-auto h-5 w-9 rounded-full bg-zinc-600 transition-colors group-data-[active=true]:bg-cyan-400"
             >
               <span
                 class="absolute left-0.5 top-0.5 size-4 rounded-full bg-white shadow-sm transition-transform group-data-[active=true]:translate-x-4"
@@ -923,7 +930,7 @@ import "../styles/global.css";
             <span class="text-sm">Major dots</span>
             <span
               aria-hidden="true"
-              class="relative ml-auto h-5 w-9 rounded-full bg-zinc-600 transition-colors group-data-[active=true]:bg-fuchsia-400"
+              class="relative ml-auto h-5 w-9 rounded-full bg-zinc-600 transition-colors group-data-[active=true]:bg-cyan-400"
             >
               <span
                 class="absolute left-0.5 top-0.5 size-4 rounded-full bg-white shadow-sm transition-transform group-data-[active=true]:translate-x-4"
@@ -970,7 +977,7 @@ import "../styles/global.css";
             <span class="text-sm">Minor dots</span>
             <span
               aria-hidden="true"
-              class="relative ml-auto h-5 w-9 rounded-full bg-zinc-600 transition-colors group-data-[active=true]:bg-fuchsia-400"
+              class="relative ml-auto h-5 w-9 rounded-full bg-zinc-600 transition-colors group-data-[active=true]:bg-cyan-400"
             >
               <span
                 class="absolute left-0.5 top-0.5 size-4 rounded-full bg-white shadow-sm transition-transform group-data-[active=true]:translate-x-4"

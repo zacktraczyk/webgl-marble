@@ -29,6 +29,12 @@ type TransformedLevelObject = BaseLevelObject & {
   transform: TransformInput;
 };
 
+/**
+ * How marbles enter the course: a free-floating point, or a slider that
+ * oscillates along the top edge dropping marbles as it moves.
+ */
+export type SpawnPointVariant = "point" | "top-slider";
+
 export type LevelSettings = {
   wallThickness: number;
 };
@@ -67,6 +73,7 @@ export type LevelObjectData =
         color: Color;
         launchSpeed: number;
         directionVariance?: number;
+        variant?: SpawnPointVariant;
       };
     });
 
