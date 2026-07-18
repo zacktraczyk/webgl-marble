@@ -1,5 +1,5 @@
 {
-  "name": "marbel",
+  "name": "marble",
   "description": "A WebGL-based marble race game with physics engine",
   "version": "1.0.0",
   "type": "module",

@@ -37,12 +37,17 @@ import {
   type PointerGestureHost,
 } from "./pointerGestures";
 import { LevelEditorSelection } from "./selection";
+import {
+  deleteSelectedObjects,
+  finishWallDraft,
+  handleEscapeKey,
+  nudgeSelectedObjects,
+  selectAllObjects,
+  type SelectionActionHost,
+} from "./selectionActions";
 import { type SnapDeps } from "./snap";
 import {
   applyLevelObjectShape,
-  getLevelObjectShape,
-  getWallEndpoints,
-  moveShape,
   setWallEndpoints,
 } from "../../game/level/geometry";
 
@@ -514,85 +519,24 @@ export class LevelEditorController {
     event.preventDefault();
   };
 
-  private readonly selectAll = () => {
-    if (this.readOnly) {
-      return false;
-    }
-    this.selection.replaceAll(
-      this.getObjects()
-        .filter((object) => !object.locked)
-        .map((object) => object.id)
+  private readonly selectAll = () =>
+    selectAllObjects(this as unknown as SelectionActionHost);
+
+  private readonly handleEscape = () =>
+    handleEscapeKey(this as unknown as SelectionActionHost);
+
+  private readonly finishWall = () =>
+    finishWallDraft(this as unknown as SelectionActionHost);
+
+  private readonly deleteSelection = () =>
+    deleteSelectedObjects(this as unknown as SelectionActionHost);
+
+  private readonly nudgeSelection = (direction: Vec2, distance: number) =>
+    nudgeSelectedObjects(
+      this as unknown as SelectionActionHost,
+      direction,
+      distance
     );
-    return true;
-  };
-
-  private readonly handleEscape = () => {
-    if (this.gesture) {
-      this.cancelGesture();
-    } else if (this.wallAnchor) {
-      this.clearWallAnchor();
-    } else if (this.activeTool !== SelectedTool.Pointer) {
-      this.callbacks.onToolRequest(SelectedTool.Pointer);
-    } else if (this.selection.size > 0) {
-      this.clearSelection();
-    }
-    return true;
-  };
-
-  private readonly finishWall = () => {
-    if (!this.wallAnchor) {
-      return false;
-    }
-    this.clearWallAnchor();
-    this.updateCursor();
-    return true;
-  };
-
-  private readonly deleteSelection = () => {
-    const selected = this.selectedObjects;
-    if (selected.length === 0 || this.readOnly) {
-      return false;
-    }
-    this.cancelGesture();
-    this.callbacks.onDelete(selected);
-    this.clearSelection();
-    return true;
-  };
-
-  private readonly nudgeSelection = (direction: Vec2, distance: number) => {
-    const selected = this.selectedObjects;
-    if (selected.length === 0 || this.readOnly) {
-      return false;
-    }
-    for (const object of selected) {
-      if (object.prefab === "wall") {
-        const { start, end } = getWallEndpoints(object);
-        setWallEndpoints(
-          object,
-          [
-            start[0] + direction[0] * distance,
-            start[1] + direction[1] * distance,
-          ],
-          [end[0] + direction[0] * distance, end[1] + direction[1] * distance]
-        );
-      } else {
-        const shape = getLevelObjectShape(
-          object,
-          this.getDefaultWallThickness()
-        );
-        applyLevelObjectShape(
-          object,
-          moveShape(shape, [
-            shape.position[0] + direction[0] * distance,
-            shape.position[1] + direction[1] * distance,
-          ])
-        );
-      }
-    }
-    this.callbacks.onObjectsChange(selected);
-    this.callbacks.onObjectsCommit(selected);
-    return true;
-  };
 
   private readonly handleSelectionModifierChange = (held: boolean) => {
     this.endpointFeedback = null;

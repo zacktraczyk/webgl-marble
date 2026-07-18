@@ -1,21 +1,29 @@
-# Marbel - WebGL Marble Race Game
+# Marble - WebGL Marble Race Game
 
 A modern WebGL-based marble race game built with TypeScript, Astro, and a custom
 physics engine. Features real-time physics simulation, collision detection, and
 interactive level building.
 
-## 🎮 Features
+## Glossary
+
+| Term | Meaning |
+| ---- | ------- |
+| **level** | Serialized course geometry (`SerializedLevel` / `AuthoredLevel`) |
+| **leg** | One race stage that wraps a level document |
+| **VDU** | Visual Display Unit — the WebGL renderer under `src/engine/vdu` |
+
+## Features
 
 - **WebGL Rendering**: High-performance graphics using WebGL
 - **Physics Engine**: Custom physics simulation with collision detection
-- **Level Builder**: Interactive tool for creating custom race tracks
+- **Leg Builder**: Interactive tool for creating custom race courses
 - **Multiple Collision Algorithms**: GJK, SAT, and general collision resolution
 - **Real-time Simulation**: Smooth 60fps physics updates
 - **TypeScript**: Full type safety and better developer experience
 
 More coming soon!
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 

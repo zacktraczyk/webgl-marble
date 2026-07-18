@@ -11,7 +11,7 @@ import {
   createFinishRackFrame,
   finishLineCells,
 } from "../game/prefabs/finishZone";
-import type { Color } from "../engine/vdu/component";
+import type { Color } from "../engine/core/color";
 import { topSliderSpawnClearance } from "../game/prefabs/spawnPoint";
 import { MAX_MARBLE_RADIUS } from "../game/level/constants";
 

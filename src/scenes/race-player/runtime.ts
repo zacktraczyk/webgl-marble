@@ -24,6 +24,10 @@ import { RaceCountdown } from "./countdown";
 import { RacePlayerPresenter } from "./presenter";
 import { setupChromeAutoHide } from "./chromeAutoHide";
 import {
+  bindRacePlayerControls,
+  runningLegStatus,
+} from "./controls";
+import {
   NEXT_LEG_RELEASE_FRACTION,
   type EliminationReason,
   type LegWindow,
@@ -538,15 +542,15 @@ export class RacePlayerRuntime {
   }
 
   private bindControls(signal: AbortSignal) {
-    for (const button of this.pauseButtons) {
-      button.addEventListener("click", this.togglePause, { signal });
-    }
-    for (const button of this.restartButtons) {
-      button.addEventListener("click", this.restart, { signal });
-    }
-    for (const button of this.skipContinueButtons) {
-      button.addEventListener("click", this.skipOrContinue, { signal });
-    }
+    bindRacePlayerControls({
+      signal,
+      pauseButtons: this.pauseButtons,
+      restartButtons: this.restartButtons,
+      skipContinueButtons: this.skipContinueButtons,
+      onPause: this.togglePause,
+      onRestart: this.restart,
+      onSkipContinue: this.skipOrContinue,
+    });
   }
 
   private updateActiveParticipants() {
@@ -558,16 +562,16 @@ export class RacePlayerRuntime {
   }
 
   private get runningStatus() {
-    const courseIssue = this.legWindow?.current.controller?.snapshot.courseIssue;
-    if (courseIssue) {
-      return `${courseIssue}. This leg will time out or can be skipped.`;
-    }
     const progression = this.progression.snapshot;
-    const leg = this.raceDocument.legs[progression.legIndex];
-    const marblesPerTeam =
-      this.finishSchedule[progression.legIndex]?.marblesPerTeam ??
-      this.raceDocument.rules.marblesPerTeam;
-    return `Racing leg ${progression.legIndex + 1}: ${leg.name} · ${progression.activeParticipantIndices.length} teams · ${marblesPerTeam} marbles each`;
+    return runningLegStatus({
+      raceDocument: this.raceDocument,
+      legIndex: progression.legIndex,
+      activeTeamCount: progression.activeParticipantIndices.length,
+      marblesPerTeam:
+        this.finishSchedule[progression.legIndex]?.marblesPerTeam ??
+        this.raceDocument.rules.marblesPerTeam,
+      courseIssue: this.legWindow?.current.controller?.snapshot.courseIssue,
+    });
   }
 
   private get currentState() {

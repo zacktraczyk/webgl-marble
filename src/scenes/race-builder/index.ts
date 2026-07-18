@@ -1,12 +1,12 @@
 import type { Scene } from "../../engine/runtime/scene";
-import { initializeRaceBuilder } from "./initialize";
+import { createRaceBuilder } from "./createRaceBuilder";
 
 export default function createScene(): Scene {
   let dispose = () => {};
 
   return {
     load: ({ signal }) => {
-      dispose = initializeRaceBuilder(signal);
+      dispose = createRaceBuilder(signal);
     },
     dispose: () => dispose(),
   };

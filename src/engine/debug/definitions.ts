@@ -1,6 +1,7 @@
 import type { EntityDefinition } from "../core/definition";
 import type { Vec2 } from "../core/transform";
-import type { Color, RenderPartDefinition } from "../vdu/component";
+import type { Color } from "../core/color";
+import type { RenderPartDefinition } from "../vdu/component";
 
 const linePart = (
   start: Vec2,

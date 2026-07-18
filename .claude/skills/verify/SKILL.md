@@ -1,9 +1,9 @@
 ---
 name: verify
-description: Build, launch, and drive the Marbel app to verify a change end-to-end (Astro dev server + headless Chromium over CDP).
+description: Build, launch, and drive the Marble app to verify a change end-to-end (Astro dev server + headless Chromium over CDP).
 ---
 
-# Verifying Marbel changes
+# Verifying Marble changes
 
 ## Launch
 
@@ -12,7 +12,7 @@ bun run dev   # Astro; picks the next free port (4321+) — read the actual port
 ```
 
 No test data ships with the app: races live in `localStorage`
-(`marbel:race-library:v1`), so a fresh browser profile starts empty.
+(`marble:race-library:v1`), so a fresh browser profile starts empty.
 Create state through the real UI (`[data-create-race]` on `/`), not by
 seeding storage.
 

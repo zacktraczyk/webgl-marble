@@ -1,5 +1,5 @@
 import type { Vec2 } from "../../../engine/core/transform";
-import type { Color } from "../../../engine/vdu/component";
+import type { Color } from "../../../engine/core/color";
 
 export const MIN_TEAMS = 1;
 export const MAX_TEAMS = 12;

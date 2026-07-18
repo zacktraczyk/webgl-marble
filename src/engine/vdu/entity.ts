@@ -14,7 +14,7 @@ export class DrawEntity {
   rootTransform?: Transform;
   gl?: WebGLRenderingContext;
   programInfo?: ProgramInfo;
-  private readonly _preInitIndicies?: number[] | Float32Array;
+  private readonly _preInitIndices?: number[] | Float32Array;
   bufferInfo?: BufferInfo;
   private _ownsBuffer = false;
 
@@ -46,7 +46,7 @@ export class DrawEntity {
         bufferInfo: BufferInfo;
       }
     | {
-        indicies: number[] | Float32Array;
+        indices: number[] | Float32Array;
       }
   )) {
     this.id = id.getNext();
@@ -63,8 +63,8 @@ export class DrawEntity {
       const { bufferInfo } = bufferParams;
       this.bufferInfo = bufferInfo;
     } else {
-      const { indicies } = bufferParams;
-      this._preInitIndicies = indicies;
+      const { indices } = bufferParams;
+      this._preInitIndices = indices;
     }
   }
 
@@ -78,25 +78,25 @@ export class DrawEntity {
     this.gl = gl;
     this.programInfo = programInfo;
 
-    if (this._preInitIndicies && !this.bufferInfo) {
-      const indicies = this._preInitIndicies;
+    if (this._preInitIndices && !this.bufferInfo) {
+      const indices = this._preInitIndices;
 
-      const indiciesBuffer = gl.createBuffer();
-      if (!indiciesBuffer) {
+      const indicesBuffer = gl.createBuffer();
+      if (!indicesBuffer) {
         throw new Error("Failed to create buffer");
       }
-      gl.bindBuffer(gl.ARRAY_BUFFER, indiciesBuffer);
+      gl.bindBuffer(gl.ARRAY_BUFFER, indicesBuffer);
       gl.bufferData(
         gl.ARRAY_BUFFER,
-        new Float32Array(indicies),
+        new Float32Array(indices),
         gl.STATIC_DRAW
       );
       const bufferInfo: BufferInfo = {
-        numElements: indicies.length / 2,
+        numElements: indices.length / 2,
         attributes: {
           aVertexPosition: {
             attributeType: "buffer",
-            buffer: indiciesBuffer,
+            buffer: indicesBuffer,
             size: 2,
             type: gl.FLOAT,
             normalize: false,
@@ -196,17 +196,17 @@ export const createCircle = (radius: number): DrawEntity => {
   const thetaStart = 0;
   const thetaLength = 2 * Math.PI;
 
-  const indicies: number[] = [];
+  const indices: number[] = [];
 
   for (let s = 0; s <= segments - 1; s++) {
     const segment = thetaStart + (s / segments) * thetaLength;
     const nextSegment = thetaStart + ((s - 1) / segments) * thetaLength;
 
-    indicies.push(0, 0);
+    indices.push(0, 0);
 
-    indicies.push(radius * Math.cos(segment), radius * Math.sin(segment));
+    indices.push(radius * Math.cos(segment), radius * Math.sin(segment));
 
-    indicies.push(
+    indices.push(
       radius * Math.cos(nextSegment),
       radius * Math.sin(nextSegment)
     );
@@ -217,7 +217,7 @@ export const createCircle = (radius: number): DrawEntity => {
     rotation: 0,
     scale: [1, 1],
     color: [1, 1, 1, 1],
-    indicies,
+    indices,
   });
 
   return drawEntity;
@@ -229,9 +229,9 @@ export const createPolygon = (
   if (vertices.length < 3) {
     throw new Error("A render polygon requires at least three vertices");
   }
-  const indicies: number[] = [];
+  const indices: number[] = [];
   for (let index = 1; index < vertices.length - 1; index++) {
-    indicies.push(
+    indices.push(
       vertices[0][0],
       vertices[0][1],
       vertices[index][0],
@@ -245,7 +245,7 @@ export const createPolygon = (
     rotation: 0,
     scale: [1, 1],
     color: [1, 1, 1, 1],
-    indicies,
+    indices,
   });
 };
 
@@ -257,22 +257,22 @@ export const createRectangle = ({
   width: number;
   height: number;
 }): DrawEntity => {
-  const indicies: number[] = [];
+  const indices: number[] = [];
 
-  indicies.push(width * (1 / 2), height * -(1 / 2));
-  indicies.push(width * -(1 / 2), height * -(1 / 2));
-  indicies.push(width * (1 / 2), height * (1 / 2));
+  indices.push(width * (1 / 2), height * -(1 / 2));
+  indices.push(width * -(1 / 2), height * -(1 / 2));
+  indices.push(width * (1 / 2), height * (1 / 2));
 
-  indicies.push(width * -(1 / 2), height * -(1 / 2));
-  indicies.push(width * -(1 / 2), height * (1 / 2));
-  indicies.push(width * (1 / 2), height * (1 / 2));
+  indices.push(width * -(1 / 2), height * -(1 / 2));
+  indices.push(width * -(1 / 2), height * (1 / 2));
+  indices.push(width * (1 / 2), height * (1 / 2));
 
   const drawEntity = new DrawEntity({
     position: [0, 0],
     rotation: 0,
     scale: [1, 1],
     color: [1, 1, 1, 1],
-    indicies,
+    indices,
   });
 
   return drawEntity;
@@ -283,18 +283,18 @@ export const createRightTriangle = (
   height: number
 ): DrawEntity => {
   // Center of triangle is at (0, 0)
-  const indicies2: number[] = [];
+  const indices2: number[] = [];
 
-  indicies2.push(width * (-1 / 2), height * -(1 / 2));
-  indicies2.push(width * (1 / 2), height * (1 / 2));
-  indicies2.push(width * (-1 / 2), height * (1 / 2));
+  indices2.push(width * (-1 / 2), height * -(1 / 2));
+  indices2.push(width * (1 / 2), height * (1 / 2));
+  indices2.push(width * (-1 / 2), height * (1 / 2));
 
   const drawEntity = new DrawEntity({
     position: [0, 0],
     rotation: 0,
     scale: [1, 1],
     color: [1, 1, 1, 1],
-    indicies: indicies2,
+    indices: indices2,
   });
 
   return drawEntity;

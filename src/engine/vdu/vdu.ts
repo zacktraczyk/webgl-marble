@@ -20,7 +20,7 @@ import vertShader from "./glsl/vert.glsl";
 import * as WebglUtils from "./webglUtils";
 
 /**
- * Renders World-owned entity components using WebGL.
+ * Visual Display Unit — WebGL renderer for World-owned entity components.
  */
 export class VDU {
   readonly canvas: HTMLCanvasElement;

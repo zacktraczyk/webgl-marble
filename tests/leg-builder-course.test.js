@@ -15,7 +15,7 @@ import {
 } from "../src/game/level/objects.ts";
 import { clampStepInteger } from "../src/scenes/leg-builder/ui/input.ts";
 
-describe("level builder course boundaries", () => {
+describe("leg builder course boundaries", () => {
   test("uses a larger widescreen default course", () => {
     expect(STAGE_WIDTH).toBe(1440);
     expect(STAGE_HEIGHT).toBe(810);

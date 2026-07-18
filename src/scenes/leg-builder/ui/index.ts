@@ -3,7 +3,7 @@ const requireElement = <T extends HTMLElement>(
   label: string
 ) => {
   if (!element) {
-    throw new Error(`Level builder element not found: ${label}`);
+    throw new Error(`Leg builder element not found: ${label}`);
   }
   return element as T;
 };

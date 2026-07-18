@@ -1,7 +1,7 @@
 // Reference article: https://developer.ibm.com/tutorials/wa-build2dphysicsengine/
 // Collision Resolution reference: https://spicyyoghurt.com/tutorials/html5-javascript-game-development/collision-detection-physics
 
-import { Observer } from "../utils/Observer";
+import { Observer } from "../utils/observer";
 import type { EntityId } from "../core/entity";
 import type { Transform } from "../core/transform";
 import {

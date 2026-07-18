@@ -27,7 +27,7 @@ const PURPLE_COLOR: Color = [168 / 255, 85 / 255, 247 / 255, 1];
 const ORANGE_COLOR: Color = [255 / 255, 159 / 255, 67 / 255, 1];
 const PINK_COLOR: Color = [255 / 255, 186 / 255, 186 / 255, 1];
 const BROWN_COLOR: Color = [156 / 255, 102 / 255, 31 / 255, 1];
-const MARBEL_COLOR: Color[] = [
+const MARBLE_COLOR: Color[] = [
   BLUE_COLOR,
   GREEN_COLOR,
   RED_COLOR,
@@ -37,8 +37,8 @@ const MARBEL_COLOR: Color[] = [
   PINK_COLOR,
   BROWN_COLOR,
 ];
-const MARBEL_RADIUS = 20;
-const MARBEL_SPAWN_BUFFER = 10;
+const MARBLE_RADIUS = 20;
+const MARBLE_SPAWN_BUFFER = 10;
 
 const WALL_THICKNESS = 50;
 const TRIANGLE_THICKNESS = WALL_THICKNESS * 2;
@@ -78,18 +78,18 @@ function createScene(): Scene {
   });
 
   const numMarbles = 500;
-  const marbels: Entity[] = [];
+  const marbles: Entity[] = [];
   let colorIndex = 0;
   const spawnBall = () => {
     const x =
-      -stage.width / 2 + MARBEL_RADIUS + WALL_THICKNESS + MARBEL_SPAWN_BUFFER;
+      -stage.width / 2 + MARBLE_RADIUS + WALL_THICKNESS + MARBLE_SPAWN_BUFFER;
     const y =
-      -stage.height / 2 + MARBEL_RADIUS + WALL_THICKNESS + MARBEL_SPAWN_BUFFER;
+      -stage.height / 2 + MARBLE_RADIUS + WALL_THICKNESS + MARBLE_SPAWN_BUFFER;
 
-    for (const marble of marbels) {
+    for (const marble of marbles) {
       if (
-        Math.abs(marble.position[0] - x) < MARBEL_RADIUS &&
-        Math.abs(marble.position[1] - y) < MARBEL_RADIUS
+        Math.abs(marble.position[0] - x) < MARBLE_RADIUS &&
+        Math.abs(marble.position[1] - y) < MARBLE_RADIUS
       ) {
         return false;
       }
@@ -104,18 +104,18 @@ function createScene(): Scene {
       marbleDefinition({
         position: [x, y],
         velocity: [vx, vy],
-        radius: MARBEL_RADIUS,
-        color: MARBEL_COLOR[colorIndex],
+        radius: MARBLE_RADIUS,
+        color: MARBLE_COLOR[colorIndex],
         decorated: false,
       })
     );
-    marbels.push(newMarble);
+    marbles.push(newMarble);
 
-    colorIndex = (colorIndex + 1) % MARBEL_COLOR.length;
+    colorIndex = (colorIndex + 1) % MARBLE_COLOR.length;
   };
 
   const destroyOutOfBoundsObjects = () => {
-    for (const marble of marbels) {
+    for (const marble of marbles) {
       if (
         marble.position[0] < -stage.width / 2 - OUT_OF_BOUNDS_THICKNESS ||
         marble.position[0] > stage.width / 2 + OUT_OF_BOUNDS_THICKNESS ||
@@ -137,7 +137,7 @@ function createScene(): Scene {
       });
     },
     fixedUpdate: (deltaMs) => {
-      if (marbels.length < numMarbles) {
+      if (marbles.length < numMarbles) {
         spawnBall();
       }
       constrainPushers();

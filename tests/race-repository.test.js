@@ -13,6 +13,10 @@ class MemoryStorage {
   setItem(key, value) {
     this.values.set(key, value);
   }
+
+  removeItem(key) {
+    this.values.delete(key);
+  }
 }
 
 const ids = () => {
@@ -149,5 +153,19 @@ describe("race repository", () => {
     expect(repository.get("race")?.participants[0].name).not.toBe(
       "Also mutated"
     );
+  });
+
+  test("migrates the legacy marbel storage key to marble", () => {
+    const storage = new MemoryStorage();
+    const race = createDefaultRace({ id: "legacy", createId: ids() });
+    storage.setItem(
+      "marbel:race-library:v1",
+      JSON.stringify({ version: 1, races: [race] })
+    );
+
+    const repository = new RaceRepository({ storage });
+    expect(repository.get("legacy")?.id).toBe("legacy");
+    expect(storage.getItem("marble:race-library:v1")).toContain("legacy");
+    expect(storage.getItem("marbel:race-library:v1")).toBeNull();
   });
 });

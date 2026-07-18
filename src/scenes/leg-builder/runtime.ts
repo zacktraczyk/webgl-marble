@@ -12,8 +12,6 @@ import {
   STAGE_HEIGHT,
   STAGE_WIDTH,
   MAX_MARBLE_RADIUS,
-  applyTopSliderSpawnLayout,
-  createCourseBoundaries,
   createDefaultCourse,
   createGridLayout,
   createPusher,
@@ -28,15 +26,10 @@ import {
   SelectedTool,
 } from "../../editor/tools";
 import { RaceController } from "../../game/race/controller";
-import { computeCourseGridWorldBounds } from "./courseGridBounds";
-import { constrainSpawnPoint } from "./spawnConstraint";
+import { LegCourseSync } from "./courseSync";
 import { BuilderCameraController } from "./ui/cameraController";
 import { BuilderControls } from "./ui/controls";
-import {
-  readCourseSize,
-  readRoundConfiguration,
-  readWallThickness,
-} from "./ui/settings";
+import { readRoundConfiguration, readWallThickness } from "./ui/settings";
 import { resolveBuilderUi, type BuilderUi } from "./ui";
 import { GridOverlay } from "./ui/gridOverlay";
 import { MotionInspectorController } from "./ui/motionInspector";
@@ -62,6 +55,7 @@ export class LegBuilderRuntime {
   private readonly controls: BuilderControls;
   private readonly cameraController: BuilderCameraController;
   private readonly motionInspector: MotionInspectorController;
+  private readonly courseSync: LegCourseSync;
   private readonly onCommit: LegBuilderOptions["onCommit"];
   private configuration: RoundConfiguration;
   /**
@@ -112,6 +106,18 @@ export class LegBuilderRuntime {
     this.rememberSpawnPosition();
     this.race = new RaceController(this.stage, this.level, this.configuration);
     this.history = new LevelHistory(this.level.document.serialize());
+    this.courseSync = new LegCourseSync({
+      stage: this.stage,
+      level: this.level,
+      ui: this.ui,
+      getConfiguration: () => this.configuration,
+      getLastValidSpawnPosition: () => this.lastValidSpawnPosition,
+      setLastValidSpawnPosition: (value) => {
+        this.lastValidSpawnPosition = value;
+      },
+      commitLevelChange: () => this.commitLevelChange(),
+      fitCamera: () => this.cameraController.fitStage(),
+    });
 
     // Editor layers
     this.gridOverlay = this.createGridOverlay();
@@ -365,55 +371,14 @@ export class LegBuilderRuntime {
   private refreshAuthoredObjects(objects: readonly LevelObjectData[]) {
     for (const object of objects) {
       if (object.prefab === "spawn-point") {
-        this.constrainSpawnPoint(object);
+        this.courseSync.constrainSpawnPoint(object);
       }
       this.level.refresh(object);
     }
   }
 
-  private constrainSpawnPoint(
-    spawnPoint: Extract<LevelObjectData, { prefab: "spawn-point" }>
-  ) {
-    this.lastValidSpawnPosition = constrainSpawnPoint({
-      spawnPoint,
-      objects: this.level.objects,
-      wallThickness: this.level.wallThickness,
-      stageSize: [this.stage.width, this.stage.height],
-      lastValidSpawnPosition: this.lastValidSpawnPosition,
-    });
-  }
-
-  private syncSpawnPointToCourse() {
-    const spawnPoint = this.level.find("spawn-point");
-    if (!spawnPoint) {
-      return;
-    }
-    this.constrainSpawnPoint(spawnPoint);
-    this.level.refresh(spawnPoint);
-  }
-
   private readonly setSpawnVariant = (variant: SpawnPointVariant) => {
-    if (this.playbackActive) {
-      return;
-    }
-    const spawnPoint = this.level.find("spawn-point");
-    if (!spawnPoint || (spawnPoint.properties.variant ?? "point") === variant) {
-      return;
-    }
-    spawnPoint.properties.variant = variant;
-    if (variant === "top-slider") {
-      applyTopSliderSpawnLayout(
-        spawnPoint,
-        [this.stage.width, this.stage.height],
-        this.level.wallThickness
-      );
-    } else {
-      delete spawnPoint.motion;
-      spawnPoint.transform.rotation = Math.PI / 2;
-      this.constrainSpawnPoint(spawnPoint);
-    }
-    this.level.refresh(spawnPoint);
-    this.commitLevelChange();
+    this.courseSync.setSpawnVariant(variant, this.playbackActive);
   };
 
   private rememberSpawnPosition() {
@@ -482,13 +447,7 @@ export class LegBuilderRuntime {
     this.ui.releaseIntervalInput.value = `${configuration.releaseIntervalMs}`;
   }
 
-  private readonly getGridWorldBounds = () =>
-    computeCourseGridWorldBounds({
-      objects: this.level.objects,
-      wallThickness: this.level.wallThickness,
-      stageWidth: this.stage.width,
-      stageHeight: this.stage.height,
-    });
+  private readonly getGridWorldBounds = () => this.courseSync.getGridWorldBounds();
 
   private syncPlaybackState(playbackActive: boolean) {
     if (this.playbackActive === playbackActive) {
@@ -515,45 +474,11 @@ export class LegBuilderRuntime {
   };
 
   private readonly handleCourseSizeChange = () => {
-    const [width, height] = readCourseSize(this.ui);
-    this.ui.courseWidthInput.value = `${width}`;
-    this.ui.courseHeightInput.value = `${height}`;
-    if (width === this.stage.width && height === this.stage.height) {
-      return;
-    }
-    this.stage.setSize(width, height);
-    this.level.resize(
-      [width, height],
-      createCourseBoundaries(
-        width,
-        height,
-        this.level.wallThickness,
-        this.configuration
-      )
-    );
-    this.syncSpawnPointToCourse();
-    this.cameraController.fitStage();
-    this.commitLevelChange();
+    this.courseSync.handleCourseSizeChange();
   };
 
   private readonly handleWallThicknessChange = () => {
-    const wallThickness = readWallThickness(this.ui);
-    this.ui.wallThicknessInput.value = `${wallThickness}`;
-    if (wallThickness === this.level.wallThickness) {
-      return;
-    }
-    this.level.setWallThickness(wallThickness);
-    this.level.resize(
-      [this.stage.width, this.stage.height],
-      createCourseBoundaries(
-        this.stage.width,
-        this.stage.height,
-        wallThickness,
-        this.configuration
-      )
-    );
-    this.syncSpawnPointToCourse();
-    this.commitLevelChange();
+    this.courseSync.handleWallThicknessChange();
   };
 
   private readonly toggleRace = () => {

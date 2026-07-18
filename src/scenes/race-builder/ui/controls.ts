@@ -6,7 +6,8 @@ import {
   requiredLegCount,
 } from "../../../races";
 import { wireLegListReorder } from "./dragReorder";
-import { fitNameInput, type RaceBuilderContext } from "./render";
+import type { RaceBuilderContext } from "./context";
+import { fitNameInput } from "./render";
 
 /**
  * Binds every top-level race-builder control (name, marble counts, sliders,

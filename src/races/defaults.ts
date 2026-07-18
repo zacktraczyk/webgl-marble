@@ -1,5 +1,5 @@
 import { LevelDocument } from "../game/level/document";
-import type { Color } from "../engine/vdu/component";
+import type { Color } from "../engine/core/color";
 import { TEAM_COLORS, TEAM_NAMES } from "../game/race/staging";
 import {
   COURSE_STROKE_WIDTH,

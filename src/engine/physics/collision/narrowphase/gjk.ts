@@ -4,7 +4,7 @@ import {
   type Collision,
   type NarrowPhase,
 } from "../types";
-import { Observer } from "../../../utils/Observer";
+import { Observer } from "../../../utils/observer";
 import type { PhysicsEntity } from "../../entity";
 
 /** Diagnostic GJK/EPA implementation. Production contacts use SAT manifolds. */

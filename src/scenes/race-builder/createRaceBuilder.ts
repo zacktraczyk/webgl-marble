@@ -1,11 +1,12 @@
 import { attachTooltip } from "../../ui/tooltip";
 import { RaceRepository, type RaceDocument } from "../../races";
 import { bindRaceBuilderControls } from "./ui/controls";
+import type { RaceBuilderContext } from "./ui/context";
 import { resolveRaceBuilderUi } from "./ui/elements";
-import { render, type RaceBuilderContext } from "./ui/render";
+import { render } from "./ui/render";
 
 /** Thin orchestrator: wires the repository, resolved UI, render, and controls. */
-export function initializeRaceBuilder(signal: AbortSignal) {
+export function createRaceBuilder(signal: AbortSignal) {
   attachTooltip(document.body, signal);
   const repository = new RaceRepository();
   const params = new URLSearchParams(window.location.search);

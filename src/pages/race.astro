@@ -2,7 +2,7 @@
 import Layout from "../layouts/Layout.astro";
 ---
 
-<Layout title="Race · Marbel">
+<Layout title="Race · Marble">
   <main class="relative size-full overflow-hidden bg-zinc-950">
     <section
       id="race-error-state"
@@ -402,59 +402,6 @@ import Layout from "../layouts/Layout.astro";
 </style>
 
 <script>
-  import { mountScene } from "../engine/runtime/mountScene";
-  import { RaceRepository, isRacePlayable } from "../races";
-  import createRacePlayerScene from "../scenes/race-player";
-
-  const params = new URLSearchParams(window.location.search);
-  const raceId = params.get("race") ?? "";
-  const repository = new RaceRepository();
-  const race = repository.get(raceId);
-  const player = document.querySelector<HTMLElement>("#race-player");
-  const errorState = document.querySelector<HTMLElement>("#race-error-state");
-  const errorTitle = document.querySelector<HTMLElement>("#race-error-title");
-  const errorCopy = document.querySelector<HTMLElement>("#race-error-copy");
-  const errorAction =
-    document.querySelector<HTMLAnchorElement>("#race-error-action");
-
-  const showError = (
-    title: string,
-    copy: string,
-    actionHref = "/",
-    actionLabel = "Return to library"
-  ) => {
-    if (errorState) errorState.hidden = false;
-    if (errorTitle) errorTitle.textContent = title;
-    if (errorCopy) errorCopy.textContent = copy;
-    if (errorAction) {
-      errorAction.href = actionHref;
-      errorAction.textContent = actionLabel;
-    }
-  };
-
-  if (!race) {
-    showError("Race not found", "It may have been deleted from this browser.");
-  } else if (!isRacePlayable(race)) {
-    showError(
-      "Race setup is incomplete",
-      "A race needs exactly one leg for each team that will be eliminated.",
-      `/race-builder?race=${encodeURIComponent(race.id)}`,
-      "Open race builder"
-    );
-  } else if (player) {
-    const backLink =
-      document.querySelector<HTMLAnchorElement>("#race-back-link");
-    if (backLink) {
-      backLink.href = `/race-builder?race=${encodeURIComponent(race.id)}`;
-    }
-    player.hidden = false;
-    try {
-      mountScene(createRacePlayerScene(race, player), {
-        errorElement: document.querySelector<HTMLElement>("#race-error"),
-      });
-    } catch (error) {
-      showError("Race could not start", `${error}`);
-      player.hidden = true;
-    }
-  }
+  import { bootRacePlayerPage } from "../scenes/race-player/boot";
+  bootRacePlayerPage();
 </script>

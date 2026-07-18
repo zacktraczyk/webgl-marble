@@ -1,5 +1,5 @@
 import type { RaceLegDocument } from "../../../races";
-import type { RaceBuilderContext } from "./render";
+import type { RaceBuilderContext } from "./context";
 
 /**
  * Live-reorders the dragged leg item as the pointer moves over the list.

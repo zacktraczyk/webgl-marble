@@ -9,11 +9,14 @@ import {
 } from "./types";
 import { createLocalId } from "./defaults";
 
-export const DEFAULT_RACE_STORAGE_KEY = "marbel:race-library:v1";
+export const DEFAULT_RACE_STORAGE_KEY = "marble:race-library:v1";
+/** Previous brand misspelling — still read once so existing libraries migrate. */
+const LEGACY_RACE_STORAGE_KEY = "marbel:race-library:v1";
 
 export interface RaceStorage {
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
+  removeItem?(key: string): void;
 }
 
 export type RaceRepositoryOptions = {
@@ -306,6 +309,21 @@ export class RaceRepository {
     let stored: string | null;
     try {
       stored = this.storage.getItem(this.storageKey);
+      if (
+        stored === null &&
+        this.storageKey === DEFAULT_RACE_STORAGE_KEY
+      ) {
+        stored = this.storage.getItem(LEGACY_RACE_STORAGE_KEY);
+        if (stored !== null) {
+          // Migrate off the misspelled key so subsequent loads use the current one.
+          try {
+            this.storage.setItem(this.storageKey, stored);
+            this.storage.removeItem?.(LEGACY_RACE_STORAGE_KEY);
+          } catch {
+            // Keep using the legacy payload from memory if write/remove fails.
+          }
+        }
+      }
     } catch {
       // Keep the initialized in-memory library when browser storage is blocked.
       return;

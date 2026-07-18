@@ -2,7 +2,7 @@ import type { Entity } from "../engine/core/entity";
 import { FreeCameraController } from "../engine/input/freeCameraController";
 import type { Scene } from "../engine/runtime/scene";
 import Stage from "../engine/stage";
-import type { Color } from "../engine/vdu/component";
+import type { Color } from "../engine/core/color";
 import { circleDefinition } from "../game/prefabs/primitives/circle";
 import { rectangleDefinition } from "../game/prefabs/primitives/rectangle";
 

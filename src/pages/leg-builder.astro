@@ -101,19 +101,6 @@ import "../scenes/leg-builder/leg-builder.css";
 </Layout>
 
 <script>
-  import { mountScene } from "../engine/runtime/mountScene";
-  import createScene from "../scenes/leg-builder";
-
-  const errorElement = document.getElementById("builder-error");
-  try {
-    mountScene(createScene(), {
-      showFps: true,
-      fpsElement: document.getElementById("builder-fps"),
-      errorElement,
-    });
-  } catch (error) {
-    if (errorElement) {
-      errorElement.textContent = `${error}`;
-    }
-  }
+  import { mountLegBuilderPage } from "../scenes/leg-builder/mountPage";
+  mountLegBuilderPage();
 </script>

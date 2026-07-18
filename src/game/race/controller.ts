@@ -7,10 +7,7 @@ import {
   createPackedFinishPlacements,
   type FinishMarblePlacement,
 } from "./finishGrid";
-import {
-  RoundRobinReleaseQueue,
-  TEAM_COLORS,
-} from "./staging";
+import { RoundRobinReleaseQueue, TEAM_COLORS } from "./staging";
 import {
   DEFAULT_SPAWN_DIRECTION_VARIANCE,
   randomSpawnAngle,
@@ -26,65 +23,21 @@ import {
 } from "../level/constants";
 import type { RacePhase, RoundConfiguration } from "../level/types";
 import { RoundFinishTracker } from "./roundFinishTracker";
+import {
+  resolveStableTeamIndices,
+  teamIndexForMarble,
+  type ExternalRaceMode,
+  type FinishedMarble,
+  type PendingMarble,
+  type RaceControllerOptions,
+  type RaceSnapshot,
+} from "./types";
 
-type PendingMarble = {
-  teamIndex: number;
-};
-
-export type RaceSnapshot = {
-  phase: RacePhase;
-  teamCount: number;
-  totalMarbles: number;
-  queuedMarbles: number;
-  releasedMarbles: number;
-  finishedMarbles: number;
-  remainingMarbles: number;
-  eliminatedTeamIndex: number | null;
-  marbleRadius: number;
-  physicsActive: boolean;
-  outOfBoundsMarbles: number;
-  courseIssue: string | null;
-};
-
-export type ExternalRaceMode = {
-  bounds: { minX: number; maxX: number; minY: number; maxY: number };
-  onMarbleReleased?: (stableTeamIndex: number) => void;
-};
-
-export type RaceControllerOptions = {
-  stableTeamIndices?: readonly number[];
-  external?: ExternalRaceMode;
-};
-
-type FinishedMarble = {
-  entity: Entity;
-  stableTeamIndex: number;
-};
-
-const resolveStableTeamIndices = (
-  teamCount: number,
-  stableTeamIndices?: readonly number[]
-) => {
-  const indices =
-    stableTeamIndices ?? Array.from({ length: teamCount }, (_, index) => index);
-  if (indices.length !== teamCount) {
-    throw new Error(
-      `Stable team indices must include exactly ${teamCount} teams`
-    );
-  }
-
-  const uniqueIndices = new Set<number>();
-  for (const index of indices) {
-    if (!Number.isInteger(index) || index < 0 || index >= TEAM_COLORS.length) {
-      throw new Error(`Unknown stable team index: ${index}`);
-    }
-    if (uniqueIndices.has(index)) {
-      throw new Error(`Duplicate stable team index: ${index}`);
-    }
-    uniqueIndices.add(index);
-  }
-  return [...indices];
-};
+export type {
+  ExternalRaceMode,
+  RaceControllerOptions,
+  RaceSnapshot,
+} from "./types";
 
 export class RaceController {
   private configuration: RoundConfiguration;
@@ -116,6 +69,7 @@ export class RaceController {
     this.usesCustomStableTeamIndices = stableTeamIndices !== undefined;
     this.stableTeamIndices = resolveStableTeamIndices(
       configuration.teamCount,
+      TEAM_COLORS.length,
       stableTeamIndices
     );
     this.finishTracker = new RoundFinishTracker(
@@ -128,6 +82,7 @@ export class RaceController {
   setConfiguration(configuration: RoundConfiguration) {
     this.stableTeamIndices = resolveStableTeamIndices(
       configuration.teamCount,
+      TEAM_COLORS.length,
       this.usesCustomStableTeamIndices ? this.stableTeamIndices : undefined
     );
     this.configuration = { ...configuration };
@@ -353,7 +308,10 @@ export class RaceController {
   }
 
   private freezeMarbleInPlace(marble: Entity) {
-    const teamIndex = this.teamIndexForMarble(marble);
+    const teamIndex = teamIndexForMarble(
+      marble,
+      this.configuration.teamCount
+    );
     if (teamIndex === null) {
       return;
     }
@@ -403,7 +361,10 @@ export class RaceController {
       if (!marble.hasTag("released-marble")) {
         continue;
       }
-      const teamIndex = this.teamIndexForMarble(marble);
+      const teamIndex = teamIndexForMarble(
+        marble,
+        this.configuration.teamCount
+      );
       if (
         teamIndex !== null &&
         this.completeMarble(marble, teamIndex, "out-of-bounds")
@@ -454,23 +415,6 @@ export class RaceController {
         })
       ),
     });
-  }
-
-  private teamIndexForMarble(marble: Entity) {
-    for (const tag of marble.tags) {
-      if (!tag.startsWith("team:")) {
-        continue;
-      }
-      const teamIndex = Number(tag.slice("team:".length)) - 1;
-      if (
-        Number.isInteger(teamIndex) &&
-        teamIndex >= 0 &&
-        teamIndex < this.configuration.teamCount
-      ) {
-        return teamIndex;
-      }
-    }
-    return null;
   }
 
   private getSpawnPoint() {
@@ -584,7 +528,10 @@ export class RaceController {
           !marble.markedForDeletion &&
           finish?.hasTag("finish-zone")
         ) {
-          const teamIndex = this.teamIndexForMarble(marble);
+          const teamIndex = teamIndexForMarble(
+            marble,
+            this.configuration.teamCount
+          );
           if (teamIndex === null) {
             continue;
           }

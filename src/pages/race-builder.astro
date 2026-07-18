@@ -3,7 +3,7 @@ import Layout from "../layouts/Layout.astro";
 import Tooltip from "../ui/Tooltip.astro";
 ---
 
-<Layout title="Race Builder · Marbel">
+<Layout title="Race Builder · Marble">
   <main class="min-h-full bg-canvas text-ink lg:h-full lg:overflow-hidden">
     <section
       id="missing-race"
@@ -267,8 +267,6 @@ import Tooltip from "../ui/Tooltip.astro";
 </Layout>
 
 <script>
-  import { mountScene } from "../engine/runtime/mountScene";
-  import createScene from "../scenes/race-builder";
-
-  mountScene(createScene());
+  import { mountRaceBuilderPage } from "../scenes/race-builder/mountPage";
+  mountRaceBuilderPage();
 </script>

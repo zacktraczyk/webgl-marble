@@ -85,29 +85,29 @@ export function createDrawObject({
   gl,
   programInfo,
   position,
-  indicies,
+  indices,
 }: {
   gl: WebGLRenderingContext;
   programInfo: ProgramInfo;
   position: [number, number];
-  indicies: number[] | Float32Array;
+  indices: number[] | Float32Array;
 }) {
-  const indiciesBuffer = gl.createBuffer();
-  if (!indiciesBuffer) {
+  const indicesBuffer = gl.createBuffer();
+  if (!indicesBuffer) {
     throw new Error("Failed to create buffer");
   }
 
-  gl.bindBuffer(gl.ARRAY_BUFFER, indiciesBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(indicies), gl.STATIC_DRAW);
+  gl.bindBuffer(gl.ARRAY_BUFFER, indicesBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(indices), gl.STATIC_DRAW);
 
   const drawObject: DrawObject = {
     programInfo,
     bufferInfo: {
-      numElements: indicies.length / 2,
+      numElements: indices.length / 2,
       attributes: {
         aVertexPosition: {
           attributeType: "buffer",
-          buffer: indiciesBuffer,
+          buffer: indicesBuffer,
           size: 2,
           type: gl.FLOAT,
           normalize: false,

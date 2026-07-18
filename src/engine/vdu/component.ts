@@ -1,6 +1,7 @@
+import type { Color } from "../core/color";
 import type { TransformInput, Vec2 } from "../core/transform";
 
-export type Color = [number, number, number, number];
+export type { Color };
 
 export type RenderPrimitive =
   | { type: "circle"; radius: number }
