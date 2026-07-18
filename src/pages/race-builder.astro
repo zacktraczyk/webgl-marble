@@ -50,8 +50,8 @@ import Tooltip from "../components/Tooltip.astro";
             <div class="mt-5 flex items-center justify-between gap-4">
               <div>
                 <p class="text-sm font-bold text-ink">Starting teams</p>
-                <p class="mt-1 text-xs leading-4 text-ink-dim">
-                  100 marbles each · one out per leg
+                <p id="setup-summary" class="mt-1 text-xs leading-4 text-ink-dim">
+                  One out per leg
                 </p>
               </div>
               <div class="flex items-center rounded-full bg-canvas">
@@ -76,6 +76,26 @@ import Tooltip from "../components/Tooltip.astro";
                   class="size-9 rounded-full text-ink-dim hover:bg-raise hover:text-ink disabled:text-ink-faint/50 disabled:hover:bg-transparent"
                   >+</button
                 >
+              </div>
+            </div>
+            <div class="mt-6">
+              <label
+                class="block text-sm font-bold text-ink"
+                for="marbles-per-team">Marbles per team</label
+              >
+              <div class="mt-3 flex items-center gap-3">
+                <input
+                  id="marbles-per-team"
+                  type="range"
+                  min="0"
+                  max="8"
+                  step="1"
+                  class="w-full accent-brand"
+                />
+                <output
+                  id="marbles-per-team-output"
+                  class="w-16 text-right text-xs tabular-nums text-ink-dim"
+                ></output>
               </div>
             </div>
             <details class="group mt-6 border-t border-line pt-4">
@@ -268,6 +288,7 @@ import Tooltip from "../components/Tooltip.astro";
 
 <script>
   import {
+    MARBLES_PER_TEAM_OPTIONS,
     MAX_RACE_PARTICIPANTS,
     RaceRepository,
     createDefaultLeg,
@@ -278,6 +299,8 @@ import Tooltip from "../components/Tooltip.astro";
     requiredLegCount,
   } from "../races";
   import type { RaceDocument, RaceLegDocument } from "../races";
+  import { computeEraSchedule } from "../game/race/eraSchedule";
+  import type { LegFinishPlan } from "../game/race/eraSchedule";
   import { attachTooltip } from "../components/tooltip";
 
   attachTooltip(document.body);
@@ -296,6 +319,12 @@ import Tooltip from "../components/Tooltip.astro";
     document.querySelector<HTMLButtonElement>("#marbles-minus");
   const marblesPlus =
     document.querySelector<HTMLButtonElement>("#marbles-plus");
+  const setupSummary = document.querySelector<HTMLElement>("#setup-summary");
+  const marblesPerTeamSlider =
+    document.querySelector<HTMLInputElement>("#marbles-per-team");
+  const marblesPerTeamOutput = document.querySelector<HTMLOutputElement>(
+    "#marbles-per-team-output"
+  );
   const releaseSpeed =
     document.querySelector<HTMLInputElement>("#release-speed");
   const releaseSpeedOutput = document.querySelector<HTMLOutputElement>(
@@ -352,6 +381,25 @@ import Tooltip from "../components/Tooltip.astro";
     marbleCount.value = `${race.participants.length}`;
     marblesMinus.disabled = race.participants.length <= 2;
     marblesPlus.disabled = race.participants.length >= MAX_RACE_PARTICIPANTS;
+    const marblesPerTeam = race.rules.marblesPerTeam;
+    if (setupSummary) {
+      setupSummary.textContent = `${marblesPerTeam} marbles each · one out per leg`;
+    }
+    if (marblesPerTeamSlider && marblesPerTeamOutput) {
+      // Legacy races store 100, which sits between the 96 and 120 stops —
+      // park the thumb at the nearest stop but show the true value until the
+      // user moves the slider.
+      const sliderIndex = MARBLES_PER_TEAM_OPTIONS.reduce(
+        (best, option, index) =>
+          Math.abs(option - marblesPerTeam) <
+          Math.abs(MARBLES_PER_TEAM_OPTIONS[best] - marblesPerTeam)
+            ? index
+            : best,
+        0
+      );
+      marblesPerTeamSlider.value = `${sliderIndex}`;
+      marblesPerTeamOutput.value = `${marblesPerTeam}`;
+    }
     releaseSpeed.value = `${race.releaseIntervalMs}`;
     releaseSpeedOutput.value = `${race.releaseIntervalMs} ms`;
 
@@ -387,6 +435,23 @@ import Tooltip from "../components/Tooltip.astro";
     legList.replaceChildren();
     let handleToFocus: HTMLButtonElement | null = null;
     const startingTeams = race.participants.length;
+    // With a complete race the era schedule is deterministic, so thumbnails
+    // can show each leg's true finish rack: era bay count plus X'd bays.
+    let schedule: LegFinishPlan[] | null = null;
+    if (race.legs.length === startingTeams - 1) {
+      try {
+        schedule = computeEraSchedule({
+          participantCount: startingTeams,
+          marblesPerTeam: race.rules.marblesPerTeam,
+          legs: race.legs.map(({ level }) => ({
+            width: level.size[0],
+            wallThickness: level.settings.wallThickness,
+          })),
+        });
+      } catch {
+        schedule = null;
+      }
+    }
     race.legs.forEach((leg, index) => {
       const fragment = legTemplate.content.cloneNode(true) as DocumentFragment;
       const item = fragment.querySelector<HTMLElement>("li");
@@ -490,8 +555,10 @@ import Tooltip from "../components/Tooltip.astro";
 
       legList.append(fragment);
       // One team is eliminated per leg, so later legs race with fewer teams.
+      const plan = schedule?.[index];
       renderLevelThumbnail(thumbnail, leg.level, {
-        teamCount: startingTeams - index,
+        teamCount: plan ? plan.bayCount : startingTeams - index,
+        xBayCount: plan?.xBayCount,
       });
     });
     pendingFocusLegId = null;
@@ -545,6 +612,20 @@ import Tooltip from "../components/Tooltip.astro";
       "click",
       () => race && setParticipantCount(race.participants.length + 1)
     );
+    marblesPerTeamSlider?.addEventListener("input", () => {
+      if (!marblesPerTeamSlider || !marblesPerTeamOutput) return;
+      const option = MARBLES_PER_TEAM_OPTIONS[Number(marblesPerTeamSlider.value)];
+      if (option !== undefined) marblesPerTeamOutput.value = `${option}`;
+    });
+    marblesPerTeamSlider?.addEventListener("change", () => {
+      if (!race || !marblesPerTeamSlider) return;
+      const option = MARBLES_PER_TEAM_OPTIONS[Number(marblesPerTeamSlider.value)];
+      if (option === undefined || option === race.rules.marblesPerTeam) return;
+      saveRace({
+        ...race,
+        rules: { ...race.rules, marblesPerTeam: option },
+      });
+    });
     releaseSpeed?.addEventListener("input", () => {
       if (releaseSpeedOutput && releaseSpeed)
         releaseSpeedOutput.value = `${releaseSpeed.value} ms`;

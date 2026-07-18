@@ -10,6 +10,7 @@ import { millisecondsToSimulationSeconds } from "../../../engine/physics/physics
 import type Stage from "../../../engine/stage";
 import { getLevelObjectMotionPose } from "../../../editor/levelMotion";
 import { levelObjectDefinitions } from "../../../game/prefabs/levelObject";
+import { finishRackHeightFor } from "../../../game/race/finishGrid";
 import {
   MAX_MARBLE_RADIUS,
   MIN_MARBLE_RADIUS,
@@ -25,15 +26,20 @@ export class AuthoredLevel {
   private readonly hiddenObjects = new Set<string>();
   private teamCount: number;
   private marblesPerTeam: number;
+  private finishPlan: RoundConfiguration["finishPlan"];
   private raceMarbleRadius = MAX_MARBLE_RADIUS;
 
   constructor(
     private readonly stage: Stage,
-    configuration: Pick<RoundConfiguration, "teamCount" | "marblesPerTeam">,
+    configuration: Pick<
+      RoundConfiguration,
+      "teamCount" | "marblesPerTeam" | "finishPlan"
+    >,
     wallThickness: number
   ) {
     this.teamCount = configuration.teamCount;
     this.marblesPerTeam = configuration.marblesPerTeam;
+    this.finishPlan = configuration.finishPlan;
     this.document = new LevelDocument(
       "Untitled level",
       [stage.width, stage.height],
@@ -42,16 +48,22 @@ export class AuthoredLevel {
   }
 
   setRoundConfiguration(
-    configuration: Pick<RoundConfiguration, "teamCount" | "marblesPerTeam">
+    configuration: Pick<
+      RoundConfiguration,
+      "teamCount" | "marblesPerTeam" | "finishPlan"
+    >
   ) {
     if (
       this.teamCount === configuration.teamCount &&
-      this.marblesPerTeam === configuration.marblesPerTeam
+      this.marblesPerTeam === configuration.marblesPerTeam &&
+      this.finishPlan === configuration.finishPlan
     ) {
       return;
     }
     this.teamCount = configuration.teamCount;
     this.marblesPerTeam = configuration.marblesPerTeam;
+    this.finishPlan = configuration.finishPlan;
+    this.syncFinishZoneGeometry();
     for (const object of [...this.objects]) {
       if (
         object.prefab === "staging-rack" ||
@@ -61,6 +73,41 @@ export class AuthoredLevel {
         this.refresh(object);
       }
     }
+  }
+
+  /**
+   * Re-derives the locked finish rack's height from the packed grid and keeps
+   * its bottom edge anchored. The saved document's height always wins when a
+   * rack spawns, so the document itself is rewritten before refreshing.
+   */
+  private syncFinishZoneGeometry() {
+    const finish = this.find("finish-zone");
+    if (!finish || !finish.locked) {
+      return;
+    }
+    let height: number;
+    try {
+      height =
+        this.finishPlan?.rackHeight ??
+        finishRackHeightFor({
+          width: finish.properties.width,
+          wallThickness: this.wallThickness,
+          bayCount: this.teamCount,
+          marblesPerTeam: this.marblesPerTeam,
+          marbleRadius: MAX_MARBLE_RADIUS,
+          minimumRadius: MIN_MARBLE_RADIUS,
+          gap: STAGING_MARBLE_GAP,
+        });
+    } catch {
+      // Impossible combination mid-edit; keep the saved geometry.
+      return;
+    }
+    const bottom = finish.transform.position[1] + finish.properties.height / 2;
+    finish.properties.height = height;
+    finish.transform.position = [
+      finish.transform.position[0],
+      bottom - height / 2,
+    ];
   }
 
   setRaceMarbleRadius(marbleRadius: number) {
@@ -137,6 +184,9 @@ export class AuthoredLevel {
     }
     this.hiddenObjects.clear();
     this.document.restore(serialized);
+    // Saved racks may predate the current packed layout; re-derive before
+    // spawning so the frame matches where finished marbles will actually go.
+    this.syncFinishZoneGeometry();
     for (const object of this.objects) {
       this.spawn(object);
     }
@@ -231,6 +281,8 @@ export class AuthoredLevel {
       minimumMarbleRadius: MIN_MARBLE_RADIUS,
       marbleGap: STAGING_MARBLE_GAP,
       raceMarbleRadius: this.raceMarbleRadius,
+      finishBayCount: this.finishPlan?.bayCount,
+      finishXBayCount: this.finishPlan?.xBayCount,
     }).map((definition) => this.stage.spawn(definition));
     if (this.hiddenObjects.has(object.id)) {
       for (const entity of entities) {

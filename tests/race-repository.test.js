@@ -21,7 +21,7 @@ const ids = () => {
 };
 
 describe("race repository", () => {
-  test("persists stable teams with one hundred marbles per team", () => {
+  test("persists stable teams with the default marbles per team", () => {
     const createId = ids();
     const race = createDefaultRace({
       id: "race",
@@ -33,7 +33,7 @@ describe("race repository", () => {
 
     expect(new Set(race.participants.map(({ id }) => id)).size).toBe(4);
     expect(race.rules).toEqual({
-      marblesPerTeam: 100,
+      marblesPerTeam: 60,
       eliminatedPerLeg: 1,
     });
     expect(isRacePlayable(race)).toBe(true);

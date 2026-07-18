@@ -12,6 +12,7 @@ import {
   STAGING_RACK_WIDTH,
 } from "../../../game/prefabs/stagingRack";
 import { FINISH_RACK_HEIGHT } from "../../../game/prefabs/finishZone";
+import { finishRackHeightFor } from "../../../game/race/finishGrid";
 import {
   DEFAULT_SPAWN_DIRECTION_VARIANCE,
   spawnAreaRadius,
@@ -22,7 +23,9 @@ import {
   DEFAULT_LAUNCH_SPEED,
   FINISH_COLOR,
   MAX_MARBLE_RADIUS,
+  MIN_MARBLE_RADIUS,
   SPAWN_COLOR,
+  STAGING_MARBLE_GAP,
   WALL_COLOR,
 } from "../constants";
 import { SelectedTool, type PusherTool } from "../types";
@@ -162,20 +165,58 @@ export const createSpawnPoint = (position: Vec2): NewLevelObjectData => ({
   },
 });
 
+/** Sizes the finish rack for a perfect-fill marble grid. */
+export type CourseFinishOptions = {
+  teamCount: number;
+  marblesPerTeam: number;
+};
+
+const courseFinishRackHeight = (
+  stageWidth: number,
+  wallThickness: number,
+  finish?: CourseFinishOptions
+) => {
+  if (!finish) {
+    return FINISH_RACK_HEIGHT;
+  }
+  try {
+    return finishRackHeightFor({
+      width: stageWidth,
+      wallThickness,
+      bayCount: finish.teamCount,
+      marblesPerTeam: finish.marblesPerTeam,
+      marbleRadius: MAX_MARBLE_RADIUS,
+      minimumRadius: MIN_MARBLE_RADIUS,
+      gap: STAGING_MARBLE_GAP,
+    });
+  } catch {
+    // An impossible combination (e.g. mid-edit) keeps the legacy height so
+    // the course stays editable; play-time layout re-derives the real value.
+    return FINISH_RACK_HEIGHT;
+  }
+};
+
 export const createDefaultCourse = (
   stageWidth: number,
   stageHeight: number,
-  wallThickness = COURSE_STROKE_WIDTH
+  wallThickness = COURSE_STROKE_WIDTH,
+  finish?: CourseFinishOptions
 ): NewLevelObjectData[] => [
-  ...createCourseBoundaries(stageWidth, stageHeight, wallThickness),
+  ...createCourseBoundaries(stageWidth, stageHeight, wallThickness, finish),
   createSpawnPoint([0, -stageHeight / 2 + MAX_MARBLE_RADIUS * 10]),
 ];
 
 export const createCourseBoundaries = (
   stageWidth: number,
   stageHeight: number,
-  wallThickness = COURSE_STROKE_WIDTH
+  wallThickness = COURSE_STROKE_WIDTH,
+  finish?: CourseFinishOptions
 ): NewLevelObjectData[] => {
+  const finishRackHeight = courseFinishRackHeight(
+    stageWidth,
+    wallThickness,
+    finish
+  );
   const sideWall = (x: number): NewLevelObjectData => ({
     prefab: "wall",
     locked: true,
@@ -192,11 +233,11 @@ export const createCourseBoundaries = (
       prefab: "finish-zone",
       locked: true,
       transform: {
-        position: [0, stageHeight / 2 - FINISH_RACK_HEIGHT / 2],
+        position: [0, stageHeight / 2 - finishRackHeight / 2],
       },
       properties: {
         width: stageWidth,
-        height: FINISH_RACK_HEIGHT,
+        height: finishRackHeight,
         color: [...FINISH_COLOR],
       },
     },

@@ -1,11 +1,20 @@
 import { uniformCameraFitInsets } from "../../engine/camera/fit";
 import Stage from "../../engine/stage";
+import {
+  computeEraSchedule,
+  type LegFinishPlan,
+} from "../../game/race/eraSchedule";
 import { TEAM_COLORS } from "../../game/race/staging";
 import {
   isRaceDocument,
   isRacePlayable,
   type RaceDocument,
 } from "../../races/types";
+import {
+  MAX_MARBLE_RADIUS,
+  MIN_MARBLE_RADIUS,
+  STAGING_MARBLE_GAP,
+} from "../level-builder/constants";
 import type { RoundConfiguration } from "../level-builder/types";
 import { LegInstance } from "./legInstance";
 import { computeLegStackLayout, type LegFrame } from "./legStack";
@@ -67,6 +76,7 @@ export class RacePlayerRuntime {
   private readonly restartButtons: HTMLButtonElement[];
   private readonly skipContinueButtons: HTMLButtonElement[];
   private readonly layout: LegFrame[];
+  private readonly finishSchedule: LegFinishPlan[];
   private readonly cameraController: RaceCameraController;
   private legWindow: LegWindow | null = null;
   private transition: Transition | null = null;
@@ -122,7 +132,23 @@ export class RacePlayerRuntime {
       height: firstLeg.level.size[1],
       vdu: { canvas },
     });
-    this.layout = computeLegStackLayout(this.raceDocument.legs);
+    // Every leg's finish rack layout — bay counts, X'd bays, and heights —
+    // is deterministic (one elimination per leg), so plan the whole race now.
+    this.finishSchedule = computeEraSchedule({
+      participantCount: this.raceDocument.participants.length,
+      marblesPerTeam: this.raceDocument.rules.marblesPerTeam,
+      legs: this.raceDocument.legs.map((leg) => ({
+        width: leg.level.size[0],
+        wallThickness: leg.level.settings.wallThickness,
+      })),
+      marbleRadius: MAX_MARBLE_RADIUS,
+      minimumRadius: MIN_MARBLE_RADIUS,
+      gap: STAGING_MARBLE_GAP,
+    });
+    this.layout = computeLegStackLayout(
+      this.raceDocument.legs,
+      this.finishSchedule
+    );
 
     // Size the stage once to the whole stack's bounding box. Nothing in this
     // scene culls against stage bounds anymore (each leg controller owns its
@@ -333,14 +359,11 @@ export class RacePlayerRuntime {
 
   private buildLeg(index: number): LegInstance {
     const leg = this.raceDocument.legs[index];
-    // Leg `i` runs with the field it inherits: N participants minus the `i`
-    // teams eliminated on the legs before it.
-    const teamCount = this.raceDocument.participants.length - index;
     return new LegInstance({
       stage: this.stage,
       leg,
       frame: this.layout[index],
-      configuration: this.createRoundConfiguration(teamCount),
+      configuration: this.createRoundConfiguration(index),
     });
   }
 
@@ -563,11 +586,19 @@ export class RacePlayerRuntime {
     this.updateControls();
   }
 
-  private createRoundConfiguration(teamCount: number): RoundConfiguration {
+  private createRoundConfiguration(legIndex: number): RoundConfiguration {
+    const plan = this.finishSchedule[legIndex];
     return {
-      teamCount,
+      // Leg `i` runs with the field it inherits: N participants minus the `i`
+      // teams eliminated on the legs before it.
+      teamCount: plan.activeTeams,
       marblesPerTeam: this.raceDocument.rules.marblesPerTeam,
       releaseIntervalMs: this.raceDocument.releaseIntervalMs,
+      finishPlan: {
+        bayCount: plan.bayCount,
+        xBayCount: plan.xBayCount,
+        rackHeight: plan.rackHeight,
+      },
     };
   }
 

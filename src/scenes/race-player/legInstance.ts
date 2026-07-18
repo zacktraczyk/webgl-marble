@@ -1,6 +1,7 @@
 import { translateSerializedLevel } from "../../editor/levelTransform";
 import type { WorldRect } from "../../engine/camera/fit";
 import type Stage from "../../engine/stage";
+import type { SerializedLevel } from "../../editor/levelDocument";
 import type { RaceLegDocument } from "../../races/types";
 import { AuthoredLevel } from "../level-builder/level";
 import {
@@ -72,7 +73,16 @@ export class LegInstance {
       this.configuration,
       this.leg.level.settings.wallThickness
     );
-    this.level.restore(translateSerializedLevel(this.leg.level, this.frame.center));
+    // The frame can be taller than the authored level (a packed finish rack
+    // may extend below it), so align the level's top edge with the frame's
+    // top edge instead of centering on the frame.
+    const levelCenter: [number, number] = [
+      this.frame.center[0],
+      this.frame.top + this.leg.level.size[1] / 2,
+    ];
+    this.level.restore(
+      translateSerializedLevel(this.resizedFinishRackLevel(), levelCenter)
+    );
 
     // Hide the spawn-point visual exactly as the runtime does today — marbles
     // release from it but the ring itself should not be drawn during the race.
@@ -80,6 +90,50 @@ export class LegInstance {
     if (spawnPoint) {
       this.level.setVisible(spawnPoint.id, false);
     }
+  }
+
+  /**
+   * The saved level with its finish rack resized to this leg's era plan: the
+   * rack keeps its top edge (the finish line stays where the track delivers
+   * marbles) and grows or shrinks downward. Locked boundary walls that ended
+   * at the saved level bottom follow the rack's new bottom edge, so the rack
+   * always meets the next leg's top wall with no gap and no protruding wall
+   * stubs. Without a plan the document is used as saved.
+   */
+  private resizedFinishRackLevel(): SerializedLevel {
+    const plan = this.configuration.finishPlan;
+    if (!plan) {
+      return this.leg.level;
+    }
+    const level = structuredClone(this.leg.level);
+    const savedBottom = level.size[1] / 2;
+    let rackBottom: number | null = null;
+    for (const object of level.objects) {
+      if (object.prefab !== "finish-zone") {
+        continue;
+      }
+      const top = object.transform.position[1] - object.properties.height / 2;
+      object.properties.height = plan.rackHeight;
+      object.transform.position = [
+        object.transform.position[0],
+        top + plan.rackHeight / 2,
+      ];
+      rackBottom = top + plan.rackHeight;
+    }
+    if (rackBottom !== null) {
+      for (const object of level.objects) {
+        if (object.prefab !== "wall" || !object.locked) {
+          continue;
+        }
+        for (const key of ["start", "end"] as const) {
+          const point = object.properties[key];
+          if (Math.abs(point[1] - savedBottom) < 1e-6) {
+            object.properties[key] = [point[0], rackBottom];
+          }
+        }
+      }
+    }
+    return level;
   }
 
   attachController(

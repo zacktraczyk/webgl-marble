@@ -1290,8 +1290,14 @@ import "../styles/global.css";
 
 <script>
   import { mountScene } from "../engine/runtime/mountScene";
+  import { computeEraSchedule } from "../game/race/eraSchedule";
   import { RaceRepository } from "../races";
   import createScene from "../scenes/level-builder";
+  import {
+    MAX_MARBLE_RADIUS,
+    MIN_MARBLE_RADIUS,
+    STAGING_MARBLE_GAP,
+  } from "../scenes/level-builder/constants";
 
   const byId = (id: string) => document.getElementById(id);
   const errorElement = byId("builder-error");
@@ -1351,15 +1357,56 @@ import "../styles/global.css";
     setSidebarOpen(builder?.dataset.sidebarOpen !== "true");
   });
 
+  // The builder previews this leg exactly as the race player will run it:
+  // the inherited team count plus the era finish plan (bay count, X'd bays,
+  // packed rack height). Only complete races have a full deterministic
+  // schedule; partial races fall back to the leg-agnostic configuration.
+  const legFinishPlan = (() => {
+    if (!race || !raceLeg) {
+      return null;
+    }
+    const legIndex = race.legs.findIndex((leg) => leg.id === legId);
+    if (legIndex < 0 || race.legs.length !== race.participants.length - 1) {
+      return null;
+    }
+    try {
+      const schedule = computeEraSchedule({
+        participantCount: race.participants.length,
+        marblesPerTeam: race.rules.marblesPerTeam,
+        legs: race.legs.map((leg) => ({
+          width: leg.level.size[0],
+          wallThickness: leg.level.settings.wallThickness,
+        })),
+        marbleRadius: MAX_MARBLE_RADIUS,
+        minimumRadius: MIN_MARBLE_RADIUS,
+        gap: STAGING_MARBLE_GAP,
+      });
+      return schedule[legIndex] ?? null;
+    } catch {
+      return null;
+    }
+  })();
+
   try {
     const scene = createScene(builder, {
       ...(race && raceLeg
         ? {
             initialLevel: raceLeg.level,
             roundConfiguration: {
-              teamCount: race.participants.length,
+              teamCount: legFinishPlan
+                ? legFinishPlan.activeTeams
+                : race.participants.length,
               marblesPerTeam: race.rules.marblesPerTeam,
               releaseIntervalMs: race.releaseIntervalMs,
+              ...(legFinishPlan
+                ? {
+                    finishPlan: {
+                      bayCount: legFinishPlan.bayCount,
+                      xBayCount: legFinishPlan.xBayCount,
+                      rackHeight: legFinishPlan.rackHeight,
+                    },
+                  }
+                : {}),
             },
             onCommit: (level) => {
               if (!race || !raceLeg) {

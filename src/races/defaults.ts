@@ -8,9 +8,10 @@ import {
 } from "../scenes/level-builder/constants";
 import { createDefaultCourse } from "../scenes/level-builder/level/objects";
 import type { RaceDocument, RaceLegDocument, RaceParticipant } from "./types";
-import { RACE_DOCUMENT_VERSION, RACE_MARBLES_PER_TEAM } from "./types";
+import { RACE_DOCUMENT_VERSION, isValidMarblesPerTeam } from "./types";
 
 export const DEFAULT_PARTICIPANT_COUNT = 4;
+export const DEFAULT_MARBLES_PER_TEAM = 60;
 export const DEFAULT_RELEASE_INTERVAL_MS = 60;
 export const MAX_RACE_PARTICIPANTS = TEAM_COLORS.length;
 
@@ -90,6 +91,7 @@ export type DefaultRaceOptions = RaceFactoryDependencies & {
   participantCount?: number;
   legCount?: number;
   releaseIntervalMs?: number;
+  marblesPerTeam?: number;
 };
 
 /** Creates a new editable race. Legs start empty so the builder can guide the first add. */
@@ -99,6 +101,7 @@ export const createDefaultRace = ({
   participantCount = DEFAULT_PARTICIPANT_COUNT,
   legCount = 0,
   releaseIntervalMs = DEFAULT_RELEASE_INTERVAL_MS,
+  marblesPerTeam = DEFAULT_MARBLES_PER_TEAM,
   createId = createLocalId,
   now = () => new Date(),
 }: DefaultRaceOptions = {}): RaceDocument => {
@@ -107,6 +110,9 @@ export const createDefaultRace = ({
   }
   if (!Number.isFinite(releaseIntervalMs) || releaseIntervalMs <= 0) {
     throw new Error("Release interval must be positive");
+  }
+  if (!isValidMarblesPerTeam(marblesPerTeam)) {
+    throw new Error("Marbles per team must be one of the supported counts");
   }
 
   const timestamp = now().toISOString();
@@ -118,7 +124,7 @@ export const createDefaultRace = ({
     updatedAt: timestamp,
     releaseIntervalMs,
     rules: {
-      marblesPerTeam: RACE_MARBLES_PER_TEAM,
+      marblesPerTeam,
       eliminatedPerLeg: 1,
     },
     participants: createDefaultParticipants(participantCount, createId),

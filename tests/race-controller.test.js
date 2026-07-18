@@ -3,7 +3,7 @@ import { TEAM_COLORS } from "../src/game/race/staging.ts";
 import { RaceController } from "../src/scenes/level-builder/race/index.ts";
 
 describe("race controller", () => {
-  test("places an out-of-bounds marble in its team finish bucket", () => {
+  test("places an out-of-bounds marble into the leftmost unclaimed bay", () => {
     const spawned = [];
     let cleared = false;
     const marble = {
@@ -32,10 +32,10 @@ describe("race controller", () => {
       releaseIntervalMs: 100,
     });
     race.finishPlacements = [
-      { teamIndex: 0, slotIndex: 0, position: [10, 10] },
-      { teamIndex: 0, slotIndex: 1, position: [20, 10] },
-      { teamIndex: 1, slotIndex: 0, position: [10, 20] },
-      { teamIndex: 1, slotIndex: 1, position: [20, 20] },
+      { bayIndex: 0, slotIndex: 0, position: [10, 10] },
+      { bayIndex: 0, slotIndex: 1, position: [20, 10] },
+      { bayIndex: 1, slotIndex: 0, position: [10, 20] },
+      { bayIndex: 1, slotIndex: 1, position: [20, 20] },
     ];
 
     race.fixedUpdate(1000 / 60);
@@ -48,13 +48,13 @@ describe("race controller", () => {
     });
     expect(spawned).toHaveLength(1);
     expect(spawned[0]).toMatchObject({
-      transform: { position: [10, 20] },
+      transform: { position: [10, 10] },
       tags: expect.arrayContaining(["finished-marble", "team:2"]),
       physics: undefined,
     });
   });
 
-  test("maps stable colors and elimination identity without changing local finish bays", () => {
+  test("maps stable colors and elimination identity through claimed bays", () => {
     const spawned = [];
     const marble = {
       tags: new Set(["team:2"]),
@@ -85,10 +85,10 @@ describe("race controller", () => {
       { stableTeamIndices: [5, 2] }
     );
     race.finishPlacements = [
-      { teamIndex: 0, slotIndex: 0, position: [10, 10] },
-      { teamIndex: 0, slotIndex: 1, position: [20, 10] },
-      { teamIndex: 1, slotIndex: 0, position: [10, 20] },
-      { teamIndex: 1, slotIndex: 1, position: [20, 20] },
+      { bayIndex: 0, slotIndex: 0, position: [10, 10] },
+      { bayIndex: 0, slotIndex: 1, position: [20, 10] },
+      { bayIndex: 1, slotIndex: 0, position: [10, 20] },
+      { bayIndex: 1, slotIndex: 1, position: [20, 20] },
     ];
 
     race.fixedUpdate(1000 / 60);
@@ -96,7 +96,7 @@ describe("race controller", () => {
     race.finishTracker.record(0);
 
     expect(spawned[0]).toMatchObject({
-      transform: { position: [10, 20] },
+      transform: { position: [10, 10] },
       render: { parts: [{ color: TEAM_COLORS[2] }] },
       tags: expect.arrayContaining(["finished-marble", "team:2"]),
     });
@@ -167,10 +167,10 @@ describe("race controller", () => {
       { external: { bounds: { minX: -100, maxX: 100, minY: -100, maxY: 100 } } }
     );
     race.finishPlacements = [
-      { teamIndex: 0, slotIndex: 0, position: [10, 10] },
-      { teamIndex: 0, slotIndex: 1, position: [20, 10] },
-      { teamIndex: 1, slotIndex: 0, position: [10, 20] },
-      { teamIndex: 1, slotIndex: 1, position: [20, 20] },
+      { bayIndex: 0, slotIndex: 0, position: [10, 10] },
+      { bayIndex: 0, slotIndex: 1, position: [20, 10] },
+      { bayIndex: 1, slotIndex: 0, position: [10, 20] },
+      { bayIndex: 1, slotIndex: 1, position: [20, 20] },
     ];
     race.raceMarbles.push(marble);
 
@@ -183,7 +183,7 @@ describe("race controller", () => {
     });
     expect(spawned).toHaveLength(1);
     expect(spawned[0]).toMatchObject({
-      transform: { position: [10, 20] },
+      transform: { position: [10, 10] },
       physics: undefined,
     });
   });

@@ -3,7 +3,23 @@ import type { Color } from "../engine/vdu/component";
 
 export const RACE_DOCUMENT_VERSION = 1 as const;
 export const RACE_LIBRARY_VERSION = 1 as const;
+/** Legacy marble count — older documents predate the selectable ladder. */
 export const RACE_MARBLES_PER_TEAM = 100 as const;
+/**
+ * Selectable marbles-per-team values. Each is rich in divisors so the finish
+ * bays can always pick a column count that divides the field exactly — a
+ * finished team's bay fills completely, with no stray blank slots.
+ */
+export const MARBLES_PER_TEAM_OPTIONS = [
+  6, 12, 24, 36, 48, 60, 72, 96, 120,
+] as const;
+
+export const isValidMarblesPerTeam = (value: unknown): value is number =>
+  typeof value === "number" &&
+  (MARBLES_PER_TEAM_OPTIONS.includes(
+    value as (typeof MARBLES_PER_TEAM_OPTIONS)[number]
+  ) ||
+    value === RACE_MARBLES_PER_TEAM);
 
 export type RaceParticipant = {
   /** Stable across every leg, even as other participants are eliminated. */
@@ -20,7 +36,7 @@ export type RaceLegDocument = {
 
 export type RaceRules = {
   /** Every active team starts each leg with the same full field. */
-  marblesPerTeam: typeof RACE_MARBLES_PER_TEAM;
+  marblesPerTeam: number;
   /** The team that owns the final marble left on the course is eliminated. */
   eliminatedPerLeg: 1;
 };
@@ -104,7 +120,7 @@ export const isRaceDocument = (value: unknown): value is RaceDocument => {
     !isFiniteNumber(value.releaseIntervalMs) ||
     value.releaseIntervalMs <= 0 ||
     !isRecord(value.rules) ||
-    value.rules.marblesPerTeam !== RACE_MARBLES_PER_TEAM ||
+    !isValidMarblesPerTeam(value.rules.marblesPerTeam) ||
     value.rules.eliminatedPerLeg !== 1 ||
     !Array.isArray(value.participants) ||
     value.participants.length < 2 ||

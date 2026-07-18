@@ -2,23 +2,29 @@ import { describe, expect, test } from "bun:test";
 import { RoundFinishTracker } from "../src/scenes/level-builder/race/roundFinishTracker.ts";
 
 describe("round finish tracker", () => {
-  test("grids every marble into its team's fixed finish bay", () => {
+  test("first team to finish claims the leftmost bay", () => {
     const tracker = new RoundFinishTracker(4, 3);
 
+    expect(tracker.bayForTeam(2)).toBeNull();
     expect(tracker.record(2)).toMatchObject({
-      bayIndex: 2,
+      bayIndex: 0,
       slotIndex: 0,
       remainingMarbles: 11,
       lastMarbleRemaining: false,
     });
     expect(tracker.record(2)).toMatchObject({
-      bayIndex: 2,
+      bayIndex: 0,
       slotIndex: 1,
       remainingMarbles: 10,
       lastMarbleRemaining: false,
     });
+    expect(tracker.bayForTeam(2)).toBe(0);
 
-    expect(tracker.finishedMarbles).toBe(2);
+    // The next team to finish claims the next bay to the right.
+    expect(tracker.record(0)).toMatchObject({ bayIndex: 1, slotIndex: 0 });
+    expect(tracker.bayForTeam(0)).toBe(1);
+
+    expect(tracker.finishedMarbles).toBe(3);
     expect(tracker.eliminatedTeamIndex).toBeNull();
   });
 
@@ -56,7 +62,7 @@ describe("round finish tracker", () => {
     expect(tracker.eliminatedTeamIndex).toBe(1);
   });
 
-  test("assigns fallback completions to the team's fixed finish bay", () => {
+  test("keeps a team's claimed bay stable across later finishes", () => {
     const tracker = new RoundFinishTracker(2, 2);
 
     tracker.record(0);

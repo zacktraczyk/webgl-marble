@@ -56,6 +56,11 @@ export class LevelBuilderRuntime {
   private readonly motionInspector: MotionInspectorController;
   private readonly onCommit: LevelBuilderOptions["onCommit"];
   private configuration: RoundConfiguration;
+  /**
+   * Era finish plan handed in by the leg builder. The settings inputs cannot
+   * express it, so it is re-merged whenever the configuration is re-read.
+   */
+  private readonly finishPlan: RoundConfiguration["finishPlan"];
   private selectedTool = SelectedTool.Pointer;
   private gridSnapEnabled = true;
   private playbackActive = false;
@@ -74,6 +79,7 @@ export class LevelBuilderRuntime {
     if (options.roundConfiguration) {
       this.syncRoundConfigurationInputs(options.roundConfiguration);
     }
+    this.finishPlan = options.roundConfiguration?.finishPlan;
     new TooltipController(this.ui, signal);
     this.stage = new Stage({
       width: options.initialLevel?.size[0] ?? STAGE_WIDTH,
@@ -86,7 +92,10 @@ export class LevelBuilderRuntime {
     );
 
     // Level and race state
-    this.configuration = readRoundConfiguration(this.ui);
+    this.configuration = {
+      ...readRoundConfiguration(this.ui),
+      finishPlan: this.finishPlan,
+    };
     this.level = this.createLevel(options.initialLevel);
     this.race = new RaceController(this.stage, this.level, this.configuration);
     this.history = new LevelHistory(this.level.document.serialize());
@@ -122,7 +131,8 @@ export class LevelBuilderRuntime {
     for (const object of createDefaultCourse(
       this.stage.width,
       this.stage.height,
-      wallThickness
+      wallThickness,
+      this.configuration
     )) {
       level.add(object);
     }
@@ -449,7 +459,10 @@ export class LevelBuilderRuntime {
   }
 
   private readonly handleRoundConfigurationChange = () => {
-    this.configuration = readRoundConfiguration(this.ui);
+    this.configuration = {
+      ...readRoundConfiguration(this.ui),
+      finishPlan: this.finishPlan,
+    };
     this.race.setConfiguration(this.configuration);
   };
 
@@ -463,7 +476,12 @@ export class LevelBuilderRuntime {
     this.stage.setSize(width, height);
     this.level.resize(
       [width, height],
-      createCourseBoundaries(width, height, this.level.wallThickness)
+      createCourseBoundaries(
+        width,
+        height,
+        this.level.wallThickness,
+        this.configuration
+      )
     );
     this.cameraController.fitStage();
     this.commitLevelChange();
@@ -478,7 +496,12 @@ export class LevelBuilderRuntime {
     this.level.setWallThickness(wallThickness);
     this.level.resize(
       [this.stage.width, this.stage.height],
-      createCourseBoundaries(this.stage.width, this.stage.height, wallThickness)
+      createCourseBoundaries(
+        this.stage.width,
+        this.stage.height,
+        wallThickness,
+        this.configuration
+      )
     );
     this.commitLevelChange();
   };

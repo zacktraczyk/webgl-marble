@@ -26,11 +26,14 @@ export type LevelThumbnailOptions = {
    * rack (checkered line plus one bay per team) instead of a flat placeholder.
    */
   teamCount?: number;
+  /** Rightmost bays drawn X'd out for teams eliminated earlier in the era. */
+  xBayCount?: number;
 };
 
 type ObjectDrawSettings = {
   wallThickness: number;
   teamCount?: number;
+  xBayCount?: number;
 };
 
 const colorCss = ([red, green, blue, alpha]: Color) =>
@@ -111,13 +114,19 @@ const fillRect = (context: CanvasRenderingContext2D, rect: FinishRackRect) => {
 const drawFinishZone = (
   context: CanvasRenderingContext2D,
   object: Extract<LevelObjectData, { prefab: "finish-zone" }>,
-  { wallThickness, teamCount }: ObjectDrawSettings
+  { wallThickness, teamCount, xBayCount }: ObjectDrawSettings
 ) => {
   const { width, height } = object.properties;
   let frame: FinishRackFrame | null = null;
   if (teamCount !== undefined) {
     try {
-      frame = createFinishRackFrame({ width, height, wallThickness, teamCount });
+      frame = createFinishRackFrame({
+        width,
+        height,
+        wallThickness,
+        teamCount,
+        xBayCount,
+      });
     } catch {
       // The rack cannot fit this team count; fall back to the placeholder.
     }
@@ -139,6 +148,17 @@ const drawFinishZone = (
       ...frame.dividers,
     ]) {
       fillRect(context, rect);
+    }
+    for (const bay of frame.disabledBays) {
+      context.strokeStyle = colorCss(FINISH_RACK_WALL);
+      context.lineWidth = wallThickness / 2;
+      context.beginPath();
+      const [bayX, bayY] = bay.position;
+      context.moveTo(bayX - bay.width / 2, bayY - bay.height / 2);
+      context.lineTo(bayX + bay.width / 2, bayY + bay.height / 2);
+      context.moveTo(bayX + bay.width / 2, bayY - bay.height / 2);
+      context.lineTo(bayX - bay.width / 2, bayY + bay.height / 2);
+      context.stroke();
     }
     context.save();
     context.translate(...frame.finishLine.position);
@@ -260,6 +280,7 @@ export const drawLevelThumbnail = (
   const settings: ObjectDrawSettings = {
     wallThickness: level.settings.wallThickness,
     teamCount: options.teamCount,
+    xBayCount: options.xBayCount,
   };
   for (const object of level.objects) {
     drawMotionGuide(context, object, level.settings.wallThickness);

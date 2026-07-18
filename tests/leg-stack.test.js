@@ -52,4 +52,40 @@ describe("leg stack layout", () => {
   test("returns an empty layout for no legs", () => {
     expect(computeLegStackLayout([])).toEqual([]);
   });
+
+  test("extends a frame when the packed rack outgrows the saved one", () => {
+    const legWithRack = (id, size, rackHeight) => {
+      const document = leg(id, size);
+      document.level.objects.push({
+        id: `${id}-finish`,
+        prefab: "finish-zone",
+        locked: true,
+        transform: { position: [0, size[1] / 2 - rackHeight / 2] },
+        properties: { width: size[0], height: rackHeight, color: [1, 1, 1, 1] },
+      });
+      return document;
+    };
+    const plan = (rackHeight) => ({
+      legIndex: 0,
+      activeTeams: 2,
+      bayCount: 2,
+      xBayCount: 0,
+      columns: 10,
+      rows: 10,
+      marbleRadius: 4.8,
+      rackHeight,
+    });
+
+    const frames = computeLegStackLayout(
+      [legWithRack("a", [40, 60], 10), legWithRack("b", [20, 100], 10)],
+      [plan(25), plan(4)]
+    );
+
+    // Leg 0's rack grows by 15, so its frame is 15 taller than the level.
+    expect(frames[0].size).toEqual([40, 75]);
+    // Leg 1's rack shrinks by 6; the frame follows so the rack's bottom wall
+    // stays flush against the next leg with no dead strip.
+    expect(frames[1].size).toEqual([20, 94]);
+    expect(frames[1].top).toBe(frames[0].bottom);
+  });
 });

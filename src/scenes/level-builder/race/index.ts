@@ -3,8 +3,9 @@ import type { CollisionEvents } from "../../../engine/physics/physics";
 import type Stage from "../../../engine/stage";
 import { marbleDefinition } from "../../../game/prefabs/marble";
 import {
-  createFinishGridLayout,
-  createFinishGridPlacements,
+  createPackedFinishLayout,
+  createPackedFinishPlacements,
+  type FinishMarblePlacement,
 } from "../../../game/race/finishGrid";
 import {
   RoundRobinReleaseQueue,
@@ -100,7 +101,7 @@ export class RaceController {
   private outOfBoundsMarbles = 0;
   private finishTracker: RoundFinishTracker;
   private motionElapsedMs = 0;
-  private finishPlacements: ReturnType<typeof createFinishGridPlacements> = [];
+  private finishPlacements: FinishMarblePlacement[] = [];
   private readonly external: ExternalRaceMode | undefined;
 
   constructor(
@@ -199,35 +200,25 @@ export class RaceController {
     this.level.resetMotion();
 
     const finish = this.level.find("finish-zone");
-    const finishBayCount = this.configuration.teamCount;
+    const finishBayCount =
+      this.configuration.finishPlan?.bayCount ?? this.configuration.teamCount;
     this.finishPlacements = [];
     if (!finish) {
       this.marbleRadius = MAX_MARBLE_RADIUS;
     } else {
-      this.marbleRadius = createFinishGridLayout({
+      const packedOptions = {
         position: finish.transform.position,
         rotation: finish.transform.rotation,
         width: finish.properties.width,
-        height: finish.properties.height,
         wallThickness: this.level.wallThickness,
-        teamCount: finishBayCount,
+        bayCount: finishBayCount,
         marblesPerTeam: this.configuration.marblesPerTeam,
-        maximumRadius: MAX_MARBLE_RADIUS,
+        marbleRadius: MAX_MARBLE_RADIUS,
         minimumRadius: MIN_MARBLE_RADIUS,
         gap: STAGING_MARBLE_GAP,
-      }).marbleRadius;
-      this.finishPlacements = createFinishGridPlacements({
-        position: finish.transform.position,
-        rotation: finish.transform.rotation,
-        width: finish.properties.width,
-        height: finish.properties.height,
-        wallThickness: this.level.wallThickness,
-        teamCount: finishBayCount,
-        marblesPerTeam: this.configuration.marblesPerTeam,
-        gap: STAGING_MARBLE_GAP,
-        maximumRadius: this.marbleRadius,
-        minimumRadius: this.marbleRadius,
-      });
+      };
+      this.marbleRadius = createPackedFinishLayout(packedOptions).marbleRadius;
+      this.finishPlacements = createPackedFinishPlacements(packedOptions);
     }
     this.level.setRaceMarbleRadius(this.marbleRadius);
 
@@ -310,8 +301,7 @@ export class RaceController {
       this.finishPlacements[
         bayIndex * this.configuration.marblesPerTeam + slotIndex
       ];
-    return placement?.teamIndex === bayIndex &&
-      placement.slotIndex === slotIndex
+    return placement?.bayIndex === bayIndex && placement.slotIndex === slotIndex
       ? placement.position
       : null;
   }

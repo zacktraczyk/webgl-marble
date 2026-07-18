@@ -5,9 +5,16 @@ export type FinishRecord = {
   lastMarbleRemaining: boolean;
 };
 
-/** Tracks finished marbles while preserving team-specific finish bays. */
+/**
+ * Tracks finished marbles. Finish bays are not pre-assigned: a team claims
+ * the leftmost unclaimed bay when its first marble finishes, so bay order
+ * mirrors the order teams reached the finish. X'd-out bays (eliminated in an
+ * earlier leg) sit at the far right, beyond every claimable index.
+ */
 export class RoundFinishTracker {
   private readonly finishCounts: number[];
+  private readonly bayByTeam: (number | null)[];
+  private nextBay = 0;
   private _finishedMarbles = 0;
 
   constructor(
@@ -21,6 +28,7 @@ export class RoundFinishTracker {
       throw new Error("A team requires at least one marble");
     }
     this.finishCounts = Array.from({ length: teamCount }, () => 0);
+    this.bayByTeam = Array.from({ length: teamCount }, () => null);
   }
 
   get totalMarbles() {
@@ -45,16 +53,27 @@ export class RoundFinishTracker {
     return teamIndex >= 0 ? teamIndex : null;
   }
 
+  /** The bay a team has claimed, or null before its first marble finishes. */
+  bayForTeam(teamIndex: number): number | null {
+    this.assertKnownTeam(teamIndex);
+    return this.bayByTeam[teamIndex];
+  }
+
   record(teamIndex: number): FinishRecord {
     this.assertKnownTeam(teamIndex);
     if (this.finishCounts[teamIndex] >= this.marblesPerTeam) {
       throw new Error(`Team ${teamIndex} has no remaining marbles`);
     }
 
+    let bayIndex = this.bayByTeam[teamIndex];
+    if (bayIndex === null) {
+      bayIndex = this.nextBay++;
+      this.bayByTeam[teamIndex] = bayIndex;
+    }
     const slotIndex = this.finishCounts[teamIndex]++;
     this._finishedMarbles++;
     return {
-      bayIndex: teamIndex,
+      bayIndex,
       slotIndex,
       remainingMarbles: this.remainingMarbles,
       lastMarbleRemaining: this.remainingMarbles === 1,
