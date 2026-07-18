@@ -1,12 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import { createGridLayout } from "../src/game/level/grid.ts";
-import { DRAG_THRESHOLD } from "../src/editor/levelEditor/constants.ts";
+import { DRAG_THRESHOLD } from "../src/editor/legEditor/constants.ts";
 import {
   updateMarqueeDrag,
   updateMoveDrag,
   updatePlaceDrag,
   updateWallDrag,
-} from "../src/editor/levelEditor/gestureDrag.ts";
+} from "../src/editor/legEditor/gestureDrag.ts";
 
 const bounds = { min: [-705, -390], max: [705, 270] };
 const gridLayout = createGridLayout(bounds);
@@ -31,7 +31,7 @@ const finishZone = (overrides = {}) => ({
   ...overrides,
 });
 
-describe("level editor gesture drag", () => {
+describe("leg editor gesture drag", () => {
   test("updatePlaceDrag always returns handled", () => {
     expect(updatePlaceDrag()).toBe("handled");
   });

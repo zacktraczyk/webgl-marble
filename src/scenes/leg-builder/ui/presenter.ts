@@ -80,11 +80,7 @@ export const updateBuilderInterface = ({
   ui,
   configuration,
   race,
-  authoredObjects,
-  selectedObjects,
   selectedObject,
-  hoveredObject,
-  wallThickness,
   selectedTool,
   spawnVariant,
   canUndo,
@@ -93,11 +89,7 @@ export const updateBuilderInterface = ({
   ui: BuilderUi;
   configuration: RoundConfiguration;
   race: RaceSnapshot;
-  authoredObjects: number;
-  selectedObjects: readonly string[];
   selectedObject: LevelObjectData | null;
-  hoveredObject: string | null;
-  wallThickness: number;
   selectedTool: SelectedTool;
   spawnVariant: SpawnPointVariant;
   canUndo: boolean;
@@ -227,26 +219,4 @@ export const updateBuilderInterface = ({
             : eliminatedTeamName
               ? `${eliminatedTeamName} marble eliminated · time frozen`
               : "Race complete";
-
-  ui.debugInfo.textContent = JSON.stringify(
-    {
-      phase: race.phase,
-      teams: race.teamCount,
-      totalMarbles: race.totalMarbles,
-      queuedMarbles: race.queuedMarbles,
-      releasedMarbles: race.releasedMarbles,
-      finishedMarbles: race.finishedMarbles,
-      remainingMarbles: race.remainingMarbles,
-      eliminatedTeam: eliminatedTeamName,
-      marbleRadius: race.marbleRadius,
-      physicsActive: race.physicsActive,
-      outOfBoundsMarbles: race.outOfBoundsMarbles,
-      authoredObjects,
-      selectedObjects,
-      hoveredObject,
-      wallThickness,
-    },
-    null,
-    2
-  );
 };

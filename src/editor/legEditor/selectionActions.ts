@@ -9,11 +9,11 @@ import {
 } from "../../game/level/geometry";
 import { SelectedTool } from "../tools";
 import type { EditorGesture } from "./gestures";
-import type { LevelEditorSelection } from "./selection";
+import type { LegEditorSelection } from "./selection";
 
 export type SelectionActionHost = {
   readonly readOnly: boolean;
-  readonly selection: LevelEditorSelection;
+  readonly selection: LegEditorSelection;
   readonly activeTool: SelectedTool;
   readonly callbacks: {
     onDelete(objects: readonly LevelObjectData[]): void;

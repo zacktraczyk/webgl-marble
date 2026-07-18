@@ -1,12 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import { getRotationHandle, getLevelObjectShape } from "../src/game/level/geometry.ts";
-import { ROTATION_HANDLE_OFFSET } from "../src/editor/levelEditor/constants.ts";
+import { ROTATION_HANDLE_OFFSET } from "../src/editor/legEditor/constants.ts";
 import {
   endpointAt,
   findWallEndpointTarget,
   resizeHandleAt,
   rotationHandleAt,
-} from "../src/editor/levelEditor/handles.ts";
+} from "../src/editor/legEditor/handles.ts";
 
 const wall = (overrides = {}) => ({
   id: "wall",
@@ -38,7 +38,7 @@ const createHandleDeps = (objects, overrides = {}) => ({
   ...overrides,
 });
 
-describe("level editor handles", () => {
+describe("leg editor handles", () => {
   test("endpointAt detects start and end within the hit radius", () => {
     const deps = createHandleDeps([]);
     const object = wall();

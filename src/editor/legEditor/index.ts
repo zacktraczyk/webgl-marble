@@ -29,14 +29,14 @@ import {
   updateIdleState as applyIdleState,
   type IdleCursorContext,
 } from "./idleCursor";
-import { LevelEditorKeyboard } from "./keyboard";
+import { LegEditorKeyboard } from "./keyboard";
 import {
   handlePointerDown,
   handlePointerMove,
   handlePointerUp,
   type PointerGestureHost,
 } from "./pointerGestures";
-import { LevelEditorSelection } from "./selection";
+import { LegEditorSelection } from "./selection";
 import {
   deleteSelectedObjects,
   finishWallDraft,
@@ -81,7 +81,7 @@ export type {
 } from "./handles";
 export { EditorOverlay } from "./overlay";
 
-export class LevelEditorController {
+export class LegEditorController {
   private readonly stage: Stage;
   private readonly cameraControls: EditorCameraControls;
   private readonly getObjects: () => readonly LevelObjectData[];
@@ -92,14 +92,15 @@ export class LevelEditorController {
   private gesture: EditorGesture | null = null;
   private activeTool = SelectedTool.Pointer;
   private readOnly = false;
-  private readonly keyboard: LevelEditorKeyboard;
+  private readonly keyboard: LegEditorKeyboard;
   private lastPointerScreen: Vec2 | null = null;
-  private readonly selection: LevelEditorSelection;
+  private readonly selection: LegEditorSelection;
   private wallAnchor: Vec2 | null = null;
   private wallPreviewEnd: Vec2 | null = null;
   private endpointFeedback: WallEndpointFeedback | null = null;
   private placementPreviewPosition: Vec2 | null = null;
-  /** Persistent host shared with pointerGestures — created once, not per event. */
+  /** Persistent hosts shared with gesture/selection modules — created once. */
+  private readonly selectionHost: SelectionActionHost;
   private readonly gestureHost: PointerGestureHost;
 
   constructor({
@@ -128,7 +129,8 @@ export class LevelEditorController {
     this.getGridSnapEnabled = getGridSnapEnabled;
     this.getGridLayout = getGridLayout;
     this.callbacks = callbacks;
-    this.selection = new LevelEditorSelection(getObjects);
+    this.selection = new LegEditorSelection(getObjects);
+    this.selectionHost = this.createSelectionActionHost();
 
     stage.canvas.addEventListener("pointerdown", this.pointerDown, { signal });
     stage.canvas.addEventListener("pointermove", this.pointerMove, { signal });
@@ -143,7 +145,7 @@ export class LevelEditorController {
       signal,
       passive: false,
     });
-    this.keyboard = new LevelEditorKeyboard(
+    this.keyboard = new LegEditorKeyboard(
       {
         undo: () => {
           this.cancelGesture();
@@ -176,10 +178,7 @@ export class LevelEditorController {
       },
       signal
     );
-    // Private fields exist at runtime; TS can't see them across the module boundary.
-    this.gestureHost = createGestureHost(
-      this as unknown as GestureHostController
-    );
+    this.gestureHost = createGestureHost(this.createGestureHostController());
   }
 
   setActiveTool(tool: SelectedTool) {
@@ -519,24 +518,160 @@ export class LevelEditorController {
     event.preventDefault();
   };
 
-  private readonly selectAll = () =>
-    selectAllObjects(this as unknown as SelectionActionHost);
+  private readonly selectAll = () => selectAllObjects(this.selectionHost);
 
-  private readonly handleEscape = () =>
-    handleEscapeKey(this as unknown as SelectionActionHost);
+  private readonly handleEscape = () => handleEscapeKey(this.selectionHost);
 
-  private readonly finishWall = () =>
-    finishWallDraft(this as unknown as SelectionActionHost);
+  private readonly finishWall = () => finishWallDraft(this.selectionHost);
 
   private readonly deleteSelection = () =>
-    deleteSelectedObjects(this as unknown as SelectionActionHost);
+    deleteSelectedObjects(this.selectionHost);
 
   private readonly nudgeSelection = (direction: Vec2, distance: number) =>
-    nudgeSelectedObjects(
-      this as unknown as SelectionActionHost,
-      direction,
-      distance
-    );
+    nudgeSelectedObjects(this.selectionHost, direction, distance);
+
+  /** Live facade so private controller state stays encapsulated. */
+  private createSelectionActionHost(): SelectionActionHost {
+    // Object-literal getters rebind `this`; keep a lexical controller ref.
+    // eslint-disable-next-line @typescript-eslint/no-this-alias -- host facade
+    const controller = this;
+    return {
+      get readOnly() {
+        return controller.readOnly;
+      },
+      get selection() {
+        return controller.selection;
+      },
+      get activeTool() {
+        return controller.activeTool;
+      },
+      get callbacks() {
+        return controller.callbacks;
+      },
+      get selectedObjects() {
+        return controller.selectedObjects;
+      },
+      getObjects: () => controller.getObjects(),
+      getDefaultWallThickness: () => controller.getDefaultWallThickness(),
+      get gesture() {
+        return controller.gesture;
+      },
+      set gesture(value) {
+        controller.gesture = value;
+      },
+      get wallAnchor() {
+        return controller.wallAnchor;
+      },
+      set wallAnchor(value) {
+        controller.wallAnchor = value;
+      },
+      cancelGesture: () => controller.cancelGesture(),
+      clearWallAnchor: () => controller.clearWallAnchor(),
+      clearSelection: () => controller.clearSelection(),
+      updateCursor: () => controller.updateCursor(),
+    };
+  }
+
+  /** Live facade for `createGestureHost` — avoids casting private members. */
+  private createGestureHostController(): GestureHostController {
+    // Object-literal getters rebind `this`; keep a lexical controller ref.
+    // eslint-disable-next-line @typescript-eslint/no-this-alias -- host facade
+    const controller = this;
+    return {
+      get gesture() {
+        return controller.gesture;
+      },
+      set gesture(value) {
+        controller.gesture = value;
+      },
+      get wallAnchor() {
+        return controller.wallAnchor;
+      },
+      set wallAnchor(value) {
+        controller.wallAnchor = value;
+      },
+      get wallPreviewEnd() {
+        return controller.wallPreviewEnd;
+      },
+      set wallPreviewEnd(value) {
+        controller.wallPreviewEnd = value;
+      },
+      get endpointFeedback() {
+        return controller.endpointFeedback;
+      },
+      set endpointFeedback(value) {
+        controller.endpointFeedback = value;
+      },
+      get placementPreviewPosition() {
+        return controller.placementPreviewPosition;
+      },
+      set placementPreviewPosition(value) {
+        controller.placementPreviewPosition = value;
+      },
+      get lastPointerScreen() {
+        return controller.lastPointerScreen;
+      },
+      set lastPointerScreen(value) {
+        controller.lastPointerScreen = value;
+      },
+      get activeTool() {
+        return controller.activeTool;
+      },
+      get readOnly() {
+        return controller.readOnly;
+      },
+      get handleDeps() {
+        return controller.handleDeps;
+      },
+      get snapDeps() {
+        return controller.snapDeps;
+      },
+      get dragDeps() {
+        return controller.dragDeps;
+      },
+      get selection() {
+        return controller.selection;
+      },
+      get callbacks() {
+        return controller.callbacks;
+      },
+      get cameraControls() {
+        return controller.cameraControls;
+      },
+      get keyboard() {
+        return controller.keyboard;
+      },
+      get creationToolActive() {
+        return controller.creationToolActive;
+      },
+      get selectedObject() {
+        return controller.selectedObject;
+      },
+      get selectedObjects() {
+        return controller.selectedObjects;
+      },
+      get cameraZoom() {
+        return controller.cameraZoom;
+      },
+      screenPoint: (event) => controller.screenPoint(event),
+      worldPoint: (screenPoint) => controller.worldPoint(screenPoint),
+      screenDistance: (first, second) =>
+        controller.screenDistance(first, second),
+      capturePointer: (pointerId) => controller.capturePointer(pointerId),
+      releasePointer: (pointerId) => controller.releasePointer(pointerId),
+      cancelGesture: () => controller.cancelGesture(),
+      updateIdleState: (screenPoint, options) =>
+        controller.updateIdleState(screenPoint, options),
+      showEndpointFeedback: (target, kind) =>
+        controller.showEndpointFeedback(target, kind),
+      isTemporarySelection: (modifier) =>
+        controller.isTemporarySelection(modifier),
+      clearWallAnchor: () => controller.clearWallAnchor(),
+      getObjects: () => controller.getObjects(),
+      getDefaultWallThickness: () => controller.getDefaultWallThickness(),
+      setCursor: (cursor) => controller.setCursor(cursor),
+    };
+  }
 
   private readonly handleSelectionModifierChange = (held: boolean) => {
     this.endpointFeedback = null;

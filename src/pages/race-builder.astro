@@ -267,6 +267,7 @@ import Tooltip from "../ui/Tooltip.astro";
 </Layout>
 
 <script>
-  import { mountRaceBuilderPage } from "../scenes/race-builder/mountPage";
-  mountRaceBuilderPage();
+  import { mountScene } from "../scenes/mount";
+  import createScene from "../scenes/race-builder";
+  mountScene(createScene());
 </script>

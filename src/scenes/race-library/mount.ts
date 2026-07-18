@@ -7,7 +7,7 @@ import {
 } from "../../races";
 import { attachTooltip } from "../../ui/tooltip";
 
-/** Boots the race library grid on `/`. */
+/** Mounts the race library grid on `/`. */
 export const mountRaceLibrary = () => {
   attachTooltip(document.body);
   const repository = new RaceRepository();

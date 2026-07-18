@@ -110,6 +110,9 @@ export default [
   },
   {
     files: ["src/pages/**/*.{ts,js,astro}"],
+    // Underscore-prefixed files are page-local chrome (not routes); they may
+    // read game constants for form defaults. Route shells stay thin.
+    ignores: ["src/pages/**/_*.astro"],
     rules: deny(
       ["**/game/**", "**/editor/**", "**/engine/**", "**/races/**"],
       "pages should mount via scenes/debug/ui only (not game/editor/engine/races)"

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { LevelHistory } from "../src/editor/levelHistory.ts";
+import { LegHistory } from "../src/editor/legHistory.ts";
 
 const level = (name, wallThickness = 25) => ({
   version: 3,
@@ -11,7 +11,7 @@ const level = (name, wallThickness = 25) => ({
 
 describe("level history", () => {
   test("undoes and redoes committed snapshots", () => {
-    const history = new LevelHistory(level("Initial"));
+    const history = new LegHistory(level("Initial"));
     history.record(level("Edited", 30));
 
     expect(history.canUndo).toBe(true);
@@ -27,7 +27,7 @@ describe("level history", () => {
   });
 
   test("drops the redo branch after a new edit", () => {
-    const history = new LevelHistory(level("Initial"));
+    const history = new LegHistory(level("Initial"));
     history.record(level("Second"));
     history.record(level("Third"));
     history.undo();
@@ -38,7 +38,7 @@ describe("level history", () => {
   });
 
   test("ignores duplicate snapshots", () => {
-    const history = new LevelHistory(level("Initial"));
+    const history = new LegHistory(level("Initial"));
 
     expect(history.record(level("Initial"))).toBe(false);
     expect(history.canUndo).toBe(false);

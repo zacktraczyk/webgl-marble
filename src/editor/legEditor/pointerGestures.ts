@@ -36,8 +36,8 @@ import {
   type HandleTestDeps,
   type WallEndpointTarget,
 } from "./handles";
-import type { LevelEditorKeyboard } from "./keyboard";
-import type { LevelEditorSelection } from "./selection";
+import type { LegEditorKeyboard } from "./keyboard";
+import type { LegEditorSelection } from "./selection";
 import { snapPlacementPoint, snapWallEndpoint, type SnapDeps } from "./snap";
 
 type PointerGestureCallbacks = {
@@ -72,10 +72,10 @@ export type PointerGestureHost = {
     findObject: (id: string) => LevelObjectData | null | undefined;
     onObjectsChange: (objects: readonly LevelObjectData[]) => void;
   };
-  selection: LevelEditorSelection;
+  selection: LegEditorSelection;
   callbacks: PointerGestureCallbacks;
   cameraControls: PointerCameraControls;
-  keyboard: Pick<LevelEditorKeyboard, "spaceHeld">;
+  keyboard: Pick<LegEditorKeyboard, "spaceHeld">;
   creationToolActive: boolean;
   selectedObject: LevelObjectData | null;
   selectedObjects: readonly LevelObjectData[];

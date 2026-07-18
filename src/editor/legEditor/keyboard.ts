@@ -1,7 +1,7 @@
 import type { Vec2 } from "../../engine/core/transform";
 import { SelectedTool } from "../tools";
 
-export type LevelEditorKeyboardActions = {
+export type LegEditorKeyboardActions = {
   undo(): void;
   redo(): void;
   selectAll(): boolean;
@@ -38,12 +38,12 @@ const releaseKeyboardControlFocus = (target: EventTarget | null) => {
 };
 
 /** Owns keyboard state and maps browser key events to editor commands. */
-export class LevelEditorKeyboard {
+export class LegEditorKeyboard {
   spaceHeld = false;
   selectionModifierHeld = false;
 
   constructor(
-    private readonly actions: LevelEditorKeyboardActions,
+    private readonly actions: LegEditorKeyboardActions,
     signal: AbortSignal
   ) {
     window.addEventListener("keydown", this.keyDown, { signal });

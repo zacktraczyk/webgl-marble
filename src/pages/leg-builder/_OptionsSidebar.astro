@@ -15,7 +15,7 @@ import {
 
 <aside
   id="leg-options-sidebar"
-  aria-label="Level options"
+  aria-label="Leg options"
   aria-hidden="true"
   inert
   class="absolute inset-y-0 right-0 z-20 flex w-64 flex-col overflow-y-auto border-l border-zinc-700 bg-zinc-800 p-4 transition-transform duration-200"
@@ -386,20 +386,8 @@ import {
   <p
     id="race-status"
     data-role="race-status"
-    class="mt-3 text-xs text-zinc-400"
+    class="mt-auto pt-3 text-xs text-zinc-400"
   >
     Ready to race
   </p>
-  <details
-    class="mt-auto border-t border-zinc-700 pt-3 text-xs text-zinc-400"
-  >
-    <summary class="cursor-pointer select-none font-medium text-zinc-300">
-      Runtime details · <span id="builder-fps">FPS: 0</span>
-    </summary>
-    <pre
-      id="builder-debug"
-      data-role="debug-info"
-      class="mt-3 max-h-64 overflow-auto font-mono text-[11px]">
-    </pre>
-  </details>
 </aside>

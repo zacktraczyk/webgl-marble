@@ -1,13 +1,13 @@
 ---
-import HomeLink from "../ui/HomeLink.astro";
-import Layout from "../layouts/Layout.astro";
-import Tooltip from "../ui/Tooltip.astro";
-import Toolbar from "../scenes/leg-builder/Toolbar.astro";
-import ViewportChrome from "../scenes/leg-builder/ViewportChrome.astro";
-import RaceControls from "../scenes/leg-builder/RaceControls.astro";
-import ObjectInspector from "../scenes/leg-builder/ObjectInspector.astro";
-import OptionsSidebar from "../scenes/leg-builder/OptionsSidebar.astro";
-import "../scenes/leg-builder/leg-builder.css";
+import HomeLink from "../../ui/HomeLink.astro";
+import Layout from "../../layouts/Layout.astro";
+import Tooltip from "../../ui/Tooltip.astro";
+import Toolbar from "./_Toolbar.astro";
+import ViewportChrome from "./_ViewportChrome.astro";
+import RaceControls from "./_RaceControls.astro";
+import ObjectInspector from "./_ObjectInspector.astro";
+import OptionsSidebar from "./_OptionsSidebar.astro";
+import "./leg-builder.css";
 ---
 
 <Layout>
@@ -101,6 +101,14 @@ import "../scenes/leg-builder/leg-builder.css";
 </Layout>
 
 <script>
-  import { mountLegBuilderPage } from "../scenes/leg-builder/mountPage";
-  mountLegBuilderPage();
+  import { mountScene } from "../../scenes/mount";
+  import { setInlineError } from "../../ui/pageError";
+  import createScene from "../../scenes/leg-builder";
+
+  const errorElement = document.getElementById("builder-error");
+  try {
+    mountScene(createScene(), { errorElement });
+  } catch (error) {
+    setInlineError(errorElement, error);
+  }
 </script>

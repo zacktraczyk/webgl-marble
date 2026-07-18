@@ -64,7 +64,6 @@ export type BuilderUi = {
   motionReverseButton: HTMLButtonElement;
   motionSpeedButtons: HTMLButtonElement[];
   statusOutput: HTMLElement;
-  debugInfo: HTMLElement;
 };
 
 export const resolveBuilderUi = (
@@ -197,6 +196,5 @@ export const resolveBuilderUi = (
       role<HTMLButtonElement>("motion-speed-fast", "fast motion"),
     ],
     statusOutput: role("race-status", "status"),
-    debugInfo: role("debug-info", "debug info"),
   };
 };

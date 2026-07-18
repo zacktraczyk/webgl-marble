@@ -8,8 +8,9 @@ interactive level building.
 
 | Term | Meaning |
 | ---- | ------- |
-| **level** | Serialized course geometry (`SerializedLevel` / `AuthoredLevel`) |
+| **level** | Serialized course geometry (`SerializedLevel` / `AuthoredLevel`) under `game/level/` |
 | **leg** | One race stage that wraps a level document |
+| **leg editor** | Interactive course editor (`editor/legEditor`) used by the leg builder |
 | **VDU** | Visual Display Unit — the WebGL renderer under `src/engine/vdu` |
 
 ## Features
@@ -84,7 +85,7 @@ Product code lives under `src/` with intended dependency direction:
 
 `pages` → `scenes` → `game` / `editor` / `races` → `engine`
 
-Shared level documents, geometry, motion, constants, grid helpers, and race simulation (`RaceController`) live in `game/`. Interactive editing (`levelEditor`, undo history, tools) lives in `editor/`.
+Shared level documents, geometry, motion, constants, grid helpers, and race simulation (`RaceController`) live in `game/`. Interactive editing (`legEditor`, undo history, tools) lives in `editor/`.
 
 Engine prototypes and legacy race demos live in `debug/` with Astro routes under `/dev/*`, separate from product `scenes/`.
 

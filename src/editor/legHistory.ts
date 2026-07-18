@@ -3,7 +3,7 @@ import type { SerializedLevel } from "../game/level/document";
 const cloneLevel = (level: SerializedLevel) => structuredClone(level);
 const fingerprint = (level: SerializedLevel) => JSON.stringify(level);
 
-export class LevelHistory {
+export class LegHistory {
   private entries: SerializedLevel[] = [];
   private index = -1;
 

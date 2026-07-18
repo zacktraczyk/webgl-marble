@@ -1,7 +1,7 @@
 import type { LevelObjectData } from "../../game/level/document";
 
 /** Owns selection and hover identity independently from gesture handling. */
-export class LevelEditorSelection {
+export class LegEditorSelection {
   private readonly ids = new Set<string>();
   private hoveredId: string | null = null;
 

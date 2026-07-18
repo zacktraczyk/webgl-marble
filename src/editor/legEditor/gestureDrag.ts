@@ -30,7 +30,7 @@ import type {
 } from "./gestures";
 import type { SnapDeps } from "./snap";
 import { snapWallEndpoint } from "./snap";
-import type { LevelEditorSelection } from "./selection";
+import type { LegEditorSelection } from "./selection";
 
 export type DragUpdateResult = "pending" | "handled" | "cancel";
 
@@ -111,7 +111,7 @@ export function updatePlaceDrag(): DragUpdateResult {
 }
 
 export type MarqueeDragDeps = DragDepsBase & {
-  selection: LevelEditorSelection;
+  selection: LegEditorSelection;
 };
 
 export function updateMarqueeDrag(

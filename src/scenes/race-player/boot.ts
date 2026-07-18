@@ -1,26 +1,7 @@
 import { RaceRepository, isRacePlayable, type RaceDocument } from "../../races";
+import { showPageErrorState } from "../../ui/pageError";
 import { mountScene } from "../mount";
 import createRacePlayerScene from "./index";
-
-const showError = (
-  title: string,
-  copy: string,
-  actionHref = "/",
-  actionLabel = "Return to library"
-) => {
-  const errorState = document.querySelector<HTMLElement>("#race-error-state");
-  const errorTitle = document.querySelector<HTMLElement>("#race-error-title");
-  const errorCopy = document.querySelector<HTMLElement>("#race-error-copy");
-  const errorAction =
-    document.querySelector<HTMLAnchorElement>("#race-error-action");
-  if (errorState) errorState.hidden = false;
-  if (errorTitle) errorTitle.textContent = title;
-  if (errorCopy) errorCopy.textContent = copy;
-  if (errorAction) {
-    errorAction.href = actionHref;
-    errorAction.textContent = actionLabel;
-  }
-};
 
 const resolveRace = (): RaceDocument | null => {
   const raceId = new URLSearchParams(window.location.search).get("race") ?? "";
@@ -28,21 +9,26 @@ const resolveRace = (): RaceDocument | null => {
 };
 
 /** Validates the race query and mounts the player, or shows an error state. */
-export const bootRacePlayerPage = () => {
+export const bootRacePlayer = () => {
   const race = resolveRace();
   const player = document.querySelector<HTMLElement>("#race-player");
 
   if (!race) {
-    showError("Race not found", "It may have been deleted from this browser.");
+    showPageErrorState({
+      title: "Race not found",
+      copy: "It may have been deleted from this browser.",
+    });
     return;
   }
   if (!isRacePlayable(race)) {
-    showError(
-      "Race setup is incomplete",
-      "A race needs exactly one leg for each team that will be eliminated.",
-      `/race-builder?race=${encodeURIComponent(race.id)}`,
-      "Open race builder"
-    );
+    showPageErrorState({
+      title: "Race setup is incomplete",
+      copy: "A race needs exactly one leg for each team that will be eliminated.",
+      action: {
+        href: `/race-builder?race=${encodeURIComponent(race.id)}`,
+        label: "Open race builder",
+      },
+    });
     return;
   }
   if (!player) {
@@ -60,7 +46,10 @@ export const bootRacePlayerPage = () => {
       errorElement: document.querySelector<HTMLElement>("#race-error"),
     });
   } catch (error) {
-    showError("Race could not start", `${error}`);
+    showPageErrorState({
+      title: "Race could not start",
+      copy: `${error}`,
+    });
     player.hidden = true;
   }
 };

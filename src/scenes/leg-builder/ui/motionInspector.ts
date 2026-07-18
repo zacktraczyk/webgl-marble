@@ -1,5 +1,5 @@
 import { getLevelObjectShape } from "../../../game/level/geometry";
-import type { LevelEditorController } from "../../../editor/levelEditor";
+import type { LegEditorController } from "../../../editor/legEditor";
 import type {
   LevelObjectData,
   LevelObjectMotion,
@@ -20,7 +20,7 @@ import { clampInteger } from "./input";
 export class MotionInspectorController {
   constructor(
     private readonly ui: BuilderUi,
-    private readonly editor: LevelEditorController,
+    private readonly editor: LegEditorController,
     private readonly level: AuthoredLevel,
     private readonly isReadOnly: () => boolean,
     private readonly commit: () => void

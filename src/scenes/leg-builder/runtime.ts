@@ -1,6 +1,6 @@
 import type { Vec2 } from "../../engine/core/transform";
-import { EditorOverlay, LevelEditorController } from "../../editor/levelEditor";
-import { LevelHistory } from "../../editor/levelHistory";
+import { EditorOverlay, LegEditorController } from "../../editor/legEditor";
+import { LegHistory } from "../../editor/legHistory";
 import type {
   LevelObjectData,
   SerializedLevel,
@@ -48,8 +48,8 @@ export class LegBuilderRuntime {
   private readonly ui: BuilderUi;
   private readonly level: AuthoredLevel;
   private readonly race: RaceController;
-  private readonly history: LevelHistory;
-  private readonly editorController: LevelEditorController;
+  private readonly history: LegHistory;
+  private readonly editorController: LegEditorController;
   private readonly editorOverlay: EditorOverlay;
   private readonly gridOverlay: GridOverlay;
   private readonly controls: BuilderControls;
@@ -105,7 +105,7 @@ export class LegBuilderRuntime {
     this.level = this.createLevel(options.initialLevel);
     this.rememberSpawnPosition();
     this.race = new RaceController(this.stage, this.level, this.configuration);
-    this.history = new LevelHistory(this.level.document.serialize());
+    this.history = new LegHistory(this.level.document.serialize());
     this.courseSync = new LegCourseSync({
       stage: this.stage,
       level: this.level,
@@ -176,7 +176,7 @@ export class LegBuilderRuntime {
   }
 
   private createEditorController(signal: AbortSignal) {
-    return new LevelEditorController({
+    return new LegEditorController({
       stage: this.stage,
       cameraControls: this.cameraController,
       getObjects: () => this.level.objects,
@@ -297,13 +297,7 @@ export class LegBuilderRuntime {
       ui: this.ui,
       configuration: this.configuration,
       race,
-      authoredObjects: this.level.objects.length,
-      selectedObjects: this.editorController.selectedObjects.map(
-        (object) => object.id
-      ),
       selectedObject: this.editorController.selectedObject,
-      hoveredObject: this.editorController.hoveredObject?.id ?? null,
-      wallThickness: this.level.wallThickness,
       selectedTool: this.selectedTool,
       spawnVariant,
       canUndo: this.history.canUndo,

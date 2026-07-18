@@ -1,11 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import { createGridLayout } from "../src/game/level/grid.ts";
 import { constrainPointToAngle } from "../src/game/level/geometry.ts";
-import { ROTATION_SNAP_STEP } from "../src/editor/levelEditor/constants.ts";
+import { ROTATION_SNAP_STEP } from "../src/editor/legEditor/constants.ts";
 import {
   snapPlacementPoint,
   snapWallEndpoint,
-} from "../src/editor/levelEditor/snap.ts";
+} from "../src/editor/legEditor/snap.ts";
 
 const bounds = { min: [-705, -390], max: [705, 270] };
 const gridLayout = createGridLayout(bounds);
@@ -26,7 +26,7 @@ const createSnapDeps = (overrides = {}) => {
   return { deps, feedback };
 };
 
-describe("level editor snap", () => {
+describe("leg editor snap", () => {
   test("free mode returns the point unchanged and clears feedback", () => {
     const { deps, feedback } = createSnapDeps({
       findWallEndpointTarget: () => ({

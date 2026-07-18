@@ -196,212 +196,212 @@ import Layout from "../layouts/Layout.astro";
 </Layout>
 
 <style>
-  /* 3 · 2 · 1 · GO — fullscreen stamped countdown, orange/white/orange */
-  #race-countdown {
-    --countdown-bg: var(--color-brand);
-    --countdown-ink: oklch(97% 0.014 85);
-    --countdown-pop: var(--color-brand-shadow);
-    --countdown-tilt: 0deg;
-    background: var(--countdown-bg);
+/* 3 · 2 · 1 · GO — fullscreen stamped countdown, orange/white/orange */
+#race-countdown {
+  --countdown-bg: var(--color-brand);
+  --countdown-ink: oklch(97% 0.014 85);
+  --countdown-pop: var(--color-brand-shadow);
+  --countdown-tilt: 0deg;
+  background: var(--countdown-bg);
+  opacity: 1;
+  transition: opacity 260ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#race-countdown[data-step="3"] {
+  --countdown-tilt: -2deg;
+}
+
+#race-countdown[data-step="2"] {
+  --countdown-bg: oklch(96% 0.012 85);
+  --countdown-ink: var(--color-brand);
+  --countdown-tilt: 2.5deg;
+}
+
+#race-countdown[data-step="1"] {
+  --countdown-tilt: -3deg;
+}
+
+#race-countdown[data-step="go"],
+#race-countdown[data-step="done"] {
+  --countdown-bg: oklch(66% 0.2 145);
+  --countdown-ink: oklch(97% 0.014 85);
+  --countdown-pop: oklch(44% 0.13 148);
+}
+
+#race-countdown[data-step="done"] {
+  opacity: 0;
+}
+
+#race-countdown-value {
+  font-size: clamp(10rem, 58vmin, 34rem);
+  line-height: 1;
+  color: var(--countdown-ink);
+  text-shadow: 0.04em 0.045em 0 var(--countdown-pop);
+  transform: rotate(var(--countdown-tilt));
+}
+
+#race-countdown[data-step="go"] #race-countdown-value,
+#race-countdown[data-step="done"] #race-countdown-value {
+  font-size: clamp(7rem, 42vmin, 24rem);
+  letter-spacing: -0.02em;
+}
+
+/* Alternating animation names so each step restarts the stamp */
+#race-countdown[data-step="1"] #race-countdown-value,
+#race-countdown[data-step="3"] #race-countdown-value {
+  animation: countdown-stamp-a 460ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+#race-countdown[data-step="2"] #race-countdown-value {
+  animation: countdown-stamp-b 460ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+#race-countdown[data-step="go"] #race-countdown-value {
+  animation: countdown-burst 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes countdown-stamp-a {
+  from {
+    opacity: 0;
+    transform: scale(1.4) rotate(var(--countdown-tilt));
+  }
+  to {
     opacity: 1;
-    transition: opacity 260ms cubic-bezier(0.16, 1, 0.3, 1);
+    transform: scale(1) rotate(var(--countdown-tilt));
   }
+}
 
-  #race-countdown[data-step="3"] {
-    --countdown-tilt: -2deg;
-  }
-
-  #race-countdown[data-step="2"] {
-    --countdown-bg: oklch(96% 0.012 85);
-    --countdown-ink: var(--color-brand);
-    --countdown-tilt: 2.5deg;
-  }
-
-  #race-countdown[data-step="1"] {
-    --countdown-tilt: -3deg;
-  }
-
-  #race-countdown[data-step="go"],
-  #race-countdown[data-step="done"] {
-    --countdown-bg: oklch(66% 0.2 145);
-    --countdown-ink: oklch(97% 0.014 85);
-    --countdown-pop: oklch(44% 0.13 148);
-  }
-
-  #race-countdown[data-step="done"] {
+@keyframes countdown-stamp-b {
+  from {
     opacity: 0;
+    transform: scale(1.4) rotate(var(--countdown-tilt));
   }
-
-  #race-countdown-value {
-    font-size: clamp(10rem, 58vmin, 34rem);
-    line-height: 1;
-    color: var(--countdown-ink);
-    text-shadow: 0.04em 0.045em 0 var(--countdown-pop);
-    transform: rotate(var(--countdown-tilt));
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(var(--countdown-tilt));
   }
+}
 
-  #race-countdown[data-step="go"] #race-countdown-value,
-  #race-countdown[data-step="done"] #race-countdown-value {
-    font-size: clamp(7rem, 42vmin, 24rem);
-    letter-spacing: -0.02em;
-  }
-
-  /* Alternating animation names so each step restarts the stamp */
-  #race-countdown[data-step="1"] #race-countdown-value,
-  #race-countdown[data-step="3"] #race-countdown-value {
-    animation: countdown-stamp-a 460ms cubic-bezier(0.16, 1, 0.3, 1) both;
-  }
-
-  #race-countdown[data-step="2"] #race-countdown-value {
-    animation: countdown-stamp-b 460ms cubic-bezier(0.16, 1, 0.3, 1) both;
-  }
-
-  #race-countdown[data-step="go"] #race-countdown-value {
-    animation: countdown-burst 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
-  }
-
-  @keyframes countdown-stamp-a {
-    from {
-      opacity: 0;
-      transform: scale(1.4) rotate(var(--countdown-tilt));
-    }
-    to {
-      opacity: 1;
-      transform: scale(1) rotate(var(--countdown-tilt));
-    }
-  }
-
-  @keyframes countdown-stamp-b {
-    from {
-      opacity: 0;
-      transform: scale(1.4) rotate(var(--countdown-tilt));
-    }
-    to {
-      opacity: 1;
-      transform: scale(1) rotate(var(--countdown-tilt));
-    }
-  }
-
-  @keyframes countdown-burst {
-    from {
-      opacity: 0;
-      transform: scale(0.5);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1);
-    }
-  }
-
-  /* Edge vignette — top and bottom only, tied to the toolbar chrome so the
-     track reads full-bleed once the controls tuck away. */
-  #race-vignette {
-    background:
-      linear-gradient(to bottom, rgb(9 9 11 / 0.55), transparent 22%),
-      linear-gradient(to top, rgb(9 9 11 / 0.55), transparent 22%);
-    transition: opacity 260ms ease-out;
-  }
-
-  #race-player[data-chrome="hidden"] #race-vignette {
+@keyframes countdown-burst {
+  from {
     opacity: 0;
+    transform: scale(0.5);
   }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
 
-  /* Video-player chrome: toolbars slide out on mouse activity and tuck away
-     after a beat of stillness — same spring in / ease-in out as the
-     leg-builder preview launch. */
+/* Edge vignette — top and bottom only, tied to the toolbar chrome so the
+   track reads full-bleed once the controls tuck away. */
+#race-vignette {
+  background:
+    linear-gradient(to bottom, rgb(9 9 11 / 0.55), transparent 22%),
+    linear-gradient(to top, rgb(9 9 11 / 0.55), transparent 22%);
+  transition: opacity 260ms ease-out;
+}
+
+#race-player[data-chrome="hidden"] #race-vignette {
+  opacity: 0;
+}
+
+/* Video-player chrome: toolbars slide out on mouse activity and tuck away
+   after a beat of stillness — same spring in / ease-in out as the
+   leg-builder preview launch. */
+#race-back-link,
+#race-leg-pill,
+#race-controls > * {
+  will-change: transform, opacity;
+  transition:
+    transform 560ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity 220ms ease-out;
+}
+
+#race-player[data-chrome="hidden"] #race-back-link {
+  transform: translateX(calc(-100% - 1.5rem)) rotate(-5deg);
+}
+
+#race-player[data-chrome="hidden"] #race-leg-pill {
+  transform: translateY(calc(-100% - 1.5rem)) scale(0.96);
+}
+
+#race-player[data-chrome="hidden"] #race-controls > :first-child {
+  transform: translateY(calc(100% + 1.5rem)) rotate(-4deg);
+}
+
+#race-player[data-chrome="hidden"] #race-controls > :last-child {
+  transform: translateY(calc(100% + 1.5rem)) rotate(4deg);
+}
+
+#race-player[data-chrome="hidden"] #race-back-link,
+#race-player[data-chrome="hidden"] #race-leg-pill,
+#race-player[data-chrome="hidden"] #race-controls > * {
+  pointer-events: none;
+  opacity: 0;
+  transition-duration: 500ms, 260ms;
+  transition-delay: 0ms, 120ms;
+  transition-timing-function: cubic-bezier(0.55, 0, 1, 0.45), ease-in;
+}
+
+#race-player[data-chrome="hidden"] #race-back-link {
+  transition-delay: 30ms, 150ms;
+}
+
+#race-player[data-chrome="hidden"] #race-controls > * {
+  transition-delay: 60ms, 180ms;
+}
+
+#elimination-card {
+  opacity: 0;
+  transform: translateY(-0.75rem);
+  transition:
+    opacity 220ms ease,
+    transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+#winner-card {
+  opacity: 0;
+  transform: translateY(1rem) scale(0.96);
+  pointer-events: none;
+  transition:
+    opacity 220ms ease,
+    transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+#race-player[data-race-state="transition"] #elimination-card {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+#race-player[data-race-state="complete"] #winner-card {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+#race-player[data-race-state="complete"] #winner-card {
+  pointer-events: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #elimination-card,
+  #winner-card,
+  #race-countdown,
+  #race-vignette,
   #race-back-link,
   #race-leg-pill,
   #race-controls > * {
-    will-change: transform, opacity;
-    transition:
-      transform 560ms cubic-bezier(0.34, 1.56, 0.64, 1),
-      opacity 220ms ease-out;
+    transition-duration: 0ms;
+    transition-delay: 0ms;
   }
 
-  #race-player[data-chrome="hidden"] #race-back-link {
-    transform: translateX(calc(-100% - 1.5rem)) rotate(-5deg);
+  #race-countdown-value {
+    animation: none !important;
   }
-
-  #race-player[data-chrome="hidden"] #race-leg-pill {
-    transform: translateY(calc(-100% - 1.5rem)) scale(0.96);
-  }
-
-  #race-player[data-chrome="hidden"] #race-controls > :first-child {
-    transform: translateY(calc(100% + 1.5rem)) rotate(-4deg);
-  }
-
-  #race-player[data-chrome="hidden"] #race-controls > :last-child {
-    transform: translateY(calc(100% + 1.5rem)) rotate(4deg);
-  }
-
-  #race-player[data-chrome="hidden"] #race-back-link,
-  #race-player[data-chrome="hidden"] #race-leg-pill,
-  #race-player[data-chrome="hidden"] #race-controls > * {
-    pointer-events: none;
-    opacity: 0;
-    transition-duration: 500ms, 260ms;
-    transition-delay: 0ms, 120ms;
-    transition-timing-function: cubic-bezier(0.55, 0, 1, 0.45), ease-in;
-  }
-
-  #race-player[data-chrome="hidden"] #race-back-link {
-    transition-delay: 30ms, 150ms;
-  }
-
-  #race-player[data-chrome="hidden"] #race-controls > * {
-    transition-delay: 60ms, 180ms;
-  }
-
-  #elimination-card {
-    opacity: 0;
-    transform: translateY(-0.75rem);
-    transition:
-      opacity 220ms ease,
-      transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
-  }
-
-  #winner-card {
-    opacity: 0;
-    transform: translateY(1rem) scale(0.96);
-    pointer-events: none;
-    transition:
-      opacity 220ms ease,
-      transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
-  }
-
-  #race-player[data-race-state="transition"] #elimination-card {
-    opacity: 1;
-    transform: translateY(0);
-  }
-
-  #race-player[data-race-state="complete"] #winner-card {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-
-  #race-player[data-race-state="complete"] #winner-card {
-    pointer-events: auto;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    #elimination-card,
-    #winner-card,
-    #race-countdown,
-    #race-vignette,
-    #race-back-link,
-    #race-leg-pill,
-    #race-controls > * {
-      transition-duration: 0ms;
-      transition-delay: 0ms;
-    }
-
-    #race-countdown-value {
-      animation: none !important;
-    }
-  }
+}
 </style>
 
 <script>
-  import { bootRacePlayerPage } from "../scenes/race-player/boot";
-  bootRacePlayerPage();
+  import { bootRacePlayer } from "../scenes/race-player/boot";
+  bootRacePlayer();
 </script>

@@ -17,16 +17,16 @@ import {
   type HandleTestDeps,
   type WallEndpointTarget,
 } from "./handles";
-import type { LevelEditorKeyboard } from "./keyboard";
-import type { LevelEditorSelection } from "./selection";
+import type { LegEditorKeyboard } from "./keyboard";
+import type { LegEditorSelection } from "./selection";
 
 export type IdleCursorContext = {
   gesture: EditorGesture | null;
-  keyboard: Pick<LevelEditorKeyboard, "spaceHeld" | "selectionModifierHeld">;
+  keyboard: Pick<LegEditorKeyboard, "spaceHeld" | "selectionModifierHeld">;
   activeTool: SelectedTool;
   creationToolActive: boolean;
   readOnly: boolean;
-  selection: LevelEditorSelection;
+  selection: LegEditorSelection;
   handleDeps: HandleTestDeps;
   selectedObject: LevelObjectData | null;
   getObjects: () => readonly LevelObjectData[];

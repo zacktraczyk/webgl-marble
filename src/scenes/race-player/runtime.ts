@@ -14,9 +14,6 @@ import {
   MIN_MARBLE_RADIUS,
   STAGING_MARBLE_GAP,
 } from "../../game/level/constants";
-import type { RoundConfiguration } from "../../game/level/types";
-import { roundConfigurationFromFinishPlan } from "../../game/race/legRound";
-import { LegInstance } from "./legInstance";
 import { computeLegStackLayout, type LegFrame } from "./legStack";
 import { fallbackEliminationIndex, RaceProgression } from "./progression";
 import { RaceCameraController } from "./raceCamera";
@@ -29,10 +26,21 @@ import {
 } from "./controls";
 import {
   NEXT_LEG_RELEASE_FRACTION,
-  type EliminationReason,
   type LegWindow,
   type Transition,
 } from "./transition";
+import {
+  beginTransition,
+  finalizeTransition,
+  releaseNextLeg,
+  type TransitionHost,
+} from "./transitionController";
+import {
+  buildLeg,
+  startRace,
+  teardownLegs,
+  type LegLifecycleHost,
+} from "./legLifecycle";
 
 export const DEFAULT_MAXIMUM_LEG_DURATION_MS = null;
 
@@ -73,6 +81,8 @@ export class RacePlayerRuntime {
   private playbackPaused = false;
   private disposed = false;
   private statusMessage = "";
+  private readonly lifecycleHost: LegLifecycleHost;
+  private readonly transitionHost: TransitionHost;
 
   constructor(
     raceDocument: RaceDocument,
@@ -167,8 +177,62 @@ export class RacePlayerRuntime {
     this.presenter.setText("race-name", this.raceDocument.name);
     setupChromeAutoHide(this.root, signal);
 
+    this.lifecycleHost = {
+      raceDocument: this.raceDocument,
+      stage: this.stage,
+      layout: this.layout,
+      finishSchedule: this.finishSchedule,
+      progression: this.progression,
+      cameraController: this.cameraController,
+      presenter: this.presenter,
+      countdown: this.countdown,
+      root: this.root,
+      getLegWindow: () => this.legWindow,
+      setLegWindow: (window) => {
+        this.legWindow = window;
+      },
+      setTransition: (transition) => {
+        this.transition = transition;
+      },
+      setLegElapsedMs: (ms) => {
+        this.legElapsedMs = ms;
+      },
+      setPlaybackPaused: (paused) => {
+        this.playbackPaused = paused;
+      },
+      setStatusMessage: (message) => {
+        this.statusMessage = message;
+      },
+      getRunningStatus: () => this.runningStatus,
+      updateActiveParticipants: () => this.updateActiveParticipants(),
+      updateInterface: () => this.updateInterface(),
+    };
+    this.transitionHost = {
+      raceDocument: this.raceDocument,
+      progression: this.progression,
+      cameraController: this.cameraController,
+      presenter: this.presenter,
+      layout: this.layout,
+      root: this.root,
+      getLegWindow: () => this.legWindow,
+      getTransition: () => this.transition,
+      setTransition: (transition) => {
+        this.transition = transition;
+      },
+      setLegElapsedMs: (ms) => {
+        this.legElapsedMs = ms;
+      },
+      setStatusMessage: (message) => {
+        this.statusMessage = message;
+      },
+      getRunningStatus: () => this.runningStatus,
+      buildLeg: (index) => buildLeg(this.lifecycleHost, index),
+      updateActiveParticipants: () => this.updateActiveParticipants(),
+      updateInterface: () => this.updateInterface(),
+    };
+
     try {
-      this.startRace();
+      startRace(this.lifecycleHost);
     } catch (error) {
       this.stage.dispose();
       throw error;
@@ -207,14 +271,15 @@ export class RacePlayerRuntime {
       snapshot?.phase === "complete" &&
       snapshot.eliminatedTeamIndex !== null
     ) {
-      this.beginTransition(snapshot.eliminatedTeamIndex, "finished");
+      beginTransition(this.transitionHost, snapshot.eliminatedTeamIndex, "finished");
       return;
     }
     if (
       this.maximumLegDurationMs !== null &&
       this.legElapsedMs >= this.maximumLegDurationMs
     ) {
-      this.beginTransition(
+      beginTransition(
+        this.transitionHost,
         fallbackEliminationIndex(
           this.progression.snapshot.activeParticipantIndices
         ),
@@ -240,10 +305,10 @@ export class RacePlayerRuntime {
         this.cameraController.visibleFractionOf(nextLeg.worldRect) >=
           NEXT_LEG_RELEASE_FRACTION
       ) {
-        this.releaseNextLeg();
+        releaseNextLeg(this.transitionHost);
       }
       if (!this.cameraController.gliding) {
-        this.finalizeTransition();
+        finalizeTransition(this.transitionHost);
       }
     }
 
@@ -279,11 +344,11 @@ export class RacePlayerRuntime {
     if (this.disposed) {
       return;
     }
-    this.teardownLegs();
+    teardownLegs(this.lifecycleHost);
     this.progression.restart();
     this.presenter.setText("race-eliminated", "");
     this.presenter.setText("race-winner", "");
-    this.startRace();
+    startRace(this.lifecycleHost);
   };
 
   skipOrContinue = () => {
@@ -299,7 +364,8 @@ export class RacePlayerRuntime {
       this.cameraController.completeGlide();
       return;
     }
-    this.beginTransition(
+    beginTransition(
+      this.transitionHost,
       fallbackEliminationIndex(
         this.progression.snapshot.activeParticipantIndices
       ),
@@ -313,202 +379,8 @@ export class RacePlayerRuntime {
     }
     this.disposed = true;
     this.countdown.clear();
-    this.teardownLegs();
+    teardownLegs(this.lifecycleHost);
     this.stage.dispose();
-  }
-
-  private startRace() {
-    this.transition = null;
-    this.legElapsedMs = 0;
-    this.playbackPaused = false;
-
-    const progression = this.progression.snapshot;
-    const current = this.buildLeg(progression.legIndex);
-    const nextIndex = progression.legIndex + 1;
-    const next = this.layout[nextIndex] ? this.buildLeg(nextIndex) : null;
-    current.attachController([...progression.activeParticipantIndices]);
-    this.legWindow = { previous: null, current, next };
-
-    this.cameraController.snapTo(current.worldRect);
-
-    const leg = this.raceDocument.legs[progression.legIndex];
-    this.root.dataset.legIndex = `${progression.legIndex}`;
-    this.presenter.setText("race-leg-name", leg.name);
-    this.presenter.setText(
-      "race-leg-progress",
-      `Leg ${progression.legIndex + 1} of ${this.raceDocument.legs.length}`
-    );
-    this.presenter.setText("race-eliminated", "");
-    this.presenter.setText("race-winner", "");
-    this.updateActiveParticipants();
-
-    // Leg 0 always opens with the countdown; the stack is otherwise idle.
-    this.beginCountdown();
-  }
-
-  private buildLeg(index: number): LegInstance {
-    const leg = this.raceDocument.legs[index];
-    return new LegInstance({
-      stage: this.stage,
-      leg,
-      frame: this.layout[index],
-      configuration: this.createRoundConfiguration(index),
-    });
-  }
-
-  private beginTransition(
-    eliminatedStableIndex: number,
-    reason: EliminationReason
-  ) {
-    if (
-      this.legWindow === null ||
-      this.transition !== null ||
-      this.progression.snapshot.winnerIndex !== null ||
-      !this.progression.snapshot.activeParticipantIndices.includes(
-        eliminatedStableIndex
-      )
-    ) {
-      return;
-    }
-
-    const legWindow = this.legWindow;
-    // On a skip/timeout the leg has no natural survivor yet — freeze whatever is
-    // still live into the finish pool so its colors are still drainable above.
-    if (reason !== "finished") {
-      legWindow.current.controller?.abandon();
-    }
-
-    const oldLeg = legWindow.current;
-    const result = this.progression.eliminate(eliminatedStableIndex);
-    this.updateActiveParticipants();
-
-    if (result.winnerIndex !== null) {
-      const winner = this.raceDocument.participants[result.winnerIndex];
-      this.statusMessage = `${winner.name} wins ${this.raceDocument.name}!`;
-      this.presenter.setText("race-winner", winner.name);
-      this.presenter.setText("race-eliminated", "");
-      // Camera stays on the final leg; the frozen field is the end tableau.
-      this.updateInterface();
-      return;
-    }
-
-    const nextLeg = legWindow.next;
-    if (!nextLeg) {
-      // A non-winning elimination always has a leg to scroll to; guard anyway.
-      return;
-    }
-
-    const participant = this.raceDocument.participants[eliminatedStableIndex];
-    this.statusMessage =
-      reason === "timed-out"
-        ? `Leg timed out — ${participant.name} team is eliminated.`
-        : reason === "skipped"
-          ? `Leg skipped — ${participant.name} team is eliminated.`
-          : `${participant.name} has the final marble on the track and is eliminated.`;
-    this.presenter.setText("race-eliminated", participant.name);
-
-    // Each marble the incoming leg releases drains one finished marble of the
-    // same color from the bays above, selling the transfer.
-    nextLeg.attachController([...result.activeParticipantIndices], {
-      onMarbleReleased: (stableTeamIndex) =>
-        oldLeg.removeFinishedMarble(stableTeamIndex),
-    });
-
-    // At most two finished legs can be alive; retire the older one now.
-    if (legWindow.previous) {
-      legWindow.previous.dispose();
-      legWindow.previous = null;
-    }
-
-    this.cameraController.glideTo(nextLeg.worldRect);
-    this.transition = { released: false, oldLeg };
-    this.updateInterface();
-  }
-
-  private releaseNextLeg() {
-    this.legWindow?.next?.controller?.toggleRunning();
-    if (this.transition) {
-      this.transition.released = true;
-    }
-  }
-
-  private finalizeTransition() {
-    if (this.legWindow === null || this.transition === null) {
-      return;
-    }
-    const legWindow = this.legWindow;
-    const nextLeg = legWindow.next;
-    if (!nextLeg) {
-      return;
-    }
-
-    // If the scroll finished before the 2/3 hand-off fired, release now.
-    if (!this.transition.released) {
-      this.releaseNextLeg();
-    }
-    const oldLeg = this.transition.oldLeg;
-    this.transition = null;
-
-    // Slide the window down one leg and pre-build the following leg's geometry.
-    legWindow.previous = oldLeg;
-    legWindow.current = nextLeg;
-    const legIndex = this.progression.snapshot.legIndex;
-    const followingIndex = legIndex + 1;
-    legWindow.next = this.layout[followingIndex]
-      ? this.buildLeg(followingIndex)
-      : null;
-
-    this.legElapsedMs = 0;
-
-    const leg = this.raceDocument.legs[legIndex];
-    this.root.dataset.legIndex = `${legIndex}`;
-    this.presenter.setText("race-leg-name", leg.name);
-    this.presenter.setText(
-      "race-leg-progress",
-      `Leg ${legIndex + 1} of ${this.raceDocument.legs.length}`
-    );
-    this.presenter.setText("race-eliminated", "");
-    this.statusMessage = this.runningStatus;
-
-    // Drop the just-finished leg immediately if it has already scrolled fully
-    // out of view; otherwise it lingers (still ticking motion) until the next
-    // transition retires it.
-    if (
-      this.cameraController.visibleFractionOf(oldLeg.worldRect) === 0
-    ) {
-      oldLeg.dispose();
-      legWindow.previous = null;
-    }
-
-    this.updateInterface();
-  }
-
-  private launchCurrentLeg() {
-    this.legWindow?.current.controller?.toggleRunning();
-    this.statusMessage = this.runningStatus;
-    this.updateInterface();
-  }
-
-  private teardownLegs() {
-    this.countdown.clear();
-    this.transition = null;
-    if (this.legWindow) {
-      this.legWindow.previous?.dispose();
-      this.legWindow.current.dispose();
-      this.legWindow.next?.dispose();
-      this.legWindow = null;
-    }
-  }
-
-  private beginCountdown() {
-    this.countdown.begin({
-      root: this.root,
-      onStatus: (message) => {
-        this.statusMessage = message;
-        this.updateInterface();
-      },
-      onComplete: () => this.launchCurrentLeg(),
-    });
   }
 
   private updateInterface() {
@@ -532,13 +404,6 @@ export class RacePlayerRuntime {
         playbackPaused: this.playbackPaused,
       },
     });
-  }
-
-  private createRoundConfiguration(legIndex: number): RoundConfiguration {
-    return roundConfigurationFromFinishPlan(
-      this.finishSchedule[legIndex],
-      this.raceDocument.releaseIntervalMs
-    );
   }
 
   private bindControls(signal: AbortSignal) {

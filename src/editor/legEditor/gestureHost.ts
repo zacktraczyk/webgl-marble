@@ -10,12 +10,12 @@ import type {
   HandleTestDeps,
   WallEndpointTarget,
 } from "./handles";
-import type { LevelEditorKeyboard } from "./keyboard";
+import type { LegEditorKeyboard } from "./keyboard";
 import type { PointerGestureHost } from "./pointerGestures";
-import type { LevelEditorSelection } from "./selection";
+import type { LegEditorSelection } from "./selection";
 import type { SnapDeps } from "./snap";
 
-/** Minimal surface `createGestureHost` needs from `LevelEditorController`. */
+/** Minimal surface `createGestureHost` needs from `LegEditorController`. */
 export type GestureHostController = {
   gesture: EditorGesture | null;
   wallAnchor: Vec2 | null;
@@ -36,10 +36,10 @@ export type GestureHostController = {
     findObject: (id: string) => LevelObjectData | null | undefined;
     onObjectsChange: (objects: readonly LevelObjectData[]) => void;
   };
-  readonly selection: LevelEditorSelection;
+  readonly selection: LegEditorSelection;
   readonly callbacks: PointerGestureHost["callbacks"];
   readonly cameraControls: PointerGestureHost["cameraControls"];
-  readonly keyboard: LevelEditorKeyboard;
+  readonly keyboard: LegEditorKeyboard;
   readonly creationToolActive: boolean;
   readonly selectedObject: LevelObjectData | null;
   readonly selectedObjects: readonly LevelObjectData[];

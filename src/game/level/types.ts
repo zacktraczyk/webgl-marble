@@ -18,6 +18,6 @@ export type RoundConfiguration = {
   teamCount: number;
   marblesPerTeam: number;
   releaseIntervalMs: number;
-  /** Set by the race player; the level builder derives layout from teamCount. */
+  /** Set by the race player; the leg builder derives layout from teamCount. */
   finishPlan?: FinishRackPlan;
 };

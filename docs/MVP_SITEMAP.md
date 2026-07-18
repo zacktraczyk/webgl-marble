@@ -6,7 +6,7 @@
 | ------------- | --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
 | Race library  | `/`                               | List races saved in this browser, preview the first leg, and open a race to edit or play.                                           |
 | Race builder  | `/race-builder?race=:id`          | Name a race, choose its starting team count, add/order/duplicate/delete legs, and show whether the race can produce one winner.     |
-| Leg builder   | `/leg-builder?race=:id&leg=:id`   | Load one serialized leg into the level builder, save edits locally, and preview that leg with the race's marble rules and era finish plan. |
+| Leg builder   | `/leg-builder?race=:id&leg=:id`   | Load one serialized leg into the leg builder, save edits locally, and preview that leg with the race's marble rules and era finish plan. |
 | Race view     | `/race?race=:id`                  | Play legs in order, eliminate the last marble after each leg, rebuild the remaining field in the next leg, and announce the winner. |
 | Developer Lab | `/dev/`                           | Keep the original physics, collision, rendering, and race prototype screens available for local development.                        |
 
