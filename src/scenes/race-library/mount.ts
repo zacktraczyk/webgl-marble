@@ -1,4 +1,8 @@
 import {
+  DEFAULT_MARBLES_PER_TEAM,
+  DEFAULT_PARTICIPANT_COUNT,
+  MARBLES_PER_TEAM_OPTIONS,
+  MAX_RACE_PARTICIPANTS,
   RaceRepository,
   createDefaultRace,
   isRacePlayable,
@@ -18,10 +22,81 @@ export const mountRaceLibrary = () => {
   const builderUrl = (raceId: string) =>
     `/race-builder?race=${encodeURIComponent(raceId)}`;
 
-  const createRace = () => {
-    const race = repository.create(createDefaultRace());
-    window.location.assign(builderUrl(race.id));
+  // The create dialog collects name + setup up front; the race document is
+  // only persisted on submit, so cancelling leaves no orphan "Untitled race".
+  const dialog = document.querySelector<HTMLDialogElement>("#create-dialog");
+  const form = document.querySelector<HTMLFormElement>("#create-form");
+  const nameInput = document.querySelector<HTMLInputElement>("#create-name");
+  const teamsMinus =
+    document.querySelector<HTMLButtonElement>("#create-teams-minus");
+  const teamsPlus =
+    document.querySelector<HTMLButtonElement>("#create-teams-plus");
+  const teamCount =
+    document.querySelector<HTMLOutputElement>("#create-team-count");
+  const marblesSlider =
+    document.querySelector<HTMLInputElement>("#create-marbles");
+  const marblesOutput = document.querySelector<HTMLOutputElement>(
+    "#create-marbles-output"
+  );
+  const derived = document.querySelector<HTMLElement>("#create-derived");
+  const cancel = document.querySelector<HTMLButtonElement>("#create-cancel");
+
+  let participantCount = DEFAULT_PARTICIPANT_COUNT;
+
+  const renderCreateForm = () => {
+    if (
+      !teamCount ||
+      !teamsMinus ||
+      !teamsPlus ||
+      !marblesSlider ||
+      !marblesOutput ||
+      !derived
+    )
+      return;
+    teamCount.value = `${participantCount}`;
+    teamsMinus.disabled = participantCount <= 2;
+    teamsPlus.disabled = participantCount >= MAX_RACE_PARTICIPANTS;
+    const marblesPerTeam = MARBLES_PER_TEAM_OPTIONS[Number(marblesSlider.value)];
+    marblesOutput.value = `${marblesPerTeam}`;
+    const legs = participantCount - 1;
+    derived.textContent = `${participantCount} teams → ${legs} legs, one team knocked out per leg. Losers' marbles carry over.`;
   };
+
+  const openCreateDialog = () => {
+    if (!dialog || !nameInput || !marblesSlider) return;
+    nameInput.value = "";
+    participantCount = DEFAULT_PARTICIPANT_COUNT;
+    marblesSlider.value = `${MARBLES_PER_TEAM_OPTIONS.indexOf(DEFAULT_MARBLES_PER_TEAM)}`;
+    renderCreateForm();
+    dialog.showModal();
+  };
+
+  teamsMinus?.addEventListener("click", () => {
+    participantCount = Math.max(2, participantCount - 1);
+    renderCreateForm();
+  });
+  teamsPlus?.addEventListener("click", () => {
+    participantCount = Math.min(MAX_RACE_PARTICIPANTS, participantCount + 1);
+    renderCreateForm();
+  });
+  marblesSlider?.addEventListener("input", renderCreateForm);
+  cancel?.addEventListener("click", () => dialog?.close());
+  // Clicks on the backdrop land on the dialog element itself.
+  dialog?.addEventListener("click", (event) => {
+    if (event.target === dialog) dialog.close();
+  });
+  form?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    if (!marblesSlider) return;
+    const race = repository.create(
+      createDefaultRace({
+        name: nameInput?.value,
+        participantCount,
+        marblesPerTeam: MARBLES_PER_TEAM_OPTIONS[Number(marblesSlider.value)],
+      })
+    );
+    window.location.assign(builderUrl(race.id));
+  });
 
   const renderLibrary = () => {
     if (!grid || !template || !createTile) return;
@@ -95,7 +170,7 @@ export const mountRaceLibrary = () => {
   for (const button of document.querySelectorAll<HTMLButtonElement>(
     "[data-create-race]"
   )) {
-    button.addEventListener("click", createRace);
+    button.addEventListener("click", openCreateDialog);
   }
   renderLibrary();
 };

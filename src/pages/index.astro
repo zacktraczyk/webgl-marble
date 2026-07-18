@@ -56,6 +56,83 @@ import Tooltip from "../ui/Tooltip.astro";
     </section>
   </main>
 
+  <dialog
+    id="create-dialog"
+    aria-label="New race"
+    class="m-auto w-[26rem] max-w-[calc(100vw-2.5rem)] rounded-[1.25rem] bg-panel p-7 text-ink shadow-[0_6px_0_var(--color-shadow)] backdrop:bg-black/60"
+  >
+    <form id="create-form" novalidate>
+      <label for="create-name" class="sr-only">Race name</label>
+      <input
+        id="create-name"
+        type="text"
+        maxlength="80"
+        autocomplete="off"
+        placeholder="Untitled race"
+        class="block w-full border-0 bg-transparent p-0 text-[1.75rem] font-extrabold tracking-[-0.02em] leading-tight text-ink caret-brand placeholder:text-ink-faint focus:outline-none"
+      />
+
+      <div class="mt-7 flex items-center justify-between gap-4">
+        <p class="text-sm font-bold text-ink">Starting teams</p>
+        <div class="flex items-center rounded-full bg-canvas">
+          <button
+            id="create-teams-minus"
+            type="button"
+            aria-label="Remove a starting team"
+            class="size-9 rounded-full text-ink-dim hover:bg-raise hover:text-ink disabled:text-ink-faint/50 disabled:hover:bg-transparent"
+            >−</button
+          >
+          <output
+            id="create-team-count"
+            class="min-w-9 text-center text-sm font-bold tabular-nums text-ink"
+            >4</output
+          >
+          <button
+            id="create-teams-plus"
+            type="button"
+            aria-label="Add a starting team"
+            class="size-9 rounded-full text-ink-dim hover:bg-raise hover:text-ink disabled:text-ink-faint/50 disabled:hover:bg-transparent"
+            >+</button
+          >
+        </div>
+      </div>
+
+      <div class="mt-6">
+        <label class="block text-sm font-bold text-ink" for="create-marbles"
+          >Starting marbles per team</label
+        >
+        <div class="mt-3 flex items-center gap-3">
+          <input
+            id="create-marbles"
+            type="range"
+            min="0"
+            max="13"
+            step="1"
+            class="w-full accent-cyan-400"
+          />
+          <output
+            id="create-marbles-output"
+            class="w-16 text-right text-xs tabular-nums text-ink-dim"
+          ></output>
+        </div>
+      </div>
+
+      <p id="create-derived" class="mt-6 text-xs leading-5 text-ink-dim"></p>
+
+      <div class="mt-7 flex items-center justify-end gap-3">
+        <button
+          id="create-cancel"
+          type="button"
+          class="pill pill-ghost text-sm hover:transform-none"
+          >Cancel</button
+        >
+        <button type="submit" class="pill pill-primary text-sm"
+          >Create race</button
+        >
+      </div>
+    </form>
+  </dialog>
+
   <Tooltip />
 
   <!-- The whole card is one link to the race's pre-launch screen. The
