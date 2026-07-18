@@ -3,7 +3,7 @@ import {
   createGridLayout,
   snapDeltaToGrid,
   snapPointToGrid,
-} from "../src/scenes/level-builder/grid.ts";
+} from "../src/game/level/grid.ts";
 
 const bounds = { min: [-705, -390], max: [705, 270] };
 

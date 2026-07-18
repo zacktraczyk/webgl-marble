@@ -11,8 +11,25 @@ import type {
   SpawnPointVariant,
 } from "../../editor/levelDocument";
 import Stage from "../../engine/stage";
-import { createGridLayout, type GridWorldBounds } from "./grid";
-import { AuthoredLevel } from "./level";
+import {
+  AuthoredLevel,
+  STAGE_HEIGHT,
+  STAGE_WIDTH,
+  MAX_MARBLE_RADIUS,
+  applyTopSliderSpawnLayout,
+  createCourseBoundaries,
+  createDefaultCourse,
+  createGridLayout,
+  createPusher,
+  createSpawnPoint,
+  createWall,
+  isCreationTool,
+  isPusherTool,
+  SelectedTool,
+  type GridWorldBounds,
+  type RoundConfiguration,
+} from "../../game/level";
+import { RaceController } from "../../game/race/controller";
 import { BuilderCameraController } from "./ui/cameraController";
 import { BuilderControls } from "./ui/controls";
 import {
@@ -20,28 +37,11 @@ import {
   readRoundConfiguration,
   readWallThickness,
 } from "./ui/settings";
-import { STAGE_HEIGHT, STAGE_WIDTH } from "./constants";
-import {
-  applyTopSliderSpawnLayout,
-  createCourseBoundaries,
-  createDefaultCourse,
-  createPusher,
-  createSpawnPoint,
-  createWall,
-} from "./level/objects";
-import { MAX_MARBLE_RADIUS } from "./constants";
-import { RaceController } from "./race";
 import { resolveBuilderUi, type BuilderUi } from "./ui";
 import { GridOverlay } from "./ui/gridOverlay";
 import { MotionInspectorController } from "./ui/motionInspector";
 import { updateBuilderInterface } from "./ui/presenter";
 import { TooltipController } from "../../components/tooltip";
-import {
-  isCreationTool,
-  isPusherTool,
-  SelectedTool,
-  type RoundConfiguration,
-} from "./types";
 
 export type LevelBuilderOptions = {
   initialLevel?: SerializedLevel;

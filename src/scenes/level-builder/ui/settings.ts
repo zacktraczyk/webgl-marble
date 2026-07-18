@@ -9,8 +9,8 @@ import {
   MIN_STAGE_WIDTH,
   MIN_WALL_THICKNESS,
   STAGE_SIZE_STEP,
-} from "../constants";
-import type { RoundConfiguration } from "../types";
+} from "../../../game/level/constants";
+import type { RoundConfiguration } from "../../../game/level/types";
 import type { BuilderUi } from ".";
 import { clampInteger, clampStepInteger } from "./input";
 

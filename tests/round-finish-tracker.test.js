@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { RoundFinishTracker } from "../src/scenes/level-builder/race/roundFinishTracker.ts";
+import { RoundFinishTracker } from "../src/game/race/roundFinishTracker.ts";
 
 describe("round finish tracker", () => {
   test("first team to finish claims the leftmost bay", () => {

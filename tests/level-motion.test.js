@@ -14,8 +14,8 @@ import {
   PUSHER_LINEAR_SPEEDS,
   PUSHER_PERIODS,
   sliderPeriodForRange,
-} from "../src/scenes/level-builder/level/objects.ts";
-import { SelectedTool } from "../src/scenes/level-builder/types.ts";
+} from "../src/game/level/objects.ts";
+import { SelectedTool } from "../src/game/level/types.ts";
 
 const authored = (data, id = "pusher") => ({ ...data, id });
 

@@ -13,8 +13,9 @@ import {
   MAX_MARBLE_RADIUS,
   MIN_MARBLE_RADIUS,
   STAGING_MARBLE_GAP,
-} from "../level-builder/constants";
-import type { RoundConfiguration } from "../level-builder/types";
+} from "../../game/level/constants";
+import type { RoundConfiguration } from "../../game/level/types";
+import { roundConfigurationFromFinishPlan } from "../../game/race/legRound";
 import { LegInstance } from "./legInstance";
 import { computeLegStackLayout, type LegFrame } from "./legStack";
 import { fallbackEliminationIndex, RaceProgression } from "./progression";
@@ -590,21 +591,10 @@ export class RacePlayerRuntime {
   }
 
   private createRoundConfiguration(legIndex: number): RoundConfiguration {
-    const plan = this.finishSchedule[legIndex];
-    return {
-      // Leg `i` runs with the field it inherits: N participants minus the `i`
-      // teams eliminated on the legs before it. Eliminated teams' marbles are
-      // redistributed, so the per-team count grows leg over leg.
-      teamCount: plan.activeTeams,
-      marblesPerTeam: plan.marblesPerTeam,
-      releaseIntervalMs: this.raceDocument.releaseIntervalMs,
-      finishPlan: {
-        bayCount: plan.bayCount,
-        xBayCount: plan.xBayCount,
-        rackHeight: plan.rackHeight,
-        marbleRadius: plan.marbleRadius,
-      },
-    };
+    return roundConfigurationFromFinishPlan(
+      this.finishSchedule[legIndex],
+      this.raceDocument.releaseIntervalMs
+    );
   }
 
   private bindControls(signal: AbortSignal) {

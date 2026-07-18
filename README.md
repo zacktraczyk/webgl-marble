@@ -67,5 +67,14 @@ npm run preview
 | `bun lint:fix`   | Fix ESLint issues            |
 | `bun type-check` | Run TypeScript type checking |
 | `bun format`     | Format code with Prettier    |
-| `bun test`       | Run tests (placeholder)      |
+| `bun test`       | Run unit tests (Bun)         |
 | `bun clean`      | Clean build artifacts        |
+
+## Layout
+
+Product code lives under `src/` with intended dependency direction:
+
+`pages` → `scenes` → `game` / `editor` / `races` → `engine`
+
+Shared level constants, grid helpers, and race simulation (`RaceController`) live in `game/`, not under individual scenes.
+

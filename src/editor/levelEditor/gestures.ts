@@ -1,5 +1,5 @@
 import type { Vec2 } from "../../engine/core/transform";
-import type { PusherTool } from "../../scenes/level-builder/types";
+import type { PusherTool } from "../../game/level/types";
 import type { LevelObjectData, LevelObjectMotion } from "../levelDocument";
 import type { LevelObjectShape, ResizeHandle } from "../levelGeometry";
 

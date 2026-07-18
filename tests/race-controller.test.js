@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { TEAM_COLORS } from "../src/game/race/staging.ts";
-import { RaceController } from "../src/scenes/level-builder/race/index.ts";
+import { RaceController } from "../src/game/race/controller.ts";
 
 describe("race controller", () => {
   test("places an out-of-bounds marble into the leftmost unclaimed bay", () => {

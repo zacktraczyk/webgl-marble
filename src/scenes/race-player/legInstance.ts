@@ -3,9 +3,9 @@ import type { WorldRect } from "../../engine/camera/fit";
 import type Stage from "../../engine/stage";
 import type { SerializedLevel } from "../../editor/levelDocument";
 import type { RaceLegDocument } from "../../races/types";
-import { AuthoredLevel } from "../level-builder/level";
-import { RaceController, type ExternalRaceMode } from "../level-builder/race";
-import type { RoundConfiguration } from "../level-builder/types";
+import { AuthoredLevel } from "../../game/level/authoredLevel";
+import { RaceController, type ExternalRaceMode } from "../../game/race/controller";
+import type { RoundConfiguration } from "../../game/level/types";
 import type { LegFrame } from "./legStack";
 
 /**

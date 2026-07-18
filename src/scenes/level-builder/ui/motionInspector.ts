@@ -11,8 +11,8 @@ import {
   PUSHER_DEFAULT_RANGE,
   PUSHER_PERIODS,
   type PusherSpeed,
-} from "../level/objects";
-import type { AuthoredLevel } from "../level";
+} from "../../../game/level/objects";
+import type { AuthoredLevel } from "../../../game/level/authoredLevel";
 import type { BuilderUi } from ".";
 import { clampInteger } from "./input";
 

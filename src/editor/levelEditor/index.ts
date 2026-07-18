@@ -1,16 +1,11 @@
 import type { Vec2 } from "../../engine/core/transform";
 import type Stage from "../../engine/stage";
-import { GRID_SIZE } from "../../scenes/level-builder/constants";
-import {
-  snapDeltaToGrid,
-  snapPointToGrid,
-  type GridLayout,
-} from "../../scenes/level-builder/grid";
+import type { GridLayout } from "../../game/level/grid";
 import {
   isPusherTool,
   SelectedTool,
   type PusherTool,
-} from "../../scenes/level-builder/types";
+} from "../../game/level/types";
 import type { LevelObjectData } from "../levelDocument";
 import type {
   EditorGesture,
@@ -20,30 +15,40 @@ import type {
   WallDraft,
   WallEndpointFeedback,
 } from "./gestures";
+import {
+  updateMarqueeDrag,
+  updateMotionRangeDrag,
+  updateMoveDrag,
+  updatePlaceDrag,
+  updateTransformDrag,
+  updateWallDrag,
+  updateWallEndpointDrag,
+} from "./gestureDrag";
+import {
+  endpointAt,
+  findWallEndpointTarget,
+  motionRangeHandleAt,
+  resizeHandleAt,
+  rotationHandleAt,
+  type HandleTestDeps,
+  type WallEndpointTarget,
+} from "./handles";
 import { LevelEditorKeyboard } from "./keyboard";
 import { LevelEditorSelection } from "./selection";
-import { oscillationPeriodForRange } from "../levelMotion";
+import {
+  snapPlacementPoint,
+  snapWallEndpoint,
+  type SnapDeps,
+} from "./snap";
+import { HANDLE_HIT_RADIUS, MIN_WALL_LENGTH } from "./constants";
 import {
   applyLevelObjectShape,
-  boundsIntersect,
-  constrainDeltaToAxis,
-  constrainPointToAngle,
-  findNearestPointIndex,
-  getLevelObjectBounds,
   getLevelObjectShape,
-  getRotationHandle,
-  getResizeAnchors,
   getWallEndpoints,
-  isLevelObjectRotatable,
-  isLevelObjectResizable,
   moveShape,
   pickLevelObject,
   resizeHandleCursor,
-  resizeShape,
-  rotateShape,
   setWallEndpoints,
-  type Bounds,
-  type LevelObjectShape,
   type ResizeHandle,
 } from "../levelGeometry";
 
@@ -71,27 +76,11 @@ export type {
   WallDraft,
   WallEndpointFeedback,
 } from "./gestures";
+export type {
+  WallEndpointExclusion,
+  WallEndpointTarget,
+} from "./handles";
 export { EditorOverlay } from "./overlay";
-
-type WallObject = Extract<LevelObjectData, { prefab: "wall" }>;
-type WallEndpointTarget = Omit<WallEndpointFeedback, "kind"> & {
-  object: WallObject;
-};
-type WallEndpointExclusion = Pick<WallEndpointTarget, "objectId" | "endpoint">;
-
-const SIZE_SNAP_STEP = GRID_SIZE / 5;
-const ROTATION_SNAP_STEP = Math.PI / 12;
-const ROTATION_HANDLE_OFFSET = 28;
-const HANDLE_HIT_RADIUS = 8;
-const ENDPOINT_SNAP_RADIUS = 12;
-const DRAG_THRESHOLD = 3;
-const MIN_OBJECT_SIZE = GRID_SIZE * 0.4;
-const MIN_WALL_LENGTH = GRID_SIZE * 0.4;
-
-const boundsFromPoints = (first: Vec2, second: Vec2): Bounds => ({
-  min: [Math.min(first[0], second[0]), Math.min(first[1], second[1])],
-  max: [Math.max(first[0], second[0]), Math.max(first[1], second[1])],
-});
 
 export class LevelEditorController {
   private readonly stage: Stage;
@@ -292,6 +281,47 @@ export class LevelEditorController {
     return this.getObjects().find((object) => object.id === id) ?? null;
   }
 
+  private get handleDeps(): HandleTestDeps {
+    return {
+      worldToScreen: (point) =>
+        this.stage.camera.worldToScreen(...point) as Vec2,
+      screenDistance: this.screenDistance.bind(this),
+      getObjects: this.getObjects,
+      getDefaultWallThickness: this.getDefaultWallThickness,
+      cameraZoom: this.stage.camera.zoom,
+    };
+  }
+
+  private get snapDeps(): SnapDeps {
+    return {
+      worldToScreen: (point) =>
+        this.stage.camera.worldToScreen(...point) as Vec2,
+      getGridSnapEnabled: this.getGridSnapEnabled,
+      getGridLayout: this.getGridLayout,
+      findWallEndpointTarget: (screenPoint, maximumDistance, options) =>
+        findWallEndpointTarget(
+          this.handleDeps,
+          screenPoint,
+          maximumDistance,
+          options
+        ),
+      setEndpointFeedback: (target, kind) =>
+        this.showEndpointFeedback(target, kind),
+    };
+  }
+
+  private get dragDeps() {
+    return {
+      screenDistance: this.screenDistance.bind(this),
+      getDefaultWallThickness: this.getDefaultWallThickness,
+      getGridSnapEnabled: this.getGridSnapEnabled,
+      getGridLayout: this.getGridLayout,
+      getObjects: this.getObjects,
+      findObject: (id: string) => this.findObject(id),
+      onObjectsChange: this.callbacks.onObjectsChange.bind(this.callbacks),
+    };
+  }
+
   private screenPoint(event: PointerEvent | WheelEvent): Vec2 {
     const bounds = this.stage.canvas.getBoundingClientRect();
     return [event.clientX - bounds.left, event.clientY - bounds.top];
@@ -396,60 +426,6 @@ export class LevelEditorController {
     return this.creationToolActive && (modifier.metaKey || modifier.ctrlKey);
   }
 
-  private endpointAt(object: LevelObjectData, screenPoint: Vec2) {
-    if (object.prefab !== "wall") {
-      return null;
-    }
-    const { start, end } = getWallEndpoints(object);
-    const startScreen = this.stage.camera.worldToScreen(...start);
-    const endScreen = this.stage.camera.worldToScreen(...end);
-    if (this.screenDistance(startScreen, screenPoint) <= HANDLE_HIT_RADIUS) {
-      return "start" as const;
-    }
-    if (this.screenDistance(endScreen, screenPoint) <= HANDLE_HIT_RADIUS) {
-      return "end" as const;
-    }
-    return null;
-  }
-
-  private wallEndpointTargetAt(
-    screenPoint: Vec2,
-    maximumDistance: number,
-    {
-      selectableOnly = false,
-      exclude,
-    }: {
-      selectableOnly?: boolean;
-      exclude?: WallEndpointExclusion;
-    } = {}
-  ): WallEndpointTarget | null {
-    const candidates = this.getObjects().flatMap((object) => {
-      if (object.prefab !== "wall" || (selectableOnly && object.locked)) {
-        return [];
-      }
-      const { start, end } = getWallEndpoints(object);
-      return (["start", "end"] as const)
-        .filter(
-          (endpoint) =>
-            object.id !== exclude?.objectId || endpoint !== exclude.endpoint
-        )
-        .map((endpoint) => ({
-          object,
-          objectId: object.id,
-          endpoint,
-          position: endpoint === "start" ? start : end,
-        }));
-    });
-    const nearestIndex = findNearestPointIndex(
-      candidates.map((candidate) =>
-        this.stage.camera.worldToScreen(...candidate.position)
-      ),
-      screenPoint,
-      maximumDistance
-    );
-    return nearestIndex === null ? null : candidates[nearestIndex];
-  }
-
   private showEndpointFeedback(
     target: WallEndpointTarget | null,
     kind: WallEndpointFeedback["kind"]
@@ -462,106 +438,6 @@ export class LevelEditorController {
           kind,
         }
       : null;
-  }
-
-  private resizeHandleAt(object: LevelObjectData, screenPoint: Vec2) {
-    if (!isLevelObjectResizable(object)) {
-      return null;
-    }
-    const shape = getLevelObjectShape(object, this.getDefaultWallThickness());
-    for (const anchor of getResizeAnchors(shape)) {
-      const anchorScreen = this.stage.camera.worldToScreen(...anchor.position);
-      if (this.screenDistance(anchorScreen, screenPoint) <= HANDLE_HIT_RADIUS) {
-        return anchor.handle;
-      }
-    }
-    return null;
-  }
-
-  private rotationHandleAt(object: LevelObjectData, screenPoint: Vec2) {
-    if (!isLevelObjectRotatable(object)) {
-      return false;
-    }
-    const offset =
-      ROTATION_HANDLE_OFFSET /
-      Math.max(Math.abs(this.stage.camera.zoom), 0.001);
-    const handle = getRotationHandle(
-      getLevelObjectShape(object, this.getDefaultWallThickness()),
-      offset
-    );
-    return (
-      this.screenDistance(
-        this.stage.camera.worldToScreen(...handle.position),
-        screenPoint
-      ) <= HANDLE_HIT_RADIUS
-    );
-  }
-
-  private motionRangeHandleAt(object: LevelObjectData, screenPoint: Vec2) {
-    if (object.motion?.type !== "oscillate") {
-      return false;
-    }
-    const center = getLevelObjectShape(
-      object,
-      this.getDefaultWallThickness()
-    ).position;
-    const handle: Vec2 = [
-      center[0] + object.motion.vector[0],
-      center[1] + object.motion.vector[1],
-    ];
-    return (
-      this.screenDistance(
-        this.stage.camera.worldToScreen(...handle),
-        screenPoint
-      ) <=
-      HANDLE_HIT_RADIUS + 2
-    );
-  }
-
-  private snapPlacementPoint(
-    point: Vec2,
-    free: boolean,
-    exclude?: WallEndpointExclusion
-  ) {
-    if (free) {
-      this.endpointFeedback = null;
-      return [...point] as Vec2;
-    }
-    const target = this.wallEndpointTargetAt(
-      this.stage.camera.worldToScreen(...point),
-      ENDPOINT_SNAP_RADIUS,
-      { exclude }
-    );
-    this.showEndpointFeedback(target, "snap");
-    if (target) {
-      return [...target.position] as Vec2;
-    }
-    return this.getGridSnapEnabled()
-      ? snapPointToGrid(point, this.getGridLayout())
-      : ([...point] as Vec2);
-  }
-
-  private snapWallEndpoint(
-    fixed: Vec2,
-    point: Vec2,
-    { free, constrain }: { free: boolean; constrain: boolean },
-    exclude?: WallEndpointExclusion
-  ) {
-    if (free) {
-      this.endpointFeedback = null;
-      return [...point] as Vec2;
-    }
-    if (constrain) {
-      this.endpointFeedback = null;
-      const gridStep = this.getGridLayout().step;
-      return constrainPointToAngle(
-        fixed,
-        point,
-        ROTATION_SNAP_STEP,
-        this.getGridSnapEnabled() ? (gridStep[0] + gridStep[1]) / 2 : 0
-      );
-    }
-    return this.snapPlacementPoint(point, false, exclude);
   }
 
   private beginPan(event: PointerEvent, screenPoint: Vec2) {
@@ -629,6 +505,8 @@ export class LevelEditorController {
     }
 
     const temporarySelection = this.isTemporarySelection(event);
+    const handleDeps = this.handleDeps;
+    const snapDeps = this.snapDeps;
 
     if (
       this.activeTool === SelectedTool.Wall &&
@@ -640,9 +518,9 @@ export class LevelEditorController {
       const anchored = existingAnchor !== null;
       const start = existingAnchor
         ? ([...existingAnchor] as Vec2)
-        : this.snapPlacementPoint(worldPoint, event.altKey);
+        : snapPlacementPoint(snapDeps, worldPoint, event.altKey);
       const end = anchored
-        ? this.snapWallEndpoint(start, worldPoint, {
+        ? snapWallEndpoint(snapDeps, start, worldPoint, {
             free: event.altKey,
             constrain: event.shiftKey,
           })
@@ -684,7 +562,7 @@ export class LevelEditorController {
     const selectedObject = this.selectedObject;
     if (
       selectedObject &&
-      this.motionRangeHandleAt(selectedObject, screenPoint) &&
+      motionRangeHandleAt(handleDeps, selectedObject, screenPoint) &&
       !this.readOnly
     ) {
       if (!selectedObject.motion) {
@@ -703,7 +581,7 @@ export class LevelEditorController {
       return;
     }
     const directEndpointTarget = temporarySelection
-      ? this.wallEndpointTargetAt(screenPoint, HANDLE_HIT_RADIUS, {
+      ? findWallEndpointTarget(handleDeps, screenPoint, HANDLE_HIT_RADIUS, {
           selectableOnly: true,
         })
       : null;
@@ -712,7 +590,9 @@ export class LevelEditorController {
       (selectedObject?.prefab === "wall" ? selectedObject : null);
     const endpoint =
       directEndpointTarget?.endpoint ??
-      (endpointObject ? this.endpointAt(endpointObject, screenPoint) : null);
+      (endpointObject
+        ? endpointAt(handleDeps, endpointObject, screenPoint)
+        : null);
     if (endpointObject && endpoint && !this.readOnly) {
       if (directEndpointTarget) {
         this.selection.replace(endpointObject.id);
@@ -735,10 +615,10 @@ export class LevelEditorController {
     }
 
     const isRotationHandle = selectedObject
-      ? this.rotationHandleAt(selectedObject, screenPoint)
+      ? rotationHandleAt(handleDeps, selectedObject, screenPoint)
       : false;
     const resizeHandle = selectedObject
-      ? this.resizeHandleAt(selectedObject, screenPoint)
+      ? resizeHandleAt(handleDeps, selectedObject, screenPoint)
       : null;
     if (selectedObject && isRotationHandle && !this.readOnly) {
       this.beginTransform(event, selectedObject, "rotate", screenPoint);
@@ -807,13 +687,15 @@ export class LevelEditorController {
     this.lastPointerScreen = screenPoint;
     if (!this.gesture) {
       const temporarySelection = this.isTemporarySelection(event);
+      const snapDeps = this.snapDeps;
       if (
         this.activeTool === SelectedTool.Wall &&
         this.wallAnchor &&
         !temporarySelection &&
         !this.readOnly
       ) {
-        this.wallPreviewEnd = this.snapWallEndpoint(
+        this.wallPreviewEnd = snapWallEndpoint(
+          snapDeps,
           this.wallAnchor,
           this.worldPoint(screenPoint),
           {
@@ -826,7 +708,8 @@ export class LevelEditorController {
         !temporarySelection &&
         !this.readOnly
       ) {
-        const position = this.snapPlacementPoint(
+        const position = snapPlacementPoint(
+          snapDeps,
           this.worldPoint(screenPoint),
           event.altKey
         );
@@ -858,235 +741,76 @@ export class LevelEditorController {
     }
 
     const worldPoint = this.worldPoint(screenPoint);
-    if (this.gesture.kind === "motion-range") {
-      if (
-        !this.gesture.changed &&
-        this.screenDistance(screenPoint, this.gesture.startScreen) <
-          DRAG_THRESHOLD
-      ) {
-        return;
-      }
-      const object = this.findObject(this.gesture.objectId);
-      if (!object || object.motion?.type !== "oscillate") {
-        this.cancelGesture();
-        return;
-      }
-      const center = getLevelObjectShape(
-        object,
-        this.getDefaultWallThickness()
-      ).position;
-      let vector: Vec2 = [worldPoint[0] - center[0], worldPoint[1] - center[1]];
-      if (event.shiftKey) {
-        vector = constrainDeltaToAxis(vector);
-      }
-      if (!event.altKey && this.getGridSnapEnabled()) {
-        vector = snapDeltaToGrid(vector, this.getGridLayout());
-      }
-      if (Math.hypot(...vector) >= MIN_OBJECT_SIZE) {
-        object.motion.periodMs = oscillationPeriodForRange(
-          object.motion,
-          Math.hypot(...vector)
+    const dragDeps = this.dragDeps;
+    const snapDeps = this.snapDeps;
+    let result: "pending" | "handled" | "cancel";
+
+    switch (this.gesture.kind) {
+      case "motion-range":
+        result = updateMotionRangeDrag(
+          this.gesture,
+          screenPoint,
+          worldPoint,
+          event,
+          dragDeps
         );
-        object.motion.vector = vector;
-        this.gesture.changed = true;
-        this.callbacks.onObjectsChange([object]);
-      }
-      event.preventDefault();
-      return;
-    }
-
-    if (this.gesture.kind === "wall") {
-      this.gesture.end = this.snapWallEndpoint(this.gesture.start, worldPoint, {
-        free: event.altKey,
-        constrain: event.shiftKey,
-      });
-      this.gesture.changed =
-        this.screenDistance(screenPoint, this.gesture.startScreen) >=
-        DRAG_THRESHOLD;
-      event.preventDefault();
-      return;
-    }
-
-    if (this.gesture.kind === "place") {
-      event.preventDefault();
-      return;
-    }
-
-    if (this.gesture.kind === "marquee") {
-      this.gesture.currentWorld = worldPoint;
-      this.gesture.changed =
-        this.screenDistance(screenPoint, this.gesture.startScreen) >=
-        DRAG_THRESHOLD;
-      if (this.gesture.changed) {
-        const selectionBounds = boundsFromPoints(
-          this.gesture.startWorld,
-          this.gesture.currentWorld
+        break;
+      case "wall":
+        result = updateWallDrag(this.gesture, screenPoint, worldPoint, event, {
+          ...dragDeps,
+          snapDeps,
+        });
+        break;
+      case "place":
+        result = updatePlaceDrag();
+        break;
+      case "marquee":
+        result = updateMarqueeDrag(
+          this.gesture,
+          screenPoint,
+          worldPoint,
+          { ...dragDeps, selection: this.selection }
         );
-        const nextSelection = this.gesture.additive
-          ? new Set(this.gesture.initialSelection)
-          : new Set<string>();
-        for (const object of this.getObjects()) {
-          if (
-            !object.locked &&
-            boundsIntersect(
-              selectionBounds,
-              getLevelObjectBounds(object, this.getDefaultWallThickness())
-            )
-          ) {
-            nextSelection.add(object.id);
-          }
-        }
-        this.selection.replaceAll(nextSelection);
-      }
-      event.preventDefault();
-      return;
+        break;
+      case "move":
+        result = updateMoveDrag(
+          this.gesture,
+          screenPoint,
+          worldPoint,
+          event,
+          dragDeps
+        );
+        break;
+      case "wall-endpoint":
+        result = updateWallEndpointDrag(
+          this.gesture,
+          screenPoint,
+          worldPoint,
+          event,
+          { ...dragDeps, snapDeps }
+        );
+        break;
+      case "resize":
+      case "rotate":
+        result = updateTransformDrag(
+          this.gesture,
+          screenPoint,
+          worldPoint,
+          event,
+          dragDeps
+        );
+        break;
+      default:
+        return;
     }
 
-    if (this.gesture.kind === "move") {
-      if (
-        !this.gesture.changed &&
-        this.screenDistance(screenPoint, this.gesture.startScreen) <
-          DRAG_THRESHOLD
-      ) {
-        return;
-      }
-      this.gesture.changed = true;
-      let rawDelta: Vec2 = [
-        worldPoint[0] - this.gesture.startWorld[0],
-        worldPoint[1] - this.gesture.startWorld[1],
-      ];
-      if (event.shiftKey) {
-        rawDelta = constrainDeltaToAxis(rawDelta);
-      }
-      const delta =
-        event.altKey || !this.getGridSnapEnabled()
-          ? rawDelta
-          : snapDeltaToGrid(rawDelta, this.getGridLayout());
-      const changed: LevelObjectData[] = [];
-      for (const [id, original] of this.gesture.originals) {
-        const object = this.findObject(id);
-        if (!object) {
-          continue;
-        }
-        if (object.prefab === "wall" && original.prefab === "wall") {
-          setWallEndpoints(
-            object,
-            [
-              original.properties.start[0] + delta[0],
-              original.properties.start[1] + delta[1],
-            ],
-            [
-              original.properties.end[0] + delta[0],
-              original.properties.end[1] + delta[1],
-            ]
-          );
-        } else {
-          const originalShape = getLevelObjectShape(
-            original,
-            this.getDefaultWallThickness()
-          );
-          applyLevelObjectShape(
-            object,
-            moveShape(originalShape, [
-              originalShape.position[0] + delta[0],
-              originalShape.position[1] + delta[1],
-            ])
-          );
-        }
-        changed.push(object);
-      }
-      this.callbacks.onObjectsChange(changed);
-      event.preventDefault();
+    if (result === "pending") {
       return;
     }
-
-    if (this.gesture.kind === "wall-endpoint") {
-      if (
-        !this.gesture.changed &&
-        this.screenDistance(screenPoint, this.gesture.startScreen) <
-          DRAG_THRESHOLD
-      ) {
-        return;
-      }
-      const object = this.findObject(this.gesture.objectId);
-      if (!object || object.prefab !== "wall") {
-        this.cancelGesture();
-        return;
-      }
-      this.gesture.changed = true;
-      const fixed =
-        this.gesture.endpoint === "start"
-          ? this.gesture.end
-          : this.gesture.start;
-      const endpoint = this.snapWallEndpoint(
-        fixed,
-        worldPoint,
-        {
-          free: event.altKey,
-          constrain: event.shiftKey,
-        },
-        {
-          objectId: this.gesture.objectId,
-          endpoint: this.gesture.endpoint,
-        }
-      );
-      setWallEndpoints(
-        object,
-        this.gesture.endpoint === "start" ? endpoint : this.gesture.start,
-        this.gesture.endpoint === "end" ? endpoint : this.gesture.end
-      );
-      this.callbacks.onObjectsChange([object]);
-      event.preventDefault();
-      return;
-    }
-
-    if (
-      !this.gesture.changed &&
-      this.screenDistance(screenPoint, this.gesture.startScreen) <
-        DRAG_THRESHOLD
-    ) {
-      return;
-    }
-    const object = this.findObject(this.gesture.objectId);
-    if (!object) {
+    if (result === "cancel") {
       this.cancelGesture();
       return;
     }
-    this.gesture.changed = true;
-    let nextShape: LevelObjectShape;
-    if (this.gesture.kind === "resize") {
-      if (!this.gesture.handle) {
-        return;
-      }
-      nextShape = resizeShape(
-        this.gesture.startShape,
-        this.gesture.handle,
-        worldPoint,
-        event.altKey ? 0 : SIZE_SNAP_STEP,
-        MIN_OBJECT_SIZE
-      );
-    } else {
-      const center = this.gesture.startShape.position;
-      const startAngle = Math.atan2(
-        this.gesture.startWorld[1] - center[1],
-        this.gesture.startWorld[0] - center[0]
-      );
-      const currentAngle = Math.atan2(
-        worldPoint[1] - center[1],
-        worldPoint[0] - center[0]
-      );
-      const angleDelta = Math.atan2(
-        Math.sin(currentAngle - startAngle),
-        Math.cos(currentAngle - startAngle)
-      );
-      nextShape = rotateShape(
-        this.gesture.startShape,
-        this.gesture.startShape.rotation + angleDelta,
-        event.altKey ? 0 : ROTATION_SNAP_STEP
-      );
-    }
-    applyLevelObjectShape(object, nextShape);
-    this.callbacks.onObjectsChange([object]);
     event.preventDefault();
   };
 
@@ -1123,7 +847,8 @@ export class LevelEditorController {
       }
     } else if (gesture.kind === "place") {
       if (this.screenDistance(screenPoint, gesture.startScreen) < 8) {
-        const position = this.snapPlacementPoint(
+        const position = snapPlacementPoint(
+          this.snapDeps,
           this.worldPoint(screenPoint),
           event.altKey
         );
@@ -1194,8 +919,9 @@ export class LevelEditorController {
       return;
     }
 
+    const handleDeps = this.handleDeps;
     const directEndpointTarget = temporarySelection
-      ? this.wallEndpointTargetAt(screenPoint, HANDLE_HIT_RADIUS, {
+      ? findWallEndpointTarget(handleDeps, screenPoint, HANDLE_HIT_RADIUS, {
           selectableOnly: true,
         })
       : null;
@@ -1210,14 +936,14 @@ export class LevelEditorController {
     const selectedObject = this.selectedObject;
     if (
       selectedObject &&
-      this.motionRangeHandleAt(selectedObject, screenPoint)
+      motionRangeHandleAt(handleDeps, selectedObject, screenPoint)
     ) {
       this.selection.setHovered(selectedObject.id);
       this.stage.canvas.style.cursor = this.readOnly ? "default" : "crosshair";
       return;
     }
     const selectedEndpoint = selectedObject
-      ? this.endpointAt(selectedObject, screenPoint)
+      ? endpointAt(handleDeps, selectedObject, screenPoint)
       : null;
     if (selectedObject?.prefab === "wall" && selectedEndpoint) {
       const { start, end } = getWallEndpoints(selectedObject);
@@ -1234,13 +960,16 @@ export class LevelEditorController {
       this.stage.canvas.style.cursor = this.readOnly ? "default" : "crosshair";
       return;
     }
-    if (selectedObject && this.rotationHandleAt(selectedObject, screenPoint)) {
+    if (
+      selectedObject &&
+      rotationHandleAt(handleDeps, selectedObject, screenPoint)
+    ) {
       this.selection.setHovered(selectedObject.id);
       this.stage.canvas.style.cursor = this.readOnly ? "default" : "grab";
       return;
     }
     const handle = selectedObject
-      ? this.resizeHandleAt(selectedObject, screenPoint)
+      ? resizeHandleAt(handleDeps, selectedObject, screenPoint)
       : null;
     if (handle) {
       this.selection.setHovered(selectedObject?.id ?? null);

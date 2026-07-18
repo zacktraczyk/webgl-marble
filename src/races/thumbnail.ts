@@ -13,7 +13,7 @@ import {
 } from "../game/prefabs/finishZone";
 import type { Color } from "../engine/vdu/component";
 import { topSliderSpawnClearance } from "../game/prefabs/spawnPoint";
-import { MAX_MARBLE_RADIUS } from "../scenes/level-builder/constants";
+import { MAX_MARBLE_RADIUS } from "../game/level/constants";
 
 export type LevelThumbnailOptions = {
   width?: number;

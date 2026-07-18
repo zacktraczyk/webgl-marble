@@ -23,6 +23,11 @@ import type {
 const GRAVITY_X = 0;
 const GRAVITY_Y = 9.8;
 
+/**
+ * Converts wall-clock milliseconds to simulation seconds.
+ * Uses 0.008 (not 1/1000) so gameplay feels faster than real-time gravity —
+ * keep AuthoredLevel motion on this same scale.
+ */
 export const millisecondsToSimulationSeconds = (milliseconds: number) =>
   milliseconds * 0.008;
 
@@ -57,8 +62,6 @@ class Physics {
     this._narrowPhase = narrowPhase ?? new SATNarrowPhase();
     this._contactSolver = contactSolver ?? new SequentialImpulseSolver();
   }
-
-  private _gravity_enabled: boolean = true;
 
   // Observer
 
@@ -200,10 +203,8 @@ class Physics {
         case "dynamic":
           entity.velocity[0] += entity.acceleration[0] * deltaSeconds;
           entity.velocity[1] += entity.acceleration[1] * deltaSeconds;
-          if (this._gravity_enabled) {
-            entity.velocity[0] += gx;
-            entity.velocity[1] += gy;
-          }
+          entity.velocity[0] += gx;
+          entity.velocity[1] += gy;
           entity.position[0] += entity.velocity[0] * deltaSeconds;
           entity.position[1] += entity.velocity[1] * deltaSeconds;
           entity.rotation += entity.angularVelocity * deltaSeconds;

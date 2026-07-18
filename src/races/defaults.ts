@@ -5,8 +5,8 @@ import {
   COURSE_STROKE_WIDTH,
   STAGE_HEIGHT,
   STAGE_WIDTH,
-} from "../scenes/level-builder/constants";
-import { createDefaultCourse } from "../scenes/level-builder/level/objects";
+} from "../game/level/constants";
+import { createDefaultCourse } from "../game/level/objects";
 import type { RaceDocument, RaceLegDocument, RaceParticipant } from "./types";
 import { RACE_DOCUMENT_VERSION, isValidMarblesPerTeam } from "./types";
 

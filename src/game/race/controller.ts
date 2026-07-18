@@ -1,30 +1,30 @@
-import type { Entity, EntityId } from "../../../engine/core/entity";
-import type { CollisionEvents } from "../../../engine/physics/physics";
-import type Stage from "../../../engine/stage";
-import { marbleDefinition } from "../../../game/prefabs/marble";
+import type { Entity, EntityId } from "../../engine/core/entity";
+import type { CollisionEvents } from "../../engine/physics/physics";
+import type Stage from "../../engine/stage";
+import { marbleDefinition } from "../prefabs/marble";
 import {
   createPackedFinishLayout,
   createPackedFinishPlacements,
   type FinishMarblePlacement,
-} from "../../../game/race/finishGrid";
+} from "./finishGrid";
 import {
   RoundRobinReleaseQueue,
   TEAM_COLORS,
-} from "../../../game/race/staging";
+} from "./staging";
 import {
   DEFAULT_SPAWN_DIRECTION_VARIANCE,
   randomSpawnAngle,
   randomSpawnOffsetsInCircle,
   spawnAreaRadius,
-} from "../../../game/race/spawn";
-import { getLevelObjectMotionPose } from "../../../editor/levelMotion";
-import type { AuthoredLevel } from "../level";
+} from "./spawn";
+import { getLevelObjectMotionPose } from "../../editor/levelMotion";
+import type { AuthoredLevel } from "../level/authoredLevel";
 import {
   MAX_MARBLE_RADIUS,
   MIN_MARBLE_RADIUS,
   STAGING_MARBLE_GAP,
-} from "../constants";
-import type { RacePhase, RoundConfiguration } from "../types";
+} from "../level/constants";
+import type { RacePhase, RoundConfiguration } from "../level/types";
 import { RoundFinishTracker } from "./roundFinishTracker";
 
 type PendingMarble = {

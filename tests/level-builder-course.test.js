@@ -8,11 +8,11 @@ import {
   STAGE_HEIGHT,
   STAGE_SIZE_STEP,
   STAGE_WIDTH,
-} from "../src/scenes/level-builder/constants.ts";
+} from "../src/game/level/constants.ts";
 import {
   createCourseBoundaries,
   createDefaultCourse,
-} from "../src/scenes/level-builder/level/objects.ts";
+} from "../src/game/level/objects.ts";
 import { clampStepInteger } from "../src/scenes/level-builder/ui/input.ts";
 
 describe("level builder course boundaries", () => {

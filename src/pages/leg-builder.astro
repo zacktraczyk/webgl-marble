@@ -13,7 +13,7 @@ import {
   STAGE_HEIGHT,
   STAGE_SIZE_STEP,
   STAGE_WIDTH,
-} from "../scenes/level-builder/constants";
+} from "../game/level/constants";
 import "../styles/global.css";
 ---
 
@@ -1297,160 +1297,13 @@ import "../styles/global.css";
 
 <script>
   import { mountScene } from "../engine/runtime/mountScene";
-  import { computeEraSchedule } from "../game/race/eraSchedule";
-  import { RaceRepository } from "../races";
-  import createScene from "../scenes/level-builder";
-  import {
-    MAX_MARBLE_RADIUS,
-    MIN_MARBLE_RADIUS,
-    STAGING_MARBLE_GAP,
-  } from "../scenes/level-builder/constants";
+  import createScene from "../scenes/leg-builder";
 
-  const byId = (id: string) => document.getElementById(id);
-  const errorElement = byId("builder-error");
-  const builder = byId("level-builder");
-  const sidebar = byId("level-options-sidebar");
-  const sidebarToggle = byId("toggle-sidebar");
-  const openSidebarIcon = sidebarToggle?.querySelector<SVGElement>(
-    '[data-sidebar-icon="open"]'
-  );
-  const closeSidebarIcon = sidebarToggle?.querySelector<SVGElement>(
-    '[data-sidebar-icon="close"]'
-  );
-  const homeLink = byId("builder-home-link") as HTMLAnchorElement | null;
-  const params = new URLSearchParams(window.location.search);
-  const raceId = params.get("race");
-  const legId = params.get("leg");
-  const repository = new RaceRepository();
-  let race = raceId ? repository.get(raceId) : null;
-  let raceLeg = race?.legs.find((leg) => leg.id === legId) ?? null;
-
-  if (race && raceLeg && homeLink) {
-    homeLink.href = `/race-builder?race=${encodeURIComponent(race.id)}`;
-    const label = homeLink.querySelector("span");
-    if (label) {
-      label.textContent = "Race builder";
-    }
-    for (const role of ["team-count", "marbles-per-team", "release-interval"]) {
-      const input = builder?.querySelector<HTMLInputElement>(
-        `[data-role="${role}"]`
-      );
-      if (input) {
-        input.disabled = true;
-        input.title = "This setting is controlled by the race builder";
-      }
-    }
-  }
-
-  const setSidebarOpen = (open: boolean) => {
-    if (!builder || !sidebar || !sidebarToggle) {
-      return;
-    }
-
-    builder.dataset.sidebarOpen = `${open}`;
-    sidebarToggle.setAttribute("aria-expanded", `${open}`);
-    sidebarToggle.setAttribute(
-      "aria-label",
-      open ? "Close options sidebar" : "Open options sidebar"
-    );
-    sidebarToggle.dataset.tooltip = open ? "Close Sidebar" : "Open Sidebar";
-    sidebar.setAttribute("aria-hidden", `${!open}`);
-    sidebar.toggleAttribute("inert", !open);
-    openSidebarIcon?.classList.toggle("hidden", open);
-    closeSidebarIcon?.classList.toggle("hidden", !open);
-  };
-
-  sidebarToggle?.addEventListener("click", () => {
-    setSidebarOpen(builder?.dataset.sidebarOpen !== "true");
-  });
-
-  const legIndex = race?.legs.findIndex((leg) => leg.id === legId) ?? -1;
-
-  // The builder previews this leg exactly as the race player will run it:
-  // the inherited team count plus the era finish plan (bay count, X'd bays,
-  // packed rack height). Only complete races have a full deterministic
-  // schedule; partial races fall back to a per-leg approximation below.
-  const legFinishPlan = (() => {
-    if (!race || !raceLeg) {
-      return null;
-    }
-    if (legIndex < 0 || race.legs.length !== race.participants.length - 1) {
-      return null;
-    }
-    try {
-      const schedule = computeEraSchedule({
-        participantCount: race.participants.length,
-        marblesPerTeam: race.rules.marblesPerTeam,
-        legs: race.legs.map((leg) => ({
-          width: leg.level.size[0],
-          wallThickness: leg.level.settings.wallThickness,
-        })),
-        marbleRadius: MAX_MARBLE_RADIUS,
-        minimumRadius: MIN_MARBLE_RADIUS,
-        gap: STAGING_MARBLE_GAP,
-      });
-      return schedule[legIndex] ?? null;
-    } catch {
-      return null;
-    }
-  })();
-
-  // One team is eliminated per leg, so leg `i` races `participants − i`
-  // teams and splits the race's marble total among them. The era schedule is
-  // exact (row-rounded); an incomplete race gets the even-split approximation.
-  const legRoundConfiguration = (() => {
-    if (!race || !raceLeg) {
-      return null;
-    }
-    const teamCount = legFinishPlan
-      ? legFinishPlan.activeTeams
-      : Math.max(2, race.participants.length - Math.max(legIndex, 0));
-    return {
-      teamCount,
-      marblesPerTeam:
-        legFinishPlan?.marblesPerTeam ??
-        Math.max(
-          1,
-          Math.round(
-            (race.participants.length * race.rules.marblesPerTeam) / teamCount
-          )
-        ),
-      releaseIntervalMs: race.releaseIntervalMs,
-      ...(legFinishPlan
-        ? {
-            finishPlan: {
-              bayCount: legFinishPlan.bayCount,
-              xBayCount: legFinishPlan.xBayCount,
-              rackHeight: legFinishPlan.rackHeight,
-              marbleRadius: legFinishPlan.marbleRadius,
-            },
-          }
-        : {}),
-    };
-  })();
-
+  const errorElement = document.getElementById("builder-error");
   try {
-    const scene = createScene(builder, {
-      ...(race && raceLeg && legRoundConfiguration
-        ? {
-            initialLevel: raceLeg.level,
-            roundConfiguration: legRoundConfiguration,
-            onCommit: (level) => {
-              if (!race || !raceLeg) {
-                return;
-              }
-              raceLeg = {
-                ...raceLeg,
-                level: { ...level, name: raceLeg.name },
-              };
-              race = repository.saveLeg(race.id, raceLeg);
-            },
-          }
-        : {}),
-    });
-    mountScene(scene, {
+    mountScene(createScene(), {
       showFps: true,
-      fpsElement: byId("builder-fps"),
+      fpsElement: document.getElementById("builder-fps"),
       errorElement,
     });
   } catch (error) {

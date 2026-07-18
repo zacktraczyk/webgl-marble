@@ -3,9 +3,9 @@ import type {
   SpawnPointVariant,
 } from "../../../editor/levelDocument";
 import { TEAM_COLORS, TEAM_NAMES } from "../../../game/race/staging";
-import { pusherSpeedForMotion } from "../level/objects";
-import type { RaceSnapshot } from "../race";
-import { SelectedTool, type RoundConfiguration } from "../types";
+import { pusherSpeedForMotion } from "../../../game/level/objects";
+import type { RaceSnapshot } from "../../../game/race/controller";
+import { SelectedTool, type RoundConfiguration } from "../../../game/level/types";
 import type { BuilderUi } from ".";
 
 const key = (label: string) => `<kbd>${label}</kbd>`;
