@@ -213,7 +213,8 @@ export class RaceController {
         wallThickness: this.level.wallThickness,
         bayCount: finishBayCount,
         marblesPerTeam: this.configuration.marblesPerTeam,
-        marbleRadius: MAX_MARBLE_RADIUS,
+        marbleRadius:
+          this.configuration.finishPlan?.marbleRadius ?? MAX_MARBLE_RADIUS,
         minimumRadius: MIN_MARBLE_RADIUS,
         gap: STAGING_MARBLE_GAP,
       };

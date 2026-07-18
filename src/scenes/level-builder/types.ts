@@ -25,13 +25,15 @@ export const isCreationTool = (tool: SelectedTool) =>
 
 export type RacePhase = "ready" | "running" | "paused" | "complete";
 
-/** Era layout for one leg's finish rack, precomputed for the whole race. */
+/** Layout for one leg's finish rack, precomputed for the whole race. */
 export type FinishRackPlan = {
   /** Bays rendered — the era's team count; may exceed the active teams. */
   bayCount: number;
   /** Rightmost bays X'd out for teams eliminated earlier in the era. */
   xBayCount: number;
   rackHeight: number;
+  /** Race-wide marble radius, scaled from the starting field size. */
+  marbleRadius: number;
 };
 
 export type RoundConfiguration = {

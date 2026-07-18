@@ -599,6 +599,7 @@ export class RacePlayerRuntime {
         bayCount: plan.bayCount,
         xBayCount: plan.xBayCount,
         rackHeight: plan.rackHeight,
+        marbleRadius: plan.marbleRadius,
       },
     };
   }
