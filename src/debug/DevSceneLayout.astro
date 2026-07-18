@@ -24,7 +24,7 @@ const DebugTag = debugAs;
 ---
 
 <Layout {title}>
-  <HomeLink />
+  <HomeLink href="/dev" label="Dev home" />
   <p
     class="absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 text-lg text-rose-500"
     id="error"
@@ -73,10 +73,7 @@ const DebugTag = debugAs;
                 FPS: 0.00
               </p>
             </div>
-            <DebugTag
-              id="debug-info"
-              class="mt-6 text-sm leading-10"
-            />
+            <DebugTag id="debug-info" class="mt-6 text-sm leading-10" />
           </div>
         )}
 
