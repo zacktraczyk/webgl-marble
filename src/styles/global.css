@@ -78,6 +78,67 @@
   .pill-play:hover {
     box-shadow: 0 2px 0 var(--color-brand-shadow);
   }
+
+  /* Open/close motion — fade + a short travel, with a gentle overshoot on
+     the way in and a quicker retreat on the way out. Callers keep the
+     element visible until its exit animation finishes (they wait on
+     getAnimations(), so reduced-motion closes instantly). */
+  @media (prefers-reduced-motion: no-preference) {
+    .dialog-rise[open] {
+      animation: rise-in 0.25s cubic-bezier(0.22, 1.4, 0.36, 1);
+    }
+    .dialog-rise[open]::backdrop {
+      animation: fade-in 0.25s ease-out;
+    }
+    .popover-drop:not([hidden]) {
+      transform-origin: top right;
+      animation: drop-in 0.18s cubic-bezier(0.22, 1.4, 0.36, 1);
+    }
+    .dialog-rise.is-closing[open] {
+      animation: rise-out 0.15s ease-in forwards;
+    }
+    .dialog-rise.is-closing[open]::backdrop {
+      animation: fade-out 0.15s ease-in forwards;
+    }
+    .popover-drop.is-closing:not([hidden]) {
+      animation: drop-out 0.15s ease-in forwards;
+    }
+  }
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem) scale(0.98);
+  }
+}
+@keyframes rise-out {
+  to {
+    opacity: 0;
+    transform: translateY(0.5rem) scale(0.98);
+  }
+}
+@keyframes drop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-0.375rem) scale(0.96);
+  }
+}
+@keyframes drop-out {
+  to {
+    opacity: 0;
+    transform: translateY(-0.25rem) scale(0.96);
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes fade-out {
+  to {
+    opacity: 0;
+  }
 }
 
 button,

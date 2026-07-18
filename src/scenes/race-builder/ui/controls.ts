@@ -5,6 +5,7 @@ import {
   createDefaultParticipants,
   requiredLegCount,
 } from "../../../races";
+import { createExitAnimator } from "../../../ui/exitAnimation";
 import { wireLegListReorder } from "./dragReorder";
 import type { RaceBuilderContext } from "./context";
 import { fitNameInput } from "./render";
@@ -31,14 +32,28 @@ export const bindRaceBuilderControls = (
     stickyHeaderObserver.observe(ui.legsDivider);
   }
 
+  const popoverExit = ui.setupPopover
+    ? createExitAnimator(ui.setupPopover)
+    : null;
   const setSetupPopoverOpen = (open: boolean) => {
     if (!ui.setupToggle || !ui.setupPopover) return;
-    ui.setupPopover.hidden = !open;
     ui.setupToggle.setAttribute("aria-expanded", `${open}`);
+    if (open) {
+      popoverExit?.cancel();
+      ui.setupPopover.hidden = false;
+    } else if (!ui.setupPopover.hidden) {
+      const popover = ui.setupPopover;
+      popoverExit?.close(() => {
+        popover.hidden = true;
+      });
+    }
   };
   ui.setupToggle?.addEventListener(
     "click",
-    () => setSetupPopoverOpen(ui.setupPopover?.hidden ?? false),
+    () =>
+      setSetupPopoverOpen(
+        ui.setupToggle?.getAttribute("aria-expanded") !== "true"
+      ),
     { signal }
   );
   document.addEventListener(

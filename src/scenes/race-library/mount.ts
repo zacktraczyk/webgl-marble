@@ -9,6 +9,7 @@ import {
   renderLevelThumbnail,
   requiredLegCount,
 } from "../../races";
+import { createExitAnimator } from "../../ui/exitAnimation";
 import { attachTooltip } from "../../ui/tooltip";
 
 /** Mounts the race library grid on `/`. */
@@ -62,13 +63,20 @@ export const mountRaceLibrary = () => {
     derived.textContent = `${participantCount} teams → ${legs} legs, one team knocked out per leg. Losers' marbles carry over.`;
   };
 
+  const dialogExit = dialog ? createExitAnimator(dialog) : null;
+  const closeCreateDialog = () => {
+    if (!dialog || !dialog.open) return;
+    dialogExit?.close(() => dialog.close());
+  };
+
   const openCreateDialog = () => {
     if (!dialog || !nameInput || !marblesSlider) return;
+    dialogExit?.cancel();
     nameInput.value = "";
     participantCount = DEFAULT_PARTICIPANT_COUNT;
     marblesSlider.value = `${MARBLES_PER_TEAM_OPTIONS.indexOf(DEFAULT_MARBLES_PER_TEAM)}`;
     renderCreateForm();
-    dialog.showModal();
+    if (!dialog.open) dialog.showModal();
   };
 
   teamsMinus?.addEventListener("click", () => {
@@ -80,10 +88,15 @@ export const mountRaceLibrary = () => {
     renderCreateForm();
   });
   marblesSlider?.addEventListener("input", renderCreateForm);
-  cancel?.addEventListener("click", () => dialog?.close());
+  cancel?.addEventListener("click", closeCreateDialog);
   // Clicks on the backdrop land on the dialog element itself.
   dialog?.addEventListener("click", (event) => {
-    if (event.target === dialog) dialog.close();
+    if (event.target === dialog) closeCreateDialog();
+  });
+  // Escape fires `cancel`; intercept it so the exit animation plays first.
+  dialog?.addEventListener("cancel", (event) => {
+    event.preventDefault();
+    closeCreateDialog();
   });
   form?.addEventListener("submit", (event) => {
     event.preventDefault();
