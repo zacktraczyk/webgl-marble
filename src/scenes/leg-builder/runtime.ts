@@ -1,7 +1,7 @@
 import {
   getLevelObjectBounds,
   hitTestLevelObject,
-} from "../../editor/levelGeometry";
+} from "../../game/level/geometry";
 import type { Vec2 } from "../../engine/core/transform";
 import { EditorOverlay, LevelEditorController } from "../../editor/levelEditor";
 import { LevelHistory } from "../../editor/levelHistory";
@@ -9,7 +9,7 @@ import type {
   LevelObjectData,
   SerializedLevel,
   SpawnPointVariant,
-} from "../../editor/levelDocument";
+} from "../../game/level/document";
 import Stage from "../../engine/stage";
 import {
   AuthoredLevel,
@@ -23,12 +23,15 @@ import {
   createPusher,
   createSpawnPoint,
   createWall,
-  isCreationTool,
-  isPusherTool,
-  SelectedTool,
   type GridWorldBounds,
   type RoundConfiguration,
 } from "../../game/level";
+import {
+  isCreationTool,
+  isPusherTool,
+  pusherKindFromTool,
+  SelectedTool,
+} from "../../editor/tools";
 import { RaceController } from "../../game/race/controller";
 import { BuilderCameraController } from "./ui/cameraController";
 import { BuilderControls } from "./ui/controls";
@@ -42,6 +45,7 @@ import { GridOverlay } from "./ui/gridOverlay";
 import { MotionInspectorController } from "./ui/motionInspector";
 import { updateBuilderInterface } from "./ui/presenter";
 import { TooltipController } from "../../components/tooltip";
+import { setDatasetFlag } from "../playbackTimers";
 
 export type LevelBuilderOptions = {
   initialLevel?: SerializedLevel;
@@ -198,7 +202,9 @@ export class LevelBuilderRuntime {
           return object;
         },
         onPlaceObject: (tool, position) => {
-          const object = this.level.add(createPusher(tool, position));
+          const object = this.level.add(
+            createPusher(pusherKindFromTool(tool), position)
+          );
           this.commitLevelChange();
           return object;
         },
@@ -311,7 +317,10 @@ export class LevelBuilderRuntime {
     const pusherPlacement = this.editorController.pusherPlacementPreview;
     const pusherDraft = pusherPlacement
       ? ({
-          ...createPusher(pusherPlacement.tool, pusherPlacement.position),
+          ...createPusher(
+            pusherKindFromTool(pusherPlacement.tool),
+            pusherPlacement.position
+          ),
           id: "pusher-placement-preview",
         } as LevelObjectData)
       : null;
@@ -556,7 +565,7 @@ export class LevelBuilderRuntime {
       return;
     }
     this.playbackActive = playbackActive;
-    this.ui.root.dataset.previewing = `${playbackActive}`;
+    setDatasetFlag(this.ui.root, "previewing", playbackActive);
     this.editorController.setReadOnly(playbackActive);
     if (playbackActive) {
       this.controls.setPusherLibraryOpen(false);

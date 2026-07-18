@@ -1,4 +1,4 @@
-import type { LevelObjectData, SerializedLevel } from "../editor/levelDocument";
+import type { LevelObjectData, SerializedLevel } from "../game/level/document";
 import type {
   FinishRackFrame,
   FinishRackRect,

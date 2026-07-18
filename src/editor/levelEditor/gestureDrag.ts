@@ -3,7 +3,7 @@ import {
   snapDeltaToGrid,
   type GridLayout,
 } from "../../game/level/grid";
-import type { LevelObjectData } from "../levelDocument";
+import type { LevelObjectData } from "../../game/level/document";
 import {
   applyLevelObjectShape,
   boundsIntersect,
@@ -15,8 +15,8 @@ import {
   rotateShape,
   setWallEndpoints,
   type LevelObjectShape,
-} from "../levelGeometry";
-import { oscillationPeriodForRange } from "../levelMotion";
+} from "../../game/level/geometry";
+import { oscillationPeriodForRange } from "../../game/level/motion";
 import { boundsFromPoints } from "./bounds";
 import {
   DRAG_THRESHOLD,

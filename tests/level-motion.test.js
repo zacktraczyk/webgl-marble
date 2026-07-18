@@ -1,12 +1,12 @@
 import { describe, expect, test } from "bun:test";
-import { LevelDocument } from "../src/editor/levelDocument.ts";
+import { LevelDocument } from "../src/game/level/document.ts";
 import {
   getLevelObjectMotionPose,
   getOscillationPeakSpeed,
   getOscillationEndpoints,
   getRotationPivot,
   oscillationPeriodForRange,
-} from "../src/editor/levelMotion.ts";
+} from "../src/game/level/motion.ts";
 import { levelObjectDefinitions } from "../src/game/prefabs/levelObject.ts";
 import {
   createPusher,
@@ -15,13 +15,12 @@ import {
   PUSHER_PERIODS,
   sliderPeriodForRange,
 } from "../src/game/level/objects.ts";
-import { SelectedTool } from "../src/game/level/types.ts";
 
 const authored = (data, id = "pusher") => ({ ...data, id });
 
 describe("level object motion", () => {
   test("places a slider at the center of its path and reaches both endpoints", () => {
-    const slider = authored(createPusher(SelectedTool.Slider, [100, 200]));
+    const slider = authored(createPusher("slider", [100, 200]));
     const endpoints = getOscillationEndpoints(slider, 15);
 
     expect(slider.properties).toMatchObject({
@@ -46,7 +45,7 @@ describe("level object motion", () => {
 
   test("keeps slider speed constant when its travel distance changes", () => {
     const peakSpeeds = [30, 90, 240].map((range) => {
-      const slider = authored(createPusher(SelectedTool.Slider, [0, 0]));
+      const slider = authored(createPusher("slider", [0, 0]));
       slider.motion.vector = [range, 0];
       slider.motion.periodMs = sliderPeriodForRange(range, "medium");
       const next = getLevelObjectMotionPose(slider, 15, 1).position[0];
@@ -60,7 +59,7 @@ describe("level object motion", () => {
       sliderPeriodForRange(30, "medium") * 8
     );
 
-    const draggedSlider = authored(createPusher(SelectedTool.Slider, [0, 0]));
+    const draggedSlider = authored(createPusher("slider", [0, 0]));
     const originalSpeed = getOscillationPeakSpeed(draggedSlider.motion);
     draggedSlider.motion.periodMs = oscillationPeriodForRange(
       draggedSlider.motion,
@@ -89,7 +88,7 @@ describe("level object motion", () => {
   });
 
   test("keeps a sweeper pivot fixed at its authored first endpoint", () => {
-    const sweeper = authored(createPusher(SelectedTool.Sweeper, [10, 20]));
+    const sweeper = authored(createPusher("sweeper", [10, 20]));
     const quarterTurn = getLevelObjectMotionPose(
       sweeper,
       15,
@@ -103,7 +102,7 @@ describe("level object motion", () => {
   });
 
   test("reverses rotating presets without changing their rest pose", () => {
-    const spinner = authored(createPusher(SelectedTool.Spinner, [0, 0]));
+    const spinner = authored(createPusher("spinner", [0, 0]));
     spinner.motion.direction = -1;
 
     const rest = getLevelObjectMotionPose(spinner, 15, 0);
@@ -118,7 +117,7 @@ describe("level object motion", () => {
   });
 
   test("spawns moving walls as kinematic physics bodies", () => {
-    const slider = authored(createPusher(SelectedTool.Slider, [0, 0]));
+    const slider = authored(createPusher("slider", [0, 0]));
     const [definition] = levelObjectDefinitions(slider, { wallThickness: 15 });
 
     expect(definition.physics?.type).toBe("kinematic");
@@ -128,7 +127,7 @@ describe("level object motion", () => {
     const document = new LevelDocument("Motion course", [800, 800], {
       wallThickness: 15,
     });
-    document.add(createPusher(SelectedTool.Slider, [0, 0]));
+    document.add(createPusher("slider", [0, 0]));
 
     expect(document.serialize()).toMatchObject({
       version: 3,

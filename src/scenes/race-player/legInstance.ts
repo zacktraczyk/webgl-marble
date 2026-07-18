@@ -1,7 +1,7 @@
-import { translateSerializedLevel } from "../../editor/levelTransform";
+import { translateSerializedLevel } from "../../game/level/transform";
 import type { WorldRect } from "../../engine/camera/fit";
 import type Stage from "../../engine/stage";
-import type { SerializedLevel } from "../../editor/levelDocument";
+import type { SerializedLevel } from "../../game/level/document";
 import type { RaceLegDocument } from "../../races/types";
 import { AuthoredLevel } from "../../game/level/authoredLevel";
 import { RaceController, type ExternalRaceMode } from "../../game/race/controller";

@@ -5,25 +5,21 @@ import {
   isPusherTool,
   SelectedTool,
   type PusherTool,
-} from "../../game/level/types";
-import type { LevelObjectData } from "../levelDocument";
+} from "../tools";
+import type { LevelObjectData } from "../../game/level/document";
 import type {
   EditorGesture,
   PusherPlacementPreview,
   SelectionMarquee,
-  TransformGesture,
   WallDraft,
   WallEndpointFeedback,
 } from "./gestures";
 import {
-  updateMarqueeDrag,
-  updateMotionRangeDrag,
-  updateMoveDrag,
-  updatePlaceDrag,
-  updateTransformDrag,
-  updateWallDrag,
-  updateWallEndpointDrag,
-} from "./gestureDrag";
+  handlePointerDown,
+  handlePointerMove,
+  handlePointerUp,
+  type PointerGestureHost,
+} from "./pointerGestures";
 import {
   endpointAt,
   findWallEndpointTarget,
@@ -35,12 +31,8 @@ import {
 } from "./handles";
 import { LevelEditorKeyboard } from "./keyboard";
 import { LevelEditorSelection } from "./selection";
-import {
-  snapPlacementPoint,
-  snapWallEndpoint,
-  type SnapDeps,
-} from "./snap";
-import { HANDLE_HIT_RADIUS, MIN_WALL_LENGTH } from "./constants";
+import { type SnapDeps } from "./snap";
+import { HANDLE_HIT_RADIUS } from "./constants";
 import {
   applyLevelObjectShape,
   getLevelObjectShape,
@@ -49,8 +41,7 @@ import {
   pickLevelObject,
   resizeHandleCursor,
   setWallEndpoints,
-  type ResizeHandle,
-} from "../levelGeometry";
+} from "../../game/level/geometry";
 
 type EditorCallbacks = {
   onObjectsChange(objects: readonly LevelObjectData[]): void;
@@ -322,6 +313,90 @@ export class LevelEditorController {
     };
   }
 
+  private get pointerGestureHost(): PointerGestureHost {
+    const self = this;
+    return {
+      get gesture() {
+        return self.gesture;
+      },
+      set gesture(value) {
+        self.gesture = value;
+      },
+      get wallAnchor() {
+        return self.wallAnchor;
+      },
+      set wallAnchor(value) {
+        self.wallAnchor = value;
+      },
+      get wallPreviewEnd() {
+        return self.wallPreviewEnd;
+      },
+      set wallPreviewEnd(value) {
+        self.wallPreviewEnd = value;
+      },
+      get endpointFeedback() {
+        return self.endpointFeedback;
+      },
+      set endpointFeedback(value) {
+        self.endpointFeedback = value;
+      },
+      get placementPreviewPosition() {
+        return self.placementPreviewPosition;
+      },
+      set placementPreviewPosition(value) {
+        self.placementPreviewPosition = value;
+      },
+      get lastPointerScreen() {
+        return self.lastPointerScreen;
+      },
+      set lastPointerScreen(value) {
+        self.lastPointerScreen = value;
+      },
+      get activeTool() {
+        return self.activeTool;
+      },
+      get readOnly() {
+        return self.readOnly;
+      },
+      handleDeps: this.handleDeps,
+      snapDeps: this.snapDeps,
+      dragDeps: this.dragDeps,
+      selection: this.selection,
+      callbacks: this.callbacks,
+      cameraControls: this.cameraControls,
+      keyboard: this.keyboard,
+      get creationToolActive() {
+        return self.creationToolActive;
+      },
+      get selectedObject() {
+        return self.selectedObject;
+      },
+      get selectedObjects() {
+        return self.selectedObjects;
+      },
+      get cameraZoom() {
+        return self.stage.camera.zoom;
+      },
+      screenPoint: (event) => self.screenPoint(event),
+      worldPoint: (screenPoint) => self.worldPoint(screenPoint),
+      screenDistance: (first, second) => self.screenDistance(first, second),
+      capturePointer: (pointerId) => self.capturePointer(pointerId),
+      releasePointer: (pointerId) => self.releasePointer(pointerId),
+      cancelGesture: () => self.cancelGesture(),
+      updateIdleState: (screenPoint, options) =>
+        self.updateIdleState(screenPoint, options),
+      showEndpointFeedback: (target, kind) =>
+        self.showEndpointFeedback(target, kind),
+      isTemporarySelection: (modifier) => self.isTemporarySelection(modifier),
+      clearWallAnchor: () => self.clearWallAnchor(),
+      getObjects: () => self.getObjects(),
+      getDefaultWallThickness: () => self.getDefaultWallThickness(),
+      setCursor: (cursor) => {
+        self.stage.canvas.style.cursor = cursor;
+      },
+    };
+  }
+
   private screenPoint(event: PointerEvent | WheelEvent): Vec2 {
     const bounds = this.stage.canvas.getBoundingClientRect();
     return [event.clientX - bounds.left, event.clientY - bounds.top];
@@ -440,438 +515,16 @@ export class LevelEditorController {
       : null;
   }
 
-  private beginPan(event: PointerEvent, screenPoint: Vec2) {
-    this.gesture = {
-      kind: "pan",
-      pointerId: event.pointerId,
-      lastScreen: screenPoint,
-    };
-    this.capturePointer(event.pointerId);
-    this.stage.canvas.style.cursor = "grabbing";
-  }
-
-  private beginMove(event: PointerEvent, screenPoint: Vec2) {
-    const originals = new Map(
-      this.selectedObjects.map((object) => [object.id, structuredClone(object)])
-    );
-    this.gesture = {
-      kind: "move",
-      pointerId: event.pointerId,
-      startWorld: this.worldPoint(screenPoint),
-      startScreen: screenPoint,
-      originals,
-      changed: false,
-    };
-    this.capturePointer(event.pointerId);
-    this.stage.canvas.style.cursor = "grabbing";
-  }
-
-  private beginTransform(
-    event: PointerEvent,
-    object: LevelObjectData,
-    kind: TransformGesture["kind"],
-    screenPoint: Vec2,
-    handle?: ResizeHandle
-  ) {
-    this.gesture = {
-      kind,
-      pointerId: event.pointerId,
-      objectId: object.id,
-      handle,
-      startShape: getLevelObjectShape(object, this.getDefaultWallThickness()),
-      startWorld: this.worldPoint(screenPoint),
-      startScreen: screenPoint,
-      changed: false,
-    };
-    this.capturePointer(event.pointerId);
-  }
-
   private readonly pointerDown = (event: PointerEvent) => {
-    const screenPoint = this.screenPoint(event);
-    this.lastPointerScreen = screenPoint;
-    const temporaryPan = this.keyboard.spaceHeld && event.button === 0;
-    if (
-      event.button === 1 ||
-      temporaryPan ||
-      (this.activeTool === SelectedTool.Pan && event.button === 0)
-    ) {
-      this.beginPan(event, screenPoint);
-      event.preventDefault();
-      return;
-    }
-
-    if (event.button !== 0) {
-      return;
-    }
-
-    const temporarySelection = this.isTemporarySelection(event);
-    const handleDeps = this.handleDeps;
-    const snapDeps = this.snapDeps;
-
-    if (
-      this.activeTool === SelectedTool.Wall &&
-      !temporarySelection &&
-      !this.readOnly
-    ) {
-      const worldPoint = this.worldPoint(screenPoint);
-      const existingAnchor = this.wallAnchor;
-      const anchored = existingAnchor !== null;
-      const start = existingAnchor
-        ? ([...existingAnchor] as Vec2)
-        : snapPlacementPoint(snapDeps, worldPoint, event.altKey);
-      const end = anchored
-        ? snapWallEndpoint(snapDeps, start, worldPoint, {
-            free: event.altKey,
-            constrain: event.shiftKey,
-          })
-        : ([...start] as Vec2);
-      this.gesture = {
-        kind: "wall",
-        pointerId: event.pointerId,
-        start,
-        end,
-        startScreen: screenPoint,
-        anchored,
-        changed: false,
-      };
-      this.capturePointer(event.pointerId);
-      event.preventDefault();
-      return;
-    }
-
-    if (
-      isPusherTool(this.activeTool) &&
-      !temporarySelection &&
-      !this.readOnly
-    ) {
-      this.gesture = {
-        kind: "place",
-        pointerId: event.pointerId,
-        tool: this.activeTool,
-        startScreen: screenPoint,
-      };
-      this.capturePointer(event.pointerId);
-      event.preventDefault();
-      return;
-    }
-
-    if (this.activeTool !== SelectedTool.Pointer && !temporarySelection) {
-      return;
-    }
-
-    const selectedObject = this.selectedObject;
-    if (
-      selectedObject &&
-      motionRangeHandleAt(handleDeps, selectedObject, screenPoint) &&
-      !this.readOnly
-    ) {
-      if (!selectedObject.motion) {
-        return;
-      }
-      this.gesture = {
-        kind: "motion-range",
-        pointerId: event.pointerId,
-        objectId: selectedObject.id,
-        startMotion: structuredClone(selectedObject.motion),
-        startScreen: screenPoint,
-        changed: false,
-      };
-      this.capturePointer(event.pointerId);
-      event.preventDefault();
-      return;
-    }
-    const directEndpointTarget = temporarySelection
-      ? findWallEndpointTarget(handleDeps, screenPoint, HANDLE_HIT_RADIUS, {
-          selectableOnly: true,
-        })
-      : null;
-    const endpointObject =
-      directEndpointTarget?.object ??
-      (selectedObject?.prefab === "wall" ? selectedObject : null);
-    const endpoint =
-      directEndpointTarget?.endpoint ??
-      (endpointObject
-        ? endpointAt(handleDeps, endpointObject, screenPoint)
-        : null);
-    if (endpointObject && endpoint && !this.readOnly) {
-      if (directEndpointTarget) {
-        this.selection.replace(endpointObject.id);
-      }
-      const { start, end } = getWallEndpoints(endpointObject);
-      this.gesture = {
-        kind: "wall-endpoint",
-        pointerId: event.pointerId,
-        objectId: endpointObject.id,
-        endpoint,
-        start,
-        end,
-        startScreen: screenPoint,
-        changed: false,
-      };
-      this.showEndpointFeedback(directEndpointTarget, "edit");
-      this.capturePointer(event.pointerId);
-      event.preventDefault();
-      return;
-    }
-
-    const isRotationHandle = selectedObject
-      ? rotationHandleAt(handleDeps, selectedObject, screenPoint)
-      : false;
-    const resizeHandle = selectedObject
-      ? resizeHandleAt(handleDeps, selectedObject, screenPoint)
-      : null;
-    if (selectedObject && isRotationHandle && !this.readOnly) {
-      this.beginTransform(event, selectedObject, "rotate", screenPoint);
-      event.preventDefault();
-      return;
-    }
-    if (selectedObject && resizeHandle && !this.readOnly) {
-      this.beginTransform(
-        event,
-        selectedObject,
-        "resize",
-        screenPoint,
-        resizeHandle
-      );
-      event.preventDefault();
-      return;
-    }
-
-    const pickedObject = pickLevelObject(
-      this.getObjects(),
-      this.worldPoint(screenPoint),
-      4 / Math.max(this.stage.camera.zoom, 0.001),
-      this.getDefaultWallThickness()
-    );
-    if (pickedObject) {
-      if (event.shiftKey) {
-        if (this.selection.has(pickedObject.id)) {
-          this.selection.delete(pickedObject.id);
-          this.updateIdleState(screenPoint);
-          event.preventDefault();
-          return;
-        }
-        this.selection.add(pickedObject.id);
-      } else if (!this.selection.has(pickedObject.id)) {
-        this.selection.replace(pickedObject.id);
-      }
-      this.selection.setHovered(pickedObject.id);
-      if (!this.readOnly) {
-        this.beginMove(event, screenPoint);
-      }
-      event.preventDefault();
-      return;
-    }
-
-    const initialSelection = this.selection.snapshot();
-    if (!event.shiftKey) {
-      this.selection.clear();
-    }
-    const worldPoint = this.worldPoint(screenPoint);
-    this.gesture = {
-      kind: "marquee",
-      pointerId: event.pointerId,
-      startWorld: worldPoint,
-      currentWorld: worldPoint,
-      startScreen: screenPoint,
-      additive: event.shiftKey,
-      initialSelection,
-      changed: false,
-    };
-    this.capturePointer(event.pointerId);
-    event.preventDefault();
+    handlePointerDown(this.pointerGestureHost, event);
   };
 
   private readonly pointerMove = (event: PointerEvent) => {
-    const screenPoint = this.screenPoint(event);
-    this.lastPointerScreen = screenPoint;
-    if (!this.gesture) {
-      const temporarySelection = this.isTemporarySelection(event);
-      const snapDeps = this.snapDeps;
-      if (
-        this.activeTool === SelectedTool.Wall &&
-        this.wallAnchor &&
-        !temporarySelection &&
-        !this.readOnly
-      ) {
-        this.wallPreviewEnd = snapWallEndpoint(
-          snapDeps,
-          this.wallAnchor,
-          this.worldPoint(screenPoint),
-          {
-            free: event.altKey,
-            constrain: event.shiftKey,
-          }
-        );
-      } else if (
-        this.creationToolActive &&
-        !temporarySelection &&
-        !this.readOnly
-      ) {
-        const position = snapPlacementPoint(
-          snapDeps,
-          this.worldPoint(screenPoint),
-          event.altKey
-        );
-        this.placementPreviewPosition = isPusherTool(this.activeTool)
-          ? position
-          : null;
-      } else if (temporarySelection) {
-        this.endpointFeedback = null;
-        this.placementPreviewPosition = null;
-      }
-      this.updateIdleState(screenPoint, {
-        temporarySelection,
-      });
-      return;
-    }
-
-    if (event.pointerId !== this.gesture.pointerId) {
-      return;
-    }
-
-    if (this.gesture.kind === "pan") {
-      this.cameraControls.panByScreen(
-        screenPoint[0] - this.gesture.lastScreen[0],
-        screenPoint[1] - this.gesture.lastScreen[1]
-      );
-      this.gesture.lastScreen = screenPoint;
-      event.preventDefault();
-      return;
-    }
-
-    const worldPoint = this.worldPoint(screenPoint);
-    const dragDeps = this.dragDeps;
-    const snapDeps = this.snapDeps;
-    let result: "pending" | "handled" | "cancel";
-
-    switch (this.gesture.kind) {
-      case "motion-range":
-        result = updateMotionRangeDrag(
-          this.gesture,
-          screenPoint,
-          worldPoint,
-          event,
-          dragDeps
-        );
-        break;
-      case "wall":
-        result = updateWallDrag(this.gesture, screenPoint, worldPoint, event, {
-          ...dragDeps,
-          snapDeps,
-        });
-        break;
-      case "place":
-        result = updatePlaceDrag();
-        break;
-      case "marquee":
-        result = updateMarqueeDrag(
-          this.gesture,
-          screenPoint,
-          worldPoint,
-          { ...dragDeps, selection: this.selection }
-        );
-        break;
-      case "move":
-        result = updateMoveDrag(
-          this.gesture,
-          screenPoint,
-          worldPoint,
-          event,
-          dragDeps
-        );
-        break;
-      case "wall-endpoint":
-        result = updateWallEndpointDrag(
-          this.gesture,
-          screenPoint,
-          worldPoint,
-          event,
-          { ...dragDeps, snapDeps }
-        );
-        break;
-      case "resize":
-      case "rotate":
-        result = updateTransformDrag(
-          this.gesture,
-          screenPoint,
-          worldPoint,
-          event,
-          dragDeps
-        );
-        break;
-      default:
-        return;
-    }
-
-    if (result === "pending") {
-      return;
-    }
-    if (result === "cancel") {
-      this.cancelGesture();
-      return;
-    }
-    event.preventDefault();
+    handlePointerMove(this.pointerGestureHost, event);
   };
 
   private readonly pointerUp = (event: PointerEvent) => {
-    if (!this.gesture || event.pointerId !== this.gesture.pointerId) {
-      return;
-    }
-    const gesture = this.gesture;
-    const screenPoint = this.screenPoint(event);
-    this.lastPointerScreen = screenPoint;
-    this.gesture = null;
-    this.releasePointer(event.pointerId);
-
-    if (gesture.kind === "wall") {
-      const length = Math.hypot(
-        gesture.end[0] - gesture.start[0],
-        gesture.end[1] - gesture.start[1]
-      );
-      if ((gesture.changed || gesture.anchored) && length >= MIN_WALL_LENGTH) {
-        const object = this.callbacks.onCreateWall(gesture.start, gesture.end);
-        this.selection.replace(object.id);
-        if (gesture.anchored) {
-          this.wallAnchor = [...gesture.end];
-          this.wallPreviewEnd = [...gesture.end];
-        } else {
-          this.clearWallAnchor();
-        }
-        this.callbacks.onToolComplete(SelectedTool.Wall);
-      } else if (!gesture.anchored) {
-        this.wallAnchor = [...gesture.start];
-        this.wallPreviewEnd = [...gesture.start];
-      } else {
-        this.wallPreviewEnd = [...gesture.end];
-      }
-    } else if (gesture.kind === "place") {
-      if (this.screenDistance(screenPoint, gesture.startScreen) < 8) {
-        const position = snapPlacementPoint(
-          this.snapDeps,
-          this.worldPoint(screenPoint),
-          event.altKey
-        );
-        const object = this.callbacks.onPlaceObject(gesture.tool, position);
-        this.selection.replace(object.id);
-        this.placementPreviewPosition = null;
-        this.callbacks.onToolComplete(gesture.tool);
-      }
-    } else if (
-      (gesture.kind === "move" ||
-        gesture.kind === "resize" ||
-        gesture.kind === "rotate" ||
-        gesture.kind === "wall-endpoint" ||
-        gesture.kind === "motion-range") &&
-      gesture.changed
-    ) {
-      this.callbacks.onObjectsCommit(this.selectedObjects);
-    }
-
-    this.updateIdleState(screenPoint, {
-      temporarySelection: this.isTemporarySelection(event),
-    });
-    event.preventDefault();
+    handlePointerUp(this.pointerGestureHost, event);
   };
 
   private readonly pointerCancel = (event: PointerEvent) => {

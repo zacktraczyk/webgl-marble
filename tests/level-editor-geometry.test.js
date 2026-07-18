@@ -11,7 +11,7 @@ import {
   pickLevelObject,
   rotateShape,
   resizeShape,
-} from "../src/editor/levelGeometry.ts";
+} from "../src/game/level/geometry.ts";
 import { levelObjectDefinitions } from "../src/game/prefabs/levelObject.ts";
 
 const wall = (overrides = {}) => ({

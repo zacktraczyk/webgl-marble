@@ -70,7 +70,7 @@ export type BuilderUi = {
 export const resolveBuilderUi = (
   rootElement: HTMLElement | null
 ): BuilderUi => {
-  const root = requireElement(rootElement, "level builder");
+  const root = requireElement(rootElement, "leg builder");
   const role = <Element extends HTMLElement = HTMLElement>(
     name: string,
     label = name

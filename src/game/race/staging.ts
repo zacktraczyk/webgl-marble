@@ -67,6 +67,22 @@ export interface FittedMarbleRadiusOptions extends StagingRackGeometry {
   padding?: number;
 }
 
+interface BayPlacementBounds {
+  minimumX: number;
+  maximumX: number;
+  minimumY: number;
+  bottomY: number;
+}
+
+interface PackedLayoutContext {
+  marblesPerTeam: number;
+  marbleRadius: number;
+  pitch: number;
+  candidateSamples: number;
+  bounds: BayPlacementBounds;
+  random: () => number;
+}
+
 const assertPositiveFinite = (value: number, label: string) => {
   if (!Number.isFinite(value) || value <= 0) {
     throw new Error(`${label} must be a positive finite number`);
@@ -80,6 +96,342 @@ const assertTeamCount = (teamCount: number) => {
     teamCount > MAX_TEAMS
   ) {
     throw new Error(`Team count must be between ${MIN_TEAMS} and ${MAX_TEAMS}`);
+  }
+};
+
+const shuffleInPlace = <T>(items: T[], random: () => number) => {
+  for (let index = items.length - 1; index > 0; index--) {
+    const swapIndex = Math.floor(random() * (index + 1));
+    [items[index], items[swapIndex]] = [items[swapIndex], items[index]];
+  }
+  return items;
+};
+
+const stagingBayPlacementBounds = ({
+  bayCenterX,
+  usableWidth,
+  position,
+  height,
+  wallThickness,
+  padding,
+  marbleRadius,
+}: {
+  bayCenterX: number;
+  usableWidth: number;
+  position: Vec2;
+  height: number;
+  wallThickness: number;
+  padding: number;
+  marbleRadius: number;
+}): BayPlacementBounds => ({
+  minimumX: bayCenterX - usableWidth / 2 + marbleRadius,
+  maximumX: bayCenterX + usableWidth / 2 - marbleRadius,
+  minimumY: position[1] - height / 2 + wallThickness + padding + marbleRadius,
+  bottomY: position[1] + height / 2 - wallThickness - padding - marbleRadius,
+});
+
+const collectSupportGapCandidateXs = (
+  packedPositions: Vec2[],
+  pitch: number,
+  bounds: BayPlacementBounds
+): number[] => {
+  const supportGapXs: number[] = [];
+  for (let first = 0; first < packedPositions.length; first++) {
+    const [firstX, firstY] = packedPositions[first];
+    for (let second = first + 1; second < packedPositions.length; second++) {
+      const [secondX, secondY] = packedPositions[second];
+      const deltaX = secondX - firstX;
+      const deltaY = secondY - firstY;
+      const supportDistance = Math.hypot(deltaX, deltaY);
+      if (supportDistance <= 0 || supportDistance > pitch * 2) {
+        continue;
+      }
+      const midpointX = (firstX + secondX) / 2;
+      const midpointY = (firstY + secondY) / 2;
+      const intersectionOffset = Math.sqrt(
+        Math.max(0, pitch ** 2 - (supportDistance / 2) ** 2)
+      );
+      const perpendicularX = -deltaY / supportDistance;
+      for (const direction of [-1, 1]) {
+        const candidateX =
+          midpointX + perpendicularX * intersectionOffset * direction;
+        const candidateY =
+          midpointY +
+          (deltaX / supportDistance) * intersectionOffset * direction;
+        if (
+          candidateY <= Math.min(firstY, secondY) + pitch / 4 &&
+          candidateX >= bounds.minimumX &&
+          candidateX <= bounds.maximumX
+        ) {
+          supportGapXs.push(candidateX);
+        }
+      }
+    }
+  }
+  return supportGapXs;
+};
+
+const computeStackedCandidateY = (
+  candidateX: number,
+  packedPositions: Vec2[],
+  pitch: number,
+  bottomY: number
+) => {
+  let candidateY = bottomY;
+  for (const [supportX, supportY] of packedPositions) {
+    const horizontalDistance = Math.abs(candidateX - supportX);
+    if (horizontalDistance >= pitch) {
+      continue;
+    }
+    candidateY = Math.min(
+      candidateY,
+      supportY - Math.sqrt(Math.max(0, pitch ** 2 - horizontalDistance ** 2))
+    );
+  }
+  return candidateY;
+};
+
+const findBestStackedPlacement = (
+  candidateXs: number[],
+  packedPositions: Vec2[],
+  pitch: number,
+  bounds: BayPlacementBounds,
+  random: () => number
+) => {
+  let bestY = Number.NEGATIVE_INFINITY;
+  let bestXs: number[] = [];
+  const testedXs = new Set<number>();
+  for (const rawCandidateX of candidateXs) {
+    const candidateX = Math.min(
+      bounds.maximumX,
+      Math.max(bounds.minimumX, rawCandidateX)
+    );
+    const roundedX = Math.round(candidateX * 1_000_000);
+    if (testedXs.has(roundedX)) {
+      continue;
+    }
+    testedXs.add(roundedX);
+
+    const candidateY = computeStackedCandidateY(
+      candidateX,
+      packedPositions,
+      pitch,
+      bounds.bottomY
+    );
+    if (candidateY < bounds.minimumY) {
+      continue;
+    }
+    if (candidateY > bestY + 1e-6) {
+      bestY = candidateY;
+      bestXs = [candidateX];
+    } else if (Math.abs(candidateY - bestY) <= 1e-6) {
+      bestXs.push(candidateX);
+    }
+  }
+  if (bestXs.length === 0) {
+    return null;
+  }
+  return {
+    x: bestXs[Math.floor(random() * bestXs.length)],
+    y: bestY,
+  };
+};
+
+const buildStackedCandidateXs = (
+  packedPositions: Vec2[],
+  pitch: number,
+  bounds: BayPlacementBounds,
+  candidateSamples: number,
+  random: () => number
+) => {
+  const candidateXs = [bounds.minimumX, bounds.maximumX];
+  for (let sample = 0; sample < candidateSamples; sample++) {
+    candidateXs.push(
+      bounds.minimumX + random() * (bounds.maximumX - bounds.minimumX)
+    );
+  }
+  for (const [supportX] of packedPositions) {
+    candidateXs.push(supportX - pitch, supportX + pitch);
+  }
+  const supportGapXs = collectSupportGapCandidateXs(
+    packedPositions,
+    pitch,
+    bounds
+  );
+  shuffleInPlace(supportGapXs, random);
+  candidateXs.push(...supportGapXs.slice(0, candidateSamples));
+  return candidateXs;
+};
+
+const createPackedLayout = ({
+  marblesPerTeam,
+  marbleRadius,
+  pitch,
+  candidateSamples,
+  bounds,
+  random,
+}: PackedLayoutContext): Vec2[] | null => {
+  const packedPositions: Vec2[] = [];
+  for (let slotIndex = 0; slotIndex < marblesPerTeam; slotIndex++) {
+    const candidateXs = buildStackedCandidateXs(
+      packedPositions,
+      pitch,
+      bounds,
+      candidateSamples,
+      random
+    );
+    const bestPlacement = findBestStackedPlacement(
+      candidateXs,
+      packedPositions,
+      pitch,
+      bounds,
+      random
+    );
+    if (!bestPlacement) {
+      return null;
+    }
+    packedPositions.push([bestPlacement.x, bestPlacement.y]);
+  }
+  return packedPositions;
+};
+
+const resolvePackedLayout = (
+  context: PackedLayoutContext
+): Vec2[] => {
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const packedPositions = createPackedLayout(context);
+    if (packedPositions) {
+      return packedPositions;
+    }
+  }
+  throw new Error(
+    `The staging rack could not pack ${context.marblesPerTeam} marbles per team`
+  );
+};
+
+const appendStackedTeamPlacements = ({
+  teamIndex,
+  marblesPerTeam,
+  marbleRadius,
+  pitch,
+  columns,
+  usableWidth,
+  bayCenterX,
+  position,
+  height,
+  wallThickness,
+  padding,
+  random,
+  placements,
+}: {
+  teamIndex: number;
+  marblesPerTeam: number;
+  marbleRadius: number;
+  pitch: number;
+  columns: number;
+  usableWidth: number;
+  bayCenterX: number;
+  position: Vec2;
+  height: number;
+  wallThickness: number;
+  padding: number;
+  random: () => number;
+  placements: StagingMarblePlacement[];
+}) => {
+  const bounds = stagingBayPlacementBounds({
+    bayCenterX,
+    usableWidth,
+    position,
+    height,
+    wallThickness,
+    padding,
+    marbleRadius,
+  });
+  const candidateSamples = Math.max(24, columns * 5);
+  const packedPositions = resolvePackedLayout({
+    marblesPerTeam,
+    marbleRadius,
+    pitch,
+    candidateSamples,
+    bounds,
+    random,
+  });
+  for (let slotIndex = 0; slotIndex < packedPositions.length; slotIndex++) {
+    placements.push({
+      teamIndex,
+      slotIndex,
+      position: packedPositions[slotIndex],
+    });
+  }
+};
+
+const slotRowForDistribution = (
+  slotIndex: number,
+  columns: number,
+  rows: number,
+  distribution: "scattered" | "stacked" | "grid"
+) =>
+  distribution === "grid"
+    ? rows - 1 - Math.floor(slotIndex / columns)
+    : Math.floor(slotIndex / columns);
+
+const appendGridOrScatteredTeamPlacements = ({
+  teamIndex,
+  marblesPerTeam,
+  marbleRadius,
+  pitch,
+  columns,
+  rows,
+  capacity,
+  gridWidth,
+  gridHeight,
+  bayCenterX,
+  position,
+  distribution,
+  gap,
+  random,
+  placements,
+}: {
+  teamIndex: number;
+  marblesPerTeam: number;
+  marbleRadius: number;
+  pitch: number;
+  columns: number;
+  rows: number;
+  capacity: number;
+  gridWidth: number;
+  gridHeight: number;
+  bayCenterX: number;
+  position: Vec2;
+  distribution: "scattered" | "stacked" | "grid";
+  gap: number;
+  random: () => number;
+  placements: StagingMarblePlacement[];
+}) => {
+  const firstX = bayCenterX - gridWidth / 2 + marbleRadius;
+  const firstY = position[1] - gridHeight / 2 + marbleRadius;
+  const jitter = gap / 3;
+  const slots = Array.from({ length: capacity }, (_, slotIndex) => ({
+    column: slotIndex % columns,
+    row: slotRowForDistribution(slotIndex, columns, rows, distribution),
+  }));
+  if (distribution === "scattered") {
+    shuffleInPlace(slots, random);
+  }
+  for (let slotIndex = 0; slotIndex < marblesPerTeam; slotIndex++) {
+    const { column, row } = slots[slotIndex];
+    placements.push({
+      teamIndex,
+      slotIndex,
+      position: [
+        firstX +
+          column * pitch +
+          (distribution === "grid" ? 0 : (random() * 2 - 1) * jitter),
+        firstY +
+          row * pitch +
+          (distribution === "grid" ? 0 : (random() * 2 - 1) * jitter),
+      ],
+    });
   }
 };
 
@@ -245,171 +597,44 @@ export const createStagingMarblePlacements = ({
   const gridHeight = rows * diameter + Math.max(0, rows - 1) * gap;
   const placements: StagingMarblePlacement[] = [];
 
-  const shuffle = <T>(items: T[]) => {
-    for (let index = items.length - 1; index > 0; index--) {
-      const swapIndex = Math.floor(random() * (index + 1));
-      [items[index], items[swapIndex]] = [items[swapIndex], items[index]];
-    }
-    return items;
-  };
-
   for (let teamIndex = 0; teamIndex < teamCount; teamIndex++) {
     const bayCenterX = leftInteriorEdge + bayWidth * (teamIndex + 0.5);
-    const jitter = gap / 3;
-
     if (distribution === "stacked") {
-      const minimumX = bayCenterX - usableWidth / 2 + marbleRadius;
-      const maximumX = bayCenterX + usableWidth / 2 - marbleRadius;
-      const minimumY =
-        position[1] - height / 2 + wallThickness + padding + marbleRadius;
-      const bottomY =
-        position[1] + height / 2 - wallThickness - padding - marbleRadius;
-      const candidateSamples = Math.max(24, columns * 5);
-
-      const createPackedLayout = () => {
-        const packedPositions: Vec2[] = [];
-        for (let slotIndex = 0; slotIndex < marblesPerTeam; slotIndex++) {
-          const candidateXs = [minimumX, maximumX];
-          for (let sample = 0; sample < candidateSamples; sample++) {
-            candidateXs.push(minimumX + random() * (maximumX - minimumX));
-          }
-          for (const [supportX] of packedPositions) {
-            candidateXs.push(supportX - pitch, supportX + pitch);
-          }
-
-          const supportGapXs: number[] = [];
-          for (let first = 0; first < packedPositions.length; first++) {
-            const [firstX, firstY] = packedPositions[first];
-            for (
-              let second = first + 1;
-              second < packedPositions.length;
-              second++
-            ) {
-              const [secondX, secondY] = packedPositions[second];
-              const deltaX = secondX - firstX;
-              const deltaY = secondY - firstY;
-              const supportDistance = Math.hypot(deltaX, deltaY);
-              if (supportDistance <= 0 || supportDistance > pitch * 2) {
-                continue;
-              }
-              const midpointX = (firstX + secondX) / 2;
-              const midpointY = (firstY + secondY) / 2;
-              const intersectionOffset = Math.sqrt(
-                Math.max(0, pitch ** 2 - (supportDistance / 2) ** 2)
-              );
-              const perpendicularX = -deltaY / supportDistance;
-              for (const direction of [-1, 1]) {
-                const candidateX =
-                  midpointX + perpendicularX * intersectionOffset * direction;
-                const candidateY =
-                  midpointY +
-                  (deltaX / supportDistance) * intersectionOffset * direction;
-                if (
-                  candidateY <= Math.min(firstY, secondY) + pitch / 4 &&
-                  candidateX >= minimumX &&
-                  candidateX <= maximumX
-                ) {
-                  supportGapXs.push(candidateX);
-                }
-              }
-            }
-          }
-          shuffle(supportGapXs);
-          candidateXs.push(...supportGapXs.slice(0, candidateSamples));
-
-          let bestY = Number.NEGATIVE_INFINITY;
-          let bestXs: number[] = [];
-          const testedXs = new Set<number>();
-          for (const rawCandidateX of candidateXs) {
-            const candidateX = Math.min(
-              maximumX,
-              Math.max(minimumX, rawCandidateX)
-            );
-            const roundedX = Math.round(candidateX * 1_000_000);
-            if (testedXs.has(roundedX)) {
-              continue;
-            }
-            testedXs.add(roundedX);
-
-            let candidateY = bottomY;
-            for (const [supportX, supportY] of packedPositions) {
-              const horizontalDistance = Math.abs(candidateX - supportX);
-              if (horizontalDistance < pitch) {
-                candidateY = Math.min(
-                  candidateY,
-                  supportY -
-                    Math.sqrt(Math.max(0, pitch ** 2 - horizontalDistance ** 2))
-                );
-              }
-            }
-            if (candidateY < minimumY) {
-              continue;
-            }
-            if (candidateY > bestY + 1e-6) {
-              bestY = candidateY;
-              bestXs = [candidateX];
-            } else if (Math.abs(candidateY - bestY) <= 1e-6) {
-              bestXs.push(candidateX);
-            }
-          }
-
-          if (bestXs.length === 0) {
-            return null;
-          }
-          packedPositions.push([
-            bestXs[Math.floor(random() * bestXs.length)],
-            bestY,
-          ]);
-        }
-        return packedPositions;
-      };
-
-      let packedPositions: Vec2[] | null = null;
-      for (let attempt = 0; attempt < 8 && !packedPositions; attempt++) {
-        packedPositions = createPackedLayout();
-      }
-      if (!packedPositions) {
-        throw new Error(
-          `The staging rack could not pack ${marblesPerTeam} marbles per team`
-        );
-      }
-      for (let slotIndex = 0; slotIndex < packedPositions.length; slotIndex++) {
-        placements.push({
-          teamIndex,
-          slotIndex,
-          position: packedPositions[slotIndex],
-        });
-      }
+      appendStackedTeamPlacements({
+        teamIndex,
+        marblesPerTeam,
+        marbleRadius,
+        pitch,
+        columns,
+        usableWidth,
+        bayCenterX,
+        position,
+        height,
+        wallThickness,
+        padding,
+        random,
+        placements,
+      });
       continue;
     }
 
-    const firstX = bayCenterX - gridWidth / 2 + marbleRadius;
-    const firstY = position[1] - gridHeight / 2 + marbleRadius;
-    const slots = Array.from({ length: capacity }, (_, slotIndex) => ({
-      column: slotIndex % columns,
-      row:
-        distribution === "grid"
-          ? rows - 1 - Math.floor(slotIndex / columns)
-          : Math.floor(slotIndex / columns),
-    }));
-    if (distribution === "scattered") {
-      shuffle(slots);
-    }
-    for (let slotIndex = 0; slotIndex < marblesPerTeam; slotIndex++) {
-      const { column, row } = slots[slotIndex];
-      placements.push({
-        teamIndex,
-        slotIndex,
-        position: [
-          firstX +
-            column * pitch +
-            (distribution === "grid" ? 0 : (random() * 2 - 1) * jitter),
-          firstY +
-            row * pitch +
-            (distribution === "grid" ? 0 : (random() * 2 - 1) * jitter),
-        ],
-      });
-    }
+    appendGridOrScatteredTeamPlacements({
+      teamIndex,
+      marblesPerTeam,
+      marbleRadius,
+      pitch,
+      columns,
+      rows,
+      capacity,
+      gridWidth,
+      gridHeight,
+      bayCenterX,
+      position,
+      distribution,
+      gap,
+      random,
+      placements,
+    });
   }
 
   return placements;

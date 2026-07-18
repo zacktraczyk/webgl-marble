@@ -20,6 +20,7 @@ import { LegInstance } from "./legInstance";
 import { computeLegStackLayout, type LegFrame } from "./legStack";
 import { fallbackEliminationIndex, RaceProgression } from "./progression";
 import { RaceCameraController } from "./raceCamera";
+import { clearTimeoutIds, scheduleTimeouts, setDatasetFlag } from "../playbackTimers";
 
 export const DEFAULT_MAXIMUM_LEG_DURATION_MS = null;
 
@@ -531,42 +532,46 @@ export class RacePlayerRuntime {
     value.textContent = "";
     this.updateInterface();
 
-    COUNTDOWN_STEPS.forEach(({ label, step }, index) => {
-      this.countdownTimers.push(
-        window.setTimeout(() => {
+    const steps: Array<{ delayMs: number; run: () => void }> = [
+      ...COUNTDOWN_STEPS.map(({ label, step }, index) => ({
+        delayMs: index * COUNTDOWN_STEP_MS,
+        run: () => {
           overlay.dataset.step = step;
           value.textContent = label;
-        }, index * COUNTDOWN_STEP_MS)
-      );
-    });
+        },
+      })),
+    ];
 
     const goShownAt = (COUNTDOWN_STEPS.length - 1) * COUNTDOWN_STEP_MS;
     const overlayGoneAt = goShownAt + COUNTDOWN_GO_HOLD_MS + COUNTDOWN_EXIT_MS;
-    this.countdownTimers.push(
-      window.setTimeout(() => {
-        overlay.dataset.step = "done";
-      }, goShownAt + COUNTDOWN_GO_HOLD_MS)
+    steps.push(
+      {
+        delayMs: goShownAt + COUNTDOWN_GO_HOLD_MS,
+        run: () => {
+          overlay.dataset.step = "done";
+        },
+      },
+      {
+        delayMs: overlayGoneAt,
+        run: () => {
+          overlay.hidden = true;
+        },
+      },
+      {
+        // Hold the marbles until the track has been visible for a beat, so the
+        // release is never hidden behind the countdown overlay.
+        delayMs: overlayGoneAt + TRACK_REVEAL_HOLD_MS,
+        run: () => {
+          this.countdownActive = false;
+          this.launchCurrentLeg();
+        },
+      }
     );
-    this.countdownTimers.push(
-      window.setTimeout(() => {
-        overlay.hidden = true;
-      }, overlayGoneAt)
-    );
-    // Hold the marbles until the track has been visible for a beat, so the
-    // release is never hidden behind the countdown overlay.
-    this.countdownTimers.push(
-      window.setTimeout(() => {
-        this.countdownActive = false;
-        this.launchCurrentLeg();
-      }, overlayGoneAt + TRACK_REVEAL_HOLD_MS)
-    );
+    scheduleTimeouts(this.countdownTimers, steps);
   }
 
   private clearCountdown() {
-    for (const timer of this.countdownTimers) {
-      window.clearTimeout(timer);
-    }
-    this.countdownTimers = [];
+    clearTimeoutIds(this.countdownTimers);
     this.countdownActive = false;
     const overlay = this.root.querySelector<HTMLElement>("#race-countdown");
     if (overlay) {

@@ -1,6 +1,6 @@
-import type { Vec2 } from "../engine/core/transform";
-import type { LevelObjectData } from "./levelDocument";
-import { getLevelObjectShape, type LevelObjectShape } from "./levelGeometry";
+import type { Vec2 } from "../../engine/core/transform";
+import type { LevelObjectData } from "./document";
+import { getLevelObjectShape, type LevelObjectShape } from "./geometry";
 
 type OscillationMotion = Extract<
   NonNullable<LevelObjectData["motion"]>,

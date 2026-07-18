@@ -1,9 +1,9 @@
-import { getLevelObjectShape } from "../../../editor/levelGeometry";
+import { getLevelObjectShape } from "../../../game/level/geometry";
 import type { LevelEditorController } from "../../../editor/levelEditor";
 import type {
   LevelObjectData,
   LevelObjectMotion,
-} from "../../../editor/levelDocument";
+} from "../../../game/level/document";
 import type { Vec2 } from "../../../engine/core/transform";
 import {
   pusherPeriodForSpeed,

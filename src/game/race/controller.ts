@@ -17,7 +17,7 @@ import {
   randomSpawnOffsetsInCircle,
   spawnAreaRadius,
 } from "./spawn";
-import { getLevelObjectMotionPose } from "../../editor/levelMotion";
+import { getLevelObjectMotionPose } from "../level/motion";
 import type { AuthoredLevel } from "../level/authoredLevel";
 import {
   MAX_MARBLE_RADIUS,

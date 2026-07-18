@@ -1,13 +1,13 @@
-import type { Scene, SceneContext } from "../engine/runtime/scene";
-import { createLegRoundConfiguration } from "../game/race/legRound";
-import { RaceRepository } from "../races";
-import createLevelBuilder from "./level-builder";
+import type { Scene, SceneContext } from "../../engine/runtime/scene";
+import { createLegRoundConfiguration } from "../../game/race/legRound";
+import { RaceRepository } from "../../races";
+import createLevelBuilder from "./createLevelBuilder";
 
 const byId = (id: string) => document.getElementById(id);
 
 const setupSidebar = () => {
-  const builder = byId("level-builder");
-  const sidebar = byId("level-options-sidebar");
+  const builder = byId("leg-builder");
+  const sidebar = byId("leg-options-sidebar");
   const sidebarToggle = byId("toggle-sidebar");
   const openSidebarIcon = sidebarToggle?.querySelector<SVGElement>(
     '[data-sidebar-icon="open"]'
@@ -45,7 +45,7 @@ const setupSidebar = () => {
 };
 
 const wireRaceHomeLink = () => {
-  const builder = byId("level-builder");
+  const builder = byId("leg-builder");
   const homeLink = byId("builder-home-link") as HTMLAnchorElement | null;
   const params = new URLSearchParams(window.location.search);
   const raceId = params.get("race");
@@ -97,6 +97,7 @@ const wireRaceHomeLink = () => {
   };
 };
 
+/** Page scene for `/leg-builder` — wires race persistence around the level editor. */
 export default function createScene(): Scene {
   let disposeChrome = () => {};
   let inner: Scene | null = null;

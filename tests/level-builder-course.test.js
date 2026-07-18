@@ -13,7 +13,7 @@ import {
   createCourseBoundaries,
   createDefaultCourse,
 } from "../src/game/level/objects.ts";
-import { clampStepInteger } from "../src/scenes/level-builder/ui/input.ts";
+import { clampStepInteger } from "../src/scenes/leg-builder/ui/input.ts";
 
 describe("level builder course boundaries", () => {
   test("uses a larger widescreen default course", () => {

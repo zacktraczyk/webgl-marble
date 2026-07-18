@@ -1,6 +1,6 @@
-import type { SpawnPointVariant } from "../../../editor/levelDocument";
+import type { SpawnPointVariant } from "../../../game/level/document";
 import type { PusherSpeed } from "../../../game/level/objects";
-import { isPusherTool, SelectedTool } from "../../../game/level/types";
+import { isPusherTool, SelectedTool } from "../../../editor/tools";
 import type { BuilderUi } from ".";
 
 export type BuilderControlActions = {

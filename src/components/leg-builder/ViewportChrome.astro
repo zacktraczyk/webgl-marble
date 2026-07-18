@@ -1,0 +1,113 @@
+<div class="absolute bottom-3 left-3 z-20 flex h-9 items-stretch gap-2">
+  <nav
+    id="viewport-controls"
+    aria-label="Viewport zoom"
+    class="flex h-9 items-stretch overflow-hidden rounded-md border border-zinc-700 bg-zinc-800/90 shadow-lg backdrop-blur"
+  >
+    <button
+      id="zoom-out"
+      data-role="zoom-out"
+      type="button"
+      aria-label="Zoom out"
+      data-tooltip="Zoom out"
+      class="flex w-9 items-center justify-center text-zinc-100 hover:bg-zinc-700 disabled:cursor-not-allowed disabled:text-zinc-600 disabled:hover:bg-transparent"
+    >
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        class="size-5"
+        aria-hidden="true"
+      >
+        <path d="M5 12h14"></path>
+      </svg>
+    </button>
+    <button
+      id="zoom-reset"
+      data-role="zoom-reset"
+      type="button"
+      aria-label="Reset zoom to 100%"
+      data-tooltip="Reset zoom to 100%"
+      class="flex min-w-14 items-center justify-center px-2 text-center font-mono text-xs text-zinc-300 hover:bg-zinc-700"
+    >
+      <output id="zoom-level" data-role="zoom-level" aria-live="polite"
+        >100%</output
+      >
+    </button>
+    <button
+      id="zoom-in"
+      data-role="zoom-in"
+      type="button"
+      aria-label="Zoom in"
+      data-tooltip="Zoom in"
+      class="flex w-9 items-center justify-center text-zinc-100 hover:bg-zinc-700 disabled:cursor-not-allowed disabled:text-zinc-600 disabled:hover:bg-transparent"
+    >
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        class="size-5"
+        aria-hidden="true"
+      >
+        <path d="M12 5v14M5 12h14"></path>
+      </svg>
+    </button>
+  </nav>
+
+  <nav
+    id="edit-history-controls"
+    aria-label="Edit history"
+    class="flex h-9 items-stretch overflow-hidden rounded-md border border-zinc-700 bg-zinc-800/90 shadow-lg backdrop-blur"
+  >
+    <button
+      id="undo-level"
+      data-role="undo"
+      type="button"
+      aria-label="Undo"
+      data-tooltip="Undo (Ctrl/⌘ Z)"
+      disabled
+      class="flex w-9 items-center justify-center text-zinc-100 hover:bg-zinc-700 disabled:cursor-not-allowed disabled:text-zinc-600 disabled:hover:bg-transparent"
+    >
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        class="size-5"
+        aria-hidden="true"
+      >
+        <path d="M9 7 4 12l5 5"></path>
+        <path d="M4 12h9a6 6 0 0 1 6 6"></path>
+      </svg>
+    </button>
+    <button
+      id="redo-level"
+      data-role="redo"
+      type="button"
+      aria-label="Redo"
+      data-tooltip="Redo (Ctrl/⌘ Shift Z)"
+      disabled
+      class="flex w-9 items-center justify-center text-zinc-100 hover:bg-zinc-700 disabled:cursor-not-allowed disabled:text-zinc-600 disabled:hover:bg-transparent"
+    >
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        class="size-5"
+        aria-hidden="true"
+      >
+        <path d="m15 7 5 5-5 5"></path>
+        <path d="M20 12h-9a6 6 0 0 0-6 6"></path>
+      </svg>
+    </button>
+  </nav>
+</div>

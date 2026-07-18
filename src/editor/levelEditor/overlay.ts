@@ -1,11 +1,11 @@
 import type Stage from "../../engine/stage";
-import type { LevelObjectData } from "../levelDocument";
+import type { LevelObjectData } from "../../game/level/document";
 import {
   getOscillationPeakSpeed,
   getLevelObjectMotionPose,
   getOscillationEndpoints,
   getRotationPivot,
-} from "../levelMotion";
+} from "../../game/level/motion";
 import {
   getLevelObjectBounds,
   getLevelObjectShape,
@@ -17,7 +17,7 @@ import {
   isLevelObjectResizable,
   type LevelObjectShape,
   type RectangleLevelShape,
-} from "../levelGeometry";
+} from "../../game/level/geometry";
 import type {
   SelectionMarquee,
   WallDraft,

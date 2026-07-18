@@ -1,5 +1,5 @@
-import type { Vec2 } from "../engine/core/transform";
-import type { SerializedLevel } from "./levelDocument";
+import type { Vec2 } from "../../engine/core/transform";
+import type { SerializedLevel } from "./document";
 
 const translated = (point: Vec2, offset: Vec2): Vec2 => [
   point[0] + offset[0],

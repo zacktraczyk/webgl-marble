@@ -1,26 +1,7 @@
-export enum SelectedTool {
-  Pan,
-  Pointer,
-  Wall,
-  Slider,
-  Spinner,
-  Sweeper,
-}
-
-export type PusherTool =
-  | SelectedTool.Slider
-  | SelectedTool.Spinner
-  | SelectedTool.Sweeper;
-
-export const isPusherTool = (tool: SelectedTool): tool is PusherTool =>
-  tool === SelectedTool.Slider ||
-  tool === SelectedTool.Spinner ||
-  tool === SelectedTool.Sweeper;
-
-export const isCreationTool = (tool: SelectedTool) =>
-  tool === SelectedTool.Wall || isPusherTool(tool);
-
 export type RacePhase = "ready" | "running" | "paused" | "complete";
+
+/** Domain kind for a moving pusher wall (independent of editor tool UX). */
+export type PusherKind = "slider" | "spinner" | "sweeper";
 
 /** Layout for one leg's finish rack, precomputed for the whole race. */
 export type FinishRackPlan = {

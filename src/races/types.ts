@@ -1,4 +1,4 @@
-import type { SerializedLevel } from "../editor/levelDocument";
+import type { SerializedLevel } from "../game/level/document";
 import type { Color } from "../engine/vdu/component";
 
 export const RACE_DOCUMENT_VERSION = 1 as const;

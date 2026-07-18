@@ -1,5 +1,5 @@
 import type { Vec2 } from "../../engine/core/transform";
-import { SelectedTool } from "../../game/level/types";
+import { SelectedTool } from "../tools";
 
 export type LevelEditorKeyboardActions = {
   undo(): void;

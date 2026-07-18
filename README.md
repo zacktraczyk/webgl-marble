@@ -76,5 +76,5 @@ Product code lives under `src/` with intended dependency direction:
 
 `pages` → `scenes` → `game` / `editor` / `races` → `engine`
 
-Shared level constants, grid helpers, and race simulation (`RaceController`) live in `game/`, not under individual scenes.
+Shared level documents, geometry, motion, constants, grid helpers, and race simulation (`RaceController`) live in `game/`. Interactive editing (`levelEditor`, undo history, tools) lives in `editor/`.
 

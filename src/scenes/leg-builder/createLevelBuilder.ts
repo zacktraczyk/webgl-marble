@@ -1,4 +1,4 @@
-import type { SerializedLevel } from "../../editor/levelDocument";
+import type { SerializedLevel } from "../../game/level/document";
 import type { Scene } from "../../engine/runtime/scene";
 import { LevelBuilderRuntime, type LevelBuilderOptions } from "./runtime";
 
@@ -8,7 +8,8 @@ export interface LevelBuilderScene extends Scene {
   getLevelSnapshot(): SerializedLevel | null;
 }
 
-function createScene(
+/** Core level editor scene — mounts against a root element with optional race wiring. */
+export default function createLevelBuilder(
   rootElement: HTMLElement | null,
   options: LevelBuilderOptions = {}
 ): LevelBuilderScene {
@@ -28,5 +29,3 @@ function createScene(
     },
   };
 }
-
-export default createScene;

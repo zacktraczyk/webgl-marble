@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { translateSerializedLevel } from "../src/editor/levelTransform.ts";
+import { translateSerializedLevel } from "../src/game/level/transform.ts";
 
 const sampleLevel = () => ({
   version: 3,

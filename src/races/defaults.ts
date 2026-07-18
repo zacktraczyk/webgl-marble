@@ -1,4 +1,4 @@
-import { LevelDocument } from "../editor/levelDocument";
+import { LevelDocument } from "../game/level/document";
 import type { Color } from "../engine/vdu/component";
 import { TEAM_COLORS, TEAM_NAMES } from "../game/race/staging";
 import {

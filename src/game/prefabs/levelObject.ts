@@ -1,6 +1,6 @@
 import type { EntityDefinition } from "../../engine/core/definition";
-import type { LevelObjectData } from "../../editor/levelDocument";
-import { getLevelObjectShape } from "../../editor/levelGeometry";
+import type { LevelObjectData } from "../level/document";
+import { getLevelObjectShape } from "../level/geometry";
 import { finishRackDefinitions } from "./finishZone";
 import { circleDefinition } from "./primitives/circle";
 import { rectangleDefinition } from "./primitives/rectangle";

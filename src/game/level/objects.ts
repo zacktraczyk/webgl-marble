@@ -2,11 +2,11 @@ import type {
   LevelObjectData,
   LevelObjectMotion,
   NewLevelObjectData,
-} from "../../editor/levelDocument";
+} from "./document";
 import {
   getOscillationPeakSpeed,
   oscillationPeriodForPeakSpeed,
-} from "../../editor/levelMotion";
+} from "./motion";
 import type { Vec2 } from "../../engine/core/transform";
 import {
   STAGING_RACK_HEIGHT,
@@ -30,7 +30,7 @@ import {
   STAGING_MARBLE_GAP,
   WALL_COLOR,
 } from "./constants";
-import { SelectedTool, type PusherTool } from "./types";
+import { type PusherKind } from "./types";
 
 export const PUSHER_WALL_LENGTH = 120;
 export const PUSHER_DEFAULT_RANGE = 90;
@@ -79,12 +79,12 @@ export const pusherSpeedForMotion = (
   );
 };
 
-const pusherMotion = (tool: PusherTool): LevelObjectMotion => {
+const pusherMotion = (kind: PusherKind): LevelObjectMotion => {
   const shared = {
     phase: 0,
     direction: 1 as const,
   };
-  if (tool === SelectedTool.Slider) {
+  if (kind === "slider") {
     return {
       type: "oscillate",
       vector: [PUSHER_DEFAULT_RANGE, 0],
@@ -94,7 +94,7 @@ const pusherMotion = (tool: PusherTool): LevelObjectMotion => {
   }
   return {
     type: "rotate",
-    pivot: tool === SelectedTool.Sweeper ? "start" : "center",
+    pivot: kind === "sweeper" ? "start" : "center",
     periodMs: PUSHER_PERIODS.medium,
     ...shared,
   };
@@ -115,25 +115,25 @@ export const createWall = (
 });
 
 export const createPusher = (
-  tool: PusherTool,
+  kind: PusherKind,
   position: Vec2
 ): NewLevelObjectData => {
   const halfLength = PUSHER_WALL_LENGTH / 2;
   const start: Vec2 =
-    tool === SelectedTool.Sweeper
+    kind === "sweeper"
       ? [...position]
-      : tool === SelectedTool.Slider
+      : kind === "slider"
         ? [position[0], position[1] - halfLength]
         : [position[0] - halfLength, position[1]];
   const end: Vec2 =
-    tool === SelectedTool.Sweeper
+    kind === "sweeper"
       ? [position[0] + PUSHER_WALL_LENGTH, position[1]]
-      : tool === SelectedTool.Slider
+      : kind === "slider"
         ? [position[0], position[1] + halfLength]
         : [position[0] + halfLength, position[1]];
   return {
     ...createWall(start, end),
-    motion: pusherMotion(tool),
+    motion: pusherMotion(kind),
   } as NewLevelObjectData;
 };
 

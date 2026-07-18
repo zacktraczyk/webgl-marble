@@ -1,5 +1,5 @@
-import type { TransformInput, Vec2 } from "../engine/core/transform";
-import type { Color } from "../engine/vdu/component";
+import type { TransformInput, Vec2 } from "../../engine/core/transform";
+import type { Color } from "../../engine/vdu/component";
 
 type BaseLevelObject = {
   id: string;
