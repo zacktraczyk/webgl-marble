@@ -34,27 +34,8 @@
 }
 
 @layer components {
-  /* Display type — heavy, tight, sentence case */
-  .type-display {
-    font-family: var(--font-sans);
-    font-weight: 800;
-    letter-spacing: -0.03em;
-    line-height: 0.92;
-  }
-
-  /* Brand dot ahead of section labels */
-  .notch::before {
-    content: "";
-    display: inline-block;
-    width: 0.55em;
-    height: 0.55em;
-    margin-right: 0.75em;
-    border-radius: 50%;
-    background: var(--color-brand);
-    transform: translateY(-0.03em);
-  }
-
-  /* Candy pills — offset solid shadows that press on hover */
+  /* Candy pills — offset solid shadows that press on hover. Kept as CSS
+     because the variant shadows and hover press are one coordinated recipe. */
   .pill {
     appearance: none;
     display: inline-flex;
@@ -96,13 +77,6 @@
   }
   .pill-play:hover {
     box-shadow: 0 2px 0 var(--color-brand-shadow);
-  }
-
-  /* Raised tile */
-  .card {
-    background: var(--color-panel);
-    border-radius: 1.25rem;
-    box-shadow: 0 6px 0 var(--color-shadow);
   }
 }
 

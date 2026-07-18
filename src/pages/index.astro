@@ -1,510 +1,250 @@
 ---
-// Race library homepage — the race-v13 design iteration (zinc + tangerine,
-// uniform 3-column grid, width-normalized leg previews behind a bottom fade)
-// wired to the real RaceRepository. Each card links to the race's builder,
-// which acts as the pre-launch screen until a dedicated preview page exists.
+// Race library homepage — zinc + tangerine brand tokens, uniform 3-column
+// grid, width-normalized leg previews behind a bottom fade. Wired to the
+// real RaceRepository. Each card links to the race's builder, which acts as
+// the pre-launch screen until a dedicated preview page exists.
+import Layout from "../layouts/Layout.astro";
 import Tooltip from "../components/Tooltip.astro";
 ---
 
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta
-      name="description"
-      content="Build local marble races, arrange their legs, and race to a winner."
-    />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap"
-      rel="stylesheet"
-    />
-    <title>Race Library · Marbel</title>
-  </head>
-  <body>
-    <main>
-      <header>
-        <h1>Marble Races</h1>
-      </header>
+<Layout title="Race Library · Marbel">
+  <main
+    class="mx-auto max-w-[68rem] px-6 pb-32 pt-[clamp(2.5rem,7vh,5rem)]"
+  >
+    <header class="mb-14 flex items-end justify-between gap-8">
+      <h1
+        class="font-extrabold tracking-[-0.03em] leading-[0.9] text-[clamp(4.5rem,13vw,9rem)] [text-shadow:0.08em_0.09em_0_var(--color-stamp)]"
+      >
+        Marble Races
+      </h1>
+    </header>
 
-      <section id="grid" aria-label="Saved races">
+    <section
+      id="grid"
+      aria-label="Saved races"
+      class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3"
+    >
+      <button
+        type="button"
+        id="create-tile"
+        data-create-race
+        class="flex h-[26rem] flex-col items-center justify-center gap-5 rounded-[1.25rem] border-2 border-dashed border-line bg-transparent p-6 transition-[border-color] duration-100 ease-out hover:border-ink-dim"
+      >
+        <span
+          class="max-w-56 text-balance text-center text-[1.375rem] font-extrabold leading-[1.2] tracking-[-0.01em] text-ink-dim"
+        >
+          Let's Get Rolling
+        </span>
+        <span class="pill pill-primary">
+          <!-- lucide: plus -->
+          <svg
+            class="-ml-1 size-[1.1em]"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M5 12h14"></path>
+            <path d="M12 5v14"></path>
+          </svg>
+          New race
+        </span>
+      </button>
+    </section>
+  </main>
+
+  <Tooltip />
+
+  <!-- The whole card is one link to the race's pre-launch screen. The
+       hover-revealed actions overlay is a sibling of the link so the
+       buttons aren't nested inside it. -->
+  <template id="tile">
+    <div class="group/tile relative">
+      <a
+        class="flex h-[26rem] flex-col rounded-[1.25rem] bg-panel p-6 text-inherit no-underline shadow-[0_6px_0_var(--color-shadow)]"
+      >
+        <h2
+          data-name
+          class="min-w-0 truncate pr-[4.5rem] text-[1.375rem] font-extrabold leading-[1.15] tracking-[-0.01em]"
+        >
+        </h2>
+        <div
+          data-preview
+          class="relative mt-[1.125rem] min-h-0 flex-1 overflow-hidden rounded-lg after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-14 after:bg-gradient-to-t after:from-panel after:to-transparent"
+        >
+        </div>
+        <div class="mt-5 flex items-center justify-between gap-3">
+          <span
+            data-legs
+            class="whitespace-nowrap text-sm font-medium text-ink-dim"
+          ></span>
+          <!-- Fixed width so every card's button matches regardless of label.
+               Group hover/focus on the wrap presses the candy-pill shadow. -->
+          <span
+            data-action
+            class="pill w-32 px-3 py-2 text-sm group-hover/tile:translate-y-0.5 group-has-[:focus-visible]/tile:translate-y-0.5 group-hover/tile:[&.pill-play]:shadow-[0_2px_0_var(--color-brand-shadow)] group-has-[:focus-visible]/tile:[&.pill-play]:shadow-[0_2px_0_var(--color-brand-shadow)] group-hover/tile:[&.pill-primary]:shadow-[0_2px_0_oklch(58%_0.005_285)] group-has-[:focus-visible]/tile:[&.pill-primary]:shadow-[0_2px_0_oklch(58%_0.005_285)]"
+          ></span>
+        </div>
+      </a>
+      <div
+        class="absolute top-5 right-6 flex gap-1.5 opacity-0 transition-opacity duration-100 ease-out group-hover/tile:opacity-100 group-focus-within/tile:opacity-100"
+      >
         <button
           type="button"
-          id="create-tile"
-          class="tile create"
-          data-create-race
+          data-duplicate-race
+          aria-label="Duplicate race"
+          data-tooltip="Duplicate race"
+          class="grid size-8 place-items-center rounded-full bg-canvas/75 text-ink-dim backdrop-blur-[4px] transition-[color,background-color] duration-100 ease-out hover:bg-canvas hover:text-ink"
         >
-          <span class="quip">Let's Get Rolling</span>
-          <span class="pill primary icon">
-            <!-- lucide: plus -->
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M5 12h14"></path>
-              <path d="M12 5v14"></path>
-            </svg>
-            New race
-          </span>
+          <!-- lucide: copy -->
+          <svg
+            class="size-4"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <rect x="9" y="9" width="12" height="12" rx="2.5"></rect>
+            <path
+              d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"
+            ></path>
+          </svg>
         </button>
-      </section>
-    </main>
-
-    <Tooltip />
-
-    <!-- The whole card is one link to the race's pre-launch screen. The
-         hover-revealed actions overlay is a sibling of the link so the
-         buttons aren't nested inside it. -->
-    <template id="tile">
-      <div class="tile-wrap">
-        <a class="tile">
-          <h2 data-name></h2>
-          <div class="preview" data-preview></div>
-          <div class="footer">
-            <span class="legs" data-legs></span>
-            <span class="pill" data-action></span>
-          </div>
-        </a>
-        <div class="actions">
-          <button
-            type="button"
-            data-duplicate-race
-            aria-label="Duplicate race"
-            data-tooltip="Duplicate race"
+        <button
+          type="button"
+          data-delete-race
+          aria-label="Delete race"
+          data-tooltip="Delete race"
+          class="grid size-8 place-items-center rounded-full bg-canvas/75 text-ink-dim backdrop-blur-[4px] transition-[color,background-color] duration-100 ease-out hover:bg-canvas hover:text-[oklch(70%_0.19_25)]"
+        >
+          <!-- lucide: trash -->
+          <svg
+            class="size-4"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
           >
-            <!-- lucide: copy -->
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <rect x="9" y="9" width="12" height="12" rx="2.5"></rect>
-              <path
-                d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"
-              ></path>
-            </svg>
-          </button>
-          <button
-            type="button"
-            data-delete-race
-            aria-label="Delete race"
-            data-tooltip="Delete race"
-          >
-            <!-- lucide: trash -->
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M3 6h18"></path>
-              <path
-                d="M19 6v13.5A1.5 1.5 0 0 1 17.5 21h-11A1.5 1.5 0 0 1 5 19.5V6"
-              ></path>
-              <path d="M8 6V4.5A1.5 1.5 0 0 1 9.5 3h5A1.5 1.5 0 0 1 16 4.5V6"
-              ></path>
-            </svg>
-          </button>
-        </div>
+            <path d="M3 6h18"></path>
+            <path
+              d="M19 6v13.5A1.5 1.5 0 0 1 17.5 21h-11A1.5 1.5 0 0 1 5 19.5V6"
+            ></path>
+            <path d="M8 6V4.5A1.5 1.5 0 0 1 9.5 3h5A1.5 1.5 0 0 1 16 4.5V6"
+            ></path>
+          </svg>
+        </button>
       </div>
-    </template>
+    </div>
+  </template>
 
-    <style>
-      :root {
-        color-scheme: dark;
-      }
-      * {
-        box-sizing: border-box;
-        margin: 0;
-      }
-      body {
-        /* Zinc scale — almost black with a hint of gray. */
-        --canvas: oklch(17% 0.004 285);
-        --tile: oklch(23% 0.005 285);
-        --shadow: oklch(11% 0.003 285);
-        --line: oklch(35% 0.006 285);
-        --ink: oklch(95% 0.005 90);
-        --dim: oklch(66% 0.008 285);
-        --accent: oklch(70% 0.185 45);
-        --accent-shadow: oklch(52% 0.15 45);
-        --stamp: oklch(32% 0.006 285);
-        --accent-ink: oklch(18% 0.03 50);
-        min-height: 100vh;
-        background: var(--canvas);
-        color: var(--ink);
-        font-family: "Bricolage Grotesque", sans-serif;
-        -webkit-font-smoothing: antialiased;
-      }
-      main {
-        max-width: 68rem;
-        margin: 0 auto;
-        padding: clamp(2.5rem, 7vh, 5rem) 1.5rem 8rem;
-      }
-      header {
-        display: flex;
-        align-items: flex-end;
-        justify-content: space-between;
-        gap: 2rem;
-        margin-bottom: 3.5rem;
-      }
-      h1 {
-        font-size: clamp(4.5rem, 13vw, 9rem);
-        font-weight: 800;
-        letter-spacing: -0.03em;
-        line-height: 0.9;
-        text-shadow: 0.08em 0.09em 0 var(--stamp);
-      }
-      .pill {
-        appearance: none;
-        display: inline-block;
-        border: 0;
-        cursor: pointer;
-        border-radius: 999px;
-        font-family: inherit;
-        font-size: 0.9375rem;
-        font-weight: 600;
-        text-decoration: none;
-        text-align: center;
-        padding: 0.625rem 1.375rem;
-        transition:
-          transform 0.12s ease-out,
-          box-shadow 0.12s ease-out;
-      }
-      .pill.primary {
-        background: var(--ink);
-        color: var(--canvas);
-        box-shadow: 0 4px 0 oklch(58% 0.005 285);
-      }
-      .pill.icon {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.375rem;
-      }
-      .pill.icon svg {
-        width: 1.1em;
-        height: 1.1em;
-        margin-left: -0.25em;
-      }
-      .pill.play {
-        background: var(--accent);
-        color: var(--accent-ink);
-        box-shadow: 0 4px 0 var(--accent-shadow);
-      }
-      .pill:hover {
-        transform: translateY(2px);
-      }
-      .pill.primary:hover {
-        box-shadow: 0 2px 0 oklch(58% 0.005 285);
-      }
-      .pill.play:hover {
-        box-shadow: 0 2px 0 var(--accent-shadow);
-      }
+  <script>
+    import {
+      RaceRepository,
+      createDefaultRace,
+      isRacePlayable,
+      renderLevelThumbnail,
+      requiredLegCount,
+    } from "../races";
+    import { attachTooltip } from "../components/tooltip";
 
-      #grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 1.5rem;
-      }
-      @media (max-width: 64rem) {
-        #grid {
-          grid-template-columns: repeat(2, 1fr);
-        }
-      }
-      @media (max-width: 40rem) {
-        #grid {
-          grid-template-columns: 1fr;
-        }
-      }
-      .tile-wrap {
-        position: relative;
-      }
-      .tile {
-        display: flex;
-        flex-direction: column;
-        height: 26rem;
-        background: var(--tile);
-        border-radius: 1.25rem;
-        padding: 1.5rem;
-        box-shadow: 0 6px 0 var(--shadow);
-        color: inherit;
-        text-decoration: none;
-      }
-      /* Icon actions overlaid on the card, vertically centered with the
-         title and revealed on hover — same idiom as the builder's leg cards. */
-      .actions {
-        position: absolute;
-        top: calc(1.5rem - 0.25rem);
-        right: 1.5rem;
-        display: flex;
-        gap: 0.375rem;
-        opacity: 0;
-        transition: opacity 0.12s ease-out;
-      }
-      .tile-wrap:hover .actions,
-      .tile-wrap:focus-within .actions {
-        opacity: 1;
-      }
-      .actions button {
-        display: grid;
-        place-items: center;
-        width: 2rem;
-        height: 2rem;
-        padding: 0;
-        border: 0;
-        border-radius: 999px;
-        cursor: pointer;
-        background: oklch(17% 0.004 285 / 0.75);
-        backdrop-filter: blur(4px);
-        color: var(--dim);
-        transition:
-          color 0.12s ease-out,
-          background 0.12s ease-out;
-      }
-      .actions button:hover {
-        background: var(--canvas);
-        color: var(--ink);
-      }
-      .actions button[data-delete-race]:hover {
-        color: oklch(70% 0.19 25);
-      }
-      .actions svg {
-        width: 1rem;
-        height: 1rem;
-      }
-      .footer {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 0.75rem;
-        margin-top: 1.25rem;
-      }
-      .tile h2 {
-        min-width: 0;
-        /* Keep long names clear of the hover actions. */
-        padding-right: 4.5rem;
-        font-size: 1.375rem;
-        font-weight: 800;
-        letter-spacing: -0.01em;
-        line-height: 1.15;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-      .legs {
-        font-size: 0.875rem;
-        font-weight: 500;
-        color: var(--dim);
-        white-space: nowrap;
-      }
-      /* Width-normalized stack in a fixed window. The fade only becomes
-         visible when a long race actually runs under it. */
-      .preview {
-        position: relative;
-        flex: 1;
-        min-height: 0;
-        overflow: hidden;
-        margin-top: 1.125rem;
-        border-radius: 0.5rem;
-      }
-      .preview::after {
-        content: "";
-        position: absolute;
-        inset: auto 0 0 0;
-        height: 3.5rem;
-        background: linear-gradient(transparent, var(--tile));
-        pointer-events: none;
-      }
-      /* Fixed width so every card's button matches regardless of label. */
-      .tile .pill {
-        width: 8rem;
-        font-size: 0.875rem;
-        padding: 0.5rem 0.75rem;
-      }
-      /* Hovering anywhere on the card presses its pill. */
-      .tile:hover .pill.play,
-      .tile:focus-visible .pill.play {
-        transform: translateY(2px);
-        box-shadow: 0 2px 0 var(--accent-shadow);
-      }
-      .tile:hover .pill.primary,
-      .tile:focus-visible .pill.primary {
-        transform: translateY(2px);
-        box-shadow: 0 2px 0 oklch(58% 0.005 285);
-      }
+    attachTooltip(document.body);
+    const repository = new RaceRepository();
+    const grid = document.querySelector<HTMLElement>("#grid");
+    const template = document.querySelector<HTMLTemplateElement>("#tile");
+    const createTile = document.querySelector<HTMLElement>("#create-tile");
 
-      .tile.create {
-        appearance: none;
-        align-items: center;
-        justify-content: center;
-        gap: 1.25rem;
-        background: none;
-        border: 2px dashed var(--line);
-        box-shadow: none;
-        cursor: pointer;
-        font-family: inherit;
-        transition: border-color 0.12s ease-out;
-      }
-      .tile.create:hover {
-        border-color: var(--dim);
-      }
-      /* Match the sizing of a standalone pill, not the fixed-width tile ones. */
-      .tile.create .pill {
-        width: auto;
-        font-size: 0.9375rem;
-        padding: 0.625rem 1.375rem;
-      }
-      /* Same display treatment as tile titles — Bricolage's optical size
-         axis shifts to its display cut at this size — but dimmed so it
-         doesn't compete with real race names. */
-      .quip {
-        max-width: 14rem;
-        text-align: center;
-        text-wrap: balance;
-        font-size: 1.375rem;
-        font-weight: 800;
-        letter-spacing: -0.01em;
-        line-height: 1.2;
-        color: var(--dim);
-      }
+    const builderUrl = (raceId: string) =>
+      `/race-builder?race=${encodeURIComponent(raceId)}`;
 
-      button:focus-visible,
-      a:focus-visible {
-        outline: 2px solid var(--accent);
-        outline-offset: 2px;
-      }
-    </style>
+    const createRace = () => {
+      const race = repository.create(createDefaultRace());
+      window.location.assign(builderUrl(race.id));
+    };
 
-    <!-- Strip canvases are created in JS, so they can't receive Astro's scoped-style attribute. -->
-    <style is:global>
-      .preview .strip {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-      }
-      .preview canvas {
-        display: block;
-        width: 100%;
-        border-radius: 0.5rem;
-      }
-    </style>
+    const renderLibrary = () => {
+      if (!grid || !template || !createTile) return;
+      const races = repository.list();
+      grid.replaceChildren();
 
-    <script>
-      import {
-        RaceRepository,
-        createDefaultRace,
-        isRacePlayable,
-        renderLevelThumbnail,
-        requiredLegCount,
-      } from "../races";
-      import { attachTooltip } from "../components/tooltip";
+      const pending: (() => void)[] = [];
+      for (const race of races) {
+        const fragment = template.content.cloneNode(true) as DocumentFragment;
+        const playable = isRacePlayable(race);
+        fragment.querySelector<HTMLAnchorElement>("a")!.href = builderUrl(
+          race.id
+        );
+        fragment.querySelector("[data-name]")!.textContent = race.name;
+        fragment.querySelector("[data-legs]")!.textContent =
+          `${race.legs.length} ${race.legs.length === 1 ? "leg" : "legs"}`;
 
-      attachTooltip(document.body);
-      const repository = new RaceRepository();
-      const grid = document.querySelector<HTMLElement>("#grid");
-      const template = document.querySelector<HTMLTemplateElement>("#tile");
-      const createTile = document.querySelector<HTMLElement>("#create-tile");
-
-      const builderUrl = (raceId: string) =>
-        `/race-builder?race=${encodeURIComponent(raceId)}`;
-
-      const createRace = () => {
-        const race = repository.create(createDefaultRace());
-        window.location.assign(builderUrl(race.id));
-      };
-
-      const renderLibrary = () => {
-        if (!grid || !template || !createTile) return;
-        const races = repository.list();
-        grid.replaceChildren();
-
-        const pending: (() => void)[] = [];
-        for (const race of races) {
-          const fragment = template.content.cloneNode(true) as DocumentFragment;
-          const playable = isRacePlayable(race);
-          fragment.querySelector<HTMLAnchorElement>(".tile")!.href = builderUrl(
-            race.id
-          );
-          fragment.querySelector("[data-name]")!.textContent = race.name;
-          fragment.querySelector("[data-legs]")!.textContent =
-            `${race.legs.length} ${race.legs.length === 1 ? "leg" : "legs"}`;
-
-          const preview = fragment.querySelector<HTMLElement>("[data-preview]")!;
-          const strip = document.createElement("div");
-          strip.className = "strip";
-          preview.append(strip);
-          const canvases = race.legs.map((leg) => {
-            const canvas = document.createElement("canvas");
-            canvas.style.aspectRatio = `${leg.level.size[0]} / ${leg.level.size[1]}`;
-            strip.append(canvas);
-            return canvas;
-          });
-          // Draw after the cards are in the document so sizes are measurable.
-          pending.push(() => {
-            race.legs.forEach((leg, index) => {
-              renderLevelThumbnail(canvases[index], leg.level, {
-                background: "oklch(19% 0.004 285)",
-                courseBackground: "oklch(26% 0.005 285)",
-                border: "oklch(38% 0.006 285)",
-                teamCount: race.participants.length - index,
-              });
+        const preview = fragment.querySelector<HTMLElement>("[data-preview]")!;
+        const strip = document.createElement("div");
+        strip.className = "flex flex-col gap-1.5";
+        preview.append(strip);
+        const canvases = race.legs.map((leg) => {
+          const canvas = document.createElement("canvas");
+          canvas.className = "block w-full rounded-lg";
+          canvas.style.aspectRatio = `${leg.level.size[0]} / ${leg.level.size[1]}`;
+          strip.append(canvas);
+          return canvas;
+        });
+        // Draw after the cards are in the document so sizes are measurable.
+        pending.push(() => {
+          race.legs.forEach((leg, index) => {
+            renderLevelThumbnail(canvases[index], leg.level, {
+              background: "oklch(19% 0.004 285)",
+              courseBackground: "oklch(26% 0.005 285)",
+              border: "oklch(38% 0.006 285)",
+              teamCount: race.participants.length - index,
             });
           });
+        });
 
-          fragment
-            .querySelector<HTMLButtonElement>("[data-duplicate-race]")!
-            .addEventListener("click", () => {
-              repository.duplicateRace(race.id);
-              renderLibrary();
-            });
-          fragment
-            .querySelector<HTMLButtonElement>("[data-delete-race]")!
-            .addEventListener("click", () => {
-              if (!confirm(`Delete "${race.name}"? This can't be undone.`))
-                return;
-              repository.delete(race.id);
-              renderLibrary();
-            });
+        fragment
+          .querySelector<HTMLButtonElement>("[data-duplicate-race]")!
+          .addEventListener("click", () => {
+            repository.duplicateRace(race.id);
+            renderLibrary();
+          });
+        fragment
+          .querySelector<HTMLButtonElement>("[data-delete-race]")!
+          .addEventListener("click", () => {
+            if (!confirm(`Delete "${race.name}"? This can't be undone.`))
+              return;
+            repository.delete(race.id);
+            renderLibrary();
+          });
 
-          const action = fragment.querySelector<HTMLElement>("[data-action]")!;
-          action.textContent = playable ? "Preview" : "Finish setup";
-          action.classList.add(playable ? "play" : "primary");
-          if (!playable) {
-            const difference = requiredLegCount(race) - race.legs.length;
-            action.dataset.tooltip =
-              difference > 0
-                ? `Add ${difference} ${difference === 1 ? "leg" : "legs"} to play`
-                : `Remove ${Math.abs(difference)} ${Math.abs(difference) === 1 ? "leg" : "legs"} to play`;
-          }
-          grid.append(fragment);
+        const action = fragment.querySelector<HTMLElement>("[data-action]")!;
+        action.textContent = playable ? "Preview" : "Finish setup";
+        action.classList.add(playable ? "pill-play" : "pill-primary");
+        if (!playable) {
+          const difference = requiredLegCount(race) - race.legs.length;
+          action.dataset.tooltip =
+            difference > 0
+              ? `Add ${difference} ${difference === 1 ? "leg" : "legs"} to play`
+              : `Remove ${Math.abs(difference)} ${Math.abs(difference) === 1 ? "leg" : "legs"} to play`;
         }
-        grid.append(createTile);
-        for (const draw of pending) draw();
-      };
-
-      for (const button of document.querySelectorAll<HTMLButtonElement>(
-        "[data-create-race]"
-      )) {
-        button.addEventListener("click", createRace);
+        grid.append(fragment);
       }
-      renderLibrary();
-    </script>
-  </body>
-</html>
+      grid.append(createTile);
+      for (const draw of pending) draw();
+    };
+
+    for (const button of document.querySelectorAll<HTMLButtonElement>(
+      "[data-create-race]"
+    )) {
+      button.addEventListener("click", createRace);
+    }
+    renderLibrary();
+  </script>
+</Layout>

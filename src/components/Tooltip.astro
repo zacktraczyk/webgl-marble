@@ -1,8 +1,8 @@
 ---
 // Shared hover tooltip. Render once per page, put `data-tooltip="Label"` (or
 // "Label (Shortcut)") on trigger elements, and start it from a script with
-// `attachTooltip(document.body)` — see ./tooltip.ts. Styles are self-contained
-// so the component works on pages with or without Tailwind.
+// `attachTooltip(document.body)` — see ./tooltip.ts. Layout/static chrome is
+// Tailwind; open/side enter animation stays in CSS.
 interface Props {
   id?: string;
 }
@@ -12,7 +12,7 @@ const { id = "app-tooltip" } = Astro.props;
 
 <div
   id={id}
-  class="tooltip"
+  class="tooltip pointer-events-none fixed z-50 flex max-w-72 items-center gap-1.5 whitespace-nowrap rounded-md bg-zinc-50 px-2.5 py-1.5 text-xs font-medium leading-4 text-zinc-950 opacity-0 shadow-[0_0_0_1px_rgb(0_0_0_/_0.1),0_20px_25px_-5px_rgb(0_0_0_/_0.1),0_8px_10px_-6px_rgb(0_0_0_/_0.1)] will-change-[opacity,transform]"
   data-role="tooltip"
   data-side="top"
   data-open="false"
@@ -20,39 +20,26 @@ const { id = "app-tooltip" } = Astro.props;
   hidden
 >
   <span data-role="tooltip-label"></span>
-  <kbd data-role="tooltip-shortcut" hidden></kbd>
-  <span class="arrow" data-role="tooltip-arrow" aria-hidden="true"></span>
+  <kbd
+    data-role="tooltip-shortcut"
+    hidden
+    class="rounded bg-zinc-200 px-1 py-0.5 font-mono text-[10px] font-semibold leading-none text-zinc-700"
+  ></kbd>
+  <span
+    class="arrow absolute size-2 rotate-45 bg-zinc-50"
+    data-role="tooltip-arrow"
+    aria-hidden="true"></span>
 </div>
 
 <style>
+  /* Enter animation depends on data-side / data-open — keep out of Tailwind. */
   .tooltip {
     --tooltip-enter-y: 0.2rem;
-    pointer-events: none;
-    position: fixed;
-    z-index: 50;
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
-    max-width: 18rem;
-    white-space: nowrap;
-    border-radius: 0.375rem;
-    background: #fafafa;
-    padding: 0.375rem 0.625rem;
-    font-size: 0.75rem;
-    line-height: 1rem;
-    font-weight: 500;
-    color: #09090b;
-    box-shadow:
-      0 0 0 1px rgb(0 0 0 / 0.1),
-      0 20px 25px -5px rgb(0 0 0 / 0.1),
-      0 8px 10px -6px rgb(0 0 0 / 0.1);
-    opacity: 0;
     transform: translateY(var(--tooltip-enter-y)) scale(0.96);
     transform-origin: 50% 100%;
     transition:
       opacity 120ms ease-out,
       transform 120ms ease-out;
-    will-change: opacity, transform;
   }
   .tooltip[hidden] {
     display: none;
@@ -64,27 +51,6 @@ const { id = "app-tooltip" } = Astro.props;
   .tooltip[data-open="true"] {
     opacity: 1;
     transform: translateY(0) scale(1);
-  }
-  kbd {
-    border-radius: 0.25rem;
-    background: #e4e4e7;
-    padding: 0.125rem 0.25rem;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-      monospace;
-    font-size: 10px;
-    font-weight: 600;
-    line-height: 1;
-    color: #3f3f46;
-  }
-  kbd[hidden] {
-    display: none;
-  }
-  .arrow {
-    position: absolute;
-    width: 0.5rem;
-    height: 0.5rem;
-    rotate: 45deg;
-    background: #fafafa;
   }
   .tooltip[data-side="top"] .arrow {
     bottom: -0.25rem;
