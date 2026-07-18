@@ -78,3 +78,5 @@ Product code lives under `src/` with intended dependency direction:
 
 Shared level documents, geometry, motion, constants, grid helpers, and race simulation (`RaceController`) live in `game/`. Interactive editing (`levelEditor`, undo history, tools) lives in `editor/`.
 
+Engine prototypes and legacy race demos live in `debug/` with Astro routes under `/dev/*`, separate from product `scenes/`.
+

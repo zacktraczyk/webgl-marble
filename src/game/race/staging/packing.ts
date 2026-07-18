@@ -1,71 +1,9 @@
-import type { Vec2 } from "../../engine/core/transform";
-import type { Color } from "../../engine/vdu/component";
-
-export const MIN_TEAMS = 1;
-export const MAX_TEAMS = 12;
-
-export const TEAM_COLORS: readonly Color[] = [
-  [56 / 255, 189 / 255, 248 / 255, 1],
-  [34 / 255, 197 / 255, 94 / 255, 1],
-  [239 / 255, 68 / 255, 68 / 255, 1],
-  [250 / 255, 204 / 255, 21 / 255, 1],
-  [168 / 255, 85 / 255, 247 / 255, 1],
-  [249 / 255, 115 / 255, 22 / 255, 1],
-  [244 / 255, 114 / 255, 182 / 255, 1],
-  [146 / 255, 64 / 255, 14 / 255, 1],
-  [45 / 255, 212 / 255, 191 / 255, 1],
-  [99 / 255, 102 / 255, 241 / 255, 1],
-  [163 / 255, 230 / 255, 53 / 255, 1],
-  [248 / 255, 250 / 255, 252 / 255, 1],
-];
-
-export const TEAM_NAMES = [
-  "Blue",
-  "Green",
-  "Red",
-  "Yellow",
-  "Purple",
-  "Orange",
-  "Pink",
-  "Brown",
-  "Teal",
-  "Indigo",
-  "Lime",
-  "White",
-] as const;
-
-export interface StagingRackGeometry {
-  position: Vec2;
-  width: number;
-  height: number;
-  wallThickness: number;
-}
-
-export interface StagingLayoutOptions extends StagingRackGeometry {
-  teamCount: number;
-  marblesPerTeam: number;
-  marbleRadius: number;
-  gap?: number;
-  padding?: number;
-  random?: () => number;
-  distribution?: "scattered" | "stacked" | "grid";
-}
-
-export interface StagingMarblePlacement {
-  teamIndex: number;
-  slotIndex: number;
-  position: Vec2;
-}
-
-export interface FittedMarbleRadiusOptions extends StagingRackGeometry {
-  teamCount: number;
-  marblesPerTeam: number;
-  maximumRadius?: number;
-  minimumRadius?: number;
-  radiusStep?: number;
-  gap?: number;
-  padding?: number;
-}
+import type { Vec2 } from "../../../engine/core/transform";
+import type {
+  StagingLayoutOptions,
+  StagingMarblePlacement,
+} from "./constants";
+import { assertPositiveFinite, assertTeamCount, stagingBayWidth, stagingCapacity } from "./geometry";
 
 interface BayPlacementBounds {
   minimumX: number;
@@ -82,22 +20,6 @@ interface PackedLayoutContext {
   bounds: BayPlacementBounds;
   random: () => number;
 }
-
-const assertPositiveFinite = (value: number, label: string) => {
-  if (!Number.isFinite(value) || value <= 0) {
-    throw new Error(`${label} must be a positive finite number`);
-  }
-};
-
-const assertTeamCount = (teamCount: number) => {
-  if (
-    !Number.isInteger(teamCount) ||
-    teamCount < MIN_TEAMS ||
-    teamCount > MAX_TEAMS
-  ) {
-    throw new Error(`Team count must be between ${MIN_TEAMS} and ${MAX_TEAMS}`);
-  }
-};
 
 const shuffleInPlace = <T>(items: T[], random: () => number) => {
   for (let index = items.length - 1; index > 0; index--) {
@@ -265,7 +187,6 @@ const buildStackedCandidateXs = (
 
 const createPackedLayout = ({
   marblesPerTeam,
-  marbleRadius,
   pitch,
   candidateSamples,
   bounds,
@@ -435,118 +356,6 @@ const appendGridOrScatteredTeamPlacements = ({
   }
 };
 
-export const stagingBayWidth = (
-  rack: StagingRackGeometry,
-  teamCount: number
-) => {
-  assertTeamCount(teamCount);
-  assertPositiveFinite(rack.width, "Rack width");
-  assertPositiveFinite(rack.wallThickness, "Rack wall thickness");
-  const interiorWidth = rack.width - rack.wallThickness * 2;
-  if (interiorWidth <= 0) {
-    throw new Error("Rack walls leave no interior width");
-  }
-  return interiorWidth / teamCount;
-};
-
-export const stagingDividerPositions = (
-  rack: StagingRackGeometry,
-  teamCount: number
-): Vec2[] => {
-  const bayWidth = stagingBayWidth(rack, teamCount);
-  const leftInteriorEdge =
-    rack.position[0] - rack.width / 2 + rack.wallThickness;
-  return Array.from({ length: teamCount - 1 }, (_, index) => [
-    leftInteriorEdge + bayWidth * (index + 1),
-    rack.position[1],
-  ]);
-};
-
-const stagingCapacity = ({
-  rack,
-  teamCount,
-  marbleRadius,
-  gap,
-  padding,
-}: {
-  rack: StagingRackGeometry;
-  teamCount: number;
-  marbleRadius: number;
-  gap: number;
-  padding: number;
-}) => {
-  const bayWidth = stagingBayWidth(rack, teamCount);
-  const usableWidth = bayWidth - rack.wallThickness - padding * 2;
-  const usableHeight = rack.height - rack.wallThickness * 2 - padding * 2;
-  const pitch = marbleRadius * 2 + gap;
-  const columns = Math.max(0, Math.floor((usableWidth + gap) / pitch));
-  const rows = Math.max(0, Math.floor((usableHeight + gap) / pitch));
-  return {
-    capacity: columns * rows,
-    columns,
-    rows,
-    usableWidth,
-    usableHeight,
-  };
-};
-
-/** Finds the largest shared race-marble radius that fits the active round. */
-export const fitStagingMarbleRadius = ({
-  position,
-  width,
-  height,
-  wallThickness,
-  teamCount,
-  marblesPerTeam,
-  maximumRadius = 4.8,
-  minimumRadius = 1.2,
-  radiusStep = 0.15,
-  gap = 0.6,
-  padding = 3,
-}: FittedMarbleRadiusOptions) => {
-  assertTeamCount(teamCount);
-  if (!Number.isInteger(marblesPerTeam) || marblesPerTeam < 1) {
-    throw new Error("Marbles per team must be a positive integer");
-  }
-  assertPositiveFinite(maximumRadius, "Maximum marble radius");
-  assertPositiveFinite(minimumRadius, "Minimum marble radius");
-  assertPositiveFinite(radiusStep, "Marble radius step");
-  if (minimumRadius > maximumRadius) {
-    throw new Error("Minimum marble radius cannot exceed the maximum");
-  }
-
-  const rack = { position, width, height, wallThickness };
-  const findRadius = (requiredCapacity: number) => {
-    for (let step = 0; ; step++) {
-      const radius = Number((maximumRadius - step * radiusStep).toFixed(10));
-      if (radius < minimumRadius) {
-        break;
-      }
-      if (
-        stagingCapacity({
-          rack,
-          teamCount,
-          marbleRadius: radius,
-          gap,
-          padding,
-        }).capacity >= requiredCapacity
-      ) {
-        return radius;
-      }
-    }
-    return null;
-  };
-
-  const radius =
-    findRadius(Math.ceil(marblesPerTeam * 1.2)) ?? findRadius(marblesPerTeam);
-  if (radius === null) {
-    throw new Error(
-      `The staging rack cannot fit ${marblesPerTeam} marbles per team`
-    );
-  }
-  return radius;
-};
-
 export const createStagingMarblePlacements = ({
   position,
   width,
@@ -639,46 +448,3 @@ export const createStagingMarblePlacements = ({
 
   return placements;
 };
-
-/** Fairly interleaves team queues and supports a rotated first team per round. */
-export class RoundRobinReleaseQueue<T> {
-  private readonly _queues: T[][];
-  private _nextTeam: number;
-  private _remaining: number;
-
-  constructor(queues: readonly (readonly T[])[], startingTeam = 0) {
-    if (queues.length < MIN_TEAMS || queues.length > MAX_TEAMS) {
-      throw new Error(`Release queues must contain 1 to ${MAX_TEAMS} teams`);
-    }
-    if (!Number.isInteger(startingTeam)) {
-      throw new Error("Starting team must be an integer");
-    }
-    this._queues = queues.map((queue) => [...queue]);
-    this._nextTeam =
-      ((startingTeam % queues.length) + queues.length) % queues.length;
-    this._remaining = this._queues.reduce(
-      (total, queue) => total + queue.length,
-      0
-    );
-  }
-
-  takeNext(): T | null {
-    if (this._remaining === 0) {
-      return null;
-    }
-    for (let offset = 0; offset < this._queues.length; offset++) {
-      const teamIndex = (this._nextTeam + offset) % this._queues.length;
-      const item = this._queues[teamIndex].shift();
-      if (item !== undefined) {
-        this._nextTeam = (teamIndex + 1) % this._queues.length;
-        this._remaining--;
-        return item;
-      }
-    }
-    return null;
-  }
-
-  get remaining() {
-    return this._remaining;
-  }
-}

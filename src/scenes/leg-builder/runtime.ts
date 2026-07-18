@@ -1,7 +1,3 @@
-import {
-  getLevelObjectBounds,
-  hitTestLevelObject,
-} from "../../game/level/geometry";
 import type { Vec2 } from "../../engine/core/transform";
 import { EditorOverlay, LevelEditorController } from "../../editor/levelEditor";
 import { LevelHistory } from "../../editor/levelHistory";
@@ -23,7 +19,6 @@ import {
   createPusher,
   createSpawnPoint,
   createWall,
-  type GridWorldBounds,
   type RoundConfiguration,
 } from "../../game/level";
 import {
@@ -33,6 +28,8 @@ import {
   SelectedTool,
 } from "../../editor/tools";
 import { RaceController } from "../../game/race/controller";
+import { computeCourseGridWorldBounds } from "./courseGridBounds";
+import { constrainSpawnPoint } from "./spawnConstraint";
 import { BuilderCameraController } from "./ui/cameraController";
 import { BuilderControls } from "./ui/controls";
 import {
@@ -374,44 +371,16 @@ export class LevelBuilderRuntime {
     }
   }
 
-  /**
-   * Keeps the spawn point on the course: clamps it inside the boundary walls
-   * and rejects positions that overlap an authored wall.
-   */
   private constrainSpawnPoint(
     spawnPoint: Extract<LevelObjectData, { prefab: "spawn-point" }>
   ) {
-    if ((spawnPoint.properties.variant ?? "point") === "top-slider") {
-      // The slider owns its layout; any drag or rotation snaps back to it.
-      applyTopSliderSpawnLayout(
-        spawnPoint,
-        [this.stage.width, this.stage.height],
-        this.level.wallThickness
-      );
-      return;
-    }
-    const radius = spawnPoint.properties.radius;
-    const wallThickness = this.level.wallThickness;
-    const maxX = Math.max(0, this.stage.width / 2 - wallThickness - radius);
-    const minY = -this.stage.height / 2 + wallThickness + radius;
-    const maxY = this.stage.height / 2 - radius;
-    const [x, y] = spawnPoint.transform.position;
-    const clamped: Vec2 = [
-      Math.min(Math.max(x, -maxX), maxX),
-      Math.min(Math.max(y, minY), Math.max(minY, maxY)),
-    ];
-    const overlapsWall = this.level.objects.some(
-      (object) =>
-        object.prefab === "wall" &&
-        !object.locked &&
-        hitTestLevelObject(object, clamped, radius, wallThickness)
-    );
-    if (overlapsWall && this.lastValidSpawnPosition) {
-      spawnPoint.transform.position = [...this.lastValidSpawnPosition];
-      return;
-    }
-    spawnPoint.transform.position = clamped;
-    this.lastValidSpawnPosition = [...clamped];
+    this.lastValidSpawnPosition = constrainSpawnPoint({
+      spawnPoint,
+      objects: this.level.objects,
+      wallThickness: this.level.wallThickness,
+      stageSize: [this.stage.width, this.stage.height],
+      lastValidSpawnPosition: this.lastValidSpawnPosition,
+    });
   }
 
   private syncSpawnPointToCourse() {
@@ -513,52 +482,13 @@ export class LevelBuilderRuntime {
     this.ui.releaseIntervalInput.value = `${configuration.releaseIntervalMs}`;
   }
 
-  private readonly getGridWorldBounds = (): GridWorldBounds => {
-    const boundaryWalls = this.level.objects
-      .filter(
-        (object): object is Extract<LevelObjectData, { prefab: "wall" }> =>
-          object.prefab === "wall" && Boolean(object.locked)
-      )
-      .map((object) => ({
-        object,
-        bounds: getLevelObjectBounds(object, this.level.wallThickness),
-      }));
-    const boundaryWallBounds = boundaryWalls
-      .filter(({ object }) => {
-        const { start, end } = object.properties;
-        return Math.abs(end[1] - start[1]) >= Math.abs(end[0] - start[0]);
-      })
-      .map(({ bounds }) => bounds)
-      .sort((first, second) => first.min[0] - second.min[0]);
-    const topWall = boundaryWalls
-      .filter(({ object }) => {
-        const { start, end } = object.properties;
-        return Math.abs(end[0] - start[0]) > Math.abs(end[1] - start[1]);
-      })
-      .map(({ bounds }) => bounds)
-      .sort((first, second) => first.min[1] - second.min[1])[0];
-    const leftWall = boundaryWallBounds[0];
-    const rightWall = boundaryWallBounds[boundaryWallBounds.length - 1];
-    const rack = this.level.find("staging-rack");
-    const finish = this.level.find("finish-zone");
-    const rackBounds = rack
-      ? getLevelObjectBounds(rack, this.level.wallThickness)
-      : null;
-    const finishBounds = finish
-      ? getLevelObjectBounds(finish, this.level.wallThickness)
-      : null;
-
-    return {
-      min: [
-        leftWall?.max[0] ?? -this.stage.width / 2,
-        rackBounds?.max[1] ?? topWall?.max[1] ?? -this.stage.height / 2,
-      ],
-      max: [
-        rightWall?.min[0] ?? this.stage.width / 2,
-        finishBounds?.min[1] ?? this.stage.height / 2,
-      ],
-    };
-  };
+  private readonly getGridWorldBounds = () =>
+    computeCourseGridWorldBounds({
+      objects: this.level.objects,
+      wallThickness: this.level.wallThickness,
+      stageWidth: this.stage.width,
+      stageHeight: this.stage.height,
+    });
 
   private syncPlaybackState(playbackActive: boolean) {
     if (this.playbackActive === playbackActive) {

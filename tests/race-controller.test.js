@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { TEAM_COLORS } from "../src/game/race/staging.ts";
+import { TEAM_COLORS } from "../src/game/race/staging/index.ts";
 import { RaceController } from "../src/game/race/controller.ts";
 
 describe("race controller", () => {

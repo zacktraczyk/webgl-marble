@@ -4,37 +4,40 @@ import Layout from "../../layouts/Layout.astro";
 
 const pages = [
   {
-    name: "Leg Builder",
-    href: "/leg-builder",
-    note: "Current leg authoring prototype",
+    name: "First Race",
+    href: "/dev/first-race",
+    note: "Original race simulation (frozen)",
   },
-  { name: "First Race", href: "/first-race", note: "Original race simulation" },
-  { name: "Second Race", href: "/second-race", note: "Alternate race setup" },
-  { name: "Random Balls", href: "/random-balls", note: "Physics load test" },
-  { name: "Arrow", href: "/arrow", note: "Primitive rendering" },
+  {
+    name: "Second Race",
+    href: "/dev/second-race",
+    note: "Alternate race setup (frozen)",
+  },
+  { name: "Random Balls", href: "/dev/random-balls", note: "Physics load test" },
+  { name: "Arrow", href: "/dev/arrow", note: "Primitive rendering" },
   {
     name: "Angular Collisions",
-    href: "/angular-collisions",
+    href: "/dev/angular-collisions",
     note: "Rotation and collision test",
   },
   {
     name: "SAT Collision",
-    href: "/sat-collision",
+    href: "/dev/sat-collision",
     note: "SAT narrowphase test",
   },
   {
     name: "GJK Collision",
-    href: "/gjk-collision",
+    href: "/dev/gjk-collision",
     note: "GJK narrowphase test",
   },
   {
     name: "Collision Resolution",
-    href: "/collision-resolution",
+    href: "/dev/collision-resolution",
     note: "Impulse resolution test",
   },
   {
     name: "Kinematic Forces",
-    href: "/kinematic-forces",
+    href: "/dev/kinematic-forces",
     note: "Kinematic motion test",
   },
 ];
@@ -55,8 +58,9 @@ const pages = [
         Developer Lab
       </h1>
       <p class="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">
-        The original debug and engine prototype screens live here. These routes
-        stay separate from the race-making workflow.
+        Engine prototypes and legacy race demos. Scene code lives in
+        <code class="text-zinc-300">src/debug/</code>; these routes stay
+        separate from the race-making workflow.
       </p>
 
       <div class="mt-10 grid gap-3 sm:grid-cols-2">

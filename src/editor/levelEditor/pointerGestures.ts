@@ -159,9 +159,11 @@ export function beginTransform(
   host.capturePointer(event.pointerId);
 }
 
-export function handlePointerDown(host: PointerGestureHost, event: PointerEvent) {
-  const screenPoint = host.screenPoint(event);
-  host.lastPointerScreen = screenPoint;
+function tryBeginPan(
+  host: PointerGestureHost,
+  event: PointerEvent,
+  screenPoint: Vec2
+): boolean {
   const temporaryPan = host.keyboard.spaceHeld && event.button === 0;
   if (
     event.button === 1 ||
@@ -170,91 +172,110 @@ export function handlePointerDown(host: PointerGestureHost, event: PointerEvent)
   ) {
     beginPan(host, event, screenPoint);
     event.preventDefault();
-    return;
+    return true;
   }
+  return false;
+}
 
-  if (event.button !== 0) {
-    return;
-  }
-
-  const temporarySelection = host.isTemporarySelection(event);
-  const handleDeps = host.handleDeps;
-  const snapDeps = host.snapDeps;
-
+function tryBeginWallDraw(
+  host: PointerGestureHost,
+  event: PointerEvent,
+  screenPoint: Vec2,
+  temporarySelection: boolean
+): boolean {
   if (
-    host.activeTool === SelectedTool.Wall &&
-    !temporarySelection &&
-    !host.readOnly
+    host.activeTool !== SelectedTool.Wall ||
+    temporarySelection ||
+    host.readOnly
   ) {
-    const worldPoint = host.worldPoint(screenPoint);
-    const existingAnchor = host.wallAnchor;
-    const anchored = existingAnchor !== null;
-    const start = existingAnchor
-      ? ([...existingAnchor] as Vec2)
-      : snapPlacementPoint(snapDeps, worldPoint, event.altKey);
-    const end = anchored
-      ? snapWallEndpoint(snapDeps, start, worldPoint, {
-          free: event.altKey,
-          constrain: event.shiftKey,
-        })
-      : ([...start] as Vec2);
-    host.gesture = {
-      kind: "wall",
-      pointerId: event.pointerId,
-      start,
-      end,
-      startScreen: screenPoint,
-      anchored,
-      changed: false,
-    };
-    host.capturePointer(event.pointerId);
-    event.preventDefault();
-    return;
+    return false;
   }
+  const worldPoint = host.worldPoint(screenPoint);
+  const existingAnchor = host.wallAnchor;
+  const anchored = existingAnchor !== null;
+  const start = existingAnchor
+    ? ([...existingAnchor] as Vec2)
+    : snapPlacementPoint(host.snapDeps, worldPoint, event.altKey);
+  const end = anchored
+    ? snapWallEndpoint(host.snapDeps, start, worldPoint, {
+        free: event.altKey,
+        constrain: event.shiftKey,
+      })
+    : ([...start] as Vec2);
+  host.gesture = {
+    kind: "wall",
+    pointerId: event.pointerId,
+    start,
+    end,
+    startScreen: screenPoint,
+    anchored,
+    changed: false,
+  };
+  host.capturePointer(event.pointerId);
+  event.preventDefault();
+  return true;
+}
 
+function tryBeginPlacement(
+  host: PointerGestureHost,
+  event: PointerEvent,
+  screenPoint: Vec2,
+  temporarySelection: boolean
+): boolean {
   if (
-    isPusherTool(host.activeTool) &&
-    !temporarySelection &&
-    !host.readOnly
+    !isPusherTool(host.activeTool) ||
+    temporarySelection ||
+    host.readOnly
   ) {
-    host.gesture = {
-      kind: "place",
-      pointerId: event.pointerId,
-      tool: host.activeTool,
-      startScreen: screenPoint,
-    };
-    host.capturePointer(event.pointerId);
-    event.preventDefault();
-    return;
+    return false;
   }
+  host.gesture = {
+    kind: "place",
+    pointerId: event.pointerId,
+    tool: host.activeTool,
+    startScreen: screenPoint,
+  };
+  host.capturePointer(event.pointerId);
+  event.preventDefault();
+  return true;
+}
 
-  if (host.activeTool !== SelectedTool.Pointer && !temporarySelection) {
-    return;
-  }
-
+function tryBeginMotionRange(
+  host: PointerGestureHost,
+  event: PointerEvent,
+  screenPoint: Vec2
+): boolean {
   const selectedObject = host.selectedObject;
   if (
-    selectedObject &&
-    motionRangeHandleAt(handleDeps, selectedObject, screenPoint) &&
-    !host.readOnly
+    !selectedObject ||
+    !motionRangeHandleAt(host.handleDeps, selectedObject, screenPoint) ||
+    host.readOnly ||
+    !selectedObject.motion
   ) {
-    if (!selectedObject.motion) {
-      return;
-    }
-    host.gesture = {
-      kind: "motion-range",
-      pointerId: event.pointerId,
-      objectId: selectedObject.id,
-      startMotion: structuredClone(selectedObject.motion),
-      startScreen: screenPoint,
-      changed: false,
-    };
-    host.capturePointer(event.pointerId);
-    event.preventDefault();
-    return;
+    return false;
   }
+  host.gesture = {
+    kind: "motion-range",
+    pointerId: event.pointerId,
+    objectId: selectedObject.id,
+    startMotion: structuredClone(selectedObject.motion),
+    startScreen: screenPoint,
+    changed: false,
+  };
+  host.capturePointer(event.pointerId);
+  event.preventDefault();
+  return true;
+}
+
+function tryBeginWallEndpoint(
+  host: PointerGestureHost,
+  event: PointerEvent,
+  screenPoint: Vec2,
+  temporarySelection: boolean
+): boolean {
+  const selectedObject = host.selectedObject;
   const directEndpointTarget = temporarySelection
-    ? findWallEndpointTarget(handleDeps, screenPoint, HANDLE_HIT_RADIUS, {
+    ? findWallEndpointTarget(host.handleDeps, screenPoint, HANDLE_HIT_RADIUS, {
         selectableOnly: true,
       })
     : null;
@@ -264,41 +285,51 @@ export function handlePointerDown(host: PointerGestureHost, event: PointerEvent)
   const endpoint =
     directEndpointTarget?.endpoint ??
     (endpointObject
-      ? endpointAt(handleDeps, endpointObject, screenPoint)
+      ? endpointAt(host.handleDeps, endpointObject, screenPoint)
       : null);
-  if (endpointObject && endpoint && !host.readOnly) {
-    if (directEndpointTarget) {
-      host.selection.replace(endpointObject.id);
-    }
-    const { start, end } = getWallEndpoints(endpointObject);
-    host.gesture = {
-      kind: "wall-endpoint",
-      pointerId: event.pointerId,
-      objectId: endpointObject.id,
-      endpoint,
-      start,
-      end,
-      startScreen: screenPoint,
-      changed: false,
-    };
-    host.showEndpointFeedback(directEndpointTarget, "edit");
-    host.capturePointer(event.pointerId);
-    event.preventDefault();
-    return;
+  if (!endpointObject || !endpoint || host.readOnly) {
+    return false;
   }
+  if (directEndpointTarget) {
+    host.selection.replace(endpointObject.id);
+  }
+  const { start, end } = getWallEndpoints(endpointObject);
+  host.gesture = {
+    kind: "wall-endpoint",
+    pointerId: event.pointerId,
+    objectId: endpointObject.id,
+    endpoint,
+    start,
+    end,
+    startScreen: screenPoint,
+    changed: false,
+  };
+  host.showEndpointFeedback(directEndpointTarget, "edit");
+  host.capturePointer(event.pointerId);
+  event.preventDefault();
+  return true;
+}
 
-  const isRotationHandle = selectedObject
-    ? rotationHandleAt(handleDeps, selectedObject, screenPoint)
-    : false;
-  const resizeHandle = selectedObject
-    ? resizeHandleAt(handleDeps, selectedObject, screenPoint)
-    : null;
-  if (selectedObject && isRotationHandle && !host.readOnly) {
+function tryBeginTransform(
+  host: PointerGestureHost,
+  event: PointerEvent,
+  screenPoint: Vec2
+): boolean {
+  const selectedObject = host.selectedObject;
+  if (!selectedObject || host.readOnly) {
+    return false;
+  }
+  if (rotationHandleAt(host.handleDeps, selectedObject, screenPoint)) {
     beginTransform(host, event, selectedObject, "rotate", screenPoint);
     event.preventDefault();
-    return;
+    return true;
   }
-  if (selectedObject && resizeHandle && !host.readOnly) {
+  const resizeHandle = resizeHandleAt(
+    host.handleDeps,
+    selectedObject,
+    screenPoint
+  );
+  if (resizeHandle) {
     beginTransform(
       host,
       event,
@@ -308,9 +339,16 @@ export function handlePointerDown(host: PointerGestureHost, event: PointerEvent)
       resizeHandle
     );
     event.preventDefault();
-    return;
+    return true;
   }
+  return false;
+}
 
+function tryBeginMoveOrMarquee(
+  host: PointerGestureHost,
+  event: PointerEvent,
+  screenPoint: Vec2
+): boolean {
   const pickedObject = pickLevelObject(
     host.getObjects(),
     host.worldPoint(screenPoint),
@@ -323,7 +361,7 @@ export function handlePointerDown(host: PointerGestureHost, event: PointerEvent)
         host.selection.delete(pickedObject.id);
         host.updateIdleState(screenPoint);
         event.preventDefault();
-        return;
+        return true;
       }
       host.selection.add(pickedObject.id);
     } else if (!host.selection.has(pickedObject.id)) {
@@ -334,7 +372,7 @@ export function handlePointerDown(host: PointerGestureHost, event: PointerEvent)
       beginMove(host, event, screenPoint);
     }
     event.preventDefault();
-    return;
+    return true;
   }
 
   const initialSelection = host.selection.snapshot();
@@ -354,6 +392,40 @@ export function handlePointerDown(host: PointerGestureHost, event: PointerEvent)
   };
   host.capturePointer(event.pointerId);
   event.preventDefault();
+  return true;
+}
+
+export function handlePointerDown(host: PointerGestureHost, event: PointerEvent) {
+  const screenPoint = host.screenPoint(event);
+  host.lastPointerScreen = screenPoint;
+
+  if (tryBeginPan(host, event, screenPoint)) {
+    return;
+  }
+  if (event.button !== 0) {
+    return;
+  }
+
+  const temporarySelection = host.isTemporarySelection(event);
+  if (tryBeginWallDraw(host, event, screenPoint, temporarySelection)) {
+    return;
+  }
+  if (tryBeginPlacement(host, event, screenPoint, temporarySelection)) {
+    return;
+  }
+  if (host.activeTool !== SelectedTool.Pointer && !temporarySelection) {
+    return;
+  }
+  if (tryBeginMotionRange(host, event, screenPoint)) {
+    return;
+  }
+  if (tryBeginWallEndpoint(host, event, screenPoint, temporarySelection)) {
+    return;
+  }
+  if (tryBeginTransform(host, event, screenPoint)) {
+    return;
+  }
+  tryBeginMoveOrMarquee(host, event, screenPoint);
 }
 
 export function handlePointerMove(host: PointerGestureHost, event: PointerEvent) {

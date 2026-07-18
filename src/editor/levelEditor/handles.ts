@@ -87,8 +87,6 @@ export function findWallEndpointTarget(
   return nearestIndex === null ? null : candidates[nearestIndex];
 }
 
-export const wallEndpointTargetAt = findWallEndpointTarget;
-
 export function resizeHandleAt(
   deps: HandleTestDeps,
   object: LevelObjectData,

@@ -1,7 +1,7 @@
 ---
-import HomeLink from "../components/HomeLink.astro";
-import Layout from "../layouts/Layout.astro";
-import "../styles/global.css";
+import HomeLink from "../../components/HomeLink.astro";
+import Layout from "../../layouts/Layout.astro";
+import "../../styles/global.css";
 ---
 
 <Layout>
@@ -12,20 +12,22 @@ import "../styles/global.css";
   >
   </p>
   <div class="relative size-full z-0">
-    <canvas id="gl-canvas" class="size-full"> Canvas Not supported </canvas>
+    <canvas id="gl-canvas" class="size-full drop-shadow-xl">
+      Canvas Not supported
+    </canvas>
   </div>
   <div
-    class="absolute z-10 right-0 top-0 flex flex-col gap-4 bg-zinc-800/40 w-1/3 px-12 py-8 h-full items-start backdrop-blur overflow-y-auto"
+    class="absolute z-10 bottom-0 flex flex-col gap-4 bg-zinc-800/40 w-full px-12 py-8 h-40 items-start backdrop-blur"
   >
     <h1 class="font-semibold underline text-lg">Debug Info</h1>
-    <pre id="#debug-info" class="text-mono"></pre>
+    <p id="#debug-info" class="text-mono"></p>
     <p id="#fps" class="">FPS: 0</p>
   </div>
 </Layout>
 
 <script>
-  import { mountScene } from "../engine/runtime/mountScene";
-  import createScene from "../scenes/gjk-collision.ts";
+  import { mountScene } from "../../engine/runtime/mountScene";
+  import createScene from "../../debug/sat-collision.ts";
 
   // Display errors on page
   try {

@@ -1,7 +1,7 @@
 ---
-import HomeLink from "../components/HomeLink.astro";
-import Layout from "../layouts/Layout.astro";
-import "../styles/global.css";
+import HomeLink from "../../components/HomeLink.astro";
+import Layout from "../../layouts/Layout.astro";
+import "../../styles/global.css";
 ---
 
 <Layout>
@@ -23,13 +23,13 @@ import "../styles/global.css";
       <h1 class="text-2xl font-bold">Debug</h1>
       <p class="font-mono z-10 bg-black/80 py-1 px-4" id="#fps">FPS: 0.00</p>
     </div>
-    <pre id="#debug-info" class="mt-6 text-sm leading-10"></pre>
+    <p id="#debug-info" class="mt-6 text-sm leading-10"></p>
   </div>
 </Layout>
 
 <script>
-  import { mountScene } from "../engine/runtime/mountScene";
-  import createScene from "../scenes/first-race.ts";
+  import { mountScene } from "../../engine/runtime/mountScene";
+  import createScene from "../../debug/angular-collisions.ts";
 
   // Display errors on page
   try {

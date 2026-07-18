@@ -1,7 +1,7 @@
 ---
-import HomeLink from "../components/HomeLink.astro";
-import Layout from "../layouts/Layout.astro";
-import "../styles/global.css";
+import HomeLink from "../../components/HomeLink.astro";
+import Layout from "../../layouts/Layout.astro";
+import "../../styles/global.css";
 ---
 
 <Layout>
@@ -26,8 +26,8 @@ import "../styles/global.css";
 </Layout>
 
 <script>
-  import { mountScene } from "../engine/runtime/mountScene";
-  import createScene from "../scenes/sat-collision.ts";
+  import { mountScene } from "../../engine/runtime/mountScene";
+  import createScene from "../../debug/collision-resolution.ts";
 
   // Display errors on page
   try {

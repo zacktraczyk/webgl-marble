@@ -91,6 +91,8 @@ export class LevelEditorController {
   private wallPreviewEnd: Vec2 | null = null;
   private endpointFeedback: WallEndpointFeedback | null = null;
   private placementPreviewPosition: Vec2 | null = null;
+  /** Persistent host shared with pointerGestures — created once, not per event. */
+  private readonly gestureHost: PointerGestureHost;
 
   constructor({
     stage,
@@ -166,6 +168,7 @@ export class LevelEditorController {
       },
       signal
     );
+    this.gestureHost = this.createGestureHost();
   }
 
   setActiveTool(tool: SelectedTool) {
@@ -313,7 +316,9 @@ export class LevelEditorController {
     };
   }
 
-  private get pointerGestureHost(): PointerGestureHost {
+  private createGestureHost(): PointerGestureHost {
+    // Bind live getters/setters to the controller without rebuilding per event.
+    // eslint-disable-next-line @typescript-eslint/no-this-alias -- host getters need the controller
     const self = this;
     return {
       get gesture() {
@@ -358,9 +363,15 @@ export class LevelEditorController {
       get readOnly() {
         return self.readOnly;
       },
-      handleDeps: this.handleDeps,
-      snapDeps: this.snapDeps,
-      dragDeps: this.dragDeps,
+      get handleDeps() {
+        return self.handleDeps;
+      },
+      get snapDeps() {
+        return self.snapDeps;
+      },
+      get dragDeps() {
+        return self.dragDeps;
+      },
       selection: this.selection,
       callbacks: this.callbacks,
       cameraControls: this.cameraControls,
@@ -516,15 +527,15 @@ export class LevelEditorController {
   }
 
   private readonly pointerDown = (event: PointerEvent) => {
-    handlePointerDown(this.pointerGestureHost, event);
+    handlePointerDown(this.gestureHost, event);
   };
 
   private readonly pointerMove = (event: PointerEvent) => {
-    handlePointerMove(this.pointerGestureHost, event);
+    handlePointerMove(this.gestureHost, event);
   };
 
   private readonly pointerUp = (event: PointerEvent) => {
-    handlePointerUp(this.pointerGestureHost, event);
+    handlePointerUp(this.gestureHost, event);
   };
 
   private readonly pointerCancel = (event: PointerEvent) => {
