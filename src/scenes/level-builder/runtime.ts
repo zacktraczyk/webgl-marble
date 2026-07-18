@@ -100,9 +100,11 @@ export class LevelBuilderRuntime {
       signal
     );
 
-    // Level and race state
+    // Level and race state. A provided configuration (a race-controlled leg)
+    // is authoritative — the sidebar inputs only mirror it, and their range
+    // bounds could clamp values like redistributed marble counts.
     this.configuration = {
-      ...readRoundConfiguration(this.ui),
+      ...(options.roundConfiguration ?? readRoundConfiguration(this.ui)),
       finishPlan: this.finishPlan,
     };
     this.level = this.createLevel(options.initialLevel);

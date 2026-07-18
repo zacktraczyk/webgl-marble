@@ -1364,15 +1364,16 @@ import "../styles/global.css";
     setSidebarOpen(builder?.dataset.sidebarOpen !== "true");
   });
 
+  const legIndex = race?.legs.findIndex((leg) => leg.id === legId) ?? -1;
+
   // The builder previews this leg exactly as the race player will run it:
   // the inherited team count plus the era finish plan (bay count, X'd bays,
   // packed rack height). Only complete races have a full deterministic
-  // schedule; partial races fall back to the leg-agnostic configuration.
+  // schedule; partial races fall back to a per-leg approximation below.
   const legFinishPlan = (() => {
     if (!race || !raceLeg) {
       return null;
     }
-    const legIndex = race.legs.findIndex((leg) => leg.id === legId);
     if (legIndex < 0 || race.legs.length !== race.participants.length - 1) {
       return null;
     }
@@ -1394,30 +1395,46 @@ import "../styles/global.css";
     }
   })();
 
+  // One team is eliminated per leg, so leg `i` races `participants − i`
+  // teams and splits the race's marble total among them. The era schedule is
+  // exact (row-rounded); an incomplete race gets the even-split approximation.
+  const legRoundConfiguration = (() => {
+    if (!race || !raceLeg) {
+      return null;
+    }
+    const teamCount = legFinishPlan
+      ? legFinishPlan.activeTeams
+      : Math.max(2, race.participants.length - Math.max(legIndex, 0));
+    return {
+      teamCount,
+      marblesPerTeam:
+        legFinishPlan?.marblesPerTeam ??
+        Math.max(
+          1,
+          Math.round(
+            (race.participants.length * race.rules.marblesPerTeam) / teamCount
+          )
+        ),
+      releaseIntervalMs: race.releaseIntervalMs,
+      ...(legFinishPlan
+        ? {
+            finishPlan: {
+              bayCount: legFinishPlan.bayCount,
+              xBayCount: legFinishPlan.xBayCount,
+              rackHeight: legFinishPlan.rackHeight,
+              marbleRadius: legFinishPlan.marbleRadius,
+            },
+          }
+        : {}),
+    };
+  })();
+
   try {
     const scene = createScene(builder, {
-      ...(race && raceLeg
+      ...(race && raceLeg && legRoundConfiguration
         ? {
             initialLevel: raceLeg.level,
-            roundConfiguration: {
-              teamCount: legFinishPlan
-                ? legFinishPlan.activeTeams
-                : race.participants.length,
-              // Redistribution grows the per-team count on later legs.
-              marblesPerTeam:
-                legFinishPlan?.marblesPerTeam ?? race.rules.marblesPerTeam,
-              releaseIntervalMs: race.releaseIntervalMs,
-              ...(legFinishPlan
-                ? {
-                    finishPlan: {
-                      bayCount: legFinishPlan.bayCount,
-                      xBayCount: legFinishPlan.xBayCount,
-                      rackHeight: legFinishPlan.rackHeight,
-                      marbleRadius: legFinishPlan.marbleRadius,
-                    },
-                  }
-                : {}),
-            },
+            roundConfiguration: legRoundConfiguration,
             onCommit: (level) => {
               if (!race || !raceLeg) {
                 return;
