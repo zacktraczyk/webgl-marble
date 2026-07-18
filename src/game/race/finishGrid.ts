@@ -53,8 +53,8 @@ export const MAX_FINISH_ROWS = 24;
  * many rows remain, and the marble radius grows uniformly to fill the width.
  */
 export const MIN_FINISH_ROWS = 5;
-/** Cap on the min-rows radius growth, as a multiple of the base radius. */
-export const MAX_FINISH_MARBLE_SCALE = 2;
+/** Cap on fill-the-bay radius growth, as a multiple of the base radius. */
+export const MAX_FINISH_MARBLE_SCALE = 3;
 
 export interface PackedFinishOptions {
   width: number;
@@ -74,9 +74,11 @@ export interface PackedFinishLayout {
   /** Vertical center-to-center spacing between rows (tight packing). */
   pitch: number;
   /**
-   * Horizontal center-to-center spacing between columns. Leftover bay width
-   * is distributed evenly between columns — the first and last columns touch
-   * the bay walls, so bays never show lopsided edge padding.
+   * Horizontal center-to-center spacing between columns, edge-to-edge (the
+   * first and last columns touch the bay walls). Exact fills make this equal
+   * to `pitch`; crunched grids make it smaller (columns overlap slightly).
+   * Loose spacing (larger than `pitch`) only survives in degenerate configs
+   * where no divisor can span the bay.
    */
   columnPitch: number;
   bayInnerWidth: number;
@@ -170,21 +172,40 @@ export const createPackedFinishLayout = ({
     const fitted = Math.min(radius, diameter / 2);
     shrunk = fitted < radius;
     radius = fitted;
-  } else if (marblesPerTeam / columns < MIN_FINISH_ROWS) {
-    // The bay is so wide the grid would flatten into a strip. Cap columns so
-    // at least MIN_FINISH_ROWS rows remain and grow the marbles uniformly to
-    // fill the width (bounded so small fields don't become boulders).
-    const cappedColumns = largestFittingDivisor(
-      marblesPerTeam,
-      marblesPerTeam / MIN_FINISH_ROWS
-    );
-    if (cappedColumns !== null) {
-      columns = cappedColumns;
-      const grownDiameter = (bayInnerWidth + gap) / columns - gap;
-      radius = Math.min(
-        grownDiameter / 2,
-        marbleRadius * MAX_FINISH_MARBLE_SCALE
+  } else {
+    // Wide side: never leave loose spacing. Cap columns so the grid keeps at
+    // least MIN_FINISH_ROWS rows, then grow the radius so the columns span
+    // the bay exactly. If the growth cap binds before the bay is spanned,
+    // crunch instead: step up to the next divisor and let columns overlap.
+    if (marblesPerTeam / columns < MIN_FINISH_ROWS) {
+      const cappedColumns = largestFittingDivisor(
+        marblesPerTeam,
+        marblesPerTeam / MIN_FINISH_ROWS
       );
+      if (cappedColumns !== null) {
+        columns = cappedColumns;
+      }
+    }
+    const radiusCap = marbleRadius * MAX_FINISH_MARBLE_SCALE;
+    const fillDiameter = (bayInnerWidth + gap) / columns - gap;
+    if (fillDiameter / 2 <= radiusCap) {
+      radius = fillDiameter / 2;
+    } else {
+      radius = radiusCap;
+      const diameter = radius * 2;
+      let crunched: number | null = null;
+      for (let candidate = columns + 1; candidate <= marblesPerTeam; candidate++) {
+        if (marblesPerTeam % candidate !== 0) {
+          continue;
+        }
+        if ((bayInnerWidth - diameter) / (candidate - 1) <= diameter + gap) {
+          crunched = candidate;
+          break;
+        }
+      }
+      // No divisor spans the bay even fully crunched (tiny fields in huge
+      // bays): fall back to a single spread row — the least-loose option.
+      columns = crunched ?? marblesPerTeam;
     }
   }
 

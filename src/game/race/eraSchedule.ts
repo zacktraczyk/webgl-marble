@@ -31,12 +31,18 @@ export interface LegFinishPlan {
 }
 
 /**
+ * Reflowing almost always grows the fill-the-bay radius a little; only a
+ * meaningful jump is worth clearing the X'd bays for.
+ */
+const RADIUS_RESET_FACTOR = 1.2;
+
+/**
  * Precomputes every leg's finish-rack layout for a race. Bays span the full
  * rack width divided by the current era's team count; eliminated teams leave
  * X'd-out bays at the far right rather than reflowing every leg. An era only
  * resets when reflowing to the surviving team count visibly improves the
- * grid: strictly more columns per bay (the rack shrinks) or strictly larger
- * marbles (wide bays under the min-row floor scale marbles up to fill).
+ * grid: strictly more columns per bay, or marbles at least
+ * RADIUS_RESET_FACTOR larger (wide bays scale marbles up to fill).
  *
  * Deterministic: one team is eliminated per leg, so leg `i` races
  * `participantCount − i` teams.
@@ -81,7 +87,7 @@ export const computeEraSchedule = ({
       const reflow = layoutFor(leg, activeTeams);
       if (
         reflow.columns > layout.columns ||
-        reflow.marbleRadius > layout.marbleRadius + 1e-6
+        reflow.marbleRadius > layout.marbleRadius * RADIUS_RESET_FACTOR
       ) {
         eraTeamCount = activeTeams;
         layout = reflow;
