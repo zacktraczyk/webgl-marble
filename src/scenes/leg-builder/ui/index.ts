@@ -55,6 +55,7 @@ export type BuilderUi = {
   courseWidthInput: HTMLInputElement;
   courseHeightInput: HTMLInputElement;
   wallThicknessInput: HTMLInputElement;
+  sceneOptions: HTMLElement;
   objectInspector: HTMLElement;
   objectInspectorTitle: HTMLElement;
   selectionCountOutput: HTMLElement;
@@ -197,6 +198,7 @@ export const resolveBuilderUi = (
       "wall-thickness",
       "wall thickness"
     ),
+    sceneOptions: role("scene-options", "scene options"),
     objectInspector: role("object-inspector", "object inspector"),
     objectInspectorTitle: role(
       "object-inspector-title",

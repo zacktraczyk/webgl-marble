@@ -11,16 +11,19 @@ import {
   STAGE_SIZE_STEP,
   STAGE_WIDTH,
 } from "../../game/level/constants";
+import ObjectInspector from "./_ObjectInspector.astro";
 ---
 
 <aside
   id="leg-options-sidebar"
-  aria-label="Leg options"
+  aria-label="Editor options"
   aria-hidden="true"
   inert
   class="absolute inset-y-0 right-0 z-20 flex w-64 flex-col overflow-y-auto border-l border-zinc-700 bg-zinc-800 p-4 transition-transform duration-200"
 >
-  <div class="mt-9 divide-y divide-zinc-700">
+  <ObjectInspector />
+
+  <div data-role="scene-options" class="mt-9 divide-y divide-zinc-700">
     <div class="py-4">
       <p class="mb-3 text-xs font-medium text-zinc-300">Course size</p>
       <div class="grid grid-cols-2 gap-2">

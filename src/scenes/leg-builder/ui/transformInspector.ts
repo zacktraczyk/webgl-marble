@@ -52,8 +52,10 @@ export class TransformInspectorController {
   update() {
     const selected = this.editor.selectedObjects;
     const readOnly = this.isReadOnly();
-    this.ui.objectInspector.hidden = selected.length === 0 || readOnly;
-    if (selected.length === 0 || readOnly) {
+    const showObjectOptions = selected.length > 0 && !readOnly;
+    this.ui.sceneOptions.hidden = showObjectOptions;
+    this.ui.objectInspector.hidden = !showObjectOptions;
+    if (!showObjectOptions) {
       return;
     }
 

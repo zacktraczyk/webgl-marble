@@ -123,7 +123,6 @@ export const updateBuilderInterface = ({
     selectedObject?.prefab === "wall" && !selectedObject.locked
       ? selectedObject
       : null;
-  ui.objectInspector.hidden = !selectedWall || playbackActive;
   if (selectedWall) {
     const motion = selectedWall.motion;
     const motionType =

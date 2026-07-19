@@ -60,8 +60,7 @@
   background: transparent;
   padding: 0 0.25rem;
   color: var(--keycap-color);
-  font-family:
-    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 0.68rem;
   line-height: 1;
 }
@@ -105,10 +104,6 @@
 
 #leg-builder[data-sidebar-open="false"] #leg-options-sidebar {
   transform: translateX(100%);
-}
-
-#leg-builder[data-sidebar-open="true"] #object-inspector {
-  right: 16.75rem;
 }
 
 #leg-builder[data-previewing="true"] #builder-toolbar {
@@ -169,6 +164,7 @@
 }
 
 #pusher-library[hidden],
+#leg-options-sidebar [data-role="scene-options"][hidden],
 #object-inspector[hidden],
 #motion-controls[hidden],
 #motion-range-row[hidden],
@@ -234,16 +230,6 @@
   100% {
     opacity: 0;
     transform: translateY(3.5rem) rotate(5deg) scale(0.82);
-  }
-}
-
-@media (max-width: 720px) {
-  #leg-builder[data-sidebar-open="true"] #object-inspector {
-    right: 0.75rem;
-  }
-
-  #leg-builder[data-sidebar-open="true"] #object-inspector {
-    display: none;
   }
 }
 
