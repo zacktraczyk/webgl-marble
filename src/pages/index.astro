@@ -152,6 +152,30 @@ import Tooltip from "../ui/Tooltip.astro";
           data-preview
           class="relative mt-[1.125rem] min-h-0 flex-1 overflow-hidden rounded-lg after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-14 after:bg-gradient-to-t after:from-panel after:to-transparent"
         >
+          <div
+            data-empty-preview
+            class="hidden h-full flex-col items-center justify-center gap-4 pb-3 text-ink-faint"
+          >
+            <svg
+              class="size-16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.75"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <!-- lucide: flag -->
+              <path
+                d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"
+              ></path>
+              <path d="M4 22v-7"></path>
+            </svg>
+            <span class="text-sm font-bold tracking-[-0.01em]"
+              >This race needs legs</span
+            >
+          </div>
         </div>
         <div class="mt-5 flex items-center justify-between gap-3">
           <span

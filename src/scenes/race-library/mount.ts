@@ -128,6 +128,13 @@ export const mountRaceLibrary = () => {
         `${race.legs.length} ${race.legs.length === 1 ? "leg" : "legs"}`;
 
       const preview = fragment.querySelector<HTMLElement>("[data-preview]")!;
+      const emptyPreview = fragment.querySelector<HTMLElement>(
+        "[data-empty-preview]"
+      )!;
+      if (race.legs.length === 0) {
+        emptyPreview.classList.remove("hidden");
+        emptyPreview.classList.add("flex");
+      }
       const strip = document.createElement("div");
       strip.className = "flex flex-col gap-1.5";
       preview.append(strip);
