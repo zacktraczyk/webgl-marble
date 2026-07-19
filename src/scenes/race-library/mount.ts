@@ -28,8 +28,15 @@ export const mountRaceLibrary = () => {
   const dialog = document.querySelector<HTMLDialogElement>("#create-dialog");
   const form = document.querySelector<HTMLFormElement>("#create-form");
   const nameInput = document.querySelector<HTMLInputElement>("#create-name");
-  const teamsMinus =
-    document.querySelector<HTMLButtonElement>("#create-teams-minus");
+  const descriptionInput = document.querySelector<HTMLTextAreaElement>(
+    "#create-description"
+  );
+  const descriptionCount = document.querySelector<HTMLElement>(
+    "#create-description-count"
+  );
+  const teamsMinus = document.querySelector<HTMLButtonElement>(
+    "#create-teams-minus"
+  );
   const teamsPlus =
     document.querySelector<HTMLButtonElement>("#create-teams-plus");
   const teamCount =
@@ -57,7 +64,8 @@ export const mountRaceLibrary = () => {
     teamCount.value = `${participantCount}`;
     teamsMinus.disabled = participantCount <= 2;
     teamsPlus.disabled = participantCount >= MAX_RACE_PARTICIPANTS;
-    const marblesPerTeam = MARBLES_PER_TEAM_OPTIONS[Number(marblesSlider.value)];
+    const marblesPerTeam =
+      MARBLES_PER_TEAM_OPTIONS[Number(marblesSlider.value)];
     marblesOutput.value = `${marblesPerTeam}`;
     const legs = participantCount - 1;
     derived.textContent = `${participantCount} teams → ${legs} legs, one team knocked out per leg. Losers' marbles carry over.`;
@@ -73,6 +81,8 @@ export const mountRaceLibrary = () => {
     if (!dialog || !nameInput || !marblesSlider) return;
     dialogExit?.cancel();
     nameInput.value = "";
+    if (descriptionInput) descriptionInput.value = "";
+    if (descriptionCount) descriptionCount.textContent = "0";
     participantCount = DEFAULT_PARTICIPANT_COUNT;
     marblesSlider.value = `${MARBLES_PER_TEAM_OPTIONS.indexOf(DEFAULT_MARBLES_PER_TEAM)}`;
     renderCreateForm();
@@ -88,6 +98,11 @@ export const mountRaceLibrary = () => {
     renderCreateForm();
   });
   marblesSlider?.addEventListener("input", renderCreateForm);
+  descriptionInput?.addEventListener("input", () => {
+    if (descriptionCount) {
+      descriptionCount.textContent = `${descriptionInput.value.length}`;
+    }
+  });
   cancel?.addEventListener("click", closeCreateDialog);
   // Clicks on the backdrop land on the dialog element itself.
   dialog?.addEventListener("click", (event) => {
@@ -104,6 +119,7 @@ export const mountRaceLibrary = () => {
     const race = repository.create(
       createDefaultRace({
         name: nameInput?.value,
+        description: descriptionInput?.value,
         participantCount,
         marblesPerTeam: MARBLES_PER_TEAM_OPTIONS[Number(marblesSlider.value)],
       })

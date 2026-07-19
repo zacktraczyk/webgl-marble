@@ -41,6 +41,7 @@ describe("race repository", () => {
       eliminatedPerLeg: 1,
     });
     expect(race.releaseIntervalMs).toBe(15);
+    expect(race.description).toBe("");
     expect(isRacePlayable(race)).toBe(true);
   });
 
@@ -71,6 +72,24 @@ describe("race repository", () => {
       version: 1,
       races: [],
     });
+  });
+
+  test("stores capped descriptions and migrates races without one", () => {
+    const storage = new MemoryStorage();
+    const race = createDefaultRace({
+      id: "described",
+      description: "  A fast final.  ",
+      createId: ids(),
+    });
+    expect(race.description).toBe("A fast final.");
+    expect(() =>
+      createDefaultRace({ description: "x".repeat(501), createId: ids() })
+    ).toThrow("500 characters or fewer");
+
+    delete race.description;
+    storage.setItem("test", JSON.stringify({ version: 1, races: [race] }));
+    const repository = new RaceRepository({ storage, storageKey: "test" });
+    expect(repository.get("described")?.description).toBe("");
   });
 
   test("upgrades one-marble MVP races to one hundred marbles per team", () => {

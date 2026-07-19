@@ -60,20 +60,27 @@ const migrateLegacyRaceLibrary = (value: unknown): unknown => {
   return {
     ...value,
     races: value.races.map((race) => {
-      if (!isRecord(race) || !isRecord(race.rules)) {
+      if (!isRecord(race)) {
         return race;
       }
-      if (race.rules.eliminatedPerLeg !== 1) {
-        return race;
+      let migratedRace = race;
+      if (!("description" in migratedRace)) {
+        migratedRace = { ...migratedRace, description: "" };
       }
-      const legacyMarbleCount = race.rules.marblesPerParticipant;
+      if (!isRecord(migratedRace.rules)) {
+        return migratedRace;
+      }
+      if (migratedRace.rules.eliminatedPerLeg !== 1) {
+        return migratedRace;
+      }
+      const legacyMarbleCount = migratedRace.rules.marblesPerParticipant;
       if (legacyMarbleCount !== 1 && legacyMarbleCount !== 100) {
-        return race;
+        return migratedRace;
       }
-      const legacyRules = { ...race.rules };
+      const legacyRules = { ...migratedRace.rules };
       delete legacyRules.marblesPerParticipant;
       return {
-        ...race,
+        ...migratedRace,
         rules: {
           ...legacyRules,
           marblesPerTeam: RACE_MARBLES_PER_TEAM,
@@ -309,10 +316,7 @@ export class RaceRepository {
     let stored: string | null;
     try {
       stored = this.storage.getItem(this.storageKey);
-      if (
-        stored === null &&
-        this.storageKey === DEFAULT_RACE_STORAGE_KEY
-      ) {
+      if (stored === null && this.storageKey === DEFAULT_RACE_STORAGE_KEY) {
         stored = this.storage.getItem(LEGACY_RACE_STORAGE_KEY);
         if (stored !== null) {
           // Migrate off the misspelled key so subsequent loads use the current one.

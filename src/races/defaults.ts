@@ -8,7 +8,11 @@ import {
 } from "../game/level/constants";
 import { createDefaultCourse } from "../game/level/objects";
 import type { RaceDocument, RaceLegDocument, RaceParticipant } from "./types";
-import { RACE_DOCUMENT_VERSION, isValidMarblesPerTeam } from "./types";
+import {
+  MAX_RACE_DESCRIPTION_LENGTH,
+  RACE_DOCUMENT_VERSION,
+  isValidMarblesPerTeam,
+} from "./types";
 
 export const DEFAULT_PARTICIPANT_COUNT = 4;
 export const DEFAULT_MARBLES_PER_TEAM = 60;
@@ -88,6 +92,7 @@ export const createDefaultLeg = ({
 export type DefaultRaceOptions = RaceFactoryDependencies & {
   id?: string;
   name?: string;
+  description?: string;
   participantCount?: number;
   legCount?: number;
   releaseIntervalMs?: number;
@@ -98,6 +103,7 @@ export type DefaultRaceOptions = RaceFactoryDependencies & {
 export const createDefaultRace = ({
   id,
   name,
+  description = "",
   participantCount = DEFAULT_PARTICIPANT_COUNT,
   legCount = 0,
   releaseIntervalMs = DEFAULT_RELEASE_INTERVAL_MS,
@@ -114,12 +120,18 @@ export const createDefaultRace = ({
   if (!isValidMarblesPerTeam(marblesPerTeam)) {
     throw new Error("Marbles per team must be one of the supported counts");
   }
+  if (description.length > MAX_RACE_DESCRIPTION_LENGTH) {
+    throw new Error(
+      `Race description must be ${MAX_RACE_DESCRIPTION_LENGTH} characters or fewer`
+    );
+  }
 
   const timestamp = now().toISOString();
   return {
     version: RACE_DOCUMENT_VERSION,
     id: id ?? createId(),
     name: name?.trim() || "Untitled race",
+    description: description.trim(),
     createdAt: timestamp,
     updatedAt: timestamp,
     releaseIntervalMs,

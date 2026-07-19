@@ -3,6 +3,7 @@ import type { Color } from "../engine/core/color";
 
 export const RACE_DOCUMENT_VERSION = 1 as const;
 export const RACE_LIBRARY_VERSION = 1 as const;
+export const MAX_RACE_DESCRIPTION_LENGTH = 500 as const;
 /** Legacy marble count — older documents predate the selectable ladder. */
 export const RACE_MARBLES_PER_TEAM = 100 as const;
 /**
@@ -45,6 +46,7 @@ export type RaceDocument = {
   version: typeof RACE_DOCUMENT_VERSION;
   id: string;
   name: string;
+  description: string;
   createdAt: string;
   updatedAt: string;
   releaseIntervalMs: number;
@@ -115,6 +117,8 @@ export const isRaceDocument = (value: unknown): value is RaceDocument => {
     value.version !== RACE_DOCUMENT_VERSION ||
     !isNonEmptyString(value.id) ||
     !isNonEmptyString(value.name) ||
+    typeof value.description !== "string" ||
+    value.description.length > MAX_RACE_DESCRIPTION_LENGTH ||
     typeof value.createdAt !== "string" ||
     typeof value.updatedAt !== "string" ||
     !isFiniteNumber(value.releaseIntervalMs) ||

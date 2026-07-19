@@ -72,7 +72,19 @@ import Tooltip from "../ui/Tooltip.astro";
         class="block w-full border-0 bg-transparent p-0 text-[1.75rem] font-extrabold tracking-[-0.02em] leading-tight text-ink caret-brand placeholder:text-ink-faint focus:outline-none"
       />
 
-      <div class="mt-7 flex items-center justify-between gap-4">
+      <label for="create-description" class="sr-only">Race description</label>
+      <textarea
+        id="create-description"
+        maxlength="500"
+        rows="4"
+        placeholder="Add a short description…"
+        class="mt-5 block w-full resize-none rounded-xl border border-line bg-canvas px-4 py-3 text-sm leading-6 text-ink caret-brand placeholder:text-ink-faint focus:border-ink-dim focus:outline-none"
+      ></textarea>
+      <p class="mt-1.5 text-right text-xs tabular-nums text-ink-faint">
+        <span id="create-description-count">0</span>/500
+      </p>
+
+      <div class="mt-5 flex items-center justify-between gap-4">
         <p class="text-sm font-bold text-ink">Starting teams</p>
         <div class="flex items-center rounded-full bg-canvas">
           <button

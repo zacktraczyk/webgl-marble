@@ -8,7 +8,7 @@ import {
 import { createExitAnimator } from "../../../ui/exitAnimation";
 import { wireLegListReorder } from "./dragReorder";
 import type { RaceBuilderContext } from "./context";
-import { fitNameInput } from "./render";
+import { fitTextArea } from "./render";
 
 /**
  * Binds every top-level race-builder control (name, marble counts, sliders,
@@ -97,7 +97,7 @@ export const bindRaceBuilderControls = (
     });
   };
 
-  ui.nameInput?.addEventListener("input", () => fitNameInput(ui.nameInput), {
+  ui.nameInput?.addEventListener("input", () => fitTextArea(ui.nameInput), {
     signal,
   });
   ui.nameInput?.addEventListener(
@@ -116,6 +116,22 @@ export const bindRaceBuilderControls = (
       if (!context.race || !ui.nameInput) return;
       const name = ui.nameInput.value.replace(/\s+/g, " ").trim();
       context.saveRace({ ...context.race, name: name || "Untitled race" });
+    },
+    { signal }
+  );
+  ui.descriptionInput?.addEventListener(
+    "input",
+    () => fitTextArea(ui.descriptionInput),
+    { signal }
+  );
+  ui.descriptionInput?.addEventListener(
+    "change",
+    () => {
+      if (!context.race || !ui.descriptionInput) return;
+      context.saveRace({
+        ...context.race,
+        description: ui.descriptionInput.value.trim(),
+      });
     },
     { signal }
   );

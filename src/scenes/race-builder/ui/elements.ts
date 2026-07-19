@@ -2,6 +2,7 @@ export type RaceBuilderUi = {
   missing: HTMLElement | null;
   builder: HTMLElement | null;
   nameInput: HTMLTextAreaElement | null;
+  descriptionInput: HTMLTextAreaElement | null;
   playLink: HTMLAnchorElement | null;
   marbleCount: HTMLOutputElement | null;
   marblesMinus: HTMLButtonElement | null;
@@ -28,6 +29,8 @@ export const resolveRaceBuilderUi = (): RaceBuilderUi => ({
   missing: document.querySelector<HTMLElement>("#missing-race"),
   builder: document.querySelector<HTMLElement>("#race-builder"),
   nameInput: document.querySelector<HTMLTextAreaElement>("#race-name"),
+  descriptionInput:
+    document.querySelector<HTMLTextAreaElement>("#race-description"),
   playLink: document.querySelector<HTMLAnchorElement>("#play-race"),
   marbleCount: document.querySelector<HTMLOutputElement>("#marble-count"),
   marblesMinus: document.querySelector<HTMLButtonElement>("#marbles-minus"),

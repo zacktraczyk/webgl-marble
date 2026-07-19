@@ -14,10 +14,10 @@ import {
 import { wireLegDragHandle } from "./dragReorder";
 import type { RaceBuilderContext } from "./context";
 
-export const fitNameInput = (nameInput: HTMLTextAreaElement | null) => {
-  if (!nameInput) return;
-  nameInput.style.height = "auto";
-  nameInput.style.height = `${nameInput.scrollHeight}px`;
+export const fitTextArea = (input: HTMLTextAreaElement | null) => {
+  if (!input) return;
+  input.style.height = "auto";
+  input.style.height = `${input.scrollHeight}px`;
 };
 
 export const render = (context: RaceBuilderContext) => {
@@ -26,6 +26,7 @@ export const render = (context: RaceBuilderContext) => {
   if (
     !race ||
     !ui.nameInput ||
+    !ui.descriptionInput ||
     !ui.playLink ||
     !ui.marbleCount ||
     !ui.marblesMinus ||
@@ -42,7 +43,11 @@ export const render = (context: RaceBuilderContext) => {
     return;
   }
   if (document.activeElement !== ui.nameInput) ui.nameInput.value = race.name;
-  fitNameInput(ui.nameInput);
+  fitTextArea(ui.nameInput);
+  if (document.activeElement !== ui.descriptionInput) {
+    ui.descriptionInput.value = race.description;
+  }
+  fitTextArea(ui.descriptionInput);
   ui.marbleCount.value = `${race.participants.length}`;
   ui.marblesMinus.disabled = race.participants.length <= 2;
   ui.marblesPlus.disabled = race.participants.length >= MAX_RACE_PARTICIPANTS;

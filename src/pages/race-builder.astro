@@ -40,7 +40,14 @@ import Tooltip from "../ui/Tooltip.astro";
             rows="1"
             class="mt-6 block w-full resize-none overflow-hidden border-0 bg-transparent p-0 font-extrabold tracking-[-0.03em] leading-[0.92] text-[clamp(3rem,6vw,4.5rem)] text-ink caret-brand [text-shadow:0.08em_0.09em_0_var(--color-stamp)] placeholder:text-ink-faint focus:outline-none"
             placeholder="Untitled race"></textarea>
-          <a id="play-race" class="pill pill-play mt-8 text-sm">Play race</a>
+          <label for="race-description" class="sr-only">Race description</label>
+          <textarea
+            id="race-description"
+            maxlength="500"
+            rows="1"
+            class="mt-4 block w-full resize-none overflow-hidden border-0 bg-transparent p-0 text-lg leading-7 text-ink-dim caret-brand placeholder:text-ink-faint focus:outline-none"
+            placeholder="Add a short description…"></textarea>
+          <a id="play-race" class="pill pill-play mt-10 text-sm">Play race</a>
         </div>
 
         <section
