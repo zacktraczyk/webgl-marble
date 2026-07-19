@@ -4,6 +4,23 @@ import { RaceRepository } from "../../races";
 import createLegBuilder from "./createLegBuilder";
 
 const byId = (id: string) => document.getElementById(id);
+const SIDEBAR_OPEN_STORAGE_KEY = "marble:leg-builder:options-open:v1";
+
+const readStoredSidebarOpen = () => {
+  try {
+    return window.localStorage.getItem(SIDEBAR_OPEN_STORAGE_KEY) === "true";
+  } catch {
+    return false;
+  }
+};
+
+const storeSidebarOpen = (open: boolean) => {
+  try {
+    window.localStorage.setItem(SIDEBAR_OPEN_STORAGE_KEY, `${open}`);
+  } catch {
+    // The sidebar still works when browser storage is unavailable.
+  }
+};
 
 const setupSidebar = () => {
   const builder = byId("leg-builder");
@@ -27,11 +44,21 @@ const setupSidebar = () => {
   };
 
   const onSidebarToggle = () => {
-    setSidebarOpen(builder?.dataset.sidebarOpen !== "true");
+    const open = builder?.dataset.sidebarOpen !== "true";
+    setSidebarOpen(open);
+    storeSidebarOpen(open);
   };
+
+  setSidebarOpen(readStoredSidebarOpen());
+  const readyFrame = window.requestAnimationFrame(() => {
+    if (builder) {
+      builder.dataset.sidebarReady = "true";
+    }
+  });
   sidebarToggle?.addEventListener("click", onSidebarToggle);
 
   return () => {
+    window.cancelAnimationFrame(readyFrame);
     sidebarToggle?.removeEventListener("click", onSidebarToggle);
   };
 };
