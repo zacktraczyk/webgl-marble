@@ -154,6 +154,15 @@ export class BuilderControls {
       "keydown",
       (event) => {
         if (
+          event.key === "Escape" &&
+          !event.repeat &&
+          ui.root.dataset.previewing === "true"
+        ) {
+          actions.resetRace();
+          ui.editorCanvas.focus();
+          event.preventDefault();
+          event.stopPropagation();
+        } else if (
           event.key === "4" &&
           !event.metaKey &&
           !event.ctrlKey &&
