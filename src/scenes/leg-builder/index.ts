@@ -9,12 +9,6 @@ const setupSidebar = () => {
   const builder = byId("leg-builder");
   const sidebar = byId("leg-options-sidebar");
   const sidebarToggle = byId("toggle-sidebar");
-  const openSidebarIcon = sidebarToggle?.querySelector<SVGElement>(
-    '[data-sidebar-icon="open"]'
-  );
-  const closeSidebarIcon = sidebarToggle?.querySelector<SVGElement>(
-    '[data-sidebar-icon="close"]'
-  );
 
   const setSidebarOpen = (open: boolean) => {
     if (!builder || !sidebar || !sidebarToggle) {
@@ -30,8 +24,6 @@ const setupSidebar = () => {
     sidebarToggle.dataset.tooltip = open ? "Close Sidebar" : "Open Sidebar";
     sidebar.setAttribute("aria-hidden", `${!open}`);
     sidebar.toggleAttribute("inert", !open);
-    openSidebarIcon?.classList.toggle("hidden", open);
-    closeSidebarIcon?.classList.toggle("hidden", !open);
   };
 
   const onSidebarToggle = () => {

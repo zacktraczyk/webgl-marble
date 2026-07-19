@@ -23,6 +23,7 @@ export type TooltipUi = {
 export class TooltipController {
   private activeTrigger: HTMLElement | null = null;
   private pendingTrigger: HTMLElement | null = null;
+  private suppressedTrigger: HTMLElement | null = null;
   private previousDescription: string | null = null;
   private showTimer: number | undefined;
   private hideTimer: number | undefined;
@@ -63,7 +64,8 @@ export class TooltipController {
     if (
       !trigger ||
       (event.relatedTarget instanceof Node &&
-        trigger.contains(event.relatedTarget))
+        trigger.contains(event.relatedTarget)) ||
+      trigger === this.suppressedTrigger
     ) {
       return;
     }
@@ -78,6 +80,9 @@ export class TooltipController {
         trigger.contains(event.relatedTarget))
     ) {
       return;
+    }
+    if (trigger === this.suppressedTrigger) {
+      this.suppressedTrigger = null;
     }
     this.scheduleDismiss(trigger);
   };
@@ -108,6 +113,11 @@ export class TooltipController {
   private readonly handlePointerDown = (event: PointerEvent) => {
     this.keyboardFocus = false;
     const trigger = this.findTrigger(event.target);
+    if (trigger?.hasAttribute("data-tooltip-dismiss-on-click")) {
+      this.suppressedTrigger = trigger;
+      this.hide();
+      return;
+    }
     if (trigger !== this.activeTrigger && trigger !== this.pendingTrigger) {
       this.hide();
     }
@@ -142,6 +152,7 @@ export class TooltipController {
     }
     this.restoreDescription();
     this.activeTrigger = null;
+    this.suppressedTrigger = null;
     this.ui.tooltip.hidden = true;
   };
 
