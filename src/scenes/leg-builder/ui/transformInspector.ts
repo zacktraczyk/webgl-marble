@@ -21,6 +21,11 @@ const finiteInput = (input: HTMLInputElement, fallback: number) => {
   return Number.isFinite(value) ? value : fallback;
 };
 
+type TransformAction =
+  | "rotate-clockwise"
+  | "flip-left-right"
+  | "flip-top-bottom";
+
 /** Owns numeric geometry editing and multi-selection arrange controls. */
 export class TransformInspectorController {
   constructor(
@@ -32,6 +37,22 @@ export class TransformInspectorController {
   ) {
     for (const input of this.inputs) {
       input.addEventListener("change", this.commitInputs, { signal });
+    }
+    for (const button of ui.transformActionButtons) {
+      button.addEventListener(
+        "click",
+        () => {
+          const action = button.dataset.transformAction as
+            | TransformAction
+            | undefined;
+          if (action === "rotate-clockwise") {
+            this.rotateClockwise();
+          } else if (action) {
+            this.editor.performContextAction(action);
+          }
+        },
+        { signal }
+      );
     }
     for (const button of ui.arrangeButtons) {
       button.addEventListener(
@@ -136,6 +157,18 @@ export class TransformInspectorController {
     if (document.activeElement !== input) {
       input.value = rounded(value);
     }
+  }
+
+  private rotateClockwise() {
+    const object = this.editor.selectedObject;
+    if (!object || this.isReadOnly()) {
+      return;
+    }
+    const shape = getLevelObjectShape(object, this.getDefaultWallThickness());
+    this.editor.updateSelectedShape({
+      ...shape,
+      rotation: shape.rotation + Math.PI / 2,
+    });
   }
 
   private readonly commitInputs = () => {

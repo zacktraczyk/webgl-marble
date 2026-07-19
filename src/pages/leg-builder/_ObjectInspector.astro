@@ -39,37 +39,41 @@
     >
       Transform
     </p>
+    <p class="mb-1 text-[10px] text-zinc-500">Position</p>
     <div class="grid grid-cols-2 gap-2">
-      <label class="text-[10px] text-zinc-500" for="transform-x">
-        X
+      <label class="relative" for="transform-x">
+        <span
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-y-0 left-2 flex items-center font-mono text-[11px] text-zinc-500"
+          >X</span
+        >
         <input
           id="transform-x"
           data-role="transform-x"
+          aria-label="X position"
           type="number"
           step="1"
-          class="mt-1 w-full rounded-md border border-zinc-600 bg-zinc-900 px-2 py-1.5 font-mono text-xs text-zinc-100 outline-none focus:border-cyan-400"
+          class="w-full rounded-md border border-zinc-600 bg-zinc-900 py-1.5 pl-6 pr-2 font-mono text-xs text-zinc-100 outline-none focus:border-cyan-400"
         />
       </label>
-      <label class="text-[10px] text-zinc-500" for="transform-y">
-        Y
+      <label class="relative" for="transform-y">
+        <span
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-y-0 left-2 flex items-center font-mono text-[11px] text-zinc-500"
+          >Y</span
+        >
         <input
           id="transform-y"
           data-role="transform-y"
+          aria-label="Y position"
           type="number"
           step="1"
-          class="mt-1 w-full rounded-md border border-zinc-600 bg-zinc-900 px-2 py-1.5 font-mono text-xs text-zinc-100 outline-none focus:border-cyan-400"
+          class="w-full rounded-md border border-zinc-600 bg-zinc-900 py-1.5 pl-6 pr-2 font-mono text-xs text-zinc-100 outline-none focus:border-cyan-400"
         />
       </label>
-      <label class="text-[10px] text-zinc-500" for="transform-rotation">
-        Angle°
-        <input
-          id="transform-rotation"
-          data-role="transform-rotation"
-          type="number"
-          step="1"
-          class="mt-1 w-full rounded-md border border-zinc-600 bg-zinc-900 px-2 py-1.5 font-mono text-xs text-zinc-100 outline-none focus:border-cyan-400"
-        />
-      </label>
+    </div>
+
+    <div class="mt-3 grid grid-cols-2 gap-2">
       <label class="text-[10px] text-zinc-500" for="transform-primary">
         <span data-role="transform-primary-label">Length</span>
         <input
@@ -96,6 +100,114 @@
           class="mt-1 w-full rounded-md border border-zinc-600 bg-zinc-900 px-2 py-1.5 font-mono text-xs text-zinc-100 outline-none focus:border-cyan-400"
         />
       </label>
+    </div>
+
+    <p class="mb-1 mt-3 text-[10px] text-zinc-500">Rotation</p>
+    <div class="flex gap-2">
+      <label class="relative min-w-0 flex-1" for="transform-rotation">
+        <span
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-y-0 left-2 flex items-center text-zinc-500"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.75"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="size-4"
+          >
+            <path d="M5 17V8"></path>
+            <path d="M5 17h10"></path>
+            <path d="M5 12a5 5 0 0 1 5 5"></path>
+          </svg>
+        </span>
+        <input
+          id="transform-rotation"
+          data-role="transform-rotation"
+          aria-label="Rotation in degrees"
+          type="number"
+          step="1"
+          class="w-full rounded-md border border-zinc-600 bg-zinc-900 py-1.5 pl-8 pr-2 font-mono text-xs text-zinc-100 outline-none focus:border-cyan-400"
+        />
+      </label>
+
+      <div
+        class="flex shrink-0 overflow-hidden rounded-md border border-zinc-600"
+      >
+        <button
+          data-transform-action="rotate-clockwise"
+          data-tooltip="Rotate 90° clockwise"
+          aria-label="Rotate 90 degrees clockwise"
+          type="button"
+          class="flex h-7 w-8 items-center justify-center text-zinc-300 outline-none hover:bg-zinc-700 hover:text-white focus-visible:bg-zinc-700 focus-visible:text-white"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="size-3.5"
+            aria-hidden="true"
+          >
+            <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"></path>
+            <path d="M21 3v5h-5"></path>
+          </svg>
+        </button>
+        <button
+          data-transform-action="flip-left-right"
+          data-tooltip="Flip left ↔ right"
+          aria-label="Flip left to right"
+          type="button"
+          class="flex h-7 w-8 items-center justify-center border-x border-zinc-600 text-zinc-300 outline-none hover:bg-zinc-700 hover:text-white focus-visible:bg-zinc-700 focus-visible:text-white"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="size-3.5"
+            aria-hidden="true"
+          >
+            <path d="m3 7 5 5-5 5V7"></path>
+            <path d="m21 7-5 5 5 5V7"></path>
+            <path d="M12 20v2"></path>
+            <path d="M12 14v2"></path>
+            <path d="M12 8v2"></path>
+            <path d="M12 2v2"></path>
+          </svg>
+        </button>
+        <button
+          data-transform-action="flip-top-bottom"
+          data-tooltip="Flip top ↕ bottom"
+          aria-label="Flip top to bottom"
+          type="button"
+          class="flex h-7 w-8 items-center justify-center text-zinc-300 outline-none hover:bg-zinc-700 hover:text-white focus-visible:bg-zinc-700 focus-visible:text-white"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="size-3.5"
+            aria-hidden="true"
+          >
+            <path d="m17 3-5 5-5-5h10"></path>
+            <path d="m17 21-5-5-5 5h10"></path>
+            <path d="M4 12H2"></path>
+            <path d="M10 12H8"></path>
+            <path d="M16 12h-2"></path>
+            <path d="M22 12h-2"></path>
+          </svg>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -161,7 +273,7 @@
     </div>
   </div>
 
-  <div data-role="motion-inspector" class="mt-3 border-t border-zinc-700 pt-3">
+  <div data-role="motion-inspector" class="mt-3 border-y border-zinc-700 py-3">
     <label class="block text-xs text-zinc-400" for="motion-type">
       Motion
       <select
@@ -176,12 +288,7 @@
       </select>
     </label>
 
-    <div
-      id="motion-controls"
-      data-role="motion-controls"
-      class="mt-3 border-t border-zinc-700 pt-3"
-      hidden
-    >
+    <div id="motion-controls" data-role="motion-controls" class="mt-3" hidden>
       <div class="flex items-center justify-between gap-3">
         <span class="text-xs text-zinc-400">Speed</span>
         <div class="flex overflow-hidden rounded-md border border-zinc-600">

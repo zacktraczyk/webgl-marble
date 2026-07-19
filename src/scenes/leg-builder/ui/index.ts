@@ -69,6 +69,7 @@ export type BuilderUi = {
   transformPrimaryLabel: HTMLElement;
   transformSecondaryLabel: HTMLElement;
   transformSecondaryRow: HTMLElement;
+  transformActionButtons: HTMLButtonElement[];
   multiSelectionControls: HTMLElement;
   arrangeButtons: HTMLButtonElement[];
   motionInspector: HTMLElement;
@@ -232,6 +233,9 @@ export const resolveBuilderUi = (
     transformSecondaryRow: role(
       "transform-secondary-row",
       "transform secondary row"
+    ),
+    transformActionButtons: Array.from(
+      root.querySelectorAll<HTMLButtonElement>("[data-transform-action]")
     ),
     multiSelectionControls: role(
       "multi-selection-controls",
