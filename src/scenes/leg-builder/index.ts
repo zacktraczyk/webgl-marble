@@ -53,12 +53,13 @@ const wireRaceHomeLink = () => {
   const repository = new RaceRepository();
   const race = raceId ? repository.get(raceId) : null;
   const raceLeg = race?.legs.find((leg) => leg.id === legId) ?? null;
+  const legIndex = race?.legs.findIndex((leg) => leg.id === legId) ?? -1;
 
   if (race && raceLeg && homeLink) {
     homeLink.href = `/race-builder?race=${encodeURIComponent(race.id)}`;
     const label = homeLink.querySelector("span");
     if (label) {
-      label.textContent = "Race builder";
+      label.textContent = `${race.name} · Leg ${legIndex + 1}`;
     }
     for (const role of ["team-count", "marbles-per-team", "release-interval"]) {
       const input = builder?.querySelector<HTMLInputElement>(
@@ -71,7 +72,6 @@ const wireRaceHomeLink = () => {
     }
   }
 
-  const legIndex = race?.legs.findIndex((leg) => leg.id === legId) ?? -1;
   const roundConfiguration =
     race && raceLeg
       ? createLegRoundConfiguration(
