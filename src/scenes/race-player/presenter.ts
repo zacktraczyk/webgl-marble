@@ -5,7 +5,6 @@ export type UpdateControlsArgs = {
   restartButtons: readonly HTMLButtonElement[];
   skipContinueButtons: readonly HTMLButtonElement[];
   winnerDeclared: boolean;
-  transitioning: boolean;
   countdownActive: boolean;
   playbackPaused: boolean;
 };
@@ -43,7 +42,6 @@ export class RacePlayerPresenter {
     restartButtons,
     skipContinueButtons,
     winnerDeclared,
-    transitioning,
     countdownActive,
     playbackPaused,
   }: UpdateControlsArgs) {
@@ -62,7 +60,7 @@ export class RacePlayerPresenter {
     }
     for (const button of skipContinueButtons) {
       button.disabled = winnerDeclared || countdownActive;
-      button.textContent = transitioning ? "Continue" : "Skip leg";
+      button.textContent = "Skip leg";
     }
   }
 

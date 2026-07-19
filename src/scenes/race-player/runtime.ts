@@ -402,7 +402,6 @@ export class RacePlayerRuntime {
         restartButtons: this.restartButtons,
         skipContinueButtons: this.skipContinueButtons,
         winnerDeclared: this.progression.snapshot.winnerIndex !== null,
-        transitioning: this.transition !== null,
         countdownActive: this.countdown.active,
         playbackPaused: this.playbackPaused,
       },

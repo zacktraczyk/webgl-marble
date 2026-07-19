@@ -348,8 +348,18 @@ import Layout from "../layouts/Layout.astro";
    track reads full-bleed once the controls tuck away. */
 #race-vignette {
   background:
-    linear-gradient(to bottom, rgb(9 9 11 / 0.55), transparent 22%),
-    linear-gradient(to top, rgb(9 9 11 / 0.55), transparent 22%);
+    linear-gradient(
+      to bottom,
+      rgb(0 0 0 / 0.96),
+      rgb(0 0 0 / 0.72) 8%,
+      transparent 28%
+    ),
+    linear-gradient(
+      to top,
+      rgb(0 0 0 / 0.96),
+      rgb(0 0 0 / 0.72) 8%,
+      transparent 28%
+    );
   transition: opacity 260ms ease-out;
 }
 
@@ -432,6 +442,10 @@ import Layout from "../layouts/Layout.astro";
 
 #race-player[data-race-state="complete"] #winner-card {
   pointer-events: auto;
+}
+
+#race-player[data-race-state="complete"] #race-controls {
+  display: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
