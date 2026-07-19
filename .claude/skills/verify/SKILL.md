@@ -7,8 +7,11 @@ description: Build, launch, and drive the Marble app to verify a change end-to-e
 
 ## Launch
 
+The user often has their own `astro dev` running on 4321 — never touch
+it. Launch a dedicated instance on its own port and clean up only that:
+
 ```bash
-bun run dev   # Astro; picks the next free port (4321+) — read the actual port from stdout
+bun run dev -- --port 4399   # errors if 4399 is taken (no silent fallback)
 ```
 
 No test data ships with the app: races live in `localStorage`
@@ -49,5 +52,7 @@ canvas thumbnails render crisply. A worked example from a past session:
 
 - `bun test` has 2 pre-existing failures in `tests/spawn-point.test.js`
   (tests expect 5 render parts, prefab emits 4) — not a regression signal.
-- Kill the server/browser afterwards: `pkill -f "astro dev"`,
-  `pkill -f chrome-headless-shell`.
+- Kill only what this session started — never `pkill -f "astro dev"`
+  (it takes down the user's own dev server too). Kill the dev server by
+  its port: `lsof -ti :4399 | xargs kill`. The headless browser is safe
+  to kill by name: `pkill -f chrome-headless-shell`.

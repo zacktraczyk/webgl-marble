@@ -6,9 +6,11 @@ import {
   RaceRepository,
   createDefaultRace,
   isRacePlayable,
-  renderLevelThumbnail,
+  renderRaceThumbnail,
   requiredLegCount,
 } from "../../races";
+import type { LegFinishPlan } from "../../game/race/eraSchedule";
+import { computeEraSchedule } from "../../game/race/eraSchedule";
 import { createExitAnimator } from "../../ui/exitAnimation";
 import { attachTooltip } from "../../ui/tooltip";
 
@@ -150,28 +152,47 @@ export const mountRaceLibrary = () => {
       if (race.legs.length === 0) {
         emptyPreview.classList.remove("hidden");
         emptyPreview.classList.add("flex");
-      }
-      const strip = document.createElement("div");
-      strip.className = "flex flex-col gap-1.5";
-      preview.append(strip);
-      const canvases = race.legs.map((leg) => {
+      } else {
         const canvas = document.createElement("canvas");
-        canvas.className = "block w-full rounded-lg";
-        canvas.style.aspectRatio = `${leg.level.size[0]} / ${leg.level.size[1]}`;
-        strip.append(canvas);
-        return canvas;
-      });
-      // Draw after the cards are in the document so sizes are measurable.
-      pending.push(() => {
-        race.legs.forEach((leg, index) => {
-          renderLevelThumbnail(canvases[index], leg.level, {
-            background: "oklch(19% 0.004 285)",
-            courseBackground: "oklch(26% 0.005 285)",
-            border: "oklch(38% 0.006 285)",
-            teamCount: race.participants.length - index,
-          });
+        canvas.className = "block w-full";
+        preview.append(canvas);
+        // With a complete race the era schedule is deterministic, so the
+        // preview can show each leg's true finish rack bay count.
+        let schedule: LegFinishPlan[] | null = null;
+        if (race.legs.length === race.participants.length - 1) {
+          try {
+            schedule = computeEraSchedule({
+              participantCount: race.participants.length,
+              marblesPerTeam: race.rules.marblesPerTeam,
+              legs: race.legs.map(({ level }) => ({
+                width: level.size[0],
+                wallThickness: level.settings.wallThickness,
+              })),
+            });
+          } catch {
+            schedule = null;
+          }
+        }
+        // Draw after the cards are in the document so sizes are measurable.
+        pending.push(() => {
+          renderRaceThumbnail(
+            canvas,
+            race.legs.map((leg, index) => ({
+              level: leg.level,
+              teamCount:
+                schedule?.[index]?.bayCount ?? race.participants.length - index,
+              xBayCount: schedule?.[index]?.xBayCount,
+            })),
+            {
+              background: "oklch(19% 0.004 285)",
+              courseBackground: "oklch(26% 0.005 285)",
+              border: "oklch(38% 0.006 285)",
+              // Short stacks still fill the preview frame, track centered.
+              minHeight: preview.clientHeight,
+            }
+          );
         });
-      });
+      }
 
       fragment
         .querySelector<HTMLButtonElement>("[data-duplicate-race]")!

@@ -257,6 +257,19 @@ const drawObject = (
   });
 };
 
+const drawLevelObjects = (
+  context: CanvasRenderingContext2D,
+  level: SerializedLevel,
+  settings: ObjectDrawSettings
+) => {
+  for (const object of level.objects) {
+    drawMotionGuide(context, object, settings.wallThickness);
+  }
+  for (const object of level.objects) {
+    drawObject(context, object, settings);
+  }
+};
+
 export const drawLevelThumbnail = (
   context: CanvasRenderingContext2D,
   level: SerializedLevel,
@@ -301,17 +314,11 @@ export const drawLevelThumbnail = (
     level.size[1]
   );
 
-  const settings: ObjectDrawSettings = {
+  drawLevelObjects(context, level, {
     wallThickness: level.settings.wallThickness,
     teamCount: options.teamCount,
     xBayCount: options.xBayCount,
-  };
-  for (const object of level.objects) {
-    drawMotionGuide(context, object, level.settings.wallThickness);
-  }
-  for (const object of level.objects) {
-    drawObject(context, object, settings);
-  }
+  });
   context.restore();
 };
 
@@ -336,6 +343,202 @@ export const renderLevelThumbnail = (
     ...options,
     width,
     height,
+    pixelRatio,
+  });
+  return true;
+};
+
+export type RaceThumbnailLeg = {
+  level: SerializedLevel;
+  teamCount?: number;
+  xBayCount?: number;
+};
+
+export type RaceThumbnailOptions = {
+  width?: number;
+  /** Canvas height; short stacks center vertically in the extra space. */
+  height?: number;
+  /** Never render shorter than this, so the background fills the frame. */
+  minHeight?: number;
+  pixelRatio?: number;
+  padding?: number;
+  background?: string;
+  courseBackground?: string;
+  border?: string;
+};
+
+/** Fraction of the canvas width kept as a dark frame around the stack. */
+const RACE_THUMBNAIL_PADDING_RATIO = 0.06;
+
+/** Browsers cap canvas dimensions; stay comfortably under the common limit. */
+const MAX_CANVAS_DIMENSION = 8192;
+
+/**
+ * Legs stacked edge-to-edge along +Y, horizontally centered — the same
+ * layout the race player uses (see `scenes/race-player/legStack.ts`, the
+ * canonical playback version; thumbnails skip its finish-rack resizing,
+ * which is invisible at this scale).
+ */
+const computeRaceStackLayout = (legs: readonly RaceThumbnailLeg[]) => {
+  const tops: number[] = [];
+  let stackWidth = 0;
+  let totalHeight = 0;
+  for (const leg of legs) {
+    tops.push(totalHeight);
+    stackWidth = Math.max(stackWidth, leg.level.size[0]);
+    totalHeight += leg.level.size[1];
+  }
+  return { stackWidth, totalHeight, tops };
+};
+
+/**
+ * Draws a whole race as one continuous course: every leg stacked
+ * edge-to-edge with a single shared track background, so leg boundaries
+ * read as one race rather than separate tiles. Scale is width-driven; the
+ * canvas is as tall as the stack needs and the caller crops the overflow.
+ */
+export const drawRaceThumbnail = (
+  context: CanvasRenderingContext2D,
+  legs: readonly RaceThumbnailLeg[],
+  options: RaceThumbnailOptions = {}
+) => {
+  const pixelRatio = options.pixelRatio ?? 1;
+  const width = options.width ?? context.canvas.width / pixelRatio;
+  const padding = options.padding ?? width * RACE_THUMBNAIL_PADDING_RATIO;
+  const background = options.background ?? "#18181b";
+  const courseBackground = options.courseBackground ?? "#27272a";
+  const border = options.border ?? "#52525b";
+
+  const { stackWidth, totalHeight, tops } = computeRaceStackLayout(legs);
+  const scale = Math.max(0.0001, (width - padding * 2) / stackWidth);
+  const height = options.height ?? padding * 2 + totalHeight * scale;
+  // A stack shorter than the canvas floats centered in the extra space.
+  const originY = Math.max(padding, (height - totalHeight * scale) / 2);
+
+  const legLeft = (leg: RaceThumbnailLeg) =>
+    width / 2 - (leg.level.size[0] * scale) / 2;
+  const legTop = (index: number) => originY + tops[index] * scale;
+
+  context.save();
+  context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+  context.clearRect(0, 0, width, height);
+  context.fillStyle = background;
+  context.fillRect(0, 0, width, height);
+
+  // First the continuous track background for every leg, then the objects:
+  // a later leg's background must never paint over the previous leg's
+  // finish rack. Rects after the first reach slightly up into the previous
+  // one so antialiasing can't leave a hairline seam at the boundary.
+  const seam = 0.5 / pixelRatio;
+  context.fillStyle = courseBackground;
+  legs.forEach((leg, index) => {
+    const overlap = index > 0 ? seam : 0;
+    context.fillRect(
+      legLeft(leg),
+      legTop(index) - overlap,
+      leg.level.size[0] * scale,
+      leg.level.size[1] * scale + overlap
+    );
+  });
+
+  legs.forEach((leg, index) => {
+    context.save();
+    context.translate(
+      width / 2,
+      legTop(index) + (leg.level.size[1] / 2) * scale
+    );
+    context.scale(scale, scale);
+    drawLevelObjects(context, leg.level, {
+      wallThickness: leg.level.settings.wallThickness,
+      teamCount: leg.teamCount,
+      xBayCount: leg.xBayCount,
+    });
+    context.restore();
+  });
+
+  // Border only along the stack's outer perimeter — never across internal
+  // leg boundaries, so the course reads as one continuous track. Ledge
+  // segments appear only where adjacent legs differ in width.
+  context.strokeStyle = border;
+  context.lineWidth = 1;
+  context.beginPath();
+  legs.forEach((leg, index) => {
+    const left = legLeft(leg);
+    const right = left + leg.level.size[0] * scale;
+    const top = legTop(index);
+    const bottom = top + leg.level.size[1] * scale;
+    context.moveTo(left, top);
+    context.lineTo(left, bottom);
+    context.moveTo(right, top);
+    context.lineTo(right, bottom);
+    if (index === 0) {
+      context.moveTo(left, top);
+      context.lineTo(right, top);
+    }
+    if (index === legs.length - 1) {
+      context.moveTo(left, bottom);
+      context.lineTo(right, bottom);
+    }
+    if (index > 0) {
+      const previous = legs[index - 1];
+      const previousLeft = legLeft(previous);
+      const previousRight = previousLeft + previous.level.size[0] * scale;
+      for (const [from, to] of [
+        [previousLeft, left],
+        [previousRight, right],
+      ]) {
+        if (Math.abs(from - to) > 0.01) {
+          context.moveTo(from, top);
+          context.lineTo(to, top);
+        }
+      }
+    }
+  });
+  context.stroke();
+  context.restore();
+};
+
+/**
+ * Sizes `canvas` to the race stack's aspect ratio (width from layout,
+ * height derived) and draws the continuous race preview into it.
+ */
+export const renderRaceThumbnail = (
+  canvas: HTMLCanvasElement,
+  legs: readonly RaceThumbnailLeg[],
+  options: RaceThumbnailOptions = {}
+) => {
+  if (legs.length === 0) {
+    return false;
+  }
+  const { stackWidth, totalHeight } = computeRaceStackLayout(legs);
+  const width = options.width ?? (canvas.clientWidth || canvas.width || 320);
+  const padding = options.padding ?? width * RACE_THUMBNAIL_PADDING_RATIO;
+  const scale = Math.max(0.0001, (width - padding * 2) / stackWidth);
+  const height = Math.max(
+    options.minHeight ?? 0,
+    padding * 2 + totalHeight * scale
+  );
+  canvas.style.aspectRatio = `${width} / ${height}`;
+  const devicePixels =
+    options.pixelRatio ??
+    (typeof window === "undefined" ? 1 : window.devicePixelRatio || 1);
+  // Many-leg stacks get tall; keep the backing store within canvas limits.
+  const pixelRatio = Math.min(
+    devicePixels,
+    MAX_CANVAS_DIMENSION / width,
+    MAX_CANVAS_DIMENSION / height
+  );
+  canvas.width = Math.max(1, Math.round(width * pixelRatio));
+  canvas.height = Math.max(1, Math.round(height * pixelRatio));
+  const context = canvas.getContext("2d");
+  if (!context) {
+    return false;
+  }
+  drawRaceThumbnail(context, legs, {
+    ...options,
+    width,
+    height,
+    padding,
     pixelRatio,
   });
   return true;
