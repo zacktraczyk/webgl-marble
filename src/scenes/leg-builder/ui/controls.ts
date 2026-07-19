@@ -43,6 +43,13 @@ const releasePointerFocus = (event: MouseEvent) => {
   }
 };
 
+const isKeyboardControlTarget = (target: EventTarget | null) =>
+  target instanceof HTMLElement &&
+  (target.isContentEditable ||
+    target.matches(
+      'button, a[href], input, textarea, select, summary, [role="button"], [role="menuitem"]'
+    ));
+
 /** Owns builder DOM events and transient control presentation. */
 export class BuilderControls {
   private readonly buttonByTool: ReadonlyMap<SelectedTool, HTMLButtonElement>;
@@ -142,7 +149,20 @@ export class BuilderControls {
     document.addEventListener(
       "keydown",
       (event) => {
-        if (event.key === "Escape" && !ui.pusherLibrary.hidden) {
+        if (
+          event.key === "4" &&
+          !event.metaKey &&
+          !event.ctrlKey &&
+          !event.altKey &&
+          !event.repeat &&
+          !isKeyboardControlTarget(event.target) &&
+          !ui.pusherMenuToggleButton.disabled
+        ) {
+          this.setContextMenuOpen(false);
+          this.setPusherLibraryOpen(true);
+          ui.sliderButton.focus();
+          event.preventDefault();
+        } else if (event.key === "Escape" && !ui.pusherLibrary.hidden) {
           this.setPusherLibraryOpen(false);
           ui.pusherMenuToggleButton.focus();
           event.preventDefault();

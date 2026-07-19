@@ -155,6 +155,9 @@ export class LegEditorKeyboard {
         return;
       }
       const toolByKey: Partial<Record<string, SelectedTool>> = {
+        "1": SelectedTool.Pan,
+        "2": SelectedTool.Pointer,
+        "3": SelectedTool.Wall,
         v: SelectedTool.Pointer,
         h: SelectedTool.Pan,
         w: SelectedTool.Wall,
