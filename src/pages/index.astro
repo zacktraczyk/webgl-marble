@@ -5,6 +5,7 @@
 // the pre-launch screen until a dedicated preview page exists.
 import Layout from "../layouts/Layout.astro";
 import Tooltip from "../ui/Tooltip.astro";
+import ConfirmDeleteDialog from "../ui/ConfirmDeleteDialog.astro";
 ---
 
 <Layout title="Race Library · Marble">
@@ -144,6 +145,8 @@ import Tooltip from "../ui/Tooltip.astro";
       </div>
     </form>
   </dialog>
+
+  <ConfirmDeleteDialog />
 
   <Tooltip />
 

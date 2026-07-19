@@ -11,6 +11,7 @@ import {
   requiredLegCount,
   type RaceLegDocument,
 } from "../../../races";
+import { openConfirmDelete } from "../../../ui/confirmDelete";
 import { wireLegDragHandle } from "./dragReorder";
 import type { RaceBuilderContext } from "./context";
 
@@ -176,9 +177,16 @@ export const render = (context: RaceBuilderContext) => {
     remove.addEventListener(
       "click",
       () => {
-        if (!context.race || !window.confirm(`Delete “${leg.name}”?`)) return;
-        context.race = repository.deleteLeg(context.race.id, leg.id);
-        context.render();
+        if (!context.race) return;
+        openConfirmDelete({
+          title: "Delete leg?",
+          message: `This permanently deletes “${leg.name}”. This can't be undone.`,
+          onConfirm: () => {
+            if (!context.race) return;
+            context.race = repository.deleteLeg(context.race.id, leg.id);
+            context.render();
+          },
+        });
       },
       { signal }
     );

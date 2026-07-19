@@ -1,6 +1,7 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import Tooltip from "../ui/Tooltip.astro";
+import ConfirmDeleteDialog from "../ui/ConfirmDeleteDialog.astro";
 ---
 
 <Layout title="Race Builder · Marble">
@@ -225,6 +226,8 @@ import Tooltip from "../ui/Tooltip.astro";
     </section>
     <Tooltip />
   </main>
+
+  <ConfirmDeleteDialog />
 
   <template id="leg-template">
     <li>

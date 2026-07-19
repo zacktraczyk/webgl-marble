@@ -11,6 +11,7 @@ import {
 } from "../../races";
 import type { LegFinishPlan } from "../../game/race/eraSchedule";
 import { computeEraSchedule } from "../../game/race/eraSchedule";
+import { openConfirmDelete } from "../../ui/confirmDelete";
 import { createExitAnimator } from "../../ui/exitAnimation";
 import { attachTooltip } from "../../ui/tooltip";
 
@@ -203,9 +204,15 @@ export const mountRaceLibrary = () => {
       fragment
         .querySelector<HTMLButtonElement>("[data-delete-race]")!
         .addEventListener("click", () => {
-          if (!confirm(`Delete "${race.name}"? This can't be undone.`)) return;
-          repository.delete(race.id);
-          renderLibrary();
+          openConfirmDelete({
+            title: "Delete race?",
+            message: `This permanently deletes “${race.name}” and all of its legs. This can't be undone.`,
+            confirmName: race.name,
+            onConfirm: () => {
+              repository.delete(race.id);
+              renderLibrary();
+            },
+          });
         });
 
       const action = fragment.querySelector<HTMLElement>("[data-action]")!;
