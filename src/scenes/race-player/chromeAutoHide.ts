@@ -2,7 +2,7 @@
  * Video-player toolbar behavior: mouse activity slides the top/bottom chrome
  * (and edge vignette) out; a beat of stillness tucks it away again. The chrome
  * stays out while a control is hovered or focused, while paused, and on the
- * winner screen.
+ * winner screen. The countdown-only back arrow has its own reveal zone.
  */
 export function setupChromeAutoHide(
   root: HTMLElement,

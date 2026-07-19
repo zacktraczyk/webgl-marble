@@ -67,6 +67,7 @@ export class RacePlayerRuntime {
   private readonly stage: Stage;
   private readonly progression: RaceProgression;
   private readonly maximumLegDurationMs: number | null;
+  private readonly backLink: HTMLAnchorElement | null;
   private readonly pauseButtons: HTMLButtonElement[];
   private readonly restartButtons: HTMLButtonElement[];
   private readonly skipContinueButtons: HTMLButtonElement[];
@@ -118,6 +119,8 @@ export class RacePlayerRuntime {
 
     this.raceDocument = structuredClone(raceDocument);
     this.root = rootElement;
+    this.backLink =
+      this.root.querySelector<HTMLAnchorElement>("#race-back-link");
     this.presenter = new RacePlayerPresenter(this.root);
     this.maximumLegDurationMs = maximumLegDurationMs;
     this.progression = new RaceProgression(
@@ -409,6 +412,7 @@ export class RacePlayerRuntime {
   private bindControls(signal: AbortSignal) {
     bindRacePlayerControls({
       signal,
+      backLink: this.backLink,
       pauseButtons: this.pauseButtons,
       restartButtons: this.restartButtons,
       skipContinueButtons: this.skipContinueButtons,

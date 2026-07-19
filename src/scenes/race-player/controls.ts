@@ -21,8 +21,20 @@ export const runningLegStatus = ({
   return `Racing leg ${legIndex + 1}: ${leg.name} · ${activeTeamCount} teams · ${marblesPerTeam} marbles each`;
 };
 
+export const handleRaceExitKey = (
+  event: Pick<KeyboardEvent, "key" | "defaultPrevented" | "preventDefault">,
+  onExit: () => void
+) => {
+  if (event.key !== "Escape" || event.defaultPrevented) {
+    return;
+  }
+  event.preventDefault();
+  onExit();
+};
+
 export const bindRacePlayerControls = ({
   signal,
+  backLink,
   pauseButtons,
   restartButtons,
   skipContinueButtons,
@@ -31,6 +43,7 @@ export const bindRacePlayerControls = ({
   onSkipContinue,
 }: {
   signal: AbortSignal;
+  backLink: HTMLAnchorElement | null;
   pauseButtons: readonly HTMLButtonElement[];
   restartButtons: readonly HTMLButtonElement[];
   skipContinueButtons: readonly HTMLButtonElement[];
@@ -38,6 +51,13 @@ export const bindRacePlayerControls = ({
   onRestart: () => void;
   onSkipContinue: () => void;
 }) => {
+  if (backLink) {
+    window.addEventListener(
+      "keydown",
+      (event) => handleRaceExitKey(event, () => backLink.click()),
+      { signal }
+    );
+  }
   for (const button of pauseButtons) {
     button.addEventListener("click", onPause, { signal });
   }

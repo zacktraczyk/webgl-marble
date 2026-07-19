@@ -35,9 +35,10 @@ export const bootRacePlayer = () => {
     return;
   }
 
-  const backLink =
-    document.querySelector<HTMLAnchorElement>("#race-back-link");
-  if (backLink) {
+  const backLinks = document.querySelectorAll<HTMLAnchorElement>(
+    "[data-race-back-link]"
+  );
+  for (const backLink of backLinks) {
     backLink.href = `/race-builder?race=${encodeURIComponent(race.id)}`;
   }
   player.hidden = false;
