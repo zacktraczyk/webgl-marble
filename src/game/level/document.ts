@@ -14,11 +14,15 @@ type LevelObjectMotionBase = {
   direction: 1 | -1;
 };
 
+export type SliderRepeat = "ping-pong" | "loop";
+
 export type LevelObjectMotion =
   | (LevelObjectMotionBase & {
       type: "oscillate";
-      /** Peak offset from the authored center; the full path is twice this vector. */
+      /** Ping-pong peak offset, or the one-way path from the authored wall. */
       vector: Vec2;
+      /** Defaults to ping-pong when omitted for backwards-compatible levels. */
+      repeat?: SliderRepeat;
     })
   | (LevelObjectMotionBase & {
       type: "rotate";

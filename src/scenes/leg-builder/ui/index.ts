@@ -75,7 +75,10 @@ export type BuilderUi = {
   motionInspector: HTMLElement;
   motionTypeSelect: HTMLSelectElement;
   motionControls: HTMLElement;
+  motionRepeatRow: HTMLElement;
+  motionRepeatButtons: HTMLButtonElement[];
   motionRangeRow: HTMLElement;
+  motionRangeLabel: HTMLElement;
   motionRangeInput: HTMLInputElement;
   motionRangeOutput: HTMLOutputElement;
   motionReverseButton: HTMLButtonElement;
@@ -247,7 +250,16 @@ export const resolveBuilderUi = (
     motionInspector: role("motion-inspector", "motion inspector"),
     motionTypeSelect: role<HTMLSelectElement>("motion-type", "motion type"),
     motionControls: role("motion-controls", "motion controls"),
+    motionRepeatRow: role("motion-repeat-row", "motion repeat row"),
+    motionRepeatButtons: [
+      role<HTMLButtonElement>(
+        "motion-repeat-ping-pong",
+        "back and forth motion"
+      ),
+      role<HTMLButtonElement>("motion-repeat-loop", "loop motion"),
+    ],
     motionRangeRow: role("motion-range-row", "motion range row"),
+    motionRangeLabel: role("motion-range-label", "motion range label"),
     motionRangeInput: role<HTMLInputElement>("motion-range", "motion range"),
     motionRangeOutput: role<HTMLOutputElement>(
       "motion-range-output",

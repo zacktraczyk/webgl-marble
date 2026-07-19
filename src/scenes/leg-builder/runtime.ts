@@ -18,12 +18,16 @@ import {
   createPusher,
   createSpawnPoint,
   createWall,
+  getLevelObjectShape,
+  pusherSpeedForMotion,
   type RoundConfiguration,
+  type SliderPlacementDefaults,
 } from "../../game/level";
 import {
   isCreationTool,
   isPusherTool,
   pusherKindFromTool,
+  type PusherTool,
   SelectedTool,
 } from "../../editor/tools";
 import { RaceController } from "../../game/race/controller";
@@ -69,6 +73,7 @@ export class LegBuilderRuntime {
   private selectedTool = SelectedTool.Pointer;
   private gridSnapEnabled = true;
   private playbackActive = false;
+  private sliderPlacementDefaults: SliderPlacementDefaults = {};
   /** Last spawn position that cleared every wall, used to reject bad drags. */
   private lastValidSpawnPosition: Vec2 | null = null;
 
@@ -227,7 +232,7 @@ export class LegBuilderRuntime {
         },
         onPlaceObject: (tool, position) => {
           const object = this.level.add(
-            createPusher(pusherKindFromTool(tool), position)
+            this.createConfiguredPusher(tool, position)
           );
           this.commitLevelChange();
           return object;
@@ -274,6 +279,7 @@ export class LegBuilderRuntime {
         inputMotionRange: this.motionInspector.inputRange,
         commitMotionRange: this.motionInspector.commitRange,
         reverseMotion: this.motionInspector.reverse,
+        setMotionRepeat: this.motionInspector.setRepeat,
         setMotionSpeed: this.motionInspector.setSpeed,
         toggleRace: this.toggleRace,
         resetRace: this.resetRace,
@@ -344,8 +350,8 @@ export class LegBuilderRuntime {
     const pusherPlacement = this.editorController.pusherPlacementPreview;
     const pusherDraft = pusherPlacement
       ? ({
-          ...createPusher(
-            pusherKindFromTool(pusherPlacement.tool),
+          ...this.createConfiguredPusher(
+            pusherPlacement.tool,
             pusherPlacement.position
           ),
           id: "pusher-placement-preview",
@@ -376,6 +382,7 @@ export class LegBuilderRuntime {
     if (this.playbackActive && isCreationTool(tool)) {
       return;
     }
+    this.rememberSliderPlacementDefaults();
     this.selectedTool = tool;
     this.controls.showSelectedTool(tool);
     this.editorController.setActiveTool(tool);
@@ -412,7 +419,29 @@ export class LegBuilderRuntime {
       : null;
   }
 
+  private rememberSliderPlacementDefaults() {
+    const object = this.editorController.selectedObject;
+    if (object?.prefab !== "wall" || object.motion?.type !== "oscillate") {
+      return;
+    }
+    this.sliderPlacementDefaults = {
+      repeat: object.motion.repeat ?? "ping-pong",
+      speed: pusherSpeedForMotion(object.motion),
+      rotation: getLevelObjectShape(object, this.level.wallThickness).rotation,
+    };
+  }
+
+  private createConfiguredPusher(tool: PusherTool, position: Vec2) {
+    const kind = pusherKindFromTool(tool);
+    return createPusher(
+      kind,
+      position,
+      kind === "slider" ? this.sliderPlacementDefaults : undefined
+    );
+  }
+
   private commitLevelChange() {
+    this.rememberSliderPlacementDefaults();
     this.race.reset();
     const snapshot = this.levelSnapshot;
     if (this.history.record(snapshot)) {

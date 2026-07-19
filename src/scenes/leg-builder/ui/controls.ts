@@ -1,4 +1,7 @@
-import type { SpawnPointVariant } from "../../../game/level/document";
+import type {
+  SliderRepeat,
+  SpawnPointVariant,
+} from "../../../game/level/document";
 import type { PusherSpeed } from "../../../game/level/objects";
 import { isPusherTool, SelectedTool } from "../../../editor/tools";
 import type { BuilderUi } from ".";
@@ -21,6 +24,7 @@ export type BuilderControlActions = {
   inputMotionRange(): void;
   commitMotionRange(): void;
   reverseMotion(): void;
+  setMotionRepeat(repeat: SliderRepeat): void;
   setMotionSpeed(speed: PusherSpeed): void;
   toggleRace(): void;
   resetRace(): void;
@@ -248,6 +252,18 @@ export class BuilderControls {
     ui.motionReverseButton.addEventListener("click", actions.reverseMotion, {
       signal,
     });
+    for (const button of ui.motionRepeatButtons) {
+      button.addEventListener(
+        "click",
+        () => {
+          const repeat = button.dataset.repeat as SliderRepeat | undefined;
+          if (repeat) {
+            actions.setMotionRepeat(repeat);
+          }
+        },
+        { signal }
+      );
+    }
     for (const button of ui.motionSpeedButtons) {
       button.addEventListener(
         "click",

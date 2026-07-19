@@ -238,6 +238,7 @@
 #leg-options-sidebar [data-role="scene-options"][hidden],
 #object-inspector[hidden],
 #motion-controls[hidden],
+#motion-repeat-row[hidden],
 #motion-range-row[hidden],
 #race-outcome[hidden] {
   display: none;

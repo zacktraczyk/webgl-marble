@@ -12,6 +12,7 @@ import {
 } from "../../game/level/geometry";
 import type { WallEndpointFeedback } from "./gestures";
 import { HANDLE_HIT_RADIUS, ROTATION_HANDLE_OFFSET } from "./constants";
+import { getOscillationEndpoints } from "../../game/level/motion";
 
 export type WallObject = Extract<LevelObjectData, { prefab: "wall" }>;
 export type WallEndpointTarget = Omit<WallEndpointFeedback, "kind"> & {
@@ -133,14 +134,14 @@ export function motionRangeHandleAt(
   if (object.motion?.type !== "oscillate") {
     return false;
   }
-  const center = getLevelObjectShape(
+  const endpoints = getOscillationEndpoints(
     object,
     deps.getDefaultWallThickness()
-  ).position;
-  const handle: Vec2 = [
-    center[0] + object.motion.vector[0],
-    center[1] + object.motion.vector[1],
-  ];
+  );
+  if (!endpoints) {
+    return false;
+  }
+  const handle = endpoints[1];
   return (
     deps.screenDistance(deps.worldToScreen(handle), screenPoint) <=
     HANDLE_HIT_RADIUS + 2

@@ -68,6 +68,12 @@ export function updateMotionRangeDrag(
   if (!event.altKey && deps.getGridSnapEnabled()) {
     vector = snapDeltaToGrid(vector, deps.getGridLayout());
   }
+  if ((object.motion.repeat ?? "ping-pong") === "loop") {
+    vector = [
+      vector[0] * object.motion.direction,
+      vector[1] * object.motion.direction,
+    ];
+  }
   if (Math.hypot(...vector) >= MIN_OBJECT_SIZE) {
     object.motion.periodMs = oscillationPeriodForRange(
       object.motion,

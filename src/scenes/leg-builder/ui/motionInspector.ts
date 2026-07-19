@@ -3,6 +3,7 @@ import type { LegEditorController } from "../../../editor/legEditor";
 import type {
   LevelObjectData,
   LevelObjectMotion,
+  SliderRepeat,
 } from "../../../game/level/document";
 import type { Vec2 } from "../../../engine/core/transform";
 import {
@@ -53,6 +54,10 @@ export class MotionInspectorController {
         motion = {
           type: "oscillate",
           vector,
+          repeat:
+            current?.type === "oscillate"
+              ? (current.repeat ?? "ping-pong")
+              : "ping-pong",
           periodMs: pusherPeriodForSpeed(
             {
               type: "oscillate",
@@ -107,6 +112,17 @@ export class MotionInspectorController {
       if (object.motion) {
         object.motion.direction = object.motion.direction === 1 ? -1 : 1;
       }
+    });
+  };
+
+  setRepeat = (repeat: SliderRepeat) => {
+    this.updateSelectedMotion((object) => {
+      if (object.motion?.type !== "oscillate") {
+        return;
+      }
+      const speed = pusherSpeedForMotion(object.motion);
+      object.motion.repeat = repeat;
+      object.motion.periodMs = pusherPeriodForSpeed(object.motion, speed);
     });
   };
 

@@ -143,8 +143,27 @@ export const updateBuilderInterface = ({
             : "Sweeper";
     ui.motionTypeSelect.value = motionType;
     ui.motionControls.hidden = !motion;
+    ui.motionRepeatRow.hidden = motion?.type !== "oscillate";
     ui.motionRangeRow.hidden = motion?.type !== "oscillate";
     if (motion?.type === "oscillate") {
+      const activeRepeat = motion.repeat ?? "ping-pong";
+      for (const button of ui.motionRepeatButtons) {
+        const active = button.dataset.repeat === activeRepeat;
+        button.dataset.active = `${active}`;
+        button.ariaPressed = `${active}`;
+      }
+      const loopIcon = ui.motionRepeatButtons
+        .find((button) => button.dataset.repeat === "loop")
+        ?.querySelector<SVGElement>("svg");
+      if (loopIcon) {
+        const directionX = motion.vector[0] * motion.direction;
+        const directionY = motion.vector[1] * motion.direction;
+        const directionDegrees =
+          (Math.atan2(directionY, directionX) * 180) / Math.PI;
+        loopIcon.style.transform = `rotate(${directionDegrees}deg)`;
+      }
+      ui.motionRangeLabel.textContent =
+        activeRepeat === "loop" ? "Distance" : "Distance each way";
       const range = Math.round(Math.hypot(...motion.vector));
       if (document.activeElement !== ui.motionRangeInput) {
         ui.motionRangeInput.value = `${range}`;

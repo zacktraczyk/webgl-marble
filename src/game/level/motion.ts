@@ -44,6 +44,14 @@ export const getOscillationPeakSpeed = (motion: OscillationMotion) => {
     : 0;
 };
 
+export const getSliderSpeed = (motion: OscillationMotion) => {
+  if ((motion.repeat ?? "ping-pong") === "ping-pong") {
+    return getOscillationPeakSpeed(motion);
+  }
+  const pathLength = Math.hypot(...motion.vector);
+  return motion.periodMs > 0 ? (pathLength * 1000) / motion.periodMs : 0;
+};
+
 export const oscillationPeriodForRange = (
   motion: OscillationMotion,
   nextRange: number
@@ -70,6 +78,17 @@ export const getLevelObjectMotionPose = (
   const direction = motion.direction;
 
   if (motion.type === "oscillate") {
+    if ((motion.repeat ?? "ping-pong") === "loop") {
+      const progress = cycle - Math.floor(cycle);
+      const pathProgress = progress * direction;
+      return {
+        position: [
+          base.position[0] + motion.vector[0] * pathProgress,
+          base.position[1] + motion.vector[1] * pathProgress,
+        ],
+        rotation: base.rotation,
+      };
+    }
     const progress = Math.sin(cycle * Math.PI * 2) * direction;
     return {
       position: [
@@ -101,6 +120,19 @@ export const getLevelObjectMotionPose = (
   };
 };
 
+export const doesSliderLoopResetBetween = (
+  motion: OscillationMotion,
+  elapsedMs: number,
+  nextElapsedMs: number
+) => {
+  if ((motion.repeat ?? "ping-pong") !== "loop") {
+    return false;
+  }
+  const periodMs = Math.max(1, motion.periodMs);
+  const cycleAt = (timeMs: number) => timeMs / periodMs + motion.phase;
+  return Math.floor(cycleAt(elapsedMs)) !== Math.floor(cycleAt(nextElapsedMs));
+};
+
 export const getOscillationEndpoints = (
   object: LevelObjectData,
   defaultWallThickness: number
@@ -110,6 +142,15 @@ export const getOscillationEndpoints = (
   }
   const { position } = getBasePose(object, defaultWallThickness).pose;
   const { vector } = object.motion;
+  if ((object.motion.repeat ?? "ping-pong") === "loop") {
+    return [
+      [...position],
+      [
+        position[0] + vector[0] * object.motion.direction,
+        position[1] + vector[1] * object.motion.direction,
+      ],
+    ];
+  }
   return [
     [position[0] - vector[0], position[1] - vector[1]],
     [position[0] + vector[0], position[1] + vector[1]],

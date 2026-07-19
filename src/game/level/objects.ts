@@ -2,11 +2,9 @@ import type {
   LevelObjectData,
   LevelObjectMotion,
   NewLevelObjectData,
+  SliderRepeat,
 } from "./document";
-import {
-  getOscillationPeakSpeed,
-  oscillationPeriodForPeakSpeed,
-} from "./motion";
+import { getSliderSpeed, oscillationPeriodForPeakSpeed } from "./motion";
 import type { Vec2 } from "../../engine/core/transform";
 import {
   STAGING_RACK_HEIGHT,
@@ -47,15 +45,26 @@ export const PUSHER_PERIODS = {
 
 export type PusherSpeed = keyof typeof PUSHER_LINEAR_SPEEDS;
 
+export type SliderPlacementDefaults = {
+  repeat?: SliderRepeat;
+  speed?: PusherSpeed;
+  rotation?: number;
+};
+
 export const sliderPeriodForRange = (range: number, speed: PusherSpeed) =>
   oscillationPeriodForPeakSpeed(range, PUSHER_LINEAR_SPEEDS[speed]);
+
+export const loopPeriodForRange = (range: number, speed: PusherSpeed) =>
+  (Math.max(0, range) * 1000) / PUSHER_LINEAR_SPEEDS[speed];
 
 export const pusherPeriodForSpeed = (
   motion: LevelObjectMotion,
   speed: PusherSpeed
 ) =>
   motion.type === "oscillate"
-    ? sliderPeriodForRange(Math.hypot(...motion.vector), speed)
+    ? (motion.repeat ?? "ping-pong") === "loop"
+      ? loopPeriodForRange(Math.hypot(...motion.vector), speed)
+      : sliderPeriodForRange(Math.hypot(...motion.vector), speed)
     : PUSHER_PERIODS[speed];
 
 export const pusherSpeedForMotion = (
@@ -63,7 +72,7 @@ export const pusherSpeedForMotion = (
 ): PusherSpeed => {
   const speeds = Object.keys(PUSHER_LINEAR_SPEEDS) as PusherSpeed[];
   if (motion.type === "oscillate") {
-    const linearSpeed = getOscillationPeakSpeed(motion);
+    const linearSpeed = getSliderSpeed(motion);
     return speeds.reduce((nearest, candidate) =>
       Math.abs(PUSHER_LINEAR_SPEEDS[candidate] - linearSpeed) <
       Math.abs(PUSHER_LINEAR_SPEEDS[nearest] - linearSpeed)
@@ -79,17 +88,27 @@ export const pusherSpeedForMotion = (
   );
 };
 
-const pusherMotion = (kind: PusherKind): LevelObjectMotion => {
+const pusherMotion = (
+  kind: PusherKind,
+  sliderDefaults?: SliderPlacementDefaults
+): LevelObjectMotion => {
   const shared = {
     phase: 0,
     direction: 1 as const,
   };
   if (kind === "slider") {
-    return {
+    const repeat = sliderDefaults?.repeat ?? "ping-pong";
+    const speed = sliderDefaults?.speed ?? "medium";
+    const motion: LevelObjectMotion = {
       type: "oscillate",
       vector: [PUSHER_DEFAULT_RANGE, 0],
-      periodMs: sliderPeriodForRange(PUSHER_DEFAULT_RANGE, "medium"),
+      repeat,
+      periodMs: 1,
       ...shared,
+    };
+    motion.periodMs = pusherPeriodForSpeed(motion, speed);
+    return {
+      ...motion,
     };
   }
   return {
@@ -116,24 +135,36 @@ export const createWall = (
 
 export const createPusher = (
   kind: PusherKind,
-  position: Vec2
+  position: Vec2,
+  sliderDefaults?: SliderPlacementDefaults
 ): NewLevelObjectData => {
   const halfLength = PUSHER_WALL_LENGTH / 2;
+  const sliderRotation = sliderDefaults?.rotation ?? Math.PI / 2;
+  const sliderAxis: Vec2 = [
+    Math.abs(Math.cos(sliderRotation)) < 1e-12 ? 0 : Math.cos(sliderRotation),
+    Math.abs(Math.sin(sliderRotation)) < 1e-12 ? 0 : Math.sin(sliderRotation),
+  ];
   const start: Vec2 =
     kind === "sweeper"
       ? [...position]
       : kind === "slider"
-        ? [position[0], position[1] - halfLength]
+        ? [
+            position[0] - sliderAxis[0] * halfLength,
+            position[1] - sliderAxis[1] * halfLength,
+          ]
         : [position[0] - halfLength, position[1]];
   const end: Vec2 =
     kind === "sweeper"
       ? [position[0] + PUSHER_WALL_LENGTH, position[1]]
       : kind === "slider"
-        ? [position[0], position[1] + halfLength]
+        ? [
+            position[0] + sliderAxis[0] * halfLength,
+            position[1] + sliderAxis[1] * halfLength,
+          ]
         : [position[0] + halfLength, position[1]];
   return {
     ...createWall(start, end),
-    motion: pusherMotion(kind),
+    motion: pusherMotion(kind, sliderDefaults),
   } as NewLevelObjectData;
 };
 

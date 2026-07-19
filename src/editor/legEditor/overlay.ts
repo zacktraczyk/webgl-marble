@@ -1,10 +1,10 @@
 import type Stage from "../../engine/stage";
 import type { LevelObjectData } from "../../game/level/document";
 import {
-  getOscillationPeakSpeed,
   getLevelObjectMotionPose,
   getOscillationEndpoints,
   getRotationPivot,
+  getSliderSpeed,
 } from "../../game/level/motion";
 import {
   getLevelObjectBounds,
@@ -238,8 +238,12 @@ export class EditorOverlay {
       context.lineTo(...secondScreen);
       context.stroke();
       context.setLineDash([]);
-      this.drawMotionArrow(firstScreen, secondScreen, 0.38, color);
-      this.drawMotionArrow(secondScreen, firstScreen, 0.38, color);
+      if ((motion.repeat ?? "ping-pong") === "loop") {
+        this.drawMotionArrow(firstScreen, secondScreen, 0.62, color);
+      } else {
+        this.drawMotionArrow(firstScreen, secondScreen, 0.38, color);
+        this.drawMotionArrow(secondScreen, firstScreen, 0.38, color);
+      }
       context.fillStyle = "rgb(24 24 27)";
       context.strokeStyle = color;
       context.beginPath();
@@ -258,7 +262,7 @@ export class EditorOverlay {
           (firstScreen[0] + secondScreen[0]) / 2,
           (firstScreen[1] + secondScreen[1]) / 2,
         ],
-        `SLIDE · ${Math.round(getOscillationPeakSpeed(motion))} u/s`,
+        `SLIDE · ${Math.round(getSliderSpeed(motion))} u/s`,
         color
       );
       return;

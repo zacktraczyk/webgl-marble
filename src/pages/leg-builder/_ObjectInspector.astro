@@ -289,7 +289,72 @@
     </label>
 
     <div id="motion-controls" data-role="motion-controls" class="mt-3" hidden>
-      <div class="flex items-center justify-between gap-3">
+      <div
+        id="motion-repeat-row"
+        data-role="motion-repeat-row"
+        class="flex items-center justify-between gap-3"
+      >
+        <span class="text-xs text-zinc-400">Repeat</span>
+        <div
+          role="group"
+          aria-label="Repeat behavior"
+          class="flex overflow-hidden rounded-md border border-zinc-600"
+        >
+          <button
+            id="motion-repeat-ping-pong"
+            data-role="motion-repeat-ping-pong"
+            data-repeat="ping-pong"
+            type="button"
+            aria-label="Back and forth"
+            aria-pressed="true"
+            data-active="true"
+            class="flex h-7 w-8 items-center justify-center text-zinc-300 hover:bg-zinc-700 data-[active=true]:bg-cyan-400 data-[active=true]:text-cyan-950"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="size-3.5"
+              aria-hidden="true"
+            >
+              <path d="m8 3-4 4 4 4"></path>
+              <path d="M4 7h16"></path>
+              <path d="m16 21 4-4-4-4"></path>
+              <path d="M20 17H4"></path>
+            </svg>
+          </button>
+          <button
+            id="motion-repeat-loop"
+            data-role="motion-repeat-loop"
+            data-repeat="loop"
+            type="button"
+            aria-label="Loop"
+            aria-pressed="false"
+            data-active="false"
+            class="flex h-7 w-8 items-center justify-center border-l border-zinc-600 text-zinc-300 hover:bg-zinc-700 data-[active=true]:bg-cyan-400 data-[active=true]:text-cyan-950"
+          >
+            <svg
+              data-role="motion-repeat-loop-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="size-3.5"
+              aria-hidden="true"
+            >
+              <path d="M5 12h14"></path>
+              <path d="m12 5 7 7-7 7"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="mt-3 flex items-center justify-between gap-3">
         <span class="text-xs text-zinc-400">Speed</span>
         <div class="flex overflow-hidden rounded-md border border-zinc-600">
           <button
@@ -329,7 +394,7 @@
         for="motion-range"
       >
         <span class="flex items-center justify-between">
-          <span>Distance each way</span>
+          <span data-role="motion-range-label">Distance each way</span>
           <output
             id="motion-range-output"
             data-role="motion-range-output"

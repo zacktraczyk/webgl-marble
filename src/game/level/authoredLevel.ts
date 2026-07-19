@@ -8,7 +8,7 @@ import type { Entity } from "../../engine/core/entity";
 import type { Vec2 } from "../../engine/core/transform";
 import { millisecondsToSimulationSeconds } from "../../engine/physics/physics";
 import type Stage from "../../engine/stage";
-import { getLevelObjectMotionPose } from "./motion";
+import { doesSliderLoopResetBetween, getLevelObjectMotionPose } from "./motion";
 import { levelObjectDefinitions } from "../prefabs/levelObject";
 import { applyTopSliderSpawnLayout } from "./objects";
 import { finishRackHeightFor } from "../race/finishGrid";
@@ -253,19 +253,31 @@ export class AuthoredLevel {
         this.wallThickness,
         elapsedMs + deltaMs
       );
+      const resetsAtEndpoint =
+        object.motion.type === "oscillate" &&
+        doesSliderLoopResetBetween(
+          object.motion,
+          elapsedMs,
+          elapsedMs + deltaMs
+        );
       for (const entity of this.entities.get(object.id) ?? []) {
-        entity.position = [...current.position];
-        entity.rotation = current.rotation;
+        entity.position = [
+          ...(resetsAtEndpoint ? next.position : current.position),
+        ];
+        entity.rotation = resetsAtEndpoint ? next.rotation : current.rotation;
         const physicsEntity = this.stage.getPhysicsEntity(entity);
         if (!physicsEntity) {
           continue;
         }
-        physicsEntity.velocity = [
-          (next.position[0] - current.position[0]) / deltaSeconds,
-          (next.position[1] - current.position[1]) / deltaSeconds,
-        ];
-        physicsEntity.angularVelocity =
-          (next.rotation - current.rotation) / deltaSeconds;
+        physicsEntity.velocity = resetsAtEndpoint
+          ? [0, 0]
+          : [
+              (next.position[0] - current.position[0]) / deltaSeconds,
+              (next.position[1] - current.position[1]) / deltaSeconds,
+            ];
+        physicsEntity.angularVelocity = resetsAtEndpoint
+          ? 0
+          : (next.rotation - current.rotation) / deltaSeconds;
       }
     }
   }

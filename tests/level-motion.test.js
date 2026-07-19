@@ -1,15 +1,20 @@
 import { describe, expect, test } from "bun:test";
 import { LevelDocument } from "../src/game/level/document.ts";
 import {
+  doesSliderLoopResetBetween,
   getLevelObjectMotionPose,
   getOscillationPeakSpeed,
   getOscillationEndpoints,
   getRotationPivot,
+  getSliderSpeed,
   oscillationPeriodForRange,
 } from "../src/game/level/motion.ts";
 import { levelObjectDefinitions } from "../src/game/prefabs/levelObject.ts";
+import { getLevelObjectShape } from "../src/game/level/geometry.ts";
 import {
   createPusher,
+  loopPeriodForRange,
+  pusherSpeedForMotion,
   PUSHER_DEFAULT_RANGE,
   PUSHER_LINEAR_SPEEDS,
   PUSHER_PERIODS,
@@ -69,6 +74,79 @@ describe("level object motion", () => {
     expect(getOscillationPeakSpeed(draggedSlider.motion)).toBeCloseTo(
       originalSpeed
     );
+  });
+
+  test("loops from the authored wall to one endpoint before resetting", () => {
+    const slider = authored(createPusher("slider", [100, 200]));
+    slider.motion.repeat = "loop";
+    slider.motion.periodMs = loopPeriodForRange(PUSHER_DEFAULT_RANGE, "medium");
+
+    expect(getLevelObjectMotionPose(slider, 15, 0).position).toEqual([
+      100, 200,
+    ]);
+    expect(
+      getLevelObjectMotionPose(slider, 15, slider.motion.periodMs / 2).position
+    ).toEqual([100 + PUSHER_DEFAULT_RANGE / 2, 200]);
+    expect(
+      getLevelObjectMotionPose(slider, 15, slider.motion.periodMs - 1)
+        .position[0]
+    ).toBeCloseTo(100 + PUSHER_DEFAULT_RANGE, 0);
+    expect(
+      getLevelObjectMotionPose(slider, 15, slider.motion.periodMs).position
+    ).toEqual([100, 200]);
+    expect(getSliderSpeed(slider.motion)).toBeCloseTo(
+      PUSHER_LINEAR_SPEEDS.medium
+    );
+    expect(
+      doesSliderLoopResetBetween(
+        slider.motion,
+        slider.motion.periodMs - 1,
+        slider.motion.periodMs + 1
+      )
+    ).toBe(true);
+  });
+
+  test("reverses which side of the authored wall a loop grows toward", () => {
+    const slider = authored(createPusher("slider", [100, 200]));
+    slider.motion.repeat = "loop";
+    slider.motion.direction = -1;
+    slider.motion.periodMs = loopPeriodForRange(PUSHER_DEFAULT_RANGE, "medium");
+
+    expect(getLevelObjectMotionPose(slider, 15, 0).position).toEqual([
+      100, 200,
+    ]);
+    expect(
+      getLevelObjectMotionPose(slider, 15, slider.motion.periodMs / 2).position
+    ).toEqual([100 - PUSHER_DEFAULT_RANGE / 2, 200]);
+    expect(getOscillationEndpoints(slider, 15)).toEqual([
+      [100, 200],
+      [100 - PUSHER_DEFAULT_RANGE, 200],
+    ]);
+  });
+
+  test("applies slider placement defaults without carrying over dimensions", () => {
+    const slider = authored(
+      createPusher("slider", [100, 200], {
+        repeat: "loop",
+        speed: "fast",
+        rotation: 0,
+      })
+    );
+    const shape = getLevelObjectShape(slider, 15);
+
+    expect(shape).toMatchObject({
+      position: [100, 200],
+      rotation: 0,
+      width: 120,
+      height: 15,
+    });
+    expect(slider.properties).not.toHaveProperty("thickness");
+    expect(slider.motion).toMatchObject({
+      repeat: "loop",
+      vector: [PUSHER_DEFAULT_RANGE, 0],
+      direction: 1,
+    });
+    expect(pusherSpeedForMotion(slider.motion)).toBe("fast");
   });
 
   test("uses evenly spaced linear speed presets", () => {
@@ -131,7 +209,15 @@ describe("level object motion", () => {
 
     expect(document.serialize()).toMatchObject({
       version: 3,
-      objects: [{ motion: { type: "oscillate", phase: 0 } }],
+      objects: [
+        {
+          motion: {
+            type: "oscillate",
+            repeat: "ping-pong",
+            phase: 0,
+          },
+        },
+      ],
     });
   });
 });
