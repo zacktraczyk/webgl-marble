@@ -1,8 +1,5 @@
 import type { Vec2 } from "../../engine/core/transform";
-import {
-  snapDeltaToGrid,
-  type GridLayout,
-} from "../../game/level/grid";
+import { snapDeltaToGrid, type GridLayout } from "../../game/level/grid";
 import type { LevelObjectData } from "../../game/level/document";
 import {
   applyLevelObjectShape,
@@ -24,10 +21,7 @@ import {
   ROTATION_SNAP_STEP,
   SIZE_SNAP_STEP,
 } from "./constants";
-import type {
-  EditorGesture,
-  TransformGesture,
-} from "./gestures";
+import type { EditorGesture, TransformGesture } from "./gestures";
 import type { SnapDeps } from "./snap";
 import { snapWallEndpoint } from "./snap";
 import type { LegEditorSelection } from "./selection";
@@ -169,7 +163,7 @@ export function updateMoveDrag(
     rawDelta = constrainDeltaToAxis(rawDelta);
   }
   const delta =
-    event.altKey || !deps.getGridSnapEnabled()
+    (event.altKey && !gesture.inserted) || !deps.getGridSnapEnabled()
       ? rawDelta
       : snapDeltaToGrid(rawDelta, deps.getGridLayout());
   const changed: LevelObjectData[] = [];
@@ -231,8 +225,7 @@ export function updateWallEndpointDrag(
     return "cancel";
   }
   gesture.changed = true;
-  const fixed =
-    gesture.endpoint === "start" ? gesture.end : gesture.start;
+  const fixed = gesture.endpoint === "start" ? gesture.end : gesture.start;
   const endpoint = snapWallEndpoint(
     deps.snapDeps,
     fixed,

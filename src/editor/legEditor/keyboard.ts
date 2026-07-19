@@ -4,6 +4,11 @@ import { SelectedTool } from "../tools";
 export type LegEditorKeyboardActions = {
   undo(): void;
   redo(): void;
+  copy(): boolean;
+  cut(): boolean;
+  paste(inPlace: boolean): boolean;
+  duplicate(): boolean;
+  focusSelection(): boolean;
   selectAll(): boolean;
   escape(): boolean;
   finishWall(): boolean;
@@ -109,6 +114,30 @@ export class LegEditorKeyboard {
       }
       return;
     }
+    if (modifier && key === "c") {
+      if (this.actions.copy()) {
+        event.preventDefault();
+      }
+      return;
+    }
+    if (modifier && key === "x") {
+      if (this.actions.cut()) {
+        event.preventDefault();
+      }
+      return;
+    }
+    if (modifier && key === "v") {
+      if (this.actions.paste(event.shiftKey)) {
+        event.preventDefault();
+      }
+      return;
+    }
+    if (modifier && key === "d") {
+      if (this.actions.duplicate()) {
+        event.preventDefault();
+      }
+      return;
+    }
     if (event.key === "Enter") {
       if (this.actions.finishWall()) {
         event.preventDefault();
@@ -118,6 +147,10 @@ export class LegEditorKeyboard {
 
     if (!modifier && !event.altKey) {
       if (key === "r" && this.actions.reset()) {
+        event.preventDefault();
+        return;
+      }
+      if (key === "f" && this.actions.focusSelection()) {
         event.preventDefault();
         return;
       }

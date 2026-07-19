@@ -2,6 +2,11 @@ import type { SpawnPointVariant } from "../../../game/level/document";
 import type { PusherSpeed } from "../../../game/level/objects";
 import { isPusherTool, SelectedTool } from "../../../editor/tools";
 import type { BuilderUi } from ".";
+import type { Vec2 } from "../../../engine/core/transform";
+import type {
+  EditorContextAction,
+  EditorContextState,
+} from "../../../editor/legEditor";
 
 export type BuilderControlActions = {
   selectTool(tool: SelectedTool): void;
@@ -23,6 +28,11 @@ export type BuilderControlActions = {
   redo(): void;
   adjustZoom(delta: number): void;
   resetZoom(): void;
+  prepareContextMenu(screenPoint: Vec2): EditorContextState;
+  performContextAction(
+    action: EditorContextAction,
+    screenPoint?: Vec2
+  ): boolean;
 };
 
 const ZOOM_STEP = 0.1;
@@ -36,6 +46,7 @@ const releasePointerFocus = (event: MouseEvent) => {
 /** Owns builder DOM events and transient control presentation. */
 export class BuilderControls {
   private readonly buttonByTool: ReadonlyMap<SelectedTool, HTMLButtonElement>;
+  private contextScreenPoint: Vec2 | null = null;
 
   constructor(
     private readonly ui: BuilderUi,
@@ -62,6 +73,45 @@ export class BuilderControls {
       );
     }
 
+    ui.editorCanvas.addEventListener(
+      "contextmenu",
+      (event) => {
+        event.preventDefault();
+        if (ui.root.dataset.previewing === "true") {
+          this.setContextMenuOpen(false);
+          return;
+        }
+        const canvasBounds = ui.editorCanvas.getBoundingClientRect();
+        const screenPoint: Vec2 = [
+          event.clientX - canvasBounds.left,
+          event.clientY - canvasBounds.top,
+        ];
+        this.contextScreenPoint = screenPoint;
+        const state = actions.prepareContextMenu(screenPoint);
+        this.showContextMenu(event.clientX, event.clientY, state);
+      },
+      { signal }
+    );
+    for (const button of ui.contextActionButtons) {
+      button.addEventListener(
+        "click",
+        () => {
+          const action = button.dataset.contextAction as
+            | EditorContextAction
+            | undefined;
+          if (action) {
+            actions.performContextAction(
+              action,
+              this.contextScreenPoint ?? undefined
+            );
+          }
+          this.setContextMenuOpen(false);
+          ui.editorCanvas.focus();
+        },
+        { signal }
+      );
+    }
+
     ui.pusherMenuToggleButton.addEventListener(
       "click",
       (event) => {
@@ -80,6 +130,12 @@ export class BuilderControls {
         ) {
           this.setPusherLibraryOpen(false);
         }
+        if (
+          !ui.contextMenu.hidden &&
+          !ui.contextMenu.contains(event.target as Node)
+        ) {
+          this.setContextMenuOpen(false);
+        }
       },
       { signal }
     );
@@ -89,6 +145,11 @@ export class BuilderControls {
         if (event.key === "Escape" && !ui.pusherLibrary.hidden) {
           this.setPusherLibraryOpen(false);
           ui.pusherMenuToggleButton.focus();
+          event.preventDefault();
+          event.stopPropagation();
+        } else if (event.key === "Escape" && !ui.contextMenu.hidden) {
+          this.setContextMenuOpen(false);
+          ui.editorCanvas.focus();
           event.preventDefault();
           event.stopPropagation();
         }
@@ -214,5 +275,59 @@ export class BuilderControls {
   setPusherLibraryOpen(open: boolean) {
     this.ui.pusherLibrary.hidden = !open;
     this.ui.pusherMenuToggleButton.ariaExpanded = `${open}`;
+  }
+
+  private showContextMenu(
+    clientX: number,
+    clientY: number,
+    state: EditorContextState
+  ) {
+    const selection = state.selectionCount > 0;
+    this.ui.contextCanvasSection.hidden = selection;
+    this.ui.contextSelectionSection.hidden = !selection;
+    this.ui.contextMultiSection.hidden = state.selectionCount < 2;
+    const needsCopyableSelection = new Set([
+      "duplicate",
+      "cut",
+      "copy",
+      "mirror-left-right",
+      "mirror-top-bottom",
+      "delete",
+    ]);
+    for (const button of this.ui.contextActionButtons) {
+      const action = button.dataset.contextAction ?? "";
+      if (
+        button.dataset.contextAction === "paste" ||
+        button.dataset.contextAction === "paste-in-place"
+      ) {
+        button.disabled = !state.canPaste;
+      }
+      if (button.dataset.contextAction?.startsWith("distribute-")) {
+        button.disabled = state.selectionCount < 3;
+      }
+      if (needsCopyableSelection.has(action)) {
+        button.disabled = state.copyableSelectionCount === 0;
+      }
+    }
+    this.ui.contextMenu.hidden = false;
+    const rootBounds = this.ui.root.getBoundingClientRect();
+    const menuBounds = this.ui.contextMenu.getBoundingClientRect();
+    const left = Math.min(
+      clientX - rootBounds.left,
+      rootBounds.width - menuBounds.width - 8
+    );
+    const top = Math.min(
+      clientY - rootBounds.top,
+      rootBounds.height - menuBounds.height - 8
+    );
+    this.ui.contextMenu.style.left = `${Math.max(8, left)}px`;
+    this.ui.contextMenu.style.top = `${Math.max(8, top)}px`;
+  }
+
+  private setContextMenuOpen(open: boolean) {
+    this.ui.contextMenu.hidden = !open;
+    if (!open) {
+      this.contextScreenPoint = null;
+    }
   }
 }

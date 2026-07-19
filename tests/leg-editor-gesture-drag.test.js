@@ -7,6 +7,8 @@ import {
   updatePlaceDrag,
   updateWallDrag,
 } from "../src/editor/legEditor/gestureDrag.ts";
+import { handlePointerUp } from "../src/editor/legEditor/pointerGestures.ts";
+import { LegEditorSelection } from "../src/editor/legEditor/selection.ts";
 
 const bounds = { min: [-705, -390], max: [705, 270] };
 const gridLayout = createGridLayout(bounds);
@@ -198,5 +200,47 @@ describe("leg editor gesture drag", () => {
     updateMarqueeDrag(gesture, [DRAG_THRESHOLD, 0], [120, 80], deps);
     expect(gesture.changed).toBe(true);
     expect(selected).toEqual([["inside"]]);
+  });
+
+  test("an Alt-copy without a drag is discarded and restores the source selection", () => {
+    const source = wall({ id: "source" });
+    const copy = wall({ id: "copy" });
+    const objects = [source, copy];
+    const selection = new LegEditorSelection(() => objects);
+    selection.replace(copy.id);
+    const discarded = [];
+    const host = {
+      gesture: {
+        kind: "move",
+        pointerId: 1,
+        startWorld: [0, 0],
+        startScreen: [0, 0],
+        originals: new Map([[copy.id, structuredClone(copy)]]),
+        inserted: true,
+        sourceSelection: [source.id],
+        changed: false,
+      },
+      selection,
+      selectedObjects: [copy],
+      callbacks: {
+        onDiscard: (removed) => discarded.push(...removed),
+        onObjectsCommit: () => {
+          throw new Error("an Alt-click should not commit a copy");
+        },
+      },
+      screenPoint: () => [0, 0],
+      releasePointer: () => {},
+      screenDistance: () => 0,
+      updateIdleState: () => {},
+      isTemporarySelection: () => false,
+    };
+
+    handlePointerUp(host, {
+      pointerId: 1,
+      preventDefault: () => {},
+    });
+
+    expect(discarded).toEqual([copy]);
+    expect(selection.selectedObjects).toEqual([source]);
   });
 });

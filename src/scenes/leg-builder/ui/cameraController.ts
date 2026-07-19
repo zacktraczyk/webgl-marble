@@ -3,6 +3,12 @@ import type { CameraFitInsets } from "../../../engine/camera/fit";
 import type { Vec2 } from "../../../engine/core/transform";
 import type Stage from "../../../engine/stage";
 import type { BuilderUi } from ".";
+import type { LevelObjectData } from "../../../game/level/document";
+import {
+  getSelectionBounds,
+  selectionCenter,
+} from "../../../editor/legEditor/selectionTransforms";
+import { calculateCameraFitForRect } from "../../../engine/camera/fit";
 
 const MIN_ZOOM = 0.1;
 const MAX_ZOOM = 4;
@@ -58,6 +64,45 @@ export class BuilderCameraController {
 
   fitStage() {
     this.resizeController.fit();
+  }
+
+  focusObjects(
+    objects: readonly LevelObjectData[],
+    defaultWallThickness: number
+  ) {
+    const bounds = getSelectionBounds(objects, defaultWallThickness);
+    if (!bounds) {
+      return;
+    }
+    const center = selectionCenter(bounds);
+    const padding = 48;
+    const baseInsets = this.getFitInsets();
+    const insets = {
+      top: baseInsets.top + padding,
+      right: baseInsets.right + padding,
+      bottom: baseInsets.bottom + padding,
+      left: baseInsets.left + padding,
+    };
+    const fit = calculateCameraFitForRect({
+      viewportWidth: this.stage.canvas.clientWidth,
+      viewportHeight: this.stage.canvas.clientHeight,
+      rect: {
+        center,
+        width: Math.max(20, bounds.max[0] - bounds.min[0]),
+        height: Math.max(20, bounds.max[1] - bounds.min[1]),
+      },
+      insets,
+    });
+    const zoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, fit.zoom));
+    const availableWidth =
+      this.stage.canvas.clientWidth - insets.left - insets.right;
+    const availableHeight =
+      this.stage.canvas.clientHeight - insets.top - insets.bottom;
+    this.stage.camera.zoom = zoom;
+    this.stage.camera.position = [
+      insets.left + availableWidth / 2 - center[0] * zoom,
+      insets.top + availableHeight / 2 - center[1] * zoom,
+    ];
   }
 
   updateControls() {

@@ -1,6 +1,9 @@
 import type { Vec2 } from "../../engine/core/transform";
 import type { PusherTool } from "../tools";
-import type { LevelObjectData, LevelObjectMotion } from "../../game/level/document";
+import type {
+  LevelObjectData,
+  LevelObjectMotion,
+} from "../../game/level/document";
 import type { LevelObjectShape, ResizeHandle } from "../../game/level/geometry";
 
 type PanGesture = {
@@ -15,6 +18,8 @@ type MoveGesture = {
   startWorld: Vec2;
   startScreen: Vec2;
   originals: Map<string, LevelObjectData>;
+  inserted: boolean;
+  sourceSelection: string[];
   changed: boolean;
 };
 

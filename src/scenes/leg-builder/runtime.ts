@@ -3,6 +3,7 @@ import { EditorOverlay, LegEditorController } from "../../editor/legEditor";
 import { LegHistory } from "../../editor/legHistory";
 import type {
   LevelObjectData,
+  NewLevelObjectData,
   SerializedLevel,
   SpawnPointVariant,
 } from "../../game/level/document";
@@ -33,6 +34,7 @@ import { readRoundConfiguration, readWallThickness } from "./ui/settings";
 import { resolveBuilderUi, type BuilderUi } from "./ui";
 import { GridOverlay } from "./ui/gridOverlay";
 import { MotionInspectorController } from "./ui/motionInspector";
+import { TransformInspectorController } from "./ui/transformInspector";
 import { updateBuilderInterface } from "./ui/presenter";
 import { TooltipController } from "../../ui/tooltip";
 import { setDatasetFlag } from "../playbackTimers";
@@ -55,6 +57,7 @@ export class LegBuilderRuntime {
   private readonly controls: BuilderControls;
   private readonly cameraController: BuilderCameraController;
   private readonly motionInspector: MotionInspectorController;
+  private readonly transformInspector: TransformInspectorController;
   private readonly courseSync: LegCourseSync;
   private readonly onCommit: LegBuilderOptions["onCommit"];
   private configuration: RoundConfiguration;
@@ -127,6 +130,13 @@ export class LegBuilderRuntime {
       this.stage
     );
     this.motionInspector = this.createMotionInspector();
+    this.transformInspector = new TransformInspectorController(
+      this.ui,
+      this.editorController,
+      () => this.level.wallThickness,
+      () => this.playbackActive,
+      signal
+    );
 
     // User actions
     this.controls = this.createControls(signal);
@@ -199,6 +209,17 @@ export class LegBuilderRuntime {
           }
           this.commitLevelChange();
         },
+        onInsert: (objects) =>
+          objects.map((object) => {
+            const copy = structuredClone(object);
+            delete (copy as Partial<LevelObjectData>).id;
+            return this.level.add(copy as NewLevelObjectData);
+          }),
+        onDiscard: (objects) => {
+          for (const object of objects) {
+            this.level.remove(object.id);
+          }
+        },
         onCreateWall: (start, end) => {
           const object = this.level.add(createWall(start, end));
           this.commitLevelChange();
@@ -220,6 +241,8 @@ export class LegBuilderRuntime {
         onUndo: () => this.undo(),
         onRedo: () => this.redo(),
         onReset: () => this.resetRace(),
+        onFocus: (objects) =>
+          this.cameraController.focusObjects(objects, this.level.wallThickness),
       },
       signal,
     });
@@ -258,6 +281,12 @@ export class LegBuilderRuntime {
         redo: () => this.redo(),
         adjustZoom: (delta) => this.cameraController.adjustZoom(delta),
         resetZoom: () => this.cameraController.resetZoom(),
+        prepareContextMenu: (screenPoint) =>
+          this.editorController.prepareContextMenu(screenPoint),
+        performContextAction: (action, screenPoint) =>
+          Boolean(
+            this.editorController.performContextAction(action, screenPoint)
+          ),
       },
       signal
     );
@@ -303,6 +332,7 @@ export class LegBuilderRuntime {
       canUndo: this.history.canUndo,
       canRedo: this.history.canRedo,
     });
+    this.transformInspector.update();
   }
 
   render() {
@@ -441,7 +471,8 @@ export class LegBuilderRuntime {
     this.ui.releaseIntervalInput.value = `${configuration.releaseIntervalMs}`;
   }
 
-  private readonly getGridWorldBounds = () => this.courseSync.getGridWorldBounds();
+  private readonly getGridWorldBounds = () =>
+    this.courseSync.getGridWorldBounds();
 
   private syncPlaybackState(playbackActive: boolean) {
     if (this.playbackActive === playbackActive) {

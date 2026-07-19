@@ -1,11 +1,7 @@
 import type { Vec2 } from "../../engine/core/transform";
 import type Stage from "../../engine/stage";
 import type { GridLayout } from "../../game/level/grid";
-import {
-  isPusherTool,
-  SelectedTool,
-  type PusherTool,
-} from "../tools";
+import { isPusherTool, SelectedTool, type PusherTool } from "../tools";
 import type { LevelObjectData } from "../../game/level/document";
 import type {
   EditorGesture,
@@ -14,10 +10,7 @@ import type {
   WallDraft,
   WallEndpointFeedback,
 } from "./gestures";
-import {
-  createGestureHost,
-  type GestureHostController,
-} from "./gestureHost";
+import { createGestureHost, type GestureHostController } from "./gestureHost";
 import {
   findWallEndpointTarget,
   type HandleTestDeps,
@@ -38,23 +31,43 @@ import {
 } from "./pointerGestures";
 import { LegEditorSelection } from "./selection";
 import {
+  alignSelectedObjects,
+  copySelectedObjects,
+  cutSelectedObjects,
   deleteSelectedObjects,
+  distributeSelectedObjects,
+  duplicateSelectedObjects,
   finishWallDraft,
+  focusSelectedObjects,
   handleEscapeKey,
+  hasClipboardObjects,
+  mirrorCopySelectedObjects,
+  mirrorSelectedObjects,
   nudgeSelectedObjects,
+  pasteClipboardObjects,
   selectAllObjects,
   type SelectionActionHost,
 } from "./selectionActions";
 import { type SnapDeps } from "./snap";
 import {
   applyLevelObjectShape,
+  getLevelObjectShape,
+  pickLevelObject,
   setWallEndpoints,
+  type LevelObjectShape,
 } from "../../game/level/geometry";
+import type {
+  SelectionAlignment,
+  SelectionDistribution,
+  SelectionMirror,
+} from "./selectionTransforms";
 
 type EditorCallbacks = {
   onObjectsChange(objects: readonly LevelObjectData[]): void;
   onObjectsCommit(objects: readonly LevelObjectData[]): void;
   onDelete(objects: readonly LevelObjectData[]): void;
+  onInsert(objects: readonly LevelObjectData[]): LevelObjectData[];
+  onDiscard(objects: readonly LevelObjectData[]): void;
   onCreateWall(start: Vec2, end: Vec2): LevelObjectData;
   onPlaceObject(tool: PusherTool, position: Vec2): LevelObjectData;
   onToolRequest(tool: SelectedTool): void;
@@ -62,6 +75,27 @@ type EditorCallbacks = {
   onUndo(): void;
   onRedo(): void;
   onReset(): void;
+  onFocus(objects: readonly LevelObjectData[]): void;
+};
+
+export type EditorContextAction =
+  | "duplicate"
+  | "cut"
+  | "copy"
+  | "paste"
+  | "paste-in-place"
+  | "select-all"
+  | "focus"
+  | "delete"
+  | `align-${SelectionAlignment}`
+  | `distribute-${SelectionDistribution}`
+  | `flip-${SelectionMirror}`
+  | `mirror-${SelectionMirror}`;
+
+export type EditorContextState = {
+  selectionCount: number;
+  copyableSelectionCount: number;
+  canPaste: boolean;
 };
 
 type EditorCameraControls = {
@@ -75,10 +109,7 @@ export type {
   WallDraft,
   WallEndpointFeedback,
 } from "./gestures";
-export type {
-  WallEndpointExclusion,
-  WallEndpointTarget,
-} from "./handles";
+export type { WallEndpointExclusion, WallEndpointTarget } from "./handles";
 export { EditorOverlay } from "./overlay";
 
 export class LegEditorController {
@@ -99,6 +130,7 @@ export class LegEditorController {
   private wallPreviewEnd: Vec2 | null = null;
   private endpointFeedback: WallEndpointFeedback | null = null;
   private placementPreviewPosition: Vec2 | null = null;
+  private repeatDuplicateDelta: Vec2 | null = null;
   /** Persistent hosts shared with gesture/selection modules — created once. */
   private readonly selectionHost: SelectionActionHost;
   private readonly gestureHost: PointerGestureHost;
@@ -155,6 +187,11 @@ export class LegEditorController {
           this.cancelGesture();
           this.callbacks.onRedo();
         },
+        copy: this.copySelection,
+        cut: this.cutSelection,
+        paste: (inPlace) => this.pasteSelection({ inPlace }),
+        duplicate: this.duplicateSelection,
+        focusSelection: this.focusSelection,
         selectAll: this.selectAll,
         escape: this.handleEscape,
         finishWall: this.finishWall,
@@ -227,6 +264,99 @@ export class LegEditorController {
 
   get selectedObject() {
     return this.selection.selectedObject;
+  }
+
+  get selectionCount() {
+    return this.selection.size;
+  }
+
+  prepareContextMenu(screenPoint: Vec2): EditorContextState {
+    if (!this.readOnly) {
+      const picked = pickLevelObject(
+        this.getObjects(),
+        this.worldPoint(screenPoint),
+        4 / Math.max(this.cameraZoom, 0.001),
+        this.getDefaultWallThickness()
+      );
+      if (picked && !this.selection.has(picked.id)) {
+        this.selection.replace(picked.id);
+      } else if (!picked) {
+        this.selection.clear();
+      }
+    }
+    return {
+      selectionCount: this.selection.size,
+      copyableSelectionCount: this.selectedObjects.filter(
+        (object) => object.prefab !== "spawn-point"
+      ).length,
+      canPaste: !this.readOnly && hasClipboardObjects(),
+    };
+  }
+
+  performContextAction(action: EditorContextAction, screenPoint?: Vec2) {
+    if (action.startsWith("align-")) {
+      return this.alignSelection(action.slice(6) as SelectionAlignment);
+    }
+    if (action.startsWith("distribute-")) {
+      return this.distributeSelection(
+        action.slice(11) as SelectionDistribution
+      );
+    }
+    if (action.startsWith("mirror-")) {
+      return this.mirrorCopySelection(action.slice(7) as SelectionMirror);
+    }
+    if (action.startsWith("flip-")) {
+      return mirrorSelectedObjects(
+        this.selectionHost,
+        action.slice(5) as SelectionMirror
+      );
+    }
+    switch (action) {
+      case "duplicate":
+        return this.duplicateSelection();
+      case "cut":
+        return this.cutSelection();
+      case "copy":
+        return this.copySelection();
+      case "paste":
+        return this.pasteSelection(
+          screenPoint ? { at: this.worldPoint(screenPoint) } : undefined
+        );
+      case "paste-in-place":
+        return this.pasteSelection({ inPlace: true });
+      case "select-all":
+        return this.selectAll();
+      case "focus":
+        return this.focusSelection();
+      case "delete":
+        return this.deleteSelection();
+    }
+  }
+
+  alignSelection(alignment: SelectionAlignment) {
+    return alignSelectedObjects(this.selectionHost, alignment);
+  }
+
+  distributeSelection(distribution: SelectionDistribution) {
+    return distributeSelectedObjects(this.selectionHost, distribution);
+  }
+
+  mirrorCopySelection(mirror: SelectionMirror) {
+    return mirrorCopySelectedObjects(this.selectionHost, mirror);
+  }
+
+  updateSelectedShape(shape: LevelObjectShape, wallThickness?: number) {
+    const object = this.selectedObject;
+    if (!object || this.readOnly) {
+      return false;
+    }
+    applyLevelObjectShape(object, shape);
+    if (object.prefab === "wall" && wallThickness !== undefined) {
+      object.properties.thickness = wallThickness;
+    }
+    this.callbacks.onObjectsChange([object]);
+    this.callbacks.onObjectsCommit([object]);
+    return true;
   }
 
   get hoveredObject() {
@@ -389,6 +519,14 @@ export class LegEditorController {
 
   private rollbackGesture(gesture: EditorGesture) {
     if (gesture.kind === "move" && gesture.changed) {
+      if (gesture.inserted) {
+        const inserted = [...gesture.originals.keys()]
+          .map((id) => this.findObject(id))
+          .filter((object): object is LevelObjectData => Boolean(object));
+        this.callbacks.onDiscard(inserted);
+        this.selection.replaceAll(gesture.sourceSelection);
+        return;
+      }
       const restored: LevelObjectData[] = [];
       for (const [id, original] of gesture.originals) {
         const object = this.findObject(id);
@@ -399,6 +537,15 @@ export class LegEditorController {
         restored.push(object);
       }
       this.callbacks.onObjectsChange(restored);
+      return;
+    }
+
+    if (gesture.kind === "move" && gesture.inserted) {
+      const inserted = [...gesture.originals.keys()]
+        .map((id) => this.findObject(id))
+        .filter((object): object is LevelObjectData => Boolean(object));
+      this.callbacks.onDiscard(inserted);
+      this.selection.replaceAll(gesture.sourceSelection);
       return;
     }
 
@@ -493,7 +640,29 @@ export class LegEditorController {
   };
 
   private readonly pointerUp = (event: PointerEvent) => {
+    const gesture = this.gesture;
     handlePointerUp(this.gestureHost, event);
+    if (gesture?.kind === "move" && gesture.inserted && gesture.changed) {
+      const firstEntry = gesture.originals.entries().next().value;
+      if (firstEntry) {
+        const [id, original] = firstEntry;
+        const object = this.findObject(id);
+        if (object) {
+          const before = getLevelObjectShape(
+            original,
+            this.getDefaultWallThickness()
+          ).position;
+          const after = getLevelObjectShape(
+            object,
+            this.getDefaultWallThickness()
+          ).position;
+          this.repeatDuplicateDelta = [
+            after[0] - before[0],
+            after[1] - before[1],
+          ];
+        }
+      }
+    }
   };
 
   private readonly pointerCancel = (event: PointerEvent) => {
@@ -519,6 +688,28 @@ export class LegEditorController {
   };
 
   private readonly selectAll = () => selectAllObjects(this.selectionHost);
+
+  private readonly copySelection = () =>
+    copySelectedObjects(this.selectionHost);
+
+  private readonly cutSelection = () => cutSelectedObjects(this.selectionHost);
+
+  private readonly pasteSelection = (options?: {
+    inPlace?: boolean;
+    at?: Vec2;
+  }) => pasteClipboardObjects(this.selectionHost, options);
+
+  private readonly duplicateSelection = () => {
+    const delta = this.repeatDuplicateDelta ?? [...this.getGridLayout().step];
+    const duplicated = duplicateSelectedObjects(this.selectionHost, delta);
+    if (duplicated) {
+      this.repeatDuplicateDelta = [...delta];
+    }
+    return duplicated;
+  };
+
+  private readonly focusSelection = () =>
+    focusSelectedObjects(this.selectionHost);
 
   private readonly handleEscape = () => handleEscapeKey(this.selectionHost);
 
@@ -553,6 +744,7 @@ export class LegEditorController {
       },
       getObjects: () => controller.getObjects(),
       getDefaultWallThickness: () => controller.getDefaultWallThickness(),
+      getGridLayout: () => controller.getGridLayout(),
       get gesture() {
         return controller.gesture;
       },

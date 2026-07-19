@@ -7,11 +7,7 @@ import {
   type ResizeHandle,
 } from "../../game/level/geometry";
 import type { LevelObjectData } from "../../game/level/document";
-import {
-  isPusherTool,
-  SelectedTool,
-  type PusherTool,
-} from "../tools";
+import { isPusherTool, SelectedTool, type PusherTool } from "../tools";
 import { HANDLE_HIT_RADIUS, MIN_WALL_LENGTH } from "./constants";
 import {
   updateMarqueeDrag,
@@ -46,6 +42,8 @@ type PointerGestureCallbacks = {
   onCreateWall(start: Vec2, end: Vec2): LevelObjectData;
   onPlaceObject(tool: PusherTool, position: Vec2): LevelObjectData;
   onToolComplete(tool: SelectedTool): void;
+  onInsert(objects: readonly LevelObjectData[]): LevelObjectData[];
+  onDiscard(objects: readonly LevelObjectData[]): void;
 };
 
 type PointerCameraControls = {
@@ -121,7 +119,8 @@ export function beginPan(
 export function beginMove(
   host: PointerGestureHost,
   event: PointerEvent,
-  screenPoint: Vec2
+  screenPoint: Vec2,
+  options: { inserted?: boolean; sourceSelection?: string[] } = {}
 ) {
   const originals = new Map(
     host.selectedObjects.map((object) => [object.id, structuredClone(object)])
@@ -132,6 +131,8 @@ export function beginMove(
     startWorld: host.worldPoint(screenPoint),
     startScreen: screenPoint,
     originals,
+    inserted: options.inserted ?? false,
+    sourceSelection: options.sourceSelection ?? [],
     changed: false,
   };
   host.capturePointer(event.pointerId);
@@ -222,11 +223,7 @@ function tryBeginPlacement(
   screenPoint: Vec2,
   temporarySelection: boolean
 ): boolean {
-  if (
-    !isPusherTool(host.activeTool) ||
-    temporarySelection ||
-    host.readOnly
-  ) {
+  if (!isPusherTool(host.activeTool) || temporarySelection || host.readOnly) {
     return false;
   }
   host.gesture = {
@@ -369,7 +366,23 @@ function tryBeginMoveOrMarquee(
     }
     host.selection.setHovered(pickedObject.id);
     if (!host.readOnly) {
-      beginMove(host, event, screenPoint);
+      if (event.altKey) {
+        const sourceSelection = host.selectedObjects.map((object) => object.id);
+        const copies = host.callbacks.onInsert(
+          structuredClone(host.selectedObjects).filter(
+            (object) => object.prefab !== "spawn-point"
+          )
+        );
+        if (copies.length > 0) {
+          host.selection.replaceAll(copies.map((object) => object.id));
+          beginMove(host, event, screenPoint, {
+            inserted: true,
+            sourceSelection,
+          });
+        }
+      } else {
+        beginMove(host, event, screenPoint);
+      }
     }
     event.preventDefault();
     return true;
@@ -395,7 +408,10 @@ function tryBeginMoveOrMarquee(
   return true;
 }
 
-export function handlePointerDown(host: PointerGestureHost, event: PointerEvent) {
+export function handlePointerDown(
+  host: PointerGestureHost,
+  event: PointerEvent
+) {
   const screenPoint = host.screenPoint(event);
   host.lastPointerScreen = screenPoint;
 
@@ -428,7 +444,10 @@ export function handlePointerDown(host: PointerGestureHost, event: PointerEvent)
   tryBeginMoveOrMarquee(host, event, screenPoint);
 }
 
-export function handlePointerMove(host: PointerGestureHost, event: PointerEvent) {
+export function handlePointerMove(
+  host: PointerGestureHost,
+  event: PointerEvent
+) {
   const screenPoint = host.screenPoint(event);
   host.lastPointerScreen = screenPoint;
   if (!host.gesture) {
@@ -511,12 +530,10 @@ export function handlePointerMove(host: PointerGestureHost, event: PointerEvent)
       result = updatePlaceDrag();
       break;
     case "marquee":
-      result = updateMarqueeDrag(
-        host.gesture,
-        screenPoint,
-        worldPoint,
-        { ...dragDeps, selection: host.selection }
-      );
+      result = updateMarqueeDrag(host.gesture, screenPoint, worldPoint, {
+        ...dragDeps,
+        selection: host.selection,
+      });
       break;
     case "move":
       result = updateMoveDrag(
@@ -603,6 +620,9 @@ export function handlePointerUp(host: PointerGestureHost, event: PointerEvent) {
       host.placementPreviewPosition = null;
       host.callbacks.onToolComplete(gesture.tool);
     }
+  } else if (gesture.kind === "move" && gesture.inserted && !gesture.changed) {
+    host.callbacks.onDiscard(host.selectedObjects);
+    host.selection.replaceAll(gesture.sourceSelection);
   } else if (
     (gesture.kind === "move" ||
       gesture.kind === "resize" ||

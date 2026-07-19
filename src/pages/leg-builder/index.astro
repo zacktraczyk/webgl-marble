@@ -7,6 +7,7 @@ import ViewportChrome from "./_ViewportChrome.astro";
 import RaceControls from "./_RaceControls.astro";
 import ObjectInspector from "./_ObjectInspector.astro";
 import OptionsSidebar from "./_OptionsSidebar.astro";
+import ContextMenu from "./_ContextMenu.astro";
 import "./_leg-builder.css";
 ---
 
@@ -84,9 +85,12 @@ import "./_leg-builder.css";
 
     <OptionsSidebar />
 
+    <ContextMenu />
+
     <div id="builder-workspace" class="absolute inset-0 overflow-hidden">
       <canvas
         id="gl-canvas"
+        tabindex="-1"
         class="size-full bg-zinc-900 data-[pointer=pan]:cursor-grab data-[pointer=select]:cursor-default data-[pointer=shape]:cursor-crosshair"
       >
         Canvas not supported

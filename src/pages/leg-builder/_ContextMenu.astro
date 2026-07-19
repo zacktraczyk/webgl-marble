@@ -1,0 +1,176 @@
+<div
+  data-role="context-menu"
+  role="menu"
+  aria-label="Editor actions"
+  hidden
+  class="absolute z-50 w-60 overflow-hidden rounded-lg border border-zinc-600 bg-zinc-800/95 p-1.5 text-xs text-zinc-200 shadow-2xl backdrop-blur"
+>
+  <div data-context-section="canvas" hidden>
+    <button
+      data-context-action="paste"
+      role="menuitem"
+      type="button"
+      class="flex w-full items-center justify-between rounded-md px-3 py-2 text-left hover:bg-zinc-700 disabled:text-zinc-600 disabled:hover:bg-transparent"
+    >
+      <span>Paste here</span><kbd class="text-[10px] text-zinc-500">⌘V</kbd>
+    </button>
+    <button
+      data-context-action="paste-in-place"
+      role="menuitem"
+      type="button"
+      class="flex w-full items-center justify-between rounded-md px-3 py-2 text-left hover:bg-zinc-700 disabled:text-zinc-600 disabled:hover:bg-transparent"
+    >
+      <span>Paste in place</span><kbd class="text-[10px] text-zinc-500">⇧⌘V</kbd
+      >
+    </button>
+    <button
+      data-context-action="select-all"
+      role="menuitem"
+      type="button"
+      class="flex w-full items-center justify-between rounded-md px-3 py-2 text-left hover:bg-zinc-700"
+    >
+      <span>Select all</span><kbd class="text-[10px] text-zinc-500">⌘A</kbd>
+    </button>
+  </div>
+
+  <div data-context-section="selection" hidden>
+    <button
+      data-context-action="duplicate"
+      role="menuitem"
+      type="button"
+      class="flex w-full items-center justify-between rounded-md px-3 py-2 text-left hover:bg-zinc-700"
+    >
+      <span>Duplicate / repeat</span><kbd class="text-[10px] text-zinc-500"
+        >⌘D</kbd
+      >
+    </button>
+    <button
+      data-context-action="cut"
+      role="menuitem"
+      type="button"
+      class="flex w-full items-center justify-between rounded-md px-3 py-2 text-left hover:bg-zinc-700"
+    >
+      <span>Cut</span><kbd class="text-[10px] text-zinc-500">⌘X</kbd>
+    </button>
+    <button
+      data-context-action="copy"
+      role="menuitem"
+      type="button"
+      class="flex w-full items-center justify-between rounded-md px-3 py-2 text-left hover:bg-zinc-700"
+    >
+      <span>Copy</span><kbd class="text-[10px] text-zinc-500">⌘C</kbd>
+    </button>
+    <button
+      data-context-action="focus"
+      role="menuitem"
+      type="button"
+      class="flex w-full items-center justify-between rounded-md px-3 py-2 text-left hover:bg-zinc-700"
+    >
+      <span>Focus selection</span><kbd class="text-[10px] text-zinc-500">F</kbd>
+    </button>
+
+    <div
+      data-context-section="multi"
+      hidden
+      class="my-1 border-y border-zinc-700 py-1"
+    >
+      <p
+        class="px-3 pb-1 pt-1 text-[9px] font-semibold uppercase tracking-widest text-zinc-500"
+      >
+        Arrange
+      </p>
+      <div class="grid grid-cols-3 gap-1 px-1.5 pb-1">
+        <button
+          data-context-action="align-left"
+          role="menuitem"
+          type="button"
+          class="rounded px-1 py-1.5 hover:bg-zinc-700">Left</button
+        >
+        <button
+          data-context-action="align-center-horizontal"
+          role="menuitem"
+          type="button"
+          class="rounded px-1 py-1.5 hover:bg-zinc-700">Center X</button
+        >
+        <button
+          data-context-action="align-right"
+          role="menuitem"
+          type="button"
+          class="rounded px-1 py-1.5 hover:bg-zinc-700">Right</button
+        >
+        <button
+          data-context-action="align-top"
+          role="menuitem"
+          type="button"
+          class="rounded px-1 py-1.5 hover:bg-zinc-700">Top</button
+        >
+        <button
+          data-context-action="align-center-vertical"
+          role="menuitem"
+          type="button"
+          class="rounded px-1 py-1.5 hover:bg-zinc-700">Center Y</button
+        >
+        <button
+          data-context-action="align-bottom"
+          role="menuitem"
+          type="button"
+          class="rounded px-1 py-1.5 hover:bg-zinc-700">Bottom</button
+        >
+      </div>
+      <button
+        data-context-action="distribute-horizontal"
+        role="menuitem"
+        type="button"
+        class="w-full rounded-md px-3 py-2 text-left hover:bg-zinc-700"
+        >Distribute horizontally</button
+      >
+      <button
+        data-context-action="distribute-vertical"
+        role="menuitem"
+        type="button"
+        class="w-full rounded-md px-3 py-2 text-left hover:bg-zinc-700"
+        >Distribute vertically</button
+      >
+    </div>
+
+    <div class="my-1 border-y border-zinc-700 py-1">
+      <button
+        data-context-action="flip-left-right"
+        role="menuitem"
+        type="button"
+        class="w-full rounded-md px-3 py-2 text-left hover:bg-zinc-700"
+        >Flip left ↔ right</button
+      >
+      <button
+        data-context-action="flip-top-bottom"
+        role="menuitem"
+        type="button"
+        class="w-full rounded-md px-3 py-2 text-left hover:bg-zinc-700"
+        >Flip top ↔ bottom</button
+      >
+      <button
+        data-context-action="mirror-left-right"
+        role="menuitem"
+        type="button"
+        class="w-full rounded-md px-3 py-2 text-left hover:bg-zinc-700"
+        >Mirror copy across course X</button
+      >
+      <button
+        data-context-action="mirror-top-bottom"
+        role="menuitem"
+        type="button"
+        class="w-full rounded-md px-3 py-2 text-left hover:bg-zinc-700"
+        >Mirror copy across course Y</button
+      >
+    </div>
+
+    <button
+      data-context-action="delete"
+      role="menuitem"
+      type="button"
+      class="flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-rose-300 hover:bg-rose-500/10"
+    >
+      <span>Delete</span><kbd class="text-[10px] text-rose-400/60">⌫</kbd>
+    </button>
+  </div>
+</div>

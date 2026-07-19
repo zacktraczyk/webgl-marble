@@ -32,6 +32,7 @@ export type BuilderUi = {
   minorGridToggleButton: HTMLButtonElement;
   gridOverlay: HTMLElement;
   editorOverlayCanvas: HTMLCanvasElement;
+  editorCanvas: HTMLCanvasElement;
   playButton: HTMLButtonElement;
   playButtonLabel: HTMLElement | null;
   playButtonIcons: SVGElement[];
@@ -56,6 +57,20 @@ export type BuilderUi = {
   wallThicknessInput: HTMLInputElement;
   objectInspector: HTMLElement;
   objectInspectorTitle: HTMLElement;
+  selectionCountOutput: HTMLElement;
+  objectKindBadge: HTMLElement;
+  transformControls: HTMLElement;
+  transformXInput: HTMLInputElement;
+  transformYInput: HTMLInputElement;
+  transformRotationInput: HTMLInputElement;
+  transformPrimaryInput: HTMLInputElement;
+  transformSecondaryInput: HTMLInputElement;
+  transformPrimaryLabel: HTMLElement;
+  transformSecondaryLabel: HTMLElement;
+  transformSecondaryRow: HTMLElement;
+  multiSelectionControls: HTMLElement;
+  arrangeButtons: HTMLButtonElement[];
+  motionInspector: HTMLElement;
   motionTypeSelect: HTMLSelectElement;
   motionControls: HTMLElement;
   motionRangeRow: HTMLElement;
@@ -63,6 +78,11 @@ export type BuilderUi = {
   motionRangeOutput: HTMLOutputElement;
   motionReverseButton: HTMLButtonElement;
   motionSpeedButtons: HTMLButtonElement[];
+  contextMenu: HTMLElement;
+  contextCanvasSection: HTMLElement;
+  contextSelectionSection: HTMLElement;
+  contextMultiSection: HTMLElement;
+  contextActionButtons: HTMLButtonElement[];
   statusOutput: HTMLElement;
 };
 
@@ -125,6 +145,10 @@ export const resolveBuilderUi = (
       "editor-overlay",
       "editor overlay"
     ),
+    editorCanvas: requireElement<HTMLCanvasElement>(
+      root.querySelector("#gl-canvas"),
+      "editor canvas"
+    ),
     playButton,
     playButtonLabel: playButton.querySelector("[data-race-button-label]"),
     playButtonIcons: Array.from(
@@ -178,6 +202,43 @@ export const resolveBuilderUi = (
       "object-inspector-title",
       "object inspector title"
     ),
+    selectionCountOutput: role("selection-count", "selection count"),
+    objectKindBadge: role("object-kind-badge", "object kind badge"),
+    transformControls: role("transform-controls", "transform controls"),
+    transformXInput: role<HTMLInputElement>("transform-x", "transform x"),
+    transformYInput: role<HTMLInputElement>("transform-y", "transform y"),
+    transformRotationInput: role<HTMLInputElement>(
+      "transform-rotation",
+      "transform rotation"
+    ),
+    transformPrimaryInput: role<HTMLInputElement>(
+      "transform-primary",
+      "transform primary size"
+    ),
+    transformSecondaryInput: role<HTMLInputElement>(
+      "transform-secondary",
+      "transform secondary size"
+    ),
+    transformPrimaryLabel: role(
+      "transform-primary-label",
+      "transform primary label"
+    ),
+    transformSecondaryLabel: role(
+      "transform-secondary-label",
+      "transform secondary label"
+    ),
+    transformSecondaryRow: role(
+      "transform-secondary-row",
+      "transform secondary row"
+    ),
+    multiSelectionControls: role(
+      "multi-selection-controls",
+      "multi selection controls"
+    ),
+    arrangeButtons: Array.from(
+      root.querySelectorAll<HTMLButtonElement>("[data-arrange-action]")
+    ),
+    motionInspector: role("motion-inspector", "motion inspector"),
     motionTypeSelect: role<HTMLSelectElement>("motion-type", "motion type"),
     motionControls: role("motion-controls", "motion controls"),
     motionRangeRow: role("motion-range-row", "motion range row"),
@@ -195,6 +256,22 @@ export const resolveBuilderUi = (
       role<HTMLButtonElement>("motion-speed-medium", "medium motion"),
       role<HTMLButtonElement>("motion-speed-fast", "fast motion"),
     ],
+    contextMenu: role("context-menu", "context menu"),
+    contextCanvasSection: requireElement(
+      root.querySelector('[data-context-section="canvas"]'),
+      "context canvas section"
+    ),
+    contextSelectionSection: requireElement(
+      root.querySelector('[data-context-section="selection"]'),
+      "context selection section"
+    ),
+    contextMultiSection: requireElement(
+      root.querySelector('[data-context-section="multi"]'),
+      "context multi selection section"
+    ),
+    contextActionButtons: Array.from(
+      root.querySelectorAll<HTMLButtonElement>("[data-context-action]")
+    ),
     statusOutput: role("race-status", "status"),
   };
 };
