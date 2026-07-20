@@ -18,14 +18,3 @@ export const createTransform = ({
   rotation,
   scale: [...scale],
 });
-
-export const identityTransform = (): Transform =>
-  createTransform({ position: [0, 0] });
-
-export const copyTransform = (target: Transform, source: Transform): void => {
-  target.position[0] = source.position[0];
-  target.position[1] = source.position[1];
-  target.rotation = source.rotation;
-  target.scale[0] = source.scale[0];
-  target.scale[1] = source.scale[1];
-};

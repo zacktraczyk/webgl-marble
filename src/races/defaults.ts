@@ -1,6 +1,6 @@
 import { LevelDocument } from "../game/level/document";
 import type { Color } from "../engine/core/color";
-import { TEAM_COLORS, TEAM_NAMES } from "../game/race/staging";
+import { TEAM_COLORS, TEAM_NAMES } from "../game/race/teams";
 import {
   COURSE_STROKE_WIDTH,
   STAGE_HEIGHT,
@@ -16,7 +16,7 @@ import {
 
 export const DEFAULT_PARTICIPANT_COUNT = 4;
 export const DEFAULT_MARBLES_PER_TEAM = 60;
-export const DEFAULT_RELEASE_INTERVAL_MS = 15;
+const DEFAULT_RELEASE_INTERVAL_MS = 15;
 export const MAX_RACE_PARTICIPANTS = TEAM_COLORS.length;
 
 export type RaceFactoryDependencies = {

@@ -34,29 +34,16 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-// TODO: Refactor into vdu
+export type Attribute = {
+  attributeType: "buffer";
 
-// Value or Buffer
-export type Attribute =
-  | {
-      attributeType: "value";
-
-      value:
-        | [number, number, number, number]
-        | [number, number, number]
-        | [number, number]
-        | [number];
-    }
-  | {
-      attributeType: "buffer";
-
-      buffer: WebGLBuffer;
-      size: number;
-      type?: number;
-      normalize?: boolean;
-      stride?: number;
-      offset?: number;
-    };
+  buffer: WebGLBuffer;
+  size: number;
+  type?: number;
+  normalize?: boolean;
+  stride?: number;
+  offset?: number;
+};
 
 export type AttributeSetters = Record<string, (b: Attribute) => void>;
 
@@ -74,56 +61,6 @@ export type BufferInfo = {
   numElements: number;
   attributes: Record<string, Attribute>;
 };
-
-export type DrawObject = {
-  programInfo: ProgramInfo;
-  bufferInfo: BufferInfo;
-  uniforms: Record<string, Uniform>;
-};
-
-export function createDrawObject({
-  gl,
-  programInfo,
-  position,
-  indices,
-}: {
-  gl: WebGLRenderingContext;
-  programInfo: ProgramInfo;
-  position: [number, number];
-  indices: number[] | Float32Array;
-}) {
-  const indicesBuffer = gl.createBuffer();
-  if (!indicesBuffer) {
-    throw new Error("Failed to create buffer");
-  }
-
-  gl.bindBuffer(gl.ARRAY_BUFFER, indicesBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(indices), gl.STATIC_DRAW);
-
-  const drawObject: DrawObject = {
-    programInfo,
-    bufferInfo: {
-      numElements: indices.length / 2,
-      attributes: {
-        aVertexPosition: {
-          attributeType: "buffer",
-          buffer: indicesBuffer,
-          size: 2,
-          type: gl.FLOAT,
-          normalize: false,
-          stride: 0,
-          offset: 0,
-        },
-      },
-    },
-    uniforms: {
-      uResolution: [gl.canvas.width, gl.canvas.height],
-      uTranslation: position,
-    },
-  };
-
-  return drawObject;
-}
 
 /**
  * Initialize a shader program
@@ -208,36 +145,16 @@ export function createAttributeSetters(
    */
   const createAttribSetter = (index: number) => {
     return (b: Attribute) => {
-      if (b.attributeType === "value") {
-        gl.disableVertexAttribArray(index);
-        switch (b.value.length) {
-          case 4:
-            gl.vertexAttrib4fv(index, b.value);
-            break;
-          case 3:
-            gl.vertexAttrib3fv(index, b.value);
-            break;
-          case 2:
-            gl.vertexAttrib2fv(index, b.value);
-            break;
-          case 1:
-            gl.vertexAttrib1fv(index, b.value);
-            break;
-          default:
-            throw new Error("the length of value must be between 1 and 4");
-        }
-      } else {
-        gl.bindBuffer(gl.ARRAY_BUFFER, b.buffer);
-        gl.enableVertexAttribArray(index);
-        gl.vertexAttribPointer(
-          index,
-          b.size,
-          b.type || gl.FLOAT,
-          b.normalize || false,
-          b.stride || 0,
-          b.offset || 0
-        );
-      }
+      gl.bindBuffer(gl.ARRAY_BUFFER, b.buffer);
+      gl.enableVertexAttribArray(index);
+      gl.vertexAttribPointer(
+        index,
+        b.size,
+        b.type || gl.FLOAT,
+        b.normalize || false,
+        b.stride || 0,
+        b.offset || 0
+      );
     };
   };
 
@@ -256,18 +173,6 @@ export function createAttributeSetters(
   return attribSetters;
 }
 
-/**
- * Get the bind point for a given sampler type
- * @param gl a WebGLRenderingContext
- * @param type a type of sampler
- * @returns a bind point for a given sampler type
- */
-function getBindPointForSamplerType(gl: WebGLRenderingContext, type: number) {
-  if (type === gl.SAMPLER_2D) return gl.TEXTURE_2D;
-  if (type === gl.SAMPLER_CUBE) return gl.TEXTURE_CUBE_MAP;
-  return undefined;
-}
-
 // TODO: Verify the type of UniformInfo
 type UniformInfo = {
   name: string;
@@ -284,22 +189,13 @@ export function createUniformSetters(
   gl: WebGLRenderingContext,
   program: WebGLProgram
 ): UniformSetters {
-  let textureUnit = 0;
-
   const createUniformSetter = (
     program: WebGLProgram,
     uniformInfo: UniformInfo
   ) => {
     const location = gl.getUniformLocation(program, uniformInfo.name);
     const type = uniformInfo.type;
-    const isArray =
-      uniformInfo.size > 1 && uniformInfo.name.slice(-3) === "[0]";
 
-    if (type === gl.FLOAT && isArray) {
-      return (v: [GLfloat]) => {
-        gl.uniform1fv(location, v);
-      };
-    }
     if (type === gl.FLOAT) {
       return (v: GLfloat) => {
         gl.uniform1f(location, v);
@@ -320,56 +216,6 @@ export function createUniformSetters(
         gl.uniform4fv(location, v);
       };
     }
-    if (type === gl.INT && isArray) {
-      return (v: [GLint]) => {
-        gl.uniform1iv(location, v);
-      };
-    }
-    if (type === gl.INT) {
-      return (v: GLint) => {
-        gl.uniform1i(location, v);
-      };
-    }
-    if (type === gl.INT_VEC2) {
-      return (v: [GLint, GLint]) => {
-        gl.uniform2iv(location, v);
-      };
-    }
-    if (type === gl.INT_VEC3) {
-      return (v: [GLint, GLint, GLint]) => {
-        gl.uniform3iv(location, v);
-      };
-    }
-    if (type === gl.INT_VEC4) {
-      return (v: [GLint, GLint, GLint, GLint]) => {
-        gl.uniform4iv(location, v);
-      };
-    }
-    if (type === gl.BOOL) {
-      return (v: [GLint]) => {
-        gl.uniform1iv(location, v);
-      };
-    }
-    if (type === gl.BOOL_VEC2) {
-      return (v: [GLint, GLint]) => {
-        gl.uniform2iv(location, v);
-      };
-    }
-    if (type === gl.BOOL_VEC3) {
-      return (v: [GLint, GLint, GLint]) => {
-        gl.uniform3iv(location, v);
-      };
-    }
-    if (type === gl.BOOL_VEC4) {
-      return (v: [GLint, GLint, GLint, GLint]) => {
-        gl.uniform4iv(location, v);
-      };
-    }
-    if (type === gl.FLOAT_MAT2) {
-      return (v: [GLfloat, GLfloat, GLfloat, GLfloat]) => {
-        gl.uniformMatrix2fv(location, false, v);
-      };
-    }
     if (type === gl.FLOAT_MAT3) {
       return (
         v: [
@@ -386,59 +232,9 @@ export function createUniformSetters(
         gl.uniformMatrix3fv(location, false, v);
       };
     }
-    if (type === gl.FLOAT_MAT4) {
-      return (
-        v: [
-          GLfloat,
-          GLfloat,
-          GLfloat,
-          GLfloat,
-          GLfloat,
-          GLfloat,
-          GLfloat,
-          GLfloat,
-          GLfloat,
-          GLfloat,
-          GLfloat,
-          GLfloat,
-          GLfloat,
-          GLfloat,
-          GLfloat,
-          GLfloat,
-        ]
-      ) => {
-        gl.uniformMatrix4fv(location, false, v);
-      };
-    }
-
-    if ((type === gl.SAMPLER_2D || type === gl.SAMPLER_CUBE) && isArray) {
-      const units = [];
-      for (let ii = 0; ii < uniformInfo.size; ++ii) {
-        units.push(textureUnit++);
-      }
-      return (function (bindPoint: GLenum, units) {
-        return function (textures: WebGLTexture[]) {
-          gl.uniform1iv(location, units);
-          textures.forEach(function (texture, index) {
-            gl.activeTexture(gl.TEXTURE0 + units[index]);
-            gl.bindTexture(bindPoint, texture);
-          });
-        };
-      })(getBindPointForSamplerType(gl, type)!, units);
-    }
-    if (type === gl.SAMPLER_2D || type === gl.SAMPLER_CUBE) {
-      return (function (bindPoint: GLenum, unit) {
-        return function (texture: WebGLTexture) {
-          gl.uniform1i(location, unit);
-          gl.activeTexture(gl.TEXTURE0 + unit);
-          gl.bindTexture(bindPoint, texture);
-        };
-      })(getBindPointForSamplerType(gl, type)!, textureUnit++);
-    }
     throw "unknown type: 0x" + type.toString(16); // we should never get here.
   };
 
-  // TODO: Fix the type of uniformSetters
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const uniformSetters: Record<string, (v: any) => void> = {};
   const numUniforms = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS);

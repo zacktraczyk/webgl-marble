@@ -12,7 +12,7 @@ export type LegFrame = {
 };
 
 /** The finish rack height baked into a leg's saved level document. */
-export const savedFinishRackHeight = (leg: RaceLegDocument): number => {
+const savedFinishRackHeight = (leg: RaceLegDocument): number => {
   for (const object of leg.level.objects) {
     if (object.prefab === "finish-zone") {
       return object.properties.height;

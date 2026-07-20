@@ -4,7 +4,8 @@ import type {
   LevelObjectData,
   LevelObjectMotion,
 } from "../../game/level/document";
-import type { LevelObjectShape, ResizeHandle } from "../../game/level/geometry";
+import type { LevelObjectShape } from "../../game/level/geometry";
+import type { ResizeHandle } from "../geometry";
 
 type PanGesture = {
   kind: "pan";

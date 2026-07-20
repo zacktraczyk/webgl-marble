@@ -10,14 +10,13 @@ import {
   getLevelObjectBounds,
   getLevelObjectShape,
   getRectangleCorners,
-  getRotationHandle,
-  getResizeAnchors,
   getWallEndpoints,
   isLevelObjectRotatable,
   isLevelObjectResizable,
   type LevelObjectShape,
   type RectangleLevelShape,
 } from "../../game/level/geometry";
+import { getRotationHandle, getResizeAnchors } from "../geometry";
 import type {
   SelectionMarquee,
   WallDraft,

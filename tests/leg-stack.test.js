@@ -68,10 +68,7 @@ describe("leg stack layout", () => {
     const plan = (rackHeight) => ({
       legIndex: 0,
       activeTeams: 2,
-      bayCount: 2,
-      xBayCount: 0,
-      columns: 10,
-      rows: 10,
+      marblesPerTeam: 100,
       marbleRadius: 4.8,
       rackHeight,
     });

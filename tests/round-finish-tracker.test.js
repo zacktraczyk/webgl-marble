@@ -5,24 +5,17 @@ describe("round finish tracker", () => {
   test("first team to finish claims the leftmost bay", () => {
     const tracker = new RoundFinishTracker(4, 3);
 
-    expect(tracker.bayForTeam(2)).toBeNull();
     expect(tracker.record(2)).toMatchObject({
       bayIndex: 0,
       slotIndex: 0,
-      remainingMarbles: 11,
-      lastMarbleRemaining: false,
     });
     expect(tracker.record(2)).toMatchObject({
       bayIndex: 0,
       slotIndex: 1,
-      remainingMarbles: 10,
-      lastMarbleRemaining: false,
     });
-    expect(tracker.bayForTeam(2)).toBe(0);
 
     // The next team to finish claims the next bay to the right.
     expect(tracker.record(0)).toMatchObject({ bayIndex: 1, slotIndex: 0 });
-    expect(tracker.bayForTeam(0)).toBe(1);
 
     expect(tracker.finishedMarbles).toBe(3);
     expect(tracker.eliminatedTeamIndex).toBeNull();
@@ -32,15 +25,10 @@ describe("round finish tracker", () => {
     const tracker = new RoundFinishTracker(4, 3);
     const finishOrder = [0, 0, 0, 1, 1, 2, 2, 2, 3, 3, 3];
 
-    let finalRecord;
     for (const teamIndex of finishOrder) {
-      finalRecord = tracker.record(teamIndex);
+      tracker.record(teamIndex);
     }
 
-    expect(finalRecord).toMatchObject({
-      remainingMarbles: 1,
-      lastMarbleRemaining: true,
-    });
     expect(tracker.eliminatedTeamIndex).toBe(1);
     expect(tracker.finishedMarbles).toBe(11);
     expect(tracker.totalMarbles).toBe(12);
@@ -69,14 +57,12 @@ describe("round finish tracker", () => {
     expect(tracker.record(1)).toMatchObject({
       bayIndex: 1,
       slotIndex: 0,
-      remainingMarbles: 2,
     });
 
     tracker.record(0);
     expect(tracker.record(1)).toMatchObject({
       bayIndex: 1,
       slotIndex: 1,
-      remainingMarbles: 0,
     });
     expect(tracker.finishedMarbles).toBe(4);
   });

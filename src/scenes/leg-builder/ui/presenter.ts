@@ -2,12 +2,11 @@ import type {
   LevelObjectData,
   SpawnPointVariant,
 } from "../../../game/level/document";
-import { TEAM_COLORS, TEAM_NAMES } from "../../../game/race/staging";
+import { TEAM_COLORS, TEAM_NAMES } from "../../../game/race/teams";
 import { pusherSpeedForMotion } from "../../../game/level/objects";
 import type { RaceSnapshot } from "../../../game/race/controller";
-import type { RoundConfiguration } from "../../../game/level/types";
+import type { RoundConfiguration } from "../../../game/race/types";
 import { SelectedTool } from "../../../editor/tools";
-import { setDatasetFlag } from "../../playbackTimers";
 import type { BuilderUi } from ".";
 
 const key = (label: string) => `<kbd>${label}</kbd>`;
@@ -200,7 +199,7 @@ export const updateBuilderInterface = ({
         : "play";
 
   ui.playButton.disabled = Boolean(race.courseIssue);
-  setDatasetFlag(ui.playButton, "previewing", race.phase !== "ready");
+  ui.playButton.dataset.previewing = `${race.phase !== "ready"}`;
   ui.playButton.ariaLabel = race.courseIssue ?? playButtonText;
   ui.playButton.dataset.tooltip = race.courseIssue ?? playButtonText;
   if (ui.playButtonLabel) {

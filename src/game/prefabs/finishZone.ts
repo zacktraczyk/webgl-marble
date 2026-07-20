@@ -13,10 +13,6 @@ export const FINISH_RACK_BACKGROUND: Color = [
   9 / 255, 9 / 255, 11 / 255, 0.86,
 ];
 export const FINISH_RACK_WALL: Color = [113 / 255, 113 / 255, 122 / 255, 1];
-/** Dim overlay for X'd-out bays of already-eliminated teams. */
-export const FINISH_RACK_DISABLED: Color = [
-  24 / 255, 24 / 255, 27 / 255, 0.72,
-];
 
 export interface FinishRackRect {
   /** Center in rack-local coordinates. */
@@ -63,16 +59,7 @@ export interface FinishRackFrame {
   bottomWall: FinishRackRect;
   sideWalls: [FinishRackRect, FinishRackRect];
   dividers: FinishRackRect[];
-  /**
-   * Inner rects of the rightmost bays owned by already-eliminated teams,
-   * rendered X'd out until the next era reset reflows the rack.
-   */
-  disabledBays: FinishRackRect[];
 }
-
-export type FinishRackFrameOptions = FinishBayOptions & {
-  xBayCount?: number;
-};
 
 /** Rack-local rectangles shared by the runtime prefab and 2D previews. */
 export const createFinishRackFrame = ({
@@ -80,8 +67,7 @@ export const createFinishRackFrame = ({
   height,
   wallThickness,
   teamCount,
-  xBayCount = 0,
-}: FinishRackFrameOptions): FinishRackFrame => {
+}: FinishBayOptions): FinishRackFrame => {
   const { gridWidth, gridHeight } = finishBayInnerSize({
     width,
     height,
@@ -101,23 +87,7 @@ export const createFinishRackFrame = ({
       height: gridHeight,
     });
   }
-  const disabledBays: FinishRackRect[] = [];
-  for (let index = teamCount - xBayCount; index < teamCount; index++) {
-    if (index < 0) continue;
-    disabledBays.push({
-      position: [
-        rackLeft +
-          wallThickness +
-          index * (gridWidth + wallThickness) +
-          gridWidth / 2,
-        bayCenterY,
-      ],
-      width: gridWidth,
-      height: gridHeight,
-    });
-  }
   return {
-    disabledBays,
     finishLine: {
       position: [0, -height / 2 + wallThickness / 2],
       width,
@@ -205,8 +175,6 @@ export const finishRackDefinitions = ({
   height,
   wallThickness,
   teamCount,
-  bayCount = teamCount,
-  xBayCount = 0,
   marblesPerTeam = 100,
   maximumMarbleRadius = 4.8,
   minimumMarbleRadius = 1.2,
@@ -219,10 +187,6 @@ export const finishRackDefinitions = ({
   height?: number;
   wallThickness: number;
   teamCount: number;
-  /** Bays rendered — the era's team count; may exceed the active teams. */
-  bayCount?: number;
-  /** Rightmost bays X'd out for teams eliminated earlier in the era. */
-  xBayCount?: number;
   marblesPerTeam?: number;
   maximumMarbleRadius?: number;
   minimumMarbleRadius?: number;
@@ -234,7 +198,7 @@ export const finishRackDefinitions = ({
   const packedHeight = finishRackHeightFor({
     width,
     wallThickness,
-    bayCount,
+    bayCount: teamCount,
     marblesPerTeam,
     marbleRadius: maximumMarbleRadius,
     minimumRadius: minimumMarbleRadius,
@@ -245,8 +209,7 @@ export const finishRackDefinitions = ({
     width,
     height: rackHeight,
     wallThickness,
-    teamCount: bayCount,
-    xBayCount,
+    teamCount,
   });
   const wall = (rect: FinishRackRect, tags: string[], physical = true) =>
     rectangleDefinition({
@@ -259,36 +222,6 @@ export const finishRackDefinitions = ({
       restitution: 0.2,
       tags: ["finish-rack-part", ...tags],
     });
-
-  const disabledBayDefinitions = frame.disabledBays.flatMap((bay) => {
-    const diagonal = Math.hypot(bay.width, bay.height);
-    const angle = Math.atan2(bay.height, bay.width);
-    const strokeThickness = wallThickness / 2;
-    const bayCenter = worldPosition(position, rotation, bay.position);
-    const stroke = (strokeAngle: number) =>
-      rectangleDefinition({
-        position: bayCenter,
-        rotation: rotation + strokeAngle,
-        width: diagonal,
-        height: strokeThickness,
-        color: FINISH_RACK_WALL,
-        physical: false,
-        tags: ["finish-rack-part", "finish-rack-x"],
-      });
-    return [
-      rectangleDefinition({
-        position: bayCenter,
-        rotation,
-        width: bay.width,
-        height: bay.height,
-        color: FINISH_RACK_DISABLED,
-        physical: false,
-        tags: ["finish-rack-part", "finish-rack-x"],
-      }),
-      stroke(angle),
-      stroke(-angle),
-    ];
-  });
 
   return [
     rectangleDefinition({
@@ -311,6 +244,5 @@ export const finishRackDefinitions = ({
     wall(frame.sideWalls[0], ["finish-rack-wall"], false),
     wall(frame.sideWalls[1], ["finish-rack-wall"], false),
     ...frame.dividers.map((divider) => wall(divider, ["finish-rack-divider"])),
-    ...disabledBayDefinitions,
   ];
 };

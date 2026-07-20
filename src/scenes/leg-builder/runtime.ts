@@ -8,21 +8,23 @@ import type {
   SpawnPointVariant,
 } from "../../game/level/document";
 import Stage from "../../engine/stage";
+import { AuthoredLevel } from "../../game/level/authoredLevel";
 import {
-  AuthoredLevel,
   STAGE_HEIGHT,
   STAGE_WIDTH,
   MAX_MARBLE_RADIUS,
+} from "../../game/level/constants";
+import {
   createDefaultCourse,
-  createGridLayout,
   createPusher,
   createSpawnPoint,
   createWall,
-  getLevelObjectShape,
   pusherSpeedForMotion,
-  type RoundConfiguration,
   type SliderPlacementDefaults,
-} from "../../game/level";
+} from "../../game/level/objects";
+import { createGridLayout } from "../../game/level/grid";
+import { getLevelObjectShape } from "../../game/level/geometry";
+import type { RoundConfiguration } from "../../game/race/types";
 import {
   isCreationTool,
   isPusherTool,
@@ -41,7 +43,6 @@ import { MotionInspectorController } from "./ui/motionInspector";
 import { TransformInspectorController } from "./ui/transformInspector";
 import { updateBuilderInterface } from "./ui/presenter";
 import { TooltipController } from "../../ui/tooltip";
-import { setDatasetFlag } from "../playbackTimers";
 
 export type LegBuilderOptions = {
   initialLevel?: SerializedLevel;
@@ -508,7 +509,7 @@ export class LegBuilderRuntime {
       return;
     }
     this.playbackActive = playbackActive;
-    setDatasetFlag(this.ui.root, "previewing", playbackActive);
+    this.ui.root.dataset.previewing = `${playbackActive}`;
     this.editorController.setReadOnly(playbackActive);
     if (playbackActive) {
       this.controls.setPusherLibraryOpen(false);

@@ -1,11 +1,8 @@
 import type { Vec2 } from "../../engine/core/transform";
 import type { LevelObjectData } from "../../game/level/document";
-import {
-  getWallEndpoints,
-  pickLevelObject,
-  resizeHandleCursor,
-} from "../../game/level/geometry";
-import { isPusherTool, SelectedTool } from "../tools";
+import { getWallEndpoints } from "../../game/level/geometry";
+import { pickLevelObject, resizeHandleCursor } from "../geometry";
+import { SelectedTool } from "../tools";
 import { HANDLE_HIT_RADIUS } from "./constants";
 import type { EditorGesture, WallEndpointFeedback } from "./gestures";
 import {
@@ -142,8 +139,4 @@ export function updateCursor(ctx: IdleCursorContext) {
   } else {
     ctx.setCursor("default");
   }
-}
-
-export function isCreationToolActive(activeTool: SelectedTool) {
-  return activeTool === SelectedTool.Wall || isPusherTool(activeTool);
 }

@@ -1,7 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { createTransform } from "../src/engine/core/transform";
 import {
-  BruteForceBroadPhase,
   NaiveAabbBroadPhase,
   computeWorldAabb,
   createCollision,
@@ -30,10 +29,10 @@ const createBody = (
 };
 
 describe("collision pipeline", () => {
-  test("brute-force broad phase returns every unique pair exactly once", () => {
+  test("broad phase returns every overlapping pair exactly once", () => {
     const bodies = [createBody(1), createBody(2), createBody(3), createBody(4)];
 
-    const pairs = new BruteForceBroadPhase().findPairs(bodies);
+    const pairs = new NaiveAabbBroadPhase().findPairs(bodies);
 
     expect(
       pairs.map(([entity1, entity2]) => [entity1.ownerId, entity2.ownerId])

@@ -6,9 +6,9 @@ import {
   RaceRepository,
   createDefaultRace,
   isRacePlayable,
-  renderRaceThumbnail,
   requiredLegCount,
 } from "../../races";
+import { renderRaceThumbnail } from "../../game/level/thumbnail";
 import type { LegFinishPlan } from "../../game/race/eraSchedule";
 import { computeEraSchedule } from "../../game/race/eraSchedule";
 import { openConfirmDelete } from "../../ui/confirmDelete";
@@ -181,8 +181,8 @@ export const mountRaceLibrary = () => {
             race.legs.map((leg, index) => ({
               level: leg.level,
               teamCount:
-                schedule?.[index]?.bayCount ?? race.participants.length - index,
-              xBayCount: schedule?.[index]?.xBayCount,
+                schedule?.[index]?.activeTeams ??
+                race.participants.length - index,
             })),
             {
               background: "oklch(19% 0.004 285)",

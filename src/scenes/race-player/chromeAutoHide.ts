@@ -7,7 +7,7 @@
 export function setupChromeAutoHide(
   root: HTMLElement,
   signal?: AbortSignal
-): () => void {
+): void {
   const CHROME_HIDE_DELAY_MS = 2600;
   const chrome = ["#race-back-link", "#race-leg-pill", "#race-controls"].flatMap(
     (selector) => [...root.querySelectorAll<HTMLElement>(selector)]
@@ -65,12 +65,12 @@ export function setupChromeAutoHide(
     attributes: true,
     attributeFilter: ["data-race-state"],
   });
-  signal?.addEventListener("abort", () => observer.disconnect(), {
-    once: true,
-  });
-
-  return () => {
-    window.clearTimeout(hideTimer);
-    observer.disconnect();
-  };
+  signal?.addEventListener(
+    "abort",
+    () => {
+      window.clearTimeout(hideTimer);
+      observer.disconnect();
+    },
+    { once: true }
+  );
 }

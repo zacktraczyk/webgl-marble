@@ -10,9 +10,6 @@ export type Aabb = {
 /** Computes a body's world-space axis-aligned bounding box. */
 export const computeWorldAabb = (entity: PhysicsEntity): Aabb | null => {
   const shape = entity.boundingShape;
-  if (!shape) {
-    return null;
-  }
 
   if (shape.type === "BoundingCircle") {
     return {

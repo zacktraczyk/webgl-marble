@@ -1,4 +1,4 @@
-import { debugArrowDefinition } from "../engine/debug/definitions";
+import { debugArrowDefinition } from "./definitions";
 import type { Entity } from "../engine/core/entity";
 import type { Scene } from "../engine/runtime/scene";
 import Stage from "../engine/stage";

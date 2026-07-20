@@ -1,17 +1,19 @@
 import { describe, expect, test } from "bun:test";
 import {
   applyLevelObjectShape,
+  getLevelObjectShape,
+  hitTestLevelObject,
+} from "../src/game/level/geometry.ts";
+import {
   constrainDeltaToAxis,
   findNearestPointIndex,
-  getLevelObjectShape,
   getRotationHandle,
   getResizeAnchors,
-  hitTestLevelObject,
   moveShape,
   pickLevelObject,
   rotateShape,
   resizeShape,
-} from "../src/game/level/geometry.ts";
+} from "../src/editor/geometry.ts";
 import { levelObjectDefinitions } from "../src/game/prefabs/levelObject.ts";
 
 const wall = (overrides = {}) => ({

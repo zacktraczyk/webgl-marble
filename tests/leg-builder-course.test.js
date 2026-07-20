@@ -163,9 +163,6 @@ describe("leg builder course boundaries", () => {
     );
 
     expect(objects.filter((object) => object.locked)).toHaveLength(4);
-    expect(objects.some((object) => object.prefab === "staging-rack")).toBe(
-      false
-    );
     expect(spawnPoint?.locked).not.toBe(true);
   });
 });

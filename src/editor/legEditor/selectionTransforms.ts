@@ -4,10 +4,9 @@ import {
   applyLevelObjectShape,
   getLevelObjectBounds,
   getLevelObjectShape,
-  moveShape,
-  rotateShape,
   type Bounds,
 } from "../../game/level/geometry";
+import { moveShape, rotateShape } from "../geometry";
 
 export type SelectionAlignment =
   | "left"

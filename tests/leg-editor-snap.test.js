@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { createGridLayout } from "../src/game/level/grid.ts";
-import { constrainPointToAngle } from "../src/game/level/geometry.ts";
+import { constrainPointToAngle } from "../src/editor/geometry.ts";
 import { ROTATION_SNAP_STEP } from "../src/editor/legEditor/constants.ts";
 import {
   snapPlacementPoint,

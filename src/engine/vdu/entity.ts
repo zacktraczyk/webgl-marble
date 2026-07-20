@@ -3,10 +3,7 @@ import type { EntityId } from "../core/entity";
 import type { Transform } from "../core/transform";
 import * as id from "../utils/id";
 import * as WebglUtils from "./webglUtils";
-
-export type ProgramInfo = WebglUtils.ProgramInfo;
-export type BufferInfo = WebglUtils.BufferInfo;
-export type Uniform = WebglUtils.Uniform;
+import type { ProgramInfo, BufferInfo, Uniform } from "./webglUtils";
 
 export class DrawEntity {
   readonly id;

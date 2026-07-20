@@ -62,15 +62,6 @@ export type LevelObjectData =
       properties: { width: number; height: number; color: Color };
     })
   | (TransformedLevelObject & {
-      prefab: "staging-rack";
-      properties: {
-        width: number;
-        height: number;
-        wallThickness: number;
-        color: Color;
-      };
-    })
-  | (TransformedLevelObject & {
       prefab: "spawn-point";
       properties: {
         radius: number;

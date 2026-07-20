@@ -85,7 +85,7 @@ const isVec2 = (value: unknown): value is [number, number] =>
  * Checks only the stable serialized-level boundary. Object-specific validation
  * remains owned by the level editor as that format evolves.
  */
-export const isSerializedLevel = (value: unknown): value is SerializedLevel =>
+const isSerializedLevel = (value: unknown): value is SerializedLevel =>
   isRecord(value) &&
   value.version === 3 &&
   typeof value.name === "string" &&
@@ -96,13 +96,13 @@ export const isSerializedLevel = (value: unknown): value is SerializedLevel =>
   value.settings.wallThickness > 0 &&
   Array.isArray(value.objects);
 
-export const isRaceParticipant = (value: unknown): value is RaceParticipant =>
+const isRaceParticipant = (value: unknown): value is RaceParticipant =>
   isRecord(value) &&
   isNonEmptyString(value.id) &&
   isNonEmptyString(value.name) &&
   isColor(value.color);
 
-export const isRaceLegDocument = (value: unknown): value is RaceLegDocument =>
+const isRaceLegDocument = (value: unknown): value is RaceLegDocument =>
   isRecord(value) &&
   isNonEmptyString(value.id) &&
   isNonEmptyString(value.name) &&

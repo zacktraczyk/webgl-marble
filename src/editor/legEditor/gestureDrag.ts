@@ -3,18 +3,20 @@ import { snapDeltaToGrid, type GridLayout } from "../../game/level/grid";
 import type { LevelObjectData } from "../../game/level/document";
 import {
   applyLevelObjectShape,
-  boundsIntersect,
-  constrainDeltaToAxis,
   getLevelObjectBounds,
   getLevelObjectShape,
-  moveShape,
-  resizeShape,
-  rotateShape,
   setWallEndpoints,
   type LevelObjectShape,
 } from "../../game/level/geometry";
+import {
+  boundsFromPoints,
+  boundsIntersect,
+  constrainDeltaToAxis,
+  moveShape,
+  resizeShape,
+  rotateShape,
+} from "../geometry";
 import { oscillationPeriodForRange } from "../../game/level/motion";
-import { boundsFromPoints } from "./bounds";
 import {
   DRAG_THRESHOLD,
   MIN_OBJECT_SIZE,
@@ -103,10 +105,6 @@ export function updateWallDrag(
   });
   gesture.changed =
     deps.screenDistance(screenPoint, gesture.startScreen) >= DRAG_THRESHOLD;
-  return "handled";
-}
-
-export function updatePlaceDrag(): DragUpdateResult {
   return "handled";
 }
 

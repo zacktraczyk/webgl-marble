@@ -1,15 +1,17 @@
 import type { Vec2 } from "../../engine/core/transform";
 import type { LevelObjectData } from "../../game/level/document";
 import {
-  findNearestPointIndex,
   getLevelObjectShape,
-  getRotationHandle,
-  getResizeAnchors,
   getWallEndpoints,
   isLevelObjectRotatable,
   isLevelObjectResizable,
-  type ResizeHandle,
 } from "../../game/level/geometry";
+import {
+  findNearestPointIndex,
+  getRotationHandle,
+  getResizeAnchors,
+  type ResizeHandle,
+} from "../geometry";
 import type { WallEndpointFeedback } from "./gestures";
 import { HANDLE_HIT_RADIUS, ROTATION_HANDLE_OFFSET } from "./constants";
 import { getOscillationEndpoints } from "../../game/level/motion";

@@ -6,10 +6,6 @@ import type {
 } from "./document";
 import { getSliderSpeed, oscillationPeriodForPeakSpeed } from "./motion";
 import type { Vec2 } from "../../engine/core/transform";
-import {
-  STAGING_RACK_HEIGHT,
-  STAGING_RACK_WIDTH,
-} from "../prefabs/stagingRack";
 import { FINISH_RACK_HEIGHT } from "../prefabs/finishZone";
 import { finishRackHeightFor } from "../race/finishGrid";
 import {
@@ -17,7 +13,7 @@ import {
   spawnAreaRadius,
 } from "../race/spawn";
 import { topSliderSpawnClearance } from "../prefabs/spawnPoint";
-import { MAX_TEAMS } from "../race/staging";
+import { MAX_TEAMS } from "../race/teams";
 import {
   COURSE_STROKE_WIDTH,
   DEFAULT_LAUNCH_SPEED,
@@ -28,9 +24,10 @@ import {
   STAGING_MARBLE_GAP,
   WALL_COLOR,
 } from "./constants";
-import { type PusherKind } from "./types";
+/** Domain kind for a moving pusher wall (independent of editor tool UX). */
+export type PusherKind = "slider" | "spinner" | "sweeper";
 
-export const PUSHER_WALL_LENGTH = 120;
+const PUSHER_WALL_LENGTH = 120;
 export const PUSHER_DEFAULT_RANGE = 90;
 export const PUSHER_LINEAR_SPEEDS = {
   slow: 120,
@@ -168,21 +165,6 @@ export const createPusher = (
   } as NewLevelObjectData;
 };
 
-export const createStagingRack = (
-  position: Vec2,
-  width = STAGING_RACK_WIDTH
-): NewLevelObjectData => ({
-  prefab: "staging-rack",
-  locked: true,
-  transform: { position },
-  properties: {
-    width,
-    height: STAGING_RACK_HEIGHT,
-    wallThickness: COURSE_STROKE_WIDTH,
-    color: [...WALL_COLOR],
-  },
-});
-
 /**
  * Pins a top-slider spawn to its track just below the top wall: centered
  * horizontally, oscillating wall-to-wall. The phase starts the sweep at the
@@ -231,7 +213,7 @@ export const createSpawnPoint = (position: Vec2): NewLevelObjectData => ({
 });
 
 /** Sizes the finish rack for a perfect-fill marble grid. */
-export type CourseFinishOptions = {
+type CourseFinishOptions = {
   teamCount: number;
   marblesPerTeam: number;
 };

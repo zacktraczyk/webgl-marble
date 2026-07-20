@@ -3,7 +3,7 @@ import {
   SequentialImpulseSolver,
   type Collision,
 } from "../engine/physics/collision";
-import { EntityDragController } from "../engine/input/entityDragController";
+import { EntityDragController } from "./entityDragController";
 import { FreeCameraController } from "../engine/input/freeCameraController";
 import Physics from "../engine/physics/physics";
 import type { Scene } from "../engine/runtime/scene";

@@ -7,7 +7,8 @@ import {
   createPackedFinishPlacements,
   type FinishMarblePlacement,
 } from "./finishGrid";
-import { RoundRobinReleaseQueue, TEAM_COLORS } from "./staging";
+import { RoundRobinReleaseQueue } from "./releaseQueue";
+import { TEAM_COLORS } from "./teams";
 import {
   DEFAULT_SPAWN_DIRECTION_VARIANCE,
   randomSpawnAngle,
@@ -21,7 +22,6 @@ import {
   MIN_MARBLE_RADIUS,
   STAGING_MARBLE_GAP,
 } from "../level/constants";
-import type { RacePhase, RoundConfiguration } from "../level/types";
 import { RoundFinishTracker } from "./roundFinishTracker";
 import {
   resolveStableTeamIndices,
@@ -30,7 +30,9 @@ import {
   type FinishedMarble,
   type PendingMarble,
   type RaceControllerOptions,
+  type RacePhase,
   type RaceSnapshot,
+  type RoundConfiguration,
 } from "./types";
 
 export type {
@@ -106,8 +108,6 @@ export class RaceController {
         eliminatedLocalTeamIndex === null
           ? null
           : this.stableTeamIndices[eliminatedLocalTeamIndex],
-      marbleRadius: this.marbleRadius,
-      physicsActive: this.physicsActive,
       outOfBoundsMarbles: this.outOfBoundsMarbles,
       courseIssue: this.courseIssue,
     };
@@ -156,8 +156,6 @@ export class RaceController {
     this.level.resetMotion();
 
     const finish = this.level.find("finish-zone");
-    const finishBayCount =
-      this.configuration.finishPlan?.bayCount ?? this.configuration.teamCount;
     this.finishPlacements = [];
     if (!finish) {
       this.marbleRadius = MAX_MARBLE_RADIUS;
@@ -167,7 +165,7 @@ export class RaceController {
         rotation: finish.transform.rotation,
         width: finish.properties.width,
         wallThickness: this.level.wallThickness,
-        bayCount: finishBayCount,
+        bayCount: this.configuration.teamCount,
         marblesPerTeam: this.configuration.marblesPerTeam,
         marbleRadius:
           this.configuration.finishPlan?.marbleRadius ?? MAX_MARBLE_RADIUS,

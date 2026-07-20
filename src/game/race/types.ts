@@ -1,5 +1,21 @@
 import type { Entity } from "../../engine/core/entity";
-import type { RacePhase, RoundConfiguration } from "../level/types";
+
+export type RacePhase = "ready" | "running" | "paused" | "complete";
+
+/** Layout for one leg's finish rack, precomputed for the whole race. */
+export type FinishRackPlan = {
+  rackHeight: number;
+  /** Race-wide marble radius, scaled from the starting field size. */
+  marbleRadius: number;
+};
+
+export type RoundConfiguration = {
+  teamCount: number;
+  marblesPerTeam: number;
+  releaseIntervalMs: number;
+  /** Set by the race player; the leg builder derives layout from teamCount. */
+  finishPlan?: FinishRackPlan;
+};
 
 export type RaceSnapshot = {
   phase: RacePhase;
@@ -10,8 +26,6 @@ export type RaceSnapshot = {
   finishedMarbles: number;
   remainingMarbles: number;
   eliminatedTeamIndex: number | null;
-  marbleRadius: number;
-  physicsActive: boolean;
   outOfBoundsMarbles: number;
   courseIssue: string | null;
 };
@@ -81,5 +95,3 @@ export const resolveStableTeamIndices = (
   }
   return [...indices];
 };
-
-export type { RoundConfiguration };

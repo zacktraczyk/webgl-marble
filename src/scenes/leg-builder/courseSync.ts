@@ -6,8 +6,8 @@ import type {
 import {
   applyTopSliderSpawnLayout,
   createCourseBoundaries,
-  type RoundConfiguration,
-} from "../../game/level";
+} from "../../game/level/objects";
+import type { RoundConfiguration } from "../../game/race/types";
 import type { AuthoredLevel } from "../../game/level/authoredLevel";
 import type Stage from "../../engine/stage";
 import { computeCourseGridWorldBounds } from "./courseGridBounds";

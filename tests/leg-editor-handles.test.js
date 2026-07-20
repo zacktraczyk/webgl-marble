@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { getRotationHandle, getLevelObjectShape } from "../src/game/level/geometry.ts";
+import { getLevelObjectShape } from "../src/game/level/geometry.ts";
+import { getRotationHandle } from "../src/editor/geometry.ts";
 import { ROTATION_HANDLE_OFFSET } from "../src/editor/legEditor/constants.ts";
 import {
   endpointAt,

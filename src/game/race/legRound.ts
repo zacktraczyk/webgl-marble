@@ -1,4 +1,4 @@
-import type { RoundConfiguration } from "../level/types";
+import type { RoundConfiguration } from "./types";
 import {
   MAX_MARBLE_RADIUS,
   MIN_MARBLE_RADIUS,
@@ -65,8 +65,6 @@ export const createLegRoundConfiguration = (
     ...(finishPlan
       ? {
           finishPlan: {
-            bayCount: finishPlan.bayCount,
-            xBayCount: finishPlan.xBayCount,
             rackHeight: finishPlan.rackHeight,
             marbleRadius: finishPlan.marbleRadius,
           },
@@ -83,8 +81,6 @@ export const roundConfigurationFromFinishPlan = (
   marblesPerTeam: plan.marblesPerTeam,
   releaseIntervalMs,
   finishPlan: {
-    bayCount: plan.bayCount,
-    xBayCount: plan.xBayCount,
     rackHeight: plan.rackHeight,
     marbleRadius: plan.marbleRadius,
   },

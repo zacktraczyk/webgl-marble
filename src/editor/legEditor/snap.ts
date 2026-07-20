@@ -3,7 +3,7 @@ import {
   snapPointToGrid,
   type GridLayout,
 } from "../../game/level/grid";
-import { constrainPointToAngle } from "../../game/level/geometry";
+import { constrainPointToAngle } from "../geometry";
 import type { WallEndpointFeedback } from "./gestures";
 import {
   ENDPOINT_SNAP_RADIUS,

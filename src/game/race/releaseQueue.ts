@@ -1,4 +1,4 @@
-import { MAX_TEAMS, MIN_TEAMS } from "./constants";
+import { MAX_TEAMS, MIN_TEAMS } from "./teams";
 
 /** Fairly interleaves team queues and supports a rotated first team per round. */
 export class RoundRobinReleaseQueue<T> {

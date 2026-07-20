@@ -55,9 +55,6 @@ export class SATNarrowPhase implements NarrowPhase {
   ): Collision | null {
     const shape1 = entity1.boundingShape;
     const shape2 = entity2.boundingShape;
-    if (!shape1 || !shape2) {
-      return null;
-    }
 
     if (shape1.type === "BoundingCircle") {
       this._assertValidCircle(shape1);

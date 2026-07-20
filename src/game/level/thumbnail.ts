@@ -1,8 +1,8 @@
-import type { LevelObjectData, SerializedLevel } from "../game/level/document";
+import type { LevelObjectData, SerializedLevel } from "./document";
 import type {
   FinishRackFrame,
   FinishRackRect,
-} from "../game/prefabs/finishZone";
+} from "../prefabs/finishZone";
 import {
   FINISH_DARK_COLOR,
   FINISH_LIGHT_COLOR,
@@ -10,12 +10,12 @@ import {
   FINISH_RACK_WALL,
   createFinishRackFrame,
   finishLineCells,
-} from "../game/prefabs/finishZone";
-import type { Color } from "../engine/core/color";
-import { topSliderSpawnClearance } from "../game/prefabs/spawnPoint";
-import { MAX_MARBLE_RADIUS } from "../game/level/constants";
+} from "../prefabs/finishZone";
+import type { Color } from "../../engine/core/color";
+import { topSliderSpawnClearance } from "../prefabs/spawnPoint";
+import { MAX_MARBLE_RADIUS } from "./constants";
 
-export type LevelThumbnailOptions = {
+type LevelThumbnailOptions = {
   width?: number;
   height?: number;
   pixelRatio?: number;
@@ -28,14 +28,11 @@ export type LevelThumbnailOptions = {
    * rack (checkered line plus one bay per team) instead of a flat placeholder.
    */
   teamCount?: number;
-  /** Rightmost bays drawn X'd out for teams eliminated earlier in the era. */
-  xBayCount?: number;
 };
 
 type ObjectDrawSettings = {
   wallThickness: number;
   teamCount?: number;
-  xBayCount?: number;
 };
 
 const colorCss = ([red, green, blue, alpha]: Color) =>
@@ -116,7 +113,7 @@ const fillRect = (context: CanvasRenderingContext2D, rect: FinishRackRect) => {
 const drawFinishZone = (
   context: CanvasRenderingContext2D,
   object: Extract<LevelObjectData, { prefab: "finish-zone" }>,
-  { wallThickness, teamCount, xBayCount }: ObjectDrawSettings
+  { wallThickness, teamCount }: ObjectDrawSettings
 ) => {
   const { width, height } = object.properties;
   let frame: FinishRackFrame | null = null;
@@ -127,7 +124,6 @@ const drawFinishZone = (
         height,
         wallThickness,
         teamCount,
-        xBayCount,
       });
     } catch {
       // The rack cannot fit this team count; fall back to the placeholder.
@@ -150,17 +146,6 @@ const drawFinishZone = (
       ...frame.dividers,
     ]) {
       fillRect(context, rect);
-    }
-    for (const bay of frame.disabledBays) {
-      context.strokeStyle = colorCss(FINISH_RACK_WALL);
-      context.lineWidth = wallThickness / 2;
-      context.beginPath();
-      const [bayX, bayY] = bay.position;
-      context.moveTo(bayX - bay.width / 2, bayY - bay.height / 2);
-      context.lineTo(bayX + bay.width / 2, bayY + bay.height / 2);
-      context.moveTo(bayX + bay.width / 2, bayY - bay.height / 2);
-      context.lineTo(bayX - bay.width / 2, bayY + bay.height / 2);
-      context.stroke();
     }
     context.save();
     context.translate(...frame.finishLine.position);
@@ -243,17 +228,6 @@ const drawObject = (
       context.stroke();
       return;
     }
-
-    const width = object.properties.width;
-    const height = object.properties.height;
-    context.lineWidth = object.properties.wallThickness;
-    context.strokeStyle = colorCss(object.properties.color);
-    context.strokeRect(
-      -width / 2 + object.properties.wallThickness / 2,
-      -height / 2 + object.properties.wallThickness / 2,
-      width - object.properties.wallThickness,
-      height - object.properties.wallThickness
-    );
   });
 };
 
@@ -270,7 +244,7 @@ const drawLevelObjects = (
   }
 };
 
-export const drawLevelThumbnail = (
+const drawLevelThumbnail = (
   context: CanvasRenderingContext2D,
   level: SerializedLevel,
   options: LevelThumbnailOptions = {}
@@ -317,7 +291,6 @@ export const drawLevelThumbnail = (
   drawLevelObjects(context, level, {
     wallThickness: level.settings.wallThickness,
     teamCount: options.teamCount,
-    xBayCount: options.xBayCount,
   });
   context.restore();
 };
@@ -348,13 +321,12 @@ export const renderLevelThumbnail = (
   return true;
 };
 
-export type RaceThumbnailLeg = {
+type RaceThumbnailLeg = {
   level: SerializedLevel;
   teamCount?: number;
-  xBayCount?: number;
 };
 
-export type RaceThumbnailOptions = {
+type RaceThumbnailOptions = {
   width?: number;
   /** Canvas height; short stacks center vertically in the extra space. */
   height?: number;
@@ -397,7 +369,7 @@ const computeRaceStackLayout = (legs: readonly RaceThumbnailLeg[]) => {
  * read as one race rather than separate tiles. Scale is width-driven; the
  * canvas is as tall as the stack needs and the caller crops the overflow.
  */
-export const drawRaceThumbnail = (
+const drawRaceThumbnail = (
   context: CanvasRenderingContext2D,
   legs: readonly RaceThumbnailLeg[],
   options: RaceThumbnailOptions = {}
@@ -451,7 +423,6 @@ export const drawRaceThumbnail = (
     drawLevelObjects(context, leg.level, {
       wallThickness: leg.level.settings.wallThickness,
       teamCount: leg.teamCount,
-      xBayCount: leg.xBayCount,
     });
     context.restore();
   });

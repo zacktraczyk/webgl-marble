@@ -1,7 +1,30 @@
 import type { Scene, SceneContext } from "../../engine/runtime/scene";
 import { createLegRoundConfiguration } from "../../game/race/legRound";
 import { RaceRepository } from "../../races";
-import createLegBuilder from "./createLegBuilder";
+import { LegBuilderRuntime, type LegBuilderOptions } from "./runtime";
+
+export type { LegBuilderOptions } from "./runtime";
+
+/** Core leg editor scene — mounts against a root element with optional race wiring. */
+function createLegBuilder(
+  rootElement: HTMLElement | null,
+  options: LegBuilderOptions = {}
+): Scene {
+  let runtime: LegBuilderRuntime | null = null;
+
+  return {
+    load: ({ signal }) => {
+      runtime = new LegBuilderRuntime(rootElement, signal, options);
+    },
+    fixedUpdate: (deltaMs) => runtime?.fixedUpdate(deltaMs),
+    update: () => runtime?.updateInterface(),
+    render: () => runtime?.render(),
+    dispose: () => {
+      runtime?.dispose();
+      runtime = null;
+    },
+  };
+}
 
 const byId = (id: string) => document.getElementById(id);
 const SIDEBAR_OPEN_STORAGE_KEY = "marble:leg-builder:options-open:v1";

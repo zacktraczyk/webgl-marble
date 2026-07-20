@@ -1,11 +1,11 @@
 ---
-import DevSceneLayout from "../../debug/DevSceneLayout.astro";
+import DevSceneLayout from "./_DevSceneLayout.astro";
 ---
 
 <DevSceneLayout panel="none" />
 
 <script>
-  import { mountDevScene } from "../../debug/mountDevScene";
+  import { mountScene } from "../../debug/mount";
   import createScene from "../../debug/second-race.ts";
-  mountDevScene(createScene(), { showFps: false });
+  mountScene(createScene(), { showFps: false });
 </script>

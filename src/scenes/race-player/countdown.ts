@@ -1,16 +1,37 @@
-import { clearTimeoutIds, scheduleTimeouts } from "../playbackTimers";
+/** Clear every timeout id in `timers` and empty the array in place. */
+const clearTimeoutIds = (timers: number[]) => {
+  for (const id of timers) {
+    window.clearTimeout(id);
+  }
+  timers.length = 0;
+};
 
-export const COUNTDOWN_STEPS = [
+type ScheduledTimeout = {
+  delayMs: number;
+  run: () => void;
+};
+
+/** Append setTimeout handles for each step into `timers`. */
+const scheduleTimeouts = (
+  timers: number[],
+  steps: readonly ScheduledTimeout[]
+) => {
+  for (const step of steps) {
+    timers.push(window.setTimeout(step.run, step.delayMs));
+  }
+};
+
+const COUNTDOWN_STEPS = [
   { label: "3", step: "3" },
   { label: "2", step: "2" },
   { label: "1", step: "1" },
   { label: "GO!", step: "go" },
 ] as const;
-export const COUNTDOWN_STEP_MS = 650;
-export const COUNTDOWN_GO_HOLD_MS = 700;
-export const COUNTDOWN_EXIT_MS = 300;
+const COUNTDOWN_STEP_MS = 650;
+const COUNTDOWN_GO_HOLD_MS = 700;
+const COUNTDOWN_EXIT_MS = 300;
 /** Clear-track pause between the countdown overlay leaving and marble release. */
-export const TRACK_REVEAL_HOLD_MS = 200;
+const TRACK_REVEAL_HOLD_MS = 200;
 
 export type BeginCountdownArgs = {
   root: HTMLElement;

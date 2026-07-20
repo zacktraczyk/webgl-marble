@@ -1,4 +1,4 @@
-import type { PusherKind } from "../game/level/types";
+import type { PusherKind } from "../game/level/objects";
 
 export enum SelectedTool {
   Pan,

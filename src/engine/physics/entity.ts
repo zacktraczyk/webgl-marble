@@ -23,7 +23,7 @@ export class PhysicsEntity {
   readonly id: number;
   readonly type: PhysicsEntityType;
   readonly sensor: boolean;
-  readonly boundingShape: BoundingShape | undefined;
+  readonly boundingShape: BoundingShape;
 
   private readonly _transform: Transform;
   readonly mass: number;

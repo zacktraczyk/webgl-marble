@@ -5,7 +5,6 @@ import { finishRackDefinitions } from "./finishZone";
 import { circleDefinition } from "./primitives/circle";
 import { rectangleDefinition } from "./primitives/rectangle";
 import { spawnPointDefinition } from "./spawnPoint";
-import { stagingRackDefinitions } from "./stagingRack";
 
 /** Converts serializable editor data into runtime-only component definitions. */
 export const levelObjectDefinitions = (
@@ -18,8 +17,6 @@ export const levelObjectDefinitions = (
     minimumMarbleRadius = 1.2,
     marbleGap = 0.6,
     raceMarbleRadius = maximumMarbleRadius,
-    finishBayCount,
-    finishXBayCount,
   }: {
     teamCount?: number;
     marblesPerTeam?: number;
@@ -28,10 +25,6 @@ export const levelObjectDefinitions = (
     minimumMarbleRadius?: number;
     marbleGap?: number;
     raceMarbleRadius?: number;
-    /** Era bay count for the finish rack; defaults to teamCount. */
-    finishBayCount?: number;
-    /** Rightmost finish bays X'd out for eliminated teams. */
-    finishXBayCount?: number;
   } = {}
 ): EntityDefinition[] => {
   let definitions: EntityDefinition[];
@@ -69,19 +62,10 @@ export const levelObjectDefinitions = (
         rotation: object.transform.rotation,
         wallThickness,
         teamCount,
-        bayCount: finishBayCount,
-        xBayCount: finishXBayCount,
         marblesPerTeam,
         maximumMarbleRadius,
         minimumMarbleRadius,
         marbleGap,
-        ...object.properties,
-      });
-      break;
-    case "staging-rack":
-      definitions = stagingRackDefinitions({
-        position: object.transform.position,
-        teamCount,
         ...object.properties,
       });
       break;

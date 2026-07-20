@@ -3,14 +3,13 @@ import { Camera2D } from "../camera/camera2d";
 import type { EntityId } from "../core/entity";
 import { createTransform, type Transform } from "../core/transform";
 import {
-  type BufferInfo,
-  type ProgramInfo,
   DrawEntity,
   createCircle,
   createPolygon,
   createRectangle,
   createRightTriangle,
 } from "./entity";
+import type { BufferInfo, ProgramInfo } from "./webglUtils";
 import type {
   RenderComponentDefinition,
   RenderPartDefinition,
@@ -25,7 +24,6 @@ import * as WebglUtils from "./webglUtils";
 export class VDU {
   readonly canvas: HTMLCanvasElement;
   private readonly _gl: WebGLRenderingContext;
-  // private readonly _shaderProgram: WebGLProgram;
   private readonly _programInfo: ProgramInfo;
   private _drawEntities: DrawEntity[];
   readonly camera: Camera2D;

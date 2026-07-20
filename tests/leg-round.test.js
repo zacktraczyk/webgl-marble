@@ -37,7 +37,6 @@ describe("leg round configuration", () => {
     expect(plan).not.toBeNull();
     const config = createLegRoundConfiguration(race, 0, plan);
     expect(config.teamCount).toBe(plan.activeTeams);
-    expect(config.finishPlan?.bayCount).toBe(plan.bayCount);
     expect(config.finishPlan?.rackHeight).toBe(plan.rackHeight);
   });
 
@@ -45,8 +44,6 @@ describe("leg round configuration", () => {
     const plan = {
       legIndex: 1,
       activeTeams: 3,
-      bayCount: 3,
-      xBayCount: 0,
       marblesPerTeam: 80,
       rackHeight: 120,
       marbleRadius: 4.5,
@@ -56,8 +53,6 @@ describe("leg round configuration", () => {
       marblesPerTeam: 80,
       releaseIntervalMs: 33,
       finishPlan: {
-        bayCount: 3,
-        xBayCount: 0,
         rackHeight: 120,
         marbleRadius: 4.5,
       },

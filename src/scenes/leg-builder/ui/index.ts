@@ -11,6 +11,7 @@ const requireElement = <T extends HTMLElement>(
 export type BuilderUi = {
   root: HTMLElement;
   toolbar: HTMLElement;
+  optionsCard: HTMLElement;
   raceControls: HTMLElement;
   toolHintOutput: HTMLElement;
   tooltip: HTMLElement;
@@ -108,6 +109,7 @@ export const resolveBuilderUi = (
   return {
     root,
     toolbar: role("toolbar", "builder toolbar"),
+    optionsCard: role("options-card", "options card"),
     raceControls: role("race-controls", "race controls"),
     toolHintOutput: role("tool-hint", "tool hint"),
     tooltip: role("tooltip", "tooltip"),

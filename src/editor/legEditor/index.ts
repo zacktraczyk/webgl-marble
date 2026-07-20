@@ -1,7 +1,12 @@
 import type { Vec2 } from "../../engine/core/transform";
 import type Stage from "../../engine/stage";
 import type { GridLayout } from "../../game/level/grid";
-import { isPusherTool, SelectedTool, type PusherTool } from "../tools";
+import {
+  isCreationTool,
+  isPusherTool,
+  SelectedTool,
+  type PusherTool,
+} from "../tools";
 import type { LevelObjectData } from "../../game/level/document";
 import type {
   EditorGesture,
@@ -10,14 +15,12 @@ import type {
   WallDraft,
   WallEndpointFeedback,
 } from "./gestures";
-import { createGestureHost, type GestureHostController } from "./gestureHost";
 import {
   findWallEndpointTarget,
   type HandleTestDeps,
   type WallEndpointTarget,
 } from "./handles";
 import {
-  isCreationToolActive,
   updateCursor as applyIdleCursor,
   updateIdleState as applyIdleState,
   type IdleCursorContext,
@@ -52,10 +55,10 @@ import { type SnapDeps } from "./snap";
 import {
   applyLevelObjectShape,
   getLevelObjectShape,
-  pickLevelObject,
   setWallEndpoints,
   type LevelObjectShape,
 } from "../../game/level/geometry";
+import { pickLevelObject } from "../geometry";
 import type {
   SelectionAlignment,
   SelectionDistribution,
@@ -215,7 +218,7 @@ export class LegEditorController {
       },
       signal
     );
-    this.gestureHost = createGestureHost(this.createGestureHostController());
+    this.gestureHost = this.createGestureHost();
   }
 
   setActiveTool(tool: SelectedTool) {
@@ -461,7 +464,7 @@ export class LegEditorController {
   }
 
   private get creationToolActive() {
-    return isCreationToolActive(this.activeTool);
+    return isCreationTool(this.activeTool);
   }
 
   private get idleCursorContext(): IdleCursorContext {
@@ -764,8 +767,8 @@ export class LegEditorController {
     };
   }
 
-  /** Live facade for `createGestureHost` — avoids casting private members. */
-  private createGestureHostController(): GestureHostController {
+  /** Live-getter host bound to the controller — created once, reused per event. */
+  private createGestureHost(): PointerGestureHost {
     // Object-literal getters rebind `this`; keep a lexical controller ref.
     // eslint-disable-next-line @typescript-eslint/no-this-alias -- host facade
     const controller = this;

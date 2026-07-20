@@ -83,11 +83,9 @@ export class Stage {
   }
 
   update(elapsed: number) {
-    this.world.updateHierarchy();
     if (this.physicsEnabled) {
       this._physics.update(elapsed);
     }
-    this.world.updateHierarchy();
     this.world.flushDestruction();
   }
 

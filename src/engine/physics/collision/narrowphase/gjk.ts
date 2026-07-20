@@ -379,14 +379,6 @@ export class GJKNarrowPhase implements NarrowPhase {
         normal: null;
         magnitude: null;
       } {
-    if (!entity1.boundingShape || !entity2.boundingShape) {
-      console.error(
-        "Cannot check circle circle collision: Entity has no bounding shape",
-        { entity1, entity2 }
-      );
-      return { isColliding: false, normal: null, magnitude: null };
-    }
-
     if (
       entity1.boundingShape.type !== "BoundingCircle" ||
       entity2.boundingShape.type !== "BoundingCircle"
@@ -431,10 +423,6 @@ export class GJKNarrowPhase implements NarrowPhase {
     entity1: PhysicsEntity,
     entity2: PhysicsEntity
   ): Collision | null {
-    if (!entity1.boundingShape || !entity2.boundingShape) {
-      return null;
-    }
-
     if (
       entity1.boundingShape.type === "BoundingCircle" &&
       entity2.boundingShape.type === "BoundingCircle"

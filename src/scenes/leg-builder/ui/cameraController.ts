@@ -122,12 +122,25 @@ export class BuilderCameraController {
     const topInset = Math.max(toolbarInset, toolHintInset);
     const bottomInset = margin + raceControlBounds.height + margin;
     const verticalInset = Math.max(topInset, bottomInset);
+    const sidebarOpen = this.ui.root.dataset.sidebarOpen === "true";
+    const maximumSidebarWidth = Number.parseFloat(
+      getComputedStyle(this.ui.optionsCard).maxWidth
+    );
+    const sidebarWidth = sidebarOpen
+      ? Math.min(
+          Number.isFinite(maximumSidebarWidth)
+            ? maximumSidebarWidth
+            : this.ui.optionsCard.getBoundingClientRect().width,
+          Math.max(0, canvasBounds.width - margin * 2)
+        )
+      : 0;
+    const horizontalInset = margin + sidebarWidth + (sidebarOpen ? margin : 0);
 
     return {
       top: verticalInset,
-      right: margin,
+      right: horizontalInset,
       bottom: verticalInset,
-      left: margin,
+      left: horizontalInset,
     };
   };
 

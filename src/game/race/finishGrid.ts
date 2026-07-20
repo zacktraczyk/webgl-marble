@@ -13,7 +13,7 @@ export interface FinishBayOptions {
   teamCount: number;
 }
 
-export interface FinishBayInnerSize {
+interface FinishBayInnerSize {
   gridWidth: number;
   gridHeight: number;
 }

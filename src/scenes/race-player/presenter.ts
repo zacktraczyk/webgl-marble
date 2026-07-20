@@ -65,7 +65,6 @@ export class RacePlayerPresenter {
   }
 
   updateActiveParticipants(
-    root: HTMLElement,
     raceDocument: RaceDocument,
     activeIndices: readonly number[]
   ) {
@@ -74,7 +73,7 @@ export class RacePlayerPresenter {
     );
     this.setText("race-active-participants", names.join(", "));
     this.setText("race-active-count", `${activeIndices.length}`);
-    for (const row of root.querySelectorAll<HTMLElement>(
+    for (const row of this.root.querySelectorAll<HTMLElement>(
       "[data-team-index]"
     )) {
       row.dataset.active = `${activeIndices.includes(

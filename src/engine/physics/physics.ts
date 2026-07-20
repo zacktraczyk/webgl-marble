@@ -73,10 +73,6 @@ class Physics {
     this._observer.unregister(observer);
   }
 
-  clear() {
-    this._observer.clear();
-  }
-
   dispose() {
     this._entities = [];
     this._observer.clear();
@@ -104,7 +100,7 @@ class Physics {
       transform,
       type: definition.type,
       sensor: definition.sensor,
-      boundingShape: this._toBoundingShape(collider, transform.position),
+      boundingShape: this._toBoundingShape(collider),
       position: transform.position,
       velocity: definition.velocity,
       angularVelocity: definition.angularVelocity,
@@ -131,10 +127,9 @@ class Physics {
     return this._entities.find((entity) => entity.ownerId === ownerId);
   }
 
-  private _toBoundingShape(
-    collider: ColliderDefinition,
-    position: [number, number]
-  ) {
+  private _toBoundingShape(collider: ColliderDefinition) {
+    // The shape's position is a placeholder; PhysicsEntity's constructor
+    // rebinds it to the entity transform.
     switch (collider.type) {
       case "circle":
         if (!Number.isFinite(collider.radius) || collider.radius <= 0) {
@@ -144,13 +139,13 @@ class Physics {
         }
         return {
           type: "BoundingCircle" as const,
-          position,
+          position: [0, 0] as [number, number],
           radius: collider.radius,
         };
       case "polygon": {
         const shape = {
           type: "BoundingConvexPolygon" as const,
-          position,
+          position: [0, 0] as [number, number],
           vertices: collider.vertices.map(([x, y]): [number, number] => [x, y]),
         };
         assertValidConvexPolygon(shape);

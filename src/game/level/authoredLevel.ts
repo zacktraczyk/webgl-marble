@@ -17,7 +17,7 @@ import {
   MIN_MARBLE_RADIUS,
   STAGING_MARBLE_GAP,
 } from "./constants";
-import type { RoundConfiguration } from "./types";
+import type { RoundConfiguration } from "../race/types";
 
 type LevelPrefab = LevelObjectData["prefab"];
 
@@ -67,7 +67,6 @@ export class AuthoredLevel {
     this.syncFinishZoneGeometry();
     for (const object of [...this.objects]) {
       if (
-        object.prefab === "staging-rack" ||
         object.prefab === "finish-zone" ||
         object.prefab === "spawn-point"
       ) {
@@ -309,8 +308,6 @@ export class AuthoredLevel {
       minimumMarbleRadius: MIN_MARBLE_RADIUS,
       marbleGap: STAGING_MARBLE_GAP,
       raceMarbleRadius: this.raceMarbleRadius,
-      finishBayCount: this.finishPlan?.bayCount,
-      finishXBayCount: this.finishPlan?.xBayCount,
     }).map((definition) => this.stage.spawn(definition));
     if (this.hiddenObjects.has(object.id)) {
       for (const entity of entities) {

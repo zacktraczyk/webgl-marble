@@ -4,7 +4,6 @@ import { DRAG_THRESHOLD } from "../src/editor/legEditor/constants.ts";
 import {
   updateMarqueeDrag,
   updateMoveDrag,
-  updatePlaceDrag,
   updateWallDrag,
 } from "../src/editor/legEditor/gestureDrag.ts";
 import { handlePointerUp } from "../src/editor/legEditor/pointerGestures.ts";
@@ -34,10 +33,6 @@ const finishZone = (overrides = {}) => ({
 });
 
 describe("leg editor gesture drag", () => {
-  test("updatePlaceDrag always returns handled", () => {
-    expect(updatePlaceDrag()).toBe("handled");
-  });
-
   test("updateMoveDrag stays pending below the drag threshold", () => {
     const object = finishZone();
     const gesture = {

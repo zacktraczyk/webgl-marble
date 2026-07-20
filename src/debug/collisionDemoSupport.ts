@@ -1,11 +1,11 @@
 import type { Entity } from "../engine/core/entity";
-import type { DraggableEntity } from "../engine/input/entityDragController";
+import type { DraggableEntity } from "./entityDragController";
 import {
   debugArrowDefinition,
   debugLineDefinition,
   draggableCircleDefinition,
   draggableShapeDefinition,
-} from "../engine/debug/definitions";
+} from "./definitions";
 import type { Collision } from "../engine/physics/collision";
 import type Stage from "../engine/stage";
 import type { Vec2 } from "../engine/core/transform";

@@ -7,10 +7,10 @@ import {
   MAX_RACE_PARTICIPANTS,
   createLocalId,
   isRacePlayable,
-  renderLevelThumbnail,
   requiredLegCount,
   type RaceLegDocument,
 } from "../../../races";
+import { renderLevelThumbnail } from "../../../game/level/thumbnail";
 import { openConfirmDelete } from "../../../ui/confirmDelete";
 import { wireLegDragHandle } from "./dragReorder";
 import type { RaceBuilderContext } from "./context";
@@ -195,8 +195,7 @@ export const render = (context: RaceBuilderContext) => {
     // One team is eliminated per leg, so later legs race with fewer teams.
     const plan = schedule?.[index];
     renderLevelThumbnail(thumbnail, leg.level, {
-      teamCount: plan ? plan.bayCount : startingTeams - index,
-      xBayCount: plan?.xBayCount,
+      teamCount: plan ? plan.activeTeams : startingTeams - index,
     });
   });
   context.pendingFocusLegId = null;

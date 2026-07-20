@@ -9,7 +9,7 @@ import {
 } from "./types";
 import { createLocalId } from "./defaults";
 
-export const DEFAULT_RACE_STORAGE_KEY = "marble:race-library:v1";
+const DEFAULT_RACE_STORAGE_KEY = "marble:race-library:v1";
 /** Previous brand misspelling — still read once so existing libraries migrate. */
 const LEGACY_RACE_STORAGE_KEY = "marbel:race-library:v1";
 
@@ -225,11 +225,6 @@ export class RaceRepository {
       })),
     };
     return this.create(duplicate);
-  }
-
-  /** Persists an intentional empty library; it does not remove the key. */
-  clear(): void {
-    this.write(emptyLibrary());
   }
 
   addLeg(raceId: string, leg: RaceLegDocument, atIndex?: number): RaceDocument {

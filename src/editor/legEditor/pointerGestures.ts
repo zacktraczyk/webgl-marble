@@ -3,9 +3,8 @@ import type { GridLayout } from "../../game/level/grid";
 import {
   getLevelObjectShape,
   getWallEndpoints,
-  pickLevelObject,
-  type ResizeHandle,
 } from "../../game/level/geometry";
+import { pickLevelObject, type ResizeHandle } from "../geometry";
 import type { LevelObjectData } from "../../game/level/document";
 import { isPusherTool, SelectedTool, type PusherTool } from "../tools";
 import { HANDLE_HIT_RADIUS, MIN_WALL_LENGTH } from "./constants";
@@ -13,7 +12,6 @@ import {
   updateMarqueeDrag,
   updateMotionRangeDrag,
   updateMoveDrag,
-  updatePlaceDrag,
   updateTransformDrag,
   updateWallDrag,
   updateWallEndpointDrag,
@@ -527,7 +525,7 @@ export function handlePointerMove(
       });
       break;
     case "place":
-      result = updatePlaceDrag();
+      result = "handled";
       break;
     case "marquee":
       result = updateMarqueeDrag(host.gesture, screenPoint, worldPoint, {

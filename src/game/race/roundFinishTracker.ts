@@ -1,8 +1,6 @@
 export type FinishRecord = {
   bayIndex: number;
   slotIndex: number;
-  remainingMarbles: number;
-  lastMarbleRemaining: boolean;
 };
 
 /**
@@ -53,12 +51,6 @@ export class RoundFinishTracker {
     return teamIndex >= 0 ? teamIndex : null;
   }
 
-  /** The bay a team has claimed, or null before its first marble finishes. */
-  bayForTeam(teamIndex: number): number | null {
-    this.assertKnownTeam(teamIndex);
-    return this.bayByTeam[teamIndex];
-  }
-
   record(teamIndex: number): FinishRecord {
     this.assertKnownTeam(teamIndex);
     if (this.finishCounts[teamIndex] >= this.marblesPerTeam) {
@@ -75,8 +67,6 @@ export class RoundFinishTracker {
     return {
       bayIndex,
       slotIndex,
-      remainingMarbles: this.remainingMarbles,
-      lastMarbleRemaining: this.remainingMarbles === 1,
     };
   }
 

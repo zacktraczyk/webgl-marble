@@ -4,9 +4,9 @@ import {
   applyLevelObjectShape,
   getLevelObjectShape,
   getWallEndpoints,
-  moveShape,
   setWallEndpoints,
 } from "../../game/level/geometry";
+import { moveShape } from "../geometry";
 import { SelectedTool } from "../tools";
 import type { EditorGesture } from "./gestures";
 import type { LegEditorSelection } from "./selection";

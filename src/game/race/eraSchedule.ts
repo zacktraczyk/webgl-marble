@@ -21,17 +21,11 @@ export interface LegFinishPlan {
   legIndex: number;
   /** Teams still racing this leg. */
   activeTeams: number;
-  /** Bays rendered — always the active teams (bays reflow every leg). */
-  bayCount: number;
-  /** Kept for rendering compatibility; redistribution never leaves X bays. */
-  xBayCount: number;
   /**
    * Marbles each team races with this leg: eliminated teams' marbles are
    * redistributed evenly to the survivors, rounded to whole grid rows.
    */
   marblesPerTeam: number;
-  columns: number;
-  rows: number;
   marbleRadius: number;
   rackHeight: number;
 }
@@ -117,11 +111,7 @@ export const computeEraSchedule = ({
     return {
       legIndex,
       activeTeams,
-      bayCount: activeTeams,
-      xBayCount: 0,
       marblesPerTeam: legMarbles,
-      columns: layout.columns,
-      rows: layout.rows,
       marbleRadius: layout.marbleRadius,
       rackHeight: layout.rackHeight,
     };

@@ -2,7 +2,7 @@ import type { LevelObjectData } from "../../game/level/document";
 import { getLevelObjectBounds } from "../../game/level/geometry";
 import type { GridWorldBounds } from "../../game/level/grid";
 
-/** Interior playfield bounds from locked walls, staging rack, and finish zone. */
+/** Interior playfield bounds from locked walls and finish zone. */
 export const computeCourseGridWorldBounds = ({
   objects,
   wallThickness,
@@ -39,9 +39,7 @@ export const computeCourseGridWorldBounds = ({
     .sort((first, second) => first.min[1] - second.min[1])[0];
   const leftWall = boundaryWallBounds[0];
   const rightWall = boundaryWallBounds[boundaryWallBounds.length - 1];
-  const rack = objects.find((object) => object.prefab === "staging-rack");
   const finish = objects.find((object) => object.prefab === "finish-zone");
-  const rackBounds = rack ? getLevelObjectBounds(rack, wallThickness) : null;
   const finishBounds = finish
     ? getLevelObjectBounds(finish, wallThickness)
     : null;
@@ -49,7 +47,7 @@ export const computeCourseGridWorldBounds = ({
   return {
     min: [
       leftWall?.max[0] ?? -stageWidth / 2,
-      rackBounds?.max[1] ?? topWall?.max[1] ?? -stageHeight / 2,
+      topWall?.max[1] ?? -stageHeight / 2,
     ],
     max: [
       rightWall?.min[0] ?? stageWidth / 2,
