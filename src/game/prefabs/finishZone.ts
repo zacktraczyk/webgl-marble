@@ -10,9 +10,7 @@ export const FINISH_RACK_HEIGHT = 135;
 
 export const FINISH_LIGHT_COLOR: Color = [244 / 255, 244 / 255, 245 / 255, 1];
 export const FINISH_DARK_COLOR: Color = [39 / 255, 39 / 255, 42 / 255, 1];
-export const FINISH_RACK_BACKGROUND: Color = [
-  9 / 255, 9 / 255, 11 / 255, 0.86,
-];
+export const FINISH_RACK_BACKGROUND: Color = [9 / 255, 9 / 255, 11 / 255, 0.86];
 export const FINISH_RACK_WALL: Color = [113 / 255, 113 / 255, 122 / 255, 1];
 
 export interface FinishRackRect {

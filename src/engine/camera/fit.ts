@@ -121,8 +121,7 @@ export const visibleVerticalFraction = (
   const rectTop = rect.center[1] - rect.height / 2;
   const rectBottom = rect.center[1] + rect.height / 2;
 
-  const overlap =
-    Math.min(viewBottom, rectBottom) - Math.max(viewTop, rectTop);
+  const overlap = Math.min(viewBottom, rectBottom) - Math.max(viewTop, rectTop);
 
   return Math.max(0, Math.min(1, overlap / rect.height));
 };

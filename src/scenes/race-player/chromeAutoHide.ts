@@ -9,9 +9,11 @@ export function setupChromeAutoHide(
   signal?: AbortSignal
 ): void {
   const CHROME_HIDE_DELAY_MS = 2600;
-  const chrome = ["#race-back-link", "#race-leg-pill", "#race-controls"].flatMap(
-    (selector) => [...root.querySelectorAll<HTMLElement>(selector)]
-  );
+  const chrome = [
+    "#race-back-link",
+    "#race-leg-pill",
+    "#race-controls",
+  ].flatMap((selector) => [...root.querySelectorAll<HTMLElement>(selector)]);
   let hideTimer: number | undefined;
 
   const chromeEngaged = () =>

@@ -1,18 +1,9 @@
 import type { Vec2 } from "../../engine/core/transform";
-import {
-  snapPointToGrid,
-  type GridLayout,
-} from "../../game/level/grid";
+import { snapPointToGrid, type GridLayout } from "../../game/level/grid";
 import { constrainPointToAngle } from "../geometry";
 import type { WallEndpointFeedback } from "./gestures";
-import {
-  ENDPOINT_SNAP_RADIUS,
-  ROTATION_SNAP_STEP,
-} from "./constants";
-import type {
-  WallEndpointExclusion,
-  WallEndpointTarget,
-} from "./handles";
+import { ENDPOINT_SNAP_RADIUS, ROTATION_SNAP_STEP } from "./constants";
+import type { WallEndpointExclusion, WallEndpointTarget } from "./handles";
 
 export type SnapDeps = {
   worldToScreen: (point: Vec2) => Vec2;

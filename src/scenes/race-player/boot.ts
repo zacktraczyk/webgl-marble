@@ -1,4 +1,8 @@
-import { RaceRepository, isRacePlayable, type RaceDocument } from "../../raceLibrary";
+import {
+  RaceRepository,
+  isRacePlayable,
+  type RaceDocument,
+} from "../../raceLibrary";
 import { mountScene } from "../mount";
 import { raceBuilderUrl } from "../urls";
 import createRacePlayerScene from "./index";
@@ -31,8 +35,7 @@ const showPageErrorState = ({
   const errorState = document.querySelector<HTMLElement>(stateSelector);
   const errorTitle = document.querySelector<HTMLElement>(titleSelector);
   const errorCopy = document.querySelector<HTMLElement>(copySelector);
-  const errorAction =
-    document.querySelector<HTMLAnchorElement>(actionSelector);
+  const errorAction = document.querySelector<HTMLAnchorElement>(actionSelector);
   if (errorState) errorState.hidden = false;
   if (errorTitle) errorTitle.textContent = title;
   if (errorCopy) errorCopy.textContent = copy;

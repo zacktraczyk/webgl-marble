@@ -4,7 +4,10 @@ import type Stage from "../../engine/stage";
 import type { SerializedLevel } from "../../game/level/document";
 import type { RaceLegDocument } from "../../raceLibrary/types";
 import { AuthoredLevel } from "../../game/level/authoredLevel";
-import { RaceController, type ExternalRaceMode } from "../../game/race/controller";
+import {
+  RaceController,
+  type ExternalRaceMode,
+} from "../../game/race/controller";
 import type { RoundConfiguration } from "../../game/race/types";
 import type { LegFrame } from "./legStack";
 

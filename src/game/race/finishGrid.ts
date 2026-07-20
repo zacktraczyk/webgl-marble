@@ -150,7 +150,10 @@ export const createPackedFinishLayout = ({
     (bayInnerWidth + gap) / minimumColumns - gap
   );
   if (neededDiameter < radius * 2) {
-    if (!Number.isFinite(neededDiameter) || neededDiameter < minimumRadius * 2) {
+    if (
+      !Number.isFinite(neededDiameter) ||
+      neededDiameter < minimumRadius * 2
+    ) {
       throw new Error(
         `The finish rack cannot fit ${marblesPerTeam} marbles for each of ${bayCount} bays`
       );

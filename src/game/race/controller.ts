@@ -306,10 +306,7 @@ export class RaceController {
   }
 
   private freezeMarbleInPlace(marble: Entity) {
-    const teamIndex = teamIndexForMarble(
-      marble,
-      this.configuration.teamCount
-    );
+    const teamIndex = teamIndexForMarble(marble, this.configuration.teamCount);
     if (teamIndex === null) {
       return;
     }

@@ -59,10 +59,23 @@ describe("leg editor handles", () => {
   });
 
   test("findWallEndpointTarget picks the nearest endpoint", () => {
-    const near = wall({ id: "near", properties: { start: [0, 0], end: [20, 0], thickness: 40, color: [1, 1, 1, 1] } });
+    const near = wall({
+      id: "near",
+      properties: {
+        start: [0, 0],
+        end: [20, 0],
+        thickness: 40,
+        color: [1, 1, 1, 1],
+      },
+    });
     const far = wall({
       id: "far",
-      properties: { start: [200, 0], end: [240, 0], thickness: 40, color: [1, 1, 1, 1] },
+      properties: {
+        start: [200, 0],
+        end: [240, 0],
+        thickness: 40,
+        color: [1, 1, 1, 1],
+      },
     });
     const deps = createHandleDeps([near, far]);
 
@@ -75,7 +88,12 @@ describe("leg editor handles", () => {
   test("findWallEndpointTarget respects exclusion and locked selectable-only filtering", () => {
     const primary = wall({
       id: "primary",
-      properties: { start: [0, 0], end: [10, 0], thickness: 40, color: [1, 1, 1, 1] },
+      properties: {
+        start: [0, 0],
+        end: [10, 0],
+        thickness: 40,
+        color: [1, 1, 1, 1],
+      },
     });
     const exclusionDeps = createHandleDeps([primary]);
 
@@ -88,11 +106,21 @@ describe("leg editor handles", () => {
     const locked = wall({
       id: "locked",
       locked: true,
-      properties: { start: [0, 0], end: [5, 0], thickness: 40, color: [1, 1, 1, 1] },
+      properties: {
+        start: [0, 0],
+        end: [5, 0],
+        thickness: 40,
+        color: [1, 1, 1, 1],
+      },
     });
     const unlocked = wall({
       id: "unlocked",
-      properties: { start: [8, 0], end: [40, 0], thickness: 40, color: [1, 1, 1, 1] },
+      properties: {
+        start: [8, 0],
+        end: [40, 0],
+        thickness: 40,
+        color: [1, 1, 1, 1],
+      },
     });
     const selectableDeps = createHandleDeps([locked, unlocked]);
 

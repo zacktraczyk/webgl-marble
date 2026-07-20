@@ -1,7 +1,11 @@
 import type { Vec2 } from "../../engine/core/transform";
 import type { LevelObjectData } from "../../game/level/document";
 import { getWallEndpoints } from "../../game/level/geometry";
-import { pickLevelObject, pickTolerance, resizeHandleCursor } from "../geometry";
+import {
+  pickLevelObject,
+  pickTolerance,
+  resizeHandleCursor,
+} from "../geometry";
 import { SelectedTool } from "../tools";
 import { HANDLE_HIT_RADIUS } from "./constants";
 import type { EditorGesture, WallEndpointFeedback } from "./gestures";

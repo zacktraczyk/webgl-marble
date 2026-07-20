@@ -11,7 +11,6 @@ describe("core world", () => {
 
     expect(transform.position).toEqual([10, 20]);
   });
-
 });
 
 describe("prefabs", () => {

@@ -58,10 +58,12 @@ export const transformVertices = (
 ): Vec2[] => {
   const cosine = Math.cos(rotation);
   const sine = Math.sin(rotation);
-  return vertices.map(([x, y]): Vec2 => [
-    x * cosine - y * sine + position[0],
-    x * sine + y * cosine + position[1],
-  ]);
+  return vertices.map(
+    ([x, y]): Vec2 => [
+      x * cosine - y * sine + position[0],
+      x * sine + y * cosine + position[1],
+    ]
+  );
 };
 
 /**

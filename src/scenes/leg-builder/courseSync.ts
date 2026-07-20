@@ -82,10 +82,7 @@ export class LegCourseSync {
     const [width, height] = readCourseSize(this.host.ui);
     this.host.ui.courseWidthInput.value = `${width}`;
     this.host.ui.courseHeightInput.value = `${height}`;
-    if (
-      width === this.host.stage.width &&
-      height === this.host.stage.height
-    ) {
+    if (width === this.host.stage.width && height === this.host.stage.height) {
       return;
     }
     this.host.stage.setSize(width, height);

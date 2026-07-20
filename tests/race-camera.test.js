@@ -23,9 +23,16 @@ const expectedGlideDuration = (from, to) => {
   );
 };
 
-const makeCanvas = (clientWidth, clientHeight) => ({ clientWidth, clientHeight });
+const makeCanvas = (clientWidth, clientHeight) => ({
+  clientWidth,
+  clientHeight,
+});
 
-const legRect = (centerY) => ({ center: [0, centerY], width: 480, height: 810 });
+const legRect = (centerY) => ({
+  center: [0, centerY],
+  width: 480,
+  height: 810,
+});
 
 const fitFor = (canvas, rect, insets = NO_INSETS) =>
   calculateCameraFitForRect({

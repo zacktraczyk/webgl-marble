@@ -1,8 +1,5 @@
 import type { LevelObjectData, SerializedLevel } from "./document";
-import type {
-  FinishRackFrame,
-  FinishRackRect,
-} from "../prefabs/finishZone";
+import type { FinishRackFrame, FinishRackRect } from "../prefabs/finishZone";
 import {
   FINISH_DARK_COLOR,
   FINISH_LIGHT_COLOR,

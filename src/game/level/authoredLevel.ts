@@ -66,10 +66,7 @@ export class AuthoredLevel {
     this.finishPlan = configuration.finishPlan;
     this.syncFinishZoneGeometry();
     for (const object of [...this.objects]) {
-      if (
-        object.prefab === "finish-zone" ||
-        object.prefab === "spawn-point"
-      ) {
+      if (object.prefab === "finish-zone" || object.prefab === "spawn-point") {
         this.refresh(object);
       }
     }

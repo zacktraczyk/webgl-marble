@@ -83,11 +83,7 @@ export class DrawEntity {
         throw new Error("Failed to create buffer");
       }
       gl.bindBuffer(gl.ARRAY_BUFFER, indicesBuffer);
-      gl.bufferData(
-        gl.ARRAY_BUFFER,
-        new Float32Array(indices),
-        gl.STATIC_DRAW
-      );
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(indices), gl.STATIC_DRAW);
       const bufferInfo: BufferInfo = {
         numElements: indices.length / 2,
         attributes: {

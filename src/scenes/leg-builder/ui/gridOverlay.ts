@@ -1,5 +1,8 @@
 import type Stage from "../../../engine/stage";
-import { createGridLayout, type GridWorldBounds } from "../../../game/level/grid";
+import {
+  createGridLayout,
+  type GridWorldBounds,
+} from "../../../game/level/grid";
 
 export class GridOverlay {
   private majorVisible = true;

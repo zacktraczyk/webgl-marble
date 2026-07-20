@@ -21,10 +21,7 @@ import { RaceCameraController } from "./raceCamera";
 import { RaceCountdown } from "./countdown";
 import { RacePlayerPresenter } from "./presenter";
 import { setupChromeAutoHide } from "./chromeAutoHide";
-import {
-  bindRacePlayerControls,
-  runningLegStatus,
-} from "./controls";
+import { bindRacePlayerControls, runningLegStatus } from "./controls";
 import { LegInstance } from "./legInstance";
 import { roundConfigurationFromFinishPlan } from "../../game/race/legRound";
 import type { RoundConfiguration } from "../../game/race/types";
@@ -91,9 +88,7 @@ export class RacePlayerRuntime {
     raceDocument: RaceDocument,
     rootElement: HTMLElement | null,
     signal: AbortSignal,
-    {
-      maximumLegDurationMs = null,
-    }: RacePlayerOptions = {}
+    { maximumLegDurationMs = null }: RacePlayerOptions = {}
   ) {
     if (!isRaceDocument(raceDocument) || !isRacePlayable(raceDocument)) {
       throw new Error(
@@ -161,9 +156,13 @@ export class RacePlayerRuntime {
     // Pausing freezes the sim by skipping `fixedUpdate`, not by toggling this.
     this.stage.physicsEnabled = true;
 
-    this.cameraController = new RaceCameraController(canvas, this.stage.camera, {
-      insets: { top: CAMERA_INSET, bottom: CAMERA_INSET, left: 0, right: 0 },
-    });
+    this.cameraController = new RaceCameraController(
+      canvas,
+      this.stage.camera,
+      {
+        insets: { top: CAMERA_INSET, bottom: CAMERA_INSET, left: 0, right: 0 },
+      }
+    );
 
     this.pauseButtons = optionalButtons(this.root, [
       "race-pause-resume",

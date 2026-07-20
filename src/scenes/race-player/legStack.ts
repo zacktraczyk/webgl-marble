@@ -41,9 +41,7 @@ export const computeLegStackLayout = (
 
   legs.forEach((leg, index) => {
     const plan = plans?.[index];
-    const rackGrowth = plan
-      ? plan.rackHeight - savedFinishRackHeight(leg)
-      : 0;
+    const rackGrowth = plan ? plan.rackHeight - savedFinishRackHeight(leg) : 0;
     const size: Vec2 = [leg.level.size[0], leg.level.size[1] + rackGrowth];
     const height = size[1];
     const centerY = index === 0 ? 0 : previousBottom + height / 2;

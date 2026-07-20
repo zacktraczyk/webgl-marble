@@ -97,7 +97,13 @@ export default [
   {
     files: ["src/debug/**/*.{ts,js}"],
     rules: deny(
-      ["**/scenes/**", "**/editor/**", "**/raceLibrary/**", "**/pages/**", "**/ui/**"],
+      [
+        "**/scenes/**",
+        "**/editor/**",
+        "**/raceLibrary/**",
+        "**/pages/**",
+        "**/ui/**",
+      ],
       "debug demos may import game/engine only (not product scenes/editor/raceLibrary/pages/ui)"
     ),
   },
