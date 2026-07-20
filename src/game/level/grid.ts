@@ -44,11 +44,24 @@ export const createGridLayout = (bounds: GridWorldBounds): GridLayout => {
 const snap = (value: number, origin: number, step: number) =>
   step > 0 ? origin + Math.round((value - origin) / step) * step : value;
 
+/**
+ * Snaps a world-space point to the nearest grid intersection.
+ * @param point - world-space point
+ * @param layout - grid to snap against
+ * @returns the snapped world-space point
+ */
 export const snapPointToGrid = (
   [x, y]: Vec2,
   { bounds, step }: GridLayout
 ): Vec2 => [snap(x, bounds.min[0], step[0]), snap(y, bounds.min[1], step[1])];
 
+/**
+ * Snaps a world-space movement delta to a whole number of grid steps (snaps
+ * the offset itself, not an absolute position).
+ * @param delta - world-space offset
+ * @param layout - grid supplying the step size
+ * @returns the snapped delta
+ */
 export const snapDeltaToGrid = ([x, y]: Vec2, { step }: GridLayout): Vec2 => [
   snap(x, 0, step[0]),
   snap(y, 0, step[1]),

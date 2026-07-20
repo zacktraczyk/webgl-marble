@@ -5,6 +5,10 @@
  */
 let CURRENT_ID = 0;
 
+/**
+ * Returns the next process-wide id and advances the shared counter.
+ * @returns a unique, monotonically increasing id
+ */
 export const getNext = () => {
   return CURRENT_ID++;
 };

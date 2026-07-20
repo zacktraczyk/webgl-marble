@@ -32,6 +32,16 @@ export type SnapDeps = {
   ) => void;
 };
 
+/**
+ * Resolves where a placed point should land: an existing wall endpoint if one
+ * is within snap range, else the grid (when grid snap is on), else the raw
+ * point. Updates endpoint feedback as a side effect.
+ * @param deps - snapping dependencies (screen mapping, grid, endpoint lookup)
+ * @param point - the desired world-space point
+ * @param free - when true, bypasses all snapping and returns the raw point
+ * @param exclude - wall endpoint to ignore when searching for snap targets
+ * @returns the resolved world-space point
+ */
 export function snapPlacementPoint(
   deps: SnapDeps,
   point: Vec2,
@@ -56,6 +66,16 @@ export function snapPlacementPoint(
     : ([...point] as Vec2);
 }
 
+/**
+ * Resolves a wall's moving endpoint while dragging: free (no snap), angle-
+ * constrained relative to the fixed endpoint, or the usual placement snapping.
+ * @param deps - snapping dependencies
+ * @param fixed - the wall's other, fixed endpoint in world space
+ * @param point - the desired world-space endpoint
+ * @param options - `free` to bypass snapping, `constrain` to snap the angle
+ * @param exclude - wall endpoint to ignore when searching for snap targets
+ * @returns the resolved world-space endpoint
+ */
 export function snapWallEndpoint(
   deps: SnapDeps,
   fixed: Vec2,

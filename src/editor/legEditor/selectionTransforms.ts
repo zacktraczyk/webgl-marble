@@ -19,6 +19,12 @@ export type SelectionAlignment =
 export type SelectionDistribution = "horizontal" | "vertical";
 export type SelectionMirror = "left-right" | "top-bottom";
 
+/**
+ * Combined world-space bounds enclosing a set of objects.
+ * @param objects - the objects to enclose
+ * @param defaultWallThickness - wall thickness (world units) when a wall sets none
+ * @returns the enclosing bounds, or null when the set is empty
+ */
 export const getSelectionBounds = (
   objects: readonly LevelObjectData[],
   defaultWallThickness: number
@@ -47,11 +53,18 @@ export const getSelectionBounds = (
   );
 };
 
+/** Center point of a bounding box, in world space. */
 export const selectionCenter = (bounds: Bounds): Vec2 => [
   (bounds.min[0] + bounds.max[0]) / 2,
   (bounds.min[1] + bounds.max[1]) / 2,
 ];
 
+/**
+ * Shifts a level object by a world-space delta, writing the result back onto it.
+ * @param object - the object to move (mutated in place)
+ * @param delta - world-space offset
+ * @param defaultWallThickness - wall thickness (world units) when a wall sets none
+ */
 export const moveLevelObjectBy = (
   object: LevelObjectData,
   delta: Vec2,
@@ -67,6 +80,13 @@ export const moveLevelObjectBy = (
   );
 };
 
+/**
+ * Aligns objects to a shared edge or center of their combined bounds.
+ * @param objects - the objects to align (mutated in place)
+ * @param defaultWallThickness - wall thickness (world units) when a wall sets none
+ * @param alignment - which edge or center to align to
+ * @returns true when applied; false with fewer than two objects
+ */
 export const alignLevelObjects = (
   objects: readonly LevelObjectData[],
   defaultWallThickness: number,
@@ -105,6 +125,14 @@ export const alignLevelObjects = (
   return true;
 };
 
+/**
+ * Spaces objects evenly between the outermost two along one axis, leaving
+ * equal gaps between them.
+ * @param objects - the objects to distribute (mutated in place)
+ * @param defaultWallThickness - wall thickness (world units) when a wall sets none
+ * @param distribution - axis to distribute along
+ * @returns true when applied; false with fewer than three objects
+ */
 export const distributeLevelObjects = (
   objects: readonly LevelObjectData[],
   defaultWallThickness: number,
@@ -144,6 +172,15 @@ export const distributeLevelObjects = (
   return true;
 };
 
+/**
+ * Mirrors objects across a horizontal or vertical axis, flipping their
+ * rotation and motion so their movement mirrors too.
+ * @param objects - the objects to mirror (mutated in place)
+ * @param defaultWallThickness - wall thickness (world units) when a wall sets none
+ * @param mirror - the axis to mirror across
+ * @param center - world-space pivot; defaults to the selection center
+ * @returns true when applied; false when the set is empty
+ */
 export const mirrorLevelObjects = (
   objects: readonly LevelObjectData[],
   defaultWallThickness: number,

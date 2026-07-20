@@ -23,11 +23,13 @@ export type Bounds = {
   max: Vec2;
 };
 
+/** A wall's thickness in world units, falling back to the level default when the wall sets none. */
 export const getWallThickness = (
   object: Extract<LevelObjectData, { prefab: "wall" }>,
   defaultWallThickness: number
 ) => object.properties.thickness ?? defaultWallThickness;
 
+/** Copies of a wall's `start`/`end` points in world space (safe to mutate). */
 export const getWallEndpoints = (
   object: Extract<LevelObjectData, { prefab: "wall" }>
 ) => ({
@@ -35,6 +37,7 @@ export const getWallEndpoints = (
   end: [...object.properties.end] as Vec2,
 });
 
+/** Overwrites a wall's `start`/`end` points, storing copies of the given world-space points. */
 export const setWallEndpoints = (
   object: Extract<LevelObjectData, { prefab: "wall" }>,
   start: Vec2,
@@ -44,6 +47,13 @@ export const setWallEndpoints = (
   object.properties.end = [...end];
 };
 
+/**
+ * Normalizes any level object into a common rectangle/circle shape in world
+ * space — walls become a rotated rectangle spanning their endpoints.
+ * @param object - the level object to describe
+ * @param defaultWallThickness - wall thickness (world units) when a wall sets none
+ * @returns the object's world-space shape (position, rotation in radians, size)
+ */
 export const getLevelObjectShape = (
   object: LevelObjectData,
   defaultWallThickness = 25
@@ -78,14 +88,23 @@ export const getLevelObjectShape = (
   }
 };
 
+/** Whether the object exposes resize handles (unlocked bumpers and finish zones). */
 export const isLevelObjectResizable = (object: LevelObjectData) =>
   !object.locked &&
   (object.prefab === "bumper" || object.prefab === "finish-zone");
 
+/** Whether the object exposes a rotation handle (unlocked finish zones and spawn points). */
 export const isLevelObjectRotatable = (object: LevelObjectData) =>
   !object.locked &&
   (object.prefab === "finish-zone" || object.prefab === "spawn-point");
 
+/**
+ * Transforms a point from a shape's local space (origin at its center, axes
+ * unrotated) into world space.
+ * @param shape - shape supplying the world position and rotation (radians)
+ * @param point - local-space point
+ * @returns the point in world space
+ */
 export const localToWorld = (shape: LevelObjectShape, [x, y]: Vec2): Vec2 => {
   const cosine = Math.cos(shape.rotation);
   const sine = Math.sin(shape.rotation);
@@ -95,6 +114,13 @@ export const localToWorld = (shape: LevelObjectShape, [x, y]: Vec2): Vec2 => {
   ];
 };
 
+/**
+ * Transforms a world-space point into a shape's local space (origin at its
+ * center, axes unrotated) — the inverse of {@link localToWorld}.
+ * @param shape - shape supplying the world position and rotation (radians)
+ * @param point - world-space point
+ * @returns the point in the shape's local space
+ */
 export const worldToLocal = (shape: LevelObjectShape, [x, y]: Vec2): Vec2 => {
   const offsetX = x - shape.position[0];
   const offsetY = y - shape.position[1];
@@ -106,6 +132,7 @@ export const worldToLocal = (shape: LevelObjectShape, [x, y]: Vec2): Vec2 => {
   ];
 };
 
+/** The rectangle's four corners in world space. */
 export const getRectangleCorners = (shape: RectangleLevelShape): Vec2[] => [
   localToWorld(shape, [-shape.width / 2, -shape.height / 2]),
   localToWorld(shape, [shape.width / 2, -shape.height / 2]),
@@ -113,6 +140,15 @@ export const getRectangleCorners = (shape: RectangleLevelShape): Vec2[] => [
   localToWorld(shape, [-shape.width / 2, shape.height / 2]),
 ];
 
+/**
+ * Whether a world-space point lies within an object's shape, optionally
+ * expanded by a tolerance.
+ * @param object - the level object to test
+ * @param point - world-space point
+ * @param tolerance - extra hit margin in world units
+ * @param defaultWallThickness - wall thickness (world units) when a wall sets none
+ * @returns true when the point is inside the shape (plus tolerance)
+ */
 export const hitTestLevelObject = (
   object: LevelObjectData,
   point: Vec2,
@@ -130,6 +166,12 @@ export const hitTestLevelObject = (
   );
 };
 
+/**
+ * Axis-aligned bounding box of an object in world space.
+ * @param object - the level object to measure
+ * @param defaultWallThickness - wall thickness (world units) when a wall sets none
+ * @returns world-space min/max corners enclosing the object
+ */
 export const getLevelObjectBounds = (
   object: LevelObjectData,
   defaultWallThickness = 25
@@ -154,6 +196,11 @@ export const getLevelObjectBounds = (
   );
 };
 
+/**
+ * Writes a shape back onto a level object, updating the fields each prefab
+ * uses (walls store `start`/`end` endpoints; others store transform + size).
+ * A shape whose kind does not match the prefab is ignored.
+ */
 export const applyLevelObjectShape = (
   object: LevelObjectData,
   shape: LevelObjectShape

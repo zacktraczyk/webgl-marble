@@ -30,11 +30,23 @@ const getBasePose = (
   };
 };
 
+/**
+ * Oscillation period that makes a sinusoidal slider reach a given peak speed
+ * over the given travel range.
+ * @param range - one-way travel distance in world units
+ * @param peakSpeed - desired peak speed in world units per second
+ * @returns the period in milliseconds
+ */
 export const oscillationPeriodForPeakSpeed = (
   range: number,
   peakSpeed: number
 ) => (Math.PI * 2 * Math.max(0, range) * 1000) / peakSpeed;
 
+/**
+ * Peak speed of a sinusoidal (ping-pong) slider.
+ * @param motion - the oscillate motion
+ * @returns peak speed in world units per second (0 when the period is non-positive)
+ */
 export const getOscillationPeakSpeed = (motion: OscillationMotion) => {
   const range = Math.hypot(...motion.vector);
   return motion.periodMs > 0
@@ -42,6 +54,12 @@ export const getOscillationPeakSpeed = (motion: OscillationMotion) => {
     : 0;
 };
 
+/**
+ * Representative speed of a slider: peak speed for ping-pong, or constant
+ * speed for a looping slider.
+ * @param motion - the oscillate motion
+ * @returns speed in world units per second
+ */
 export const getSliderSpeed = (motion: OscillationMotion) => {
   if ((motion.repeat ?? "ping-pong") === "ping-pong") {
     return getOscillationPeakSpeed(motion);
@@ -50,6 +68,13 @@ export const getSliderSpeed = (motion: OscillationMotion) => {
   return motion.periodMs > 0 ? (pathLength * 1000) / motion.periodMs : 0;
 };
 
+/**
+ * Rescales a slider's period so its speed stays constant when the travel
+ * range changes.
+ * @param motion - the current oscillate motion
+ * @param nextRange - the new one-way travel distance in world units
+ * @returns the adjusted period in milliseconds
+ */
 export const oscillationPeriodForRange = (
   motion: OscillationMotion,
   nextRange: number
@@ -60,6 +85,14 @@ export const oscillationPeriodForRange = (
     : motion.periodMs;
 };
 
+/**
+ * World-space pose of an object at a point in time, applying its oscillate or
+ * rotate motion; returns the resting pose when the object has no motion.
+ * @param object - the level object
+ * @param defaultWallThickness - wall thickness (world units) when a wall sets none
+ * @param elapsedMs - elapsed time in milliseconds
+ * @returns world position and rotation (radians) at that time
+ */
 export const getLevelObjectMotionPose = (
   object: LevelObjectData,
   defaultWallThickness: number,
@@ -118,6 +151,14 @@ export const getLevelObjectMotionPose = (
   };
 };
 
+/**
+ * Whether a looping slider wraps back to its start between two times (it
+ * teleports at each cycle boundary). Always false for ping-pong sliders.
+ * @param motion - the oscillate motion
+ * @param elapsedMs - start time in milliseconds
+ * @param nextElapsedMs - end time in milliseconds
+ * @returns true when a loop reset occurs within the interval
+ */
 export const doesSliderLoopResetBetween = (
   motion: OscillationMotion,
   elapsedMs: number,
@@ -131,6 +172,12 @@ export const doesSliderLoopResetBetween = (
   return Math.floor(cycleAt(elapsedMs)) !== Math.floor(cycleAt(nextElapsedMs));
 };
 
+/**
+ * The two world-space endpoints of an oscillating object's travel path.
+ * @param object - the level object
+ * @param defaultWallThickness - wall thickness (world units) when a wall sets none
+ * @returns the `[start, end]` world points, or null when the object does not oscillate
+ */
 export const getOscillationEndpoints = (
   object: LevelObjectData,
   defaultWallThickness: number
@@ -155,6 +202,13 @@ export const getOscillationEndpoints = (
   ];
 };
 
+/**
+ * World-space point a rotating object turns about (its center, or a rectangle
+ * end when the motion pivots there).
+ * @param object - the level object
+ * @param defaultWallThickness - wall thickness (world units) when a wall sets none
+ * @returns the pivot in world space, or null when the object does not rotate
+ */
 export const getRotationPivot = (
   object: LevelObjectData,
   defaultWallThickness: number

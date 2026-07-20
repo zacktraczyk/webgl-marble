@@ -15,6 +15,11 @@ export type WorldRect = {
 
 export type CameraFitInsetSource = CameraFitInsets | (() => CameraFitInsets);
 
+/**
+ * Builds camera-fit insets with the same padding on all four sides.
+ * @param padding inset applied to every side, in screen pixels
+ * @returns the insets
+ */
 export const uniformCameraFitInsets = (padding: number): CameraFitInsets => ({
   top: padding,
   right: padding,
@@ -22,6 +27,12 @@ export const uniformCameraFitInsets = (padding: number): CameraFitInsets => ({
   left: padding,
 });
 
+/**
+ * Computes the zoom and screen-space center that fit content of the given size
+ * into the viewport, after subtracting insets. Origin-centered — see
+ * `calculateCameraFitForRect` for arbitrarily positioned content.
+ * @returns `zoom` (uniform scale) and `position` (screen-space center, in px)
+ */
 export const calculateCameraFit = ({
   viewportWidth,
   viewportHeight,

@@ -295,6 +295,11 @@ const drawLevelThumbnail = (
   context.restore();
 };
 
+/**
+ * Sizes `canvas` to the requested (or measured) dimensions and draws the level
+ * preview into its 2D context.
+ * @returns `true` on success, `false` when a 2D context is unavailable.
+ */
 export const renderLevelThumbnail = (
   canvas: HTMLCanvasElement,
   level: SerializedLevel,
@@ -472,6 +477,7 @@ const drawRaceThumbnail = (
 /**
  * Sizes `canvas` to the race stack's aspect ratio (width from layout,
  * height derived) and draws the continuous race preview into it.
+ * @returns `true` on success, `false` for empty `legs` or no 2D context.
  */
 export const renderRaceThumbnail = (
   canvas: HTMLCanvasElement,

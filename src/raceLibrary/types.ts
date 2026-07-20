@@ -15,6 +15,7 @@ export const MARBLES_PER_TEAM_OPTIONS = [
   6, 12, 24, 36, 48, 60, 72, 96, 120, 150, 180, 240, 300, 360,
 ] as const;
 
+/** Type guard: accepts a supported ladder value or the legacy 100 count. */
 export const isValidMarblesPerTeam = (value: unknown): value is number =>
   typeof value === "number" &&
   (MARBLES_PER_TEAM_OPTIONS.includes(
@@ -111,6 +112,7 @@ const isRaceLegDocument = (value: unknown): value is RaceLegDocument =>
 const hasUniqueIds = (items: readonly { id: string }[]) =>
   new Set(items.map(({ id }) => id)).size === items.length;
 
+/** Type guard validating an unknown value against the race document schema. */
 export const isRaceDocument = (value: unknown): value is RaceDocument => {
   if (
     !isRecord(value) ||
@@ -140,6 +142,7 @@ export const isRaceDocument = (value: unknown): value is RaceDocument => {
   return true;
 };
 
+/** Type guard validating an unknown value against the race library schema. */
 export const isRaceLibraryDocument = (
   value: unknown
 ): value is RaceLibraryDocument =>
@@ -149,9 +152,11 @@ export const isRaceLibraryDocument = (
   value.races.every(isRaceDocument) &&
   hasUniqueIds(value.races);
 
+/** Legs a race needs to run: one elimination per leg, i.e. teams minus one. */
 export const requiredLegCount = (race: Pick<RaceDocument, "participants">) =>
   Math.max(0, race.participants.length - 1);
 
+/** Whether a race has enough teams and exactly the required number of legs. */
 export const isRacePlayable = (
   race: Pick<RaceDocument, "participants" | "legs">
 ) =>

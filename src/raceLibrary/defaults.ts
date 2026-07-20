@@ -26,6 +26,7 @@ export type RaceFactoryDependencies = {
 
 let fallbackId = 0;
 
+/** A unique id for local (unsynced) documents; prefers `crypto.randomUUID`. */
 export const createLocalId = () => {
   if (typeof globalThis.crypto?.randomUUID === "function") {
     return globalThis.crypto.randomUUID();
@@ -41,6 +42,13 @@ const copyColor = (color: readonly number[]): Color => [
   color[3],
 ];
 
+/**
+ * Builds `count` teams seeded with the default names and colors.
+ * @param count Number of teams; an integer in `2..MAX_RACE_PARTICIPANTS`.
+ * @param createId Factory for participant ids (override for deterministic tests).
+ * @returns Fresh participants, each with an independently copied color.
+ * @throws If `count` falls outside the supported range.
+ */
 export const createDefaultParticipants = (
   count = DEFAULT_PARTICIPANT_COUNT,
   createId = createLocalId
@@ -64,6 +72,12 @@ export type DefaultLegOptions = RaceFactoryDependencies & {
   index?: number;
 };
 
+/**
+ * Builds a leg backed by a fresh default course (walls, spawn, finish zone).
+ * @param options Optional id/name/index and factory overrides; `index` seeds
+ *   the fallback name `Leg N`.
+ * @returns The serialized leg document.
+ */
 export const createDefaultLeg = ({
   id,
   name,
