@@ -112,6 +112,11 @@ export const getRotationHandle = (
   };
 };
 
+export const PICK_TOLERANCE_PIXELS = 4;
+
+export const pickTolerance = (zoom: number) =>
+  PICK_TOLERANCE_PIXELS / Math.max(zoom, 0.001);
+
 export const pickLevelObject = (
   objects: readonly LevelObjectData[],
   point: Vec2,

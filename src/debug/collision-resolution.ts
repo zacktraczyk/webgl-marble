@@ -4,6 +4,7 @@ import { FreeCameraController } from "../engine/input/freeCameraController";
 import type { Scene } from "../engine/runtime/scene";
 import Stage from "../engine/stage";
 import { circleDefinition } from "../game/prefabs/primitives/circle";
+import { updateDebugInfo } from "./debugInfo";
 
 function createScene(): Scene {
   const stage = new Stage();
@@ -74,12 +75,5 @@ function createScene(): Scene {
     dispose: () => stage.dispose(),
   };
 }
-
-const debugInfoElem = document.getElementById("debug-info");
-const updateDebugInfo = (value: unknown) => {
-  if (debugInfoElem) {
-    debugInfoElem.textContent = JSON.stringify(value, null, 2);
-  }
-};
 
 export default createScene;

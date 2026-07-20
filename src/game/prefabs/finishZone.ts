@@ -1,5 +1,6 @@
 import type { EntityDefinition } from "../../engine/core/definition";
 import type { Vec2 } from "../../engine/core/transform";
+import { applyTransform } from "../../engine/core/transform";
 import type { Color } from "../../engine/core/color";
 import type { FinishBayOptions } from "../race/finishGrid";
 import { finishBayInnerSize, finishRackHeightFor } from "../race/finishGrid";
@@ -117,19 +118,6 @@ export const createFinishRackFrame = ({
   };
 };
 
-const worldPosition = (
-  position: Vec2,
-  rotation: number,
-  [localX, localY]: Vec2
-): Vec2 => {
-  const cosine = Math.cos(rotation);
-  const sine = Math.sin(rotation);
-  return [
-    position[0] + localX * cosine - localY * sine,
-    position[1] + localX * sine + localY * cosine,
-  ];
-};
-
 export const finishZoneDefinition = ({
   position,
   rotation = 0,
@@ -213,7 +201,7 @@ export const finishRackDefinitions = ({
   });
   const wall = (rect: FinishRackRect, tags: string[], physical = true) =>
     rectangleDefinition({
-      position: worldPosition(position, rotation, rect.position),
+      position: applyTransform(position, rotation, rect.position),
       rotation,
       width: rect.width,
       height: rect.height,
@@ -234,7 +222,7 @@ export const finishRackDefinitions = ({
       tags: ["finish-rack-part", "finish-rack-background"],
     }),
     finishZoneDefinition({
-      position: worldPosition(position, rotation, frame.finishLine.position),
+      position: applyTransform(position, rotation, frame.finishLine.position),
       rotation,
       width: frame.finishLine.width,
       height: frame.finishLine.height,

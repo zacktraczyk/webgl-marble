@@ -1,6 +1,7 @@
 import type { Scene, SceneContext } from "../../engine/runtime/scene";
 import { createLegRoundConfiguration } from "../../game/race/legRound";
-import { RaceRepository } from "../../raceLibrary";
+import { RaceRepository, legScheduleInputs } from "../../raceLibrary";
+import { raceBuilderUrl } from "../urls";
 import { LegBuilderRuntime, type LegBuilderOptions } from "./runtime";
 
 export type { LegBuilderOptions } from "./runtime";
@@ -98,7 +99,7 @@ const wireRaceHomeLink = () => {
   const legIndex = race?.legs.findIndex((leg) => leg.id === legId) ?? -1;
 
   if (race && raceLeg && homeLink) {
-    homeLink.href = `/race-builder?race=${encodeURIComponent(race.id)}`;
+    homeLink.href = raceBuilderUrl(race.id);
     const label = homeLink.querySelector("span");
     if (label) {
       label.textContent = `${race.name} · Leg ${legIndex + 1}`;
@@ -121,10 +122,7 @@ const wireRaceHomeLink = () => {
             participantCount: race.participants.length,
             marblesPerTeam: race.rules.marblesPerTeam,
             releaseIntervalMs: race.releaseIntervalMs,
-            legs: race.legs.map((leg) => ({
-              width: leg.level.size[0],
-              wallThickness: leg.level.settings.wallThickness,
-            })),
+            legs: legScheduleInputs(race.legs),
           },
           Math.max(legIndex, 0)
         )

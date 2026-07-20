@@ -1,7 +1,7 @@
 import type { Vec2 } from "../../engine/core/transform";
 import type { LevelObjectData } from "../../game/level/document";
 import { getWallEndpoints } from "../../game/level/geometry";
-import { pickLevelObject, resizeHandleCursor } from "../geometry";
+import { pickLevelObject, pickTolerance, resizeHandleCursor } from "../geometry";
 import { SelectedTool } from "../tools";
 import { HANDLE_HIT_RADIUS } from "./constants";
 import type { EditorGesture, WallEndpointFeedback } from "./gestures";
@@ -120,7 +120,7 @@ export function updateIdleState(
   const hoveredObject = pickLevelObject(
     ctx.getObjects(),
     ctx.worldPoint(screenPoint),
-    4 / Math.max(ctx.cameraZoom, 0.001),
+    pickTolerance(ctx.cameraZoom),
     ctx.getDefaultWallThickness()
   );
   ctx.selection.setHovered(hoveredObject?.id ?? null);

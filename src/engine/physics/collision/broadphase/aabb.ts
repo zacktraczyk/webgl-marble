@@ -1,4 +1,5 @@
 import type { PhysicsEntity } from "../../entity";
+import { transformVertices } from "../geometry";
 
 export type Aabb = {
   minX: number;
@@ -20,15 +21,15 @@ export const computeWorldAabb = (entity: PhysicsEntity): Aabb | null => {
     };
   }
 
-  const cosine = Math.cos(entity.rotation);
-  const sine = Math.sin(entity.rotation);
   let minX = Infinity;
   let minY = Infinity;
   let maxX = -Infinity;
   let maxY = -Infinity;
-  for (const [x, y] of shape.vertices) {
-    const worldX = x * cosine - y * sine + entity.position[0];
-    const worldY = x * sine + y * cosine + entity.position[1];
+  for (const [worldX, worldY] of transformVertices(
+    shape.vertices,
+    entity.position,
+    entity.rotation
+  )) {
     minX = Math.min(minX, worldX);
     minY = Math.min(minY, worldY);
     maxX = Math.max(maxX, worldX);

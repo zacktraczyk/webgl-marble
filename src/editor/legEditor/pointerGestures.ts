@@ -1,10 +1,9 @@
 import type { Vec2 } from "../../engine/core/transform";
-import type { GridLayout } from "../../game/level/grid";
 import {
   getLevelObjectShape,
   getWallEndpoints,
 } from "../../game/level/geometry";
-import { pickLevelObject, type ResizeHandle } from "../geometry";
+import { pickLevelObject, pickTolerance, type ResizeHandle } from "../geometry";
 import type { LevelObjectData } from "../../game/level/document";
 import { isPusherTool, SelectedTool, type PusherTool } from "../tools";
 import { HANDLE_HIT_RADIUS, MIN_WALL_LENGTH } from "./constants";
@@ -15,6 +14,7 @@ import {
   updateTransformDrag,
   updateWallDrag,
   updateWallEndpointDrag,
+  type DragDepsBase,
 } from "./gestureDrag";
 import type {
   EditorGesture,
@@ -59,15 +59,7 @@ export type PointerGestureHost = {
   readOnly: boolean;
   handleDeps: HandleTestDeps;
   snapDeps: SnapDeps;
-  dragDeps: {
-    screenDistance: (first: Vec2, second: Vec2) => number;
-    getDefaultWallThickness: () => number;
-    getGridSnapEnabled: () => boolean;
-    getGridLayout: () => GridLayout;
-    getObjects: () => readonly LevelObjectData[];
-    findObject: (id: string) => LevelObjectData | null | undefined;
-    onObjectsChange: (objects: readonly LevelObjectData[]) => void;
-  };
+  dragDeps: DragDepsBase;
   selection: LegEditorSelection;
   callbacks: PointerGestureCallbacks;
   cameraControls: PointerCameraControls;
@@ -347,7 +339,7 @@ function tryBeginMoveOrMarquee(
   const pickedObject = pickLevelObject(
     host.getObjects(),
     host.worldPoint(screenPoint),
-    4 / Math.max(host.cameraZoom, 0.001),
+    pickTolerance(host.cameraZoom),
     host.getDefaultWallThickness()
   );
   if (pickedObject) {

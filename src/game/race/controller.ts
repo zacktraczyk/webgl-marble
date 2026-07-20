@@ -314,8 +314,12 @@ export class RaceController {
       return;
     }
     const position: [number, number] = [marble.position[0], marble.position[1]];
-    const stableTeamIndex = this.stableTeamIndices[teamIndex];
     marble.delete();
+    this.spawnFinishedMarble(position, teamIndex);
+  }
+
+  private spawnFinishedMarble(position: [number, number], teamIndex: number) {
+    const stableTeamIndex = this.stableTeamIndices[teamIndex];
     this.finishMarbles.push({
       stableTeamIndex,
       entity: this.stage.spawn(
@@ -399,20 +403,7 @@ export class RaceController {
     if (!position) {
       return;
     }
-    const stableTeamIndex = this.stableTeamIndices[teamIndex];
-    this.finishMarbles.push({
-      stableTeamIndex,
-      entity: this.stage.spawn(
-        marbleDefinition({
-          position: [...position],
-          radius: this.marbleRadius,
-          color: TEAM_COLORS[stableTeamIndex],
-          team: `${teamIndex + 1}`,
-          tags: ["finished-marble"],
-          physical: false,
-        })
-      ),
-    });
+    this.spawnFinishedMarble([...position], teamIndex);
   }
 
   private getSpawnPoint() {

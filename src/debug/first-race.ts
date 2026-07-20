@@ -4,6 +4,7 @@ import Stage from "../engine/stage";
 import { finishZoneDefinition } from "../game/prefabs/finishZone";
 import { marbleDefinition } from "../game/prefabs/marble";
 import { rectangleDefinition } from "../game/prefabs/primitives/rectangle";
+import { updateDebugInfo } from "./debugInfo";
 
 function createScene(): Scene {
   const { stage, finishLine } = init();
@@ -190,14 +191,5 @@ function init() {
     finishLine,
   };
 }
-
-// Debug info
-const debugInfoElem = document.getElementById("debug-info");
-/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-const updateDebugInfo = (obj: any) => {
-  if (debugInfoElem) {
-    debugInfoElem.textContent = JSON.stringify(obj, null, 2);
-  }
-};
 
 export default createScene;

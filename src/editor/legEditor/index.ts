@@ -58,7 +58,7 @@ import {
   setWallEndpoints,
   type LevelObjectShape,
 } from "../../game/level/geometry";
-import { pickLevelObject } from "../geometry";
+import { pickLevelObject, pickTolerance } from "../geometry";
 import type {
   SelectionAlignment,
   SelectionDistribution,
@@ -278,7 +278,7 @@ export class LegEditorController {
       const picked = pickLevelObject(
         this.getObjects(),
         this.worldPoint(screenPoint),
-        4 / Math.max(this.cameraZoom, 0.001),
+        pickTolerance(this.cameraZoom),
         this.getDefaultWallThickness()
       );
       if (picked && !this.selection.has(picked.id)) {

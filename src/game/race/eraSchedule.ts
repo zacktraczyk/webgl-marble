@@ -1,5 +1,9 @@
 import type { PackedFinishOptions } from "./finishGrid";
-import { createPackedFinishLayout, roundToFinishGrid } from "./finishGrid";
+import {
+  createPackedFinishLayout,
+  finishBayInnerWidth,
+  roundToFinishGrid,
+} from "./finishGrid";
 
 export interface EraScheduleLeg {
   width: number;
@@ -79,8 +83,11 @@ export const computeEraSchedule = ({
     baseRadius * FINISH_MARBLE_SCALE_CAP,
     legs.reduce((radius, leg, legIndex) => {
       const activeTeams = participantCount - legIndex;
-      const bayInnerWidth =
-        (leg.width - leg.wallThickness * (activeTeams + 1)) / activeTeams;
+      const bayInnerWidth = finishBayInnerWidth({
+        width: leg.width,
+        wallThickness: leg.wallThickness,
+        bayCount: activeTeams,
+      });
       const idealMarbles = (participantCount * marblesPerTeam) / activeTeams;
       const neededDiameter =
         (TARGET_FINISH_ROWS * (bayInnerWidth + gapSize)) / idealMarbles -

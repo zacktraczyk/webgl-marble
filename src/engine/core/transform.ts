@@ -18,3 +18,17 @@ export const createTransform = ({
   rotation,
   scale: [...scale],
 });
+
+/** Rotates a local offset by `rotation`, then translates it by `position`. */
+export const applyTransform = (
+  position: Vec2,
+  rotation: number,
+  [localX, localY]: Vec2
+): Vec2 => {
+  const cosine = Math.cos(rotation);
+  const sine = Math.sin(rotation);
+  return [
+    position[0] + localX * cosine - localY * sine,
+    position[1] + localX * sine + localY * cosine,
+  ];
+};

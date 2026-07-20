@@ -7,6 +7,7 @@ import { pusherSpeedForMotion } from "../../../game/level/objects";
 import type { RaceSnapshot } from "../../../game/race/controller";
 import type { RoundConfiguration } from "../../../game/race/types";
 import { SelectedTool } from "../../../editor/tools";
+import { wallMotionType } from "./wallMotion";
 import type { BuilderUi } from ".";
 
 const key = (label: string) => `<kbd>${label}</kbd>`;
@@ -124,23 +125,9 @@ export const updateBuilderInterface = ({
       : null;
   if (selectedWall) {
     const motion = selectedWall.motion;
-    const motionType =
-      motion?.type === "oscillate"
-        ? "slide"
-        : motion?.type === "rotate" && motion.pivot === "start"
-          ? "sweep"
-          : motion?.type === "rotate"
-            ? "spin"
-            : "none";
-    ui.objectInspectorTitle.textContent =
-      motionType === "none"
-        ? "Wall"
-        : motionType === "slide"
-          ? "Slider"
-          : motionType === "spin"
-            ? "Spinner"
-            : "Sweeper";
-    ui.motionTypeSelect.value = motionType;
+    // The object-inspector title is owned by the transform inspector, which
+    // runs after this pass; here we only drive the motion-type select.
+    ui.motionTypeSelect.value = wallMotionType(motion);
     ui.motionControls.hidden = !motion;
     ui.motionRepeatRow.hidden = motion?.type !== "oscillate";
     ui.motionRangeRow.hidden = motion?.type !== "oscillate";

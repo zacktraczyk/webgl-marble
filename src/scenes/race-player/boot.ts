@@ -1,5 +1,6 @@
 import { RaceRepository, isRacePlayable, type RaceDocument } from "../../raceLibrary";
 import { mountScene } from "../mount";
+import { raceBuilderUrl } from "../urls";
 import createRacePlayerScene from "./index";
 
 type PageErrorAction = {
@@ -63,7 +64,7 @@ export const bootRacePlayer = () => {
       title: "Race setup is incomplete",
       copy: "A race needs exactly one leg for each team that will be eliminated.",
       action: {
-        href: `/race-builder?race=${encodeURIComponent(race.id)}`,
+        href: raceBuilderUrl(race.id),
         label: "Open race builder",
       },
     });
@@ -77,7 +78,7 @@ export const bootRacePlayer = () => {
     "[data-race-back-link]"
   );
   for (const backLink of backLinks) {
-    backLink.href = `/race-builder?race=${encodeURIComponent(race.id)}`;
+    backLink.href = raceBuilderUrl(race.id);
   }
   player.hidden = false;
   try {

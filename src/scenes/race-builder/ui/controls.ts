@@ -6,6 +6,7 @@ import {
   requiredLegCount,
 } from "../../../raceLibrary";
 import { createExitAnimator } from "../../../ui/exitAnimation";
+import { legCountLabel } from "../../format";
 import { wireLegListReorder } from "./dragReorder";
 import type { RaceBuilderContext } from "./context";
 import { fitTextArea } from "./render";
@@ -195,7 +196,7 @@ export const bindRaceBuilderControls = (
       if (
         context.race.legs.length > needed &&
         !window.confirm(
-          `Remove the final ${context.race.legs.length - needed} ${context.race.legs.length - needed === 1 ? "leg" : "legs"} to match the team count?`
+          `Remove the final ${legCountLabel(context.race.legs.length - needed)} to match the team count?`
         )
       ) {
         return;

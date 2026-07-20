@@ -10,6 +10,7 @@ import {
   MAX_WALL_THICKNESS,
   MIN_WALL_THICKNESS,
 } from "../../../game/level/constants";
+import { wallMotionLabel } from "./wallMotion";
 import type { BuilderUi } from ".";
 
 const degrees = (radians: number) => (radians * 180) / Math.PI;
@@ -102,13 +103,7 @@ export class TransformInspectorController {
     const shape = getLevelObjectShape(object, this.getDefaultWallThickness());
     this.ui.objectInspectorTitle.textContent =
       object.prefab === "wall"
-        ? object.motion?.type === "oscillate"
-          ? "Slider"
-          : object.motion?.type === "rotate" && object.motion.pivot === "start"
-            ? "Sweeper"
-            : object.motion?.type === "rotate"
-              ? "Spinner"
-              : "Wall"
+        ? wallMotionLabel(object.motion)
         : object.prefab === "spawn-point"
           ? "Spawn point"
           : object.prefab === "finish-zone"

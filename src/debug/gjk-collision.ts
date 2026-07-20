@@ -21,6 +21,7 @@ import {
   spawnCollisionDemoShapes,
   spawnCollisionDiagnostics,
 } from "./collisionDemoSupport";
+import { updateDebugInfo } from "./debugInfo";
 
 type GjkDebugEvent = {
   furthestPoint1?: Vec2;
@@ -146,12 +147,5 @@ function createScene(): Scene {
     dispose: () => stage.dispose(),
   };
 }
-
-const debugInfoElem = document.getElementById("debug-info");
-const updateDebugInfo = (value: unknown) => {
-  if (debugInfoElem) {
-    debugInfoElem.textContent = JSON.stringify(value, null, 2);
-  }
-};
 
 export default createScene;

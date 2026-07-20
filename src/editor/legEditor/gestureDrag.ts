@@ -30,7 +30,7 @@ import type { LegEditorSelection } from "./selection";
 
 export type DragUpdateResult = "pending" | "handled" | "cancel";
 
-type DragDepsBase = {
+export type DragDepsBase = {
   screenDistance: (first: Vec2, second: Vec2) => number;
   getDefaultWallThickness: () => number;
   getGridSnapEnabled: () => boolean;

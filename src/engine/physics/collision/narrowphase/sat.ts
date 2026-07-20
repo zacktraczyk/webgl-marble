@@ -22,6 +22,7 @@ import {
   scale,
   signedArea,
   subtract,
+  transformVertices,
   type Vec2,
 } from "../geometry";
 
@@ -410,13 +411,10 @@ export class SATNarrowPhase implements NarrowPhase {
       this._validatedPolygons.add(polygon);
     }
 
-    const cosine = Math.cos(entity.rotation);
-    const sine = Math.sin(entity.rotation);
-    const vertices = polygon.vertices.map(
-      ([x, y]): Vec2 => [
-        x * cosine - y * sine + entity.position[0],
-        x * sine + y * cosine + entity.position[1],
-      ]
+    const vertices = transformVertices(
+      polygon.vertices,
+      entity.position,
+      entity.rotation
     );
     const winding = Math.sign(signedArea(vertices));
     const outwardNormals = vertices.map((vertex, index): Vec2 => {

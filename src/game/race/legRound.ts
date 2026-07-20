@@ -49,27 +49,18 @@ export const createLegRoundConfiguration = (
   legIndex: number,
   finishPlan: LegFinishPlan | null = resolveLegFinishPlan(race, legIndex)
 ): RoundConfiguration => {
-  const teamCount = finishPlan
-    ? finishPlan.activeTeams
-    : Math.max(2, race.participantCount - Math.max(legIndex, 0));
+  if (finishPlan) {
+    return roundConfigurationFromFinishPlan(finishPlan, race.releaseIntervalMs);
+  }
 
+  const teamCount = Math.max(2, race.participantCount - Math.max(legIndex, 0));
   return {
     teamCount,
-    marblesPerTeam:
-      finishPlan?.marblesPerTeam ??
-      Math.max(
-        1,
-        Math.round((race.participantCount * race.marblesPerTeam) / teamCount)
-      ),
+    marblesPerTeam: Math.max(
+      1,
+      Math.round((race.participantCount * race.marblesPerTeam) / teamCount)
+    ),
     releaseIntervalMs: race.releaseIntervalMs,
-    ...(finishPlan
-      ? {
-          finishPlan: {
-            rackHeight: finishPlan.rackHeight,
-            marbleRadius: finishPlan.marbleRadius,
-          },
-        }
-      : {}),
   };
 };
 

@@ -1,4 +1,5 @@
 import type { Vec2 } from "../../engine/core/transform";
+import { applyTransform } from "../../engine/core/transform";
 
 const assertPositiveFinite = (value: number, label: string) => {
   if (!Number.isFinite(value) || value <= 0) {
@@ -18,6 +19,17 @@ interface FinishBayInnerSize {
   gridHeight: number;
 }
 
+/** Inner width of one team bay: the rack width minus its walls, split evenly. */
+export const finishBayInnerWidth = ({
+  width,
+  wallThickness,
+  bayCount,
+}: {
+  width: number;
+  wallThickness: number;
+  bayCount: number;
+}): number => (width - wallThickness * (bayCount + 1)) / bayCount;
+
 /** Inner size of each team bay once the rack walls are carved out. */
 export const finishBayInnerSize = ({
   width,
@@ -31,7 +43,11 @@ export const finishBayInnerSize = ({
   if (!Number.isInteger(teamCount) || teamCount < 1) {
     throw new Error("Team count must be a positive integer");
   }
-  const gridWidth = (width - wallThickness * (teamCount + 1)) / teamCount;
+  const gridWidth = finishBayInnerWidth({
+    width,
+    wallThickness,
+    bayCount: teamCount,
+  });
   const gridHeight = height - wallThickness * 2;
   if (gridWidth <= 0 || gridHeight <= 0) {
     throw new Error(
@@ -116,7 +132,7 @@ export const createPackedFinishLayout = ({
     throw new Error("Finish max rows must be a positive integer");
   }
 
-  const bayInnerWidth = (width - wallThickness * (bayCount + 1)) / bayCount;
+  const bayInnerWidth = finishBayInnerWidth({ width, wallThickness, bayCount });
   if (bayInnerWidth <= 0) {
     throw new Error(`A ${width}-wide finish rack cannot fit ${bayCount} bays`);
   }
@@ -243,7 +259,7 @@ export const createPackedFinishPlacements = (
       placements.push({
         bayIndex,
         slotIndex,
-        position: worldPosition(options.position, rotation, [
+        position: applyTransform(options.position, rotation, [
           firstColumnX + column * layout.columnPitch,
           gridBottom - layout.marbleRadius - row * layout.pitch,
         ]),
@@ -252,17 +268,4 @@ export const createPackedFinishPlacements = (
   }
 
   return placements;
-};
-
-const worldPosition = (
-  position: Vec2,
-  rotation: number,
-  [localX, localY]: Vec2
-): Vec2 => {
-  const cosine = Math.cos(rotation);
-  const sine = Math.sin(rotation);
-  return [
-    position[0] + localX * cosine - localY * sine,
-    position[1] + localX * sine + localY * cosine,
-  ];
 };

@@ -5,15 +5,16 @@ import {
   MAX_RACE_PARTICIPANTS,
   RaceRepository,
   createDefaultRace,
+  eraScheduleForRace,
   isRacePlayable,
   requiredLegCount,
 } from "../../raceLibrary";
 import { renderRaceThumbnail } from "../../game/level/thumbnail";
-import type { LegFinishPlan } from "../../game/race/eraSchedule";
-import { computeEraSchedule } from "../../game/race/eraSchedule";
 import { openConfirmDelete } from "../../ui/confirmDelete";
 import { createExitAnimator } from "../../ui/exitAnimation";
 import { attachTooltip } from "../../ui/tooltip";
+import { legCountLabel } from "../format";
+import { raceBuilderUrl } from "../urls";
 
 /** Mounts the race library grid on `/`. */
 export const mountRaceLibrary = () => {
@@ -22,9 +23,6 @@ export const mountRaceLibrary = () => {
   const grid = document.querySelector<HTMLElement>("#grid");
   const template = document.querySelector<HTMLTemplateElement>("#tile");
   const createTile = document.querySelector<HTMLElement>("#create-tile");
-
-  const builderUrl = (raceId: string) =>
-    `/race-builder?race=${encodeURIComponent(raceId)}`;
 
   // The create dialog collects name + setup up front; the race document is
   // only persisted on submit, so cancelling leaves no orphan "Untitled race".
@@ -127,7 +125,7 @@ export const mountRaceLibrary = () => {
         marblesPerTeam: MARBLES_PER_TEAM_OPTIONS[Number(marblesSlider.value)],
       })
     );
-    window.location.assign(builderUrl(race.id));
+    window.location.assign(raceBuilderUrl(race.id));
   });
 
   const renderLibrary = () => {
@@ -139,12 +137,13 @@ export const mountRaceLibrary = () => {
     for (const race of races) {
       const fragment = template.content.cloneNode(true) as DocumentFragment;
       const playable = isRacePlayable(race);
-      fragment.querySelector<HTMLAnchorElement>("a")!.href = builderUrl(
+      fragment.querySelector<HTMLAnchorElement>("a")!.href = raceBuilderUrl(
         race.id
       );
       fragment.querySelector("[data-name]")!.textContent = race.name;
-      fragment.querySelector("[data-legs]")!.textContent =
-        `${race.legs.length} ${race.legs.length === 1 ? "leg" : "legs"}`;
+      fragment.querySelector("[data-legs]")!.textContent = legCountLabel(
+        race.legs.length
+      );
 
       const preview = fragment.querySelector<HTMLElement>("[data-preview]")!;
       const emptyPreview = fragment.querySelector<HTMLElement>(
@@ -159,21 +158,7 @@ export const mountRaceLibrary = () => {
         preview.append(canvas);
         // With a complete race the era schedule is deterministic, so the
         // preview can show each leg's true finish rack bay count.
-        let schedule: LegFinishPlan[] | null = null;
-        if (race.legs.length === race.participants.length - 1) {
-          try {
-            schedule = computeEraSchedule({
-              participantCount: race.participants.length,
-              marblesPerTeam: race.rules.marblesPerTeam,
-              legs: race.legs.map(({ level }) => ({
-                width: level.size[0],
-                wallThickness: level.settings.wallThickness,
-              })),
-            });
-          } catch {
-            schedule = null;
-          }
-        }
+        const schedule = eraScheduleForRace(race);
         // Draw after the cards are in the document so sizes are measurable.
         pending.push(() => {
           renderRaceThumbnail(
@@ -222,8 +207,8 @@ export const mountRaceLibrary = () => {
         const difference = requiredLegCount(race) - race.legs.length;
         action.dataset.tooltip =
           difference > 0
-            ? `Add ${difference} ${difference === 1 ? "leg" : "legs"} to play`
-            : `Remove ${Math.abs(difference)} ${Math.abs(difference) === 1 ? "leg" : "legs"} to play`;
+            ? `Add ${legCountLabel(difference)} to play`
+            : `Remove ${legCountLabel(Math.abs(difference))} to play`;
       }
       grid.append(fragment);
     }

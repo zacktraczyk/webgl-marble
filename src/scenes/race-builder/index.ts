@@ -5,6 +5,7 @@ import { bindRaceBuilderControls } from "./ui/controls";
 import type { RaceBuilderContext } from "./ui/context";
 import { resolveRaceBuilderUi } from "./ui/elements";
 import { render } from "./ui/render";
+import { legBuilderUrl } from "../urls";
 
 /** Thin orchestrator: wires the repository, resolved UI, render, and controls. */
 function createRaceBuilder(signal: AbortSignal) {
@@ -14,8 +15,7 @@ function createRaceBuilder(signal: AbortSignal) {
   const raceId = params.get("race") ?? "";
   const ui = resolveRaceBuilderUi();
 
-  const editLegUrl = (legId: string) =>
-    `/leg-builder?race=${encodeURIComponent(raceId)}&leg=${encodeURIComponent(legId)}`;
+  const editLegUrl = (legId: string) => legBuilderUrl(raceId, legId);
 
   const context: RaceBuilderContext = {
     ui,

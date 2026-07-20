@@ -480,9 +480,7 @@ export class LegBuilderRuntime {
     this.level.restore(snapshot);
     this.rememberSpawnPosition();
     this.editorController.clearSelection();
-    this.ui.courseWidthInput.value = `${snapshot.size[0]}`;
-    this.ui.courseHeightInput.value = `${snapshot.size[1]}`;
-    this.ui.wallThicknessInput.value = `${snapshot.settings.wallThickness}`;
+    this.syncLevelInputs(snapshot);
     if (sizeChanged) {
       this.cameraController.fitStage();
     }

@@ -1,6 +1,7 @@
 import type { Collision, ContactPoint, ContactSolver } from "../types";
 import type { PhysicsEntity } from "../../entity";
 import type { Vec2 } from "../../../core/transform";
+import { add, cross, dot, scale, subtract } from "../geometry";
 
 type CachedImpulse = {
   normal: number;
@@ -301,14 +302,6 @@ export class SequentialImpulseSolver implements ContactSolver {
   }
 }
 
-const add = (a: Vec2, b: Vec2): Vec2 => [a[0] + b[0], a[1] + b[1]];
-const subtract = (a: Vec2, b: Vec2): Vec2 => [a[0] - b[0], a[1] - b[1]];
-const scale = (vector: Vec2, scalar: number): Vec2 => [
-  vector[0] * scalar,
-  vector[1] * scalar,
-];
-const dot = (a: Vec2, b: Vec2) => a[0] * b[0] + a[1] * b[1];
-const cross = (a: Vec2, b: Vec2) => a[0] * b[1] - a[1] * b[0];
 const angularVelocityAtOffset = (
   angularVelocity: number,
   offset: Vec2

@@ -7,7 +7,6 @@ import {
   getSliderSpeed,
 } from "../../game/level/motion";
 import {
-  getLevelObjectBounds,
   getLevelObjectShape,
   getRectangleCorners,
   getWallEndpoints,
@@ -17,6 +16,7 @@ import {
   type RectangleLevelShape,
 } from "../../game/level/geometry";
 import { getRotationHandle, getResizeAnchors } from "../geometry";
+import { getSelectionBounds } from "./selectionTransforms";
 import type {
   SelectionMarquee,
   WallDraft,
@@ -422,31 +422,10 @@ export class EditorOverlay {
     objects: readonly LevelObjectData[],
     defaultWallThickness: number
   ) {
-    const bounds = objects.reduce(
-      (selection, object) => {
-        const objectBounds = getLevelObjectBounds(object, defaultWallThickness);
-        return {
-          min: [
-            Math.min(selection.min[0], objectBounds.min[0]),
-            Math.min(selection.min[1], objectBounds.min[1]),
-          ] as [number, number],
-          max: [
-            Math.max(selection.max[0], objectBounds.max[0]),
-            Math.max(selection.max[1], objectBounds.max[1]),
-          ] as [number, number],
-        };
-      },
-      {
-        min: [Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY] as [
-          number,
-          number,
-        ],
-        max: [Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY] as [
-          number,
-          number,
-        ],
-      }
-    );
+    const bounds = getSelectionBounds(objects, defaultWallThickness);
+    if (!bounds) {
+      return;
+    }
     const [left, top] = this.stage.camera.worldToScreen(...bounds.min);
     const [right, bottom] = this.stage.camera.worldToScreen(...bounds.max);
     this.context.save();

@@ -1,4 +1,5 @@
 import type { Vec2 } from "../../engine/core/transform";
+import { applyTransform } from "../../engine/core/transform";
 import type { LevelObjectData } from "./document";
 import { getLevelObjectShape, type LevelObjectShape } from "./geometry";
 
@@ -12,11 +13,8 @@ export type LevelObjectPose = {
   rotation: number;
 };
 
-const rotateVector = ([x, y]: Vec2, angle: number): Vec2 => {
-  const cosine = Math.cos(angle);
-  const sine = Math.sin(angle);
-  return [x * cosine - y * sine, x * sine + y * cosine];
-};
+const rotateVector = (vector: Vec2, angle: number): Vec2 =>
+  applyTransform([0, 0], angle, vector);
 
 const getBasePose = (
   object: LevelObjectData,

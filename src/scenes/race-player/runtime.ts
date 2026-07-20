@@ -9,6 +9,7 @@ import {
   isRacePlayable,
   type RaceDocument,
 } from "../../raceLibrary/types";
+import { legScheduleInputs } from "../../raceLibrary/eraSchedule";
 import {
   MAX_MARBLE_RADIUS,
   MIN_MARBLE_RADIUS,
@@ -139,10 +140,7 @@ export class RacePlayerRuntime {
     this.finishSchedule = computeEraSchedule({
       participantCount: this.raceDocument.participants.length,
       marblesPerTeam: this.raceDocument.rules.marblesPerTeam,
-      legs: this.raceDocument.legs.map((leg) => ({
-        width: leg.level.size[0],
-        wallThickness: leg.level.settings.wallThickness,
-      })),
+      legs: legScheduleInputs(this.raceDocument.legs),
       marbleRadius: MAX_MARBLE_RADIUS,
       minimumRadius: MIN_MARBLE_RADIUS,
       gap: STAGING_MARBLE_GAP,
@@ -451,6 +449,18 @@ export class RacePlayerRuntime {
     });
   }
 
+  /** Publishes the active leg's name, progress, and index for the chrome. */
+  private announceLeg(legIndex: number) {
+    const leg = this.raceDocument.legs[legIndex];
+    this.root.dataset.legIndex = `${legIndex}`;
+    this.presenter.setText("race-leg-name", leg.name);
+    this.presenter.setText(
+      "race-leg-progress",
+      `Leg ${legIndex + 1} of ${this.raceDocument.legs.length}`
+    );
+    this.presenter.setText("race-eliminated", "");
+  }
+
   private startRace() {
     this.transition = null;
     this.legElapsedMs = 0;
@@ -465,14 +475,7 @@ export class RacePlayerRuntime {
 
     this.cameraController.snapTo(current.worldRect);
 
-    const leg = this.raceDocument.legs[progression.legIndex];
-    this.root.dataset.legIndex = `${progression.legIndex}`;
-    this.presenter.setText("race-leg-name", leg.name);
-    this.presenter.setText(
-      "race-leg-progress",
-      `Leg ${progression.legIndex + 1} of ${this.raceDocument.legs.length}`
-    );
-    this.presenter.setText("race-eliminated", "");
+    this.announceLeg(progression.legIndex);
     this.presenter.setText("race-winner", "");
     this.updateActiveParticipants();
 
@@ -586,14 +589,7 @@ export class RacePlayerRuntime {
 
     this.legElapsedMs = 0;
 
-    const leg = this.raceDocument.legs[legIndex];
-    this.root.dataset.legIndex = `${legIndex}`;
-    this.presenter.setText("race-leg-name", leg.name);
-    this.presenter.setText(
-      "race-leg-progress",
-      `Leg ${legIndex + 1} of ${this.raceDocument.legs.length}`
-    );
-    this.presenter.setText("race-eliminated", "");
+    this.announceLeg(legIndex);
     this.statusMessage = this.runningStatus;
 
     // Drop the just-finished leg immediately if it has already scrolled fully

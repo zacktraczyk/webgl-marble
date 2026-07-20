@@ -29,6 +29,20 @@ export const normalize = (vector: Vec2, fallback: Vec2 = [1, 0]): Vec2 => {
   return scale(vector, inverseMagnitude);
 };
 
+/** Rotates each local vertex by `rotation` and translates it by `position`. */
+export const transformVertices = (
+  vertices: readonly Vec2[],
+  position: Vec2,
+  rotation: number
+): Vec2[] => {
+  const cosine = Math.cos(rotation);
+  const sine = Math.sin(rotation);
+  return vertices.map(([x, y]): Vec2 => [
+    x * cosine - y * sine + position[0],
+    x * sine + y * cosine + position[1],
+  ]);
+};
+
 export const closestPointOnSegment = (
   point: Vec2,
   start: Vec2,

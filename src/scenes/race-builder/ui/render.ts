@@ -1,17 +1,17 @@
-import {
-  computeEraSchedule,
-  type LegFinishPlan,
-} from "../../../game/race/eraSchedule";
+import type { LegFinishPlan } from "../../../game/race/eraSchedule";
 import {
   MARBLES_PER_TEAM_OPTIONS,
   MAX_RACE_PARTICIPANTS,
   createLocalId,
+  eraScheduleForRace,
   isRacePlayable,
   requiredLegCount,
   type RaceLegDocument,
 } from "../../../raceLibrary";
 import { renderLevelThumbnail } from "../../../game/level/thumbnail";
 import { openConfirmDelete } from "../../../ui/confirmDelete";
+import { legCountLabel } from "../../format";
+import { racePlayerUrl } from "../../urls";
 import { wireLegDragHandle } from "./dragReorder";
 import type { RaceBuilderContext } from "./context";
 
@@ -77,21 +77,21 @@ export const render = (context: RaceBuilderContext) => {
   ui.setupWarningText.textContent = configured
     ? ""
     : difference > 0
-      ? `Add ${difference} ${difference === 1 ? "leg" : "legs"}`
-      : `Remove ${Math.abs(difference)} ${Math.abs(difference) === 1 ? "leg" : "legs"}`;
+      ? `Add ${legCountLabel(difference)}`
+      : `Remove ${legCountLabel(Math.abs(difference))}`;
   ui.addLegButton.hidden = difference <= 0;
   ui.completeRaceButton.hidden = difference === 0;
 
   const playable = isRacePlayable(race);
   if (playable) {
-    ui.playLink.href = `/race?race=${encodeURIComponent(race.id)}`;
+    ui.playLink.href = racePlayerUrl(race.id);
     ui.playLink.removeAttribute("data-tooltip");
   } else {
     ui.playLink.removeAttribute("href");
     ui.playLink.dataset.tooltip =
       difference > 0
-        ? `Add ${difference} ${difference === 1 ? "leg" : "legs"} to play`
-        : `Remove ${Math.abs(difference)} ${Math.abs(difference) === 1 ? "leg" : "legs"} to play`;
+        ? `Add ${legCountLabel(difference)} to play`
+        : `Remove ${legCountLabel(Math.abs(difference))} to play`;
   }
   ui.playLink.setAttribute("aria-disabled", `${!playable}`);
   ui.playLink.classList.toggle("opacity-40", !playable);
@@ -103,21 +103,7 @@ export const render = (context: RaceBuilderContext) => {
   const startingTeams = race.participants.length;
   // With a complete race the era schedule is deterministic, so thumbnails
   // can show each leg's true finish rack: era bay count plus X'd bays.
-  let schedule: LegFinishPlan[] | null = null;
-  if (race.legs.length === startingTeams - 1) {
-    try {
-      schedule = computeEraSchedule({
-        participantCount: startingTeams,
-        marblesPerTeam: race.rules.marblesPerTeam,
-        legs: race.legs.map(({ level }) => ({
-          width: level.size[0],
-          wallThickness: level.settings.wallThickness,
-        })),
-      });
-    } catch {
-      schedule = null;
-    }
-  }
+  const schedule: LegFinishPlan[] | null = eraScheduleForRace(race);
   race.legs.forEach((leg, index) => {
     const fragment = ui.legTemplate!.content.cloneNode(
       true
