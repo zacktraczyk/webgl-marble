@@ -1,6 +1,6 @@
 import type { Scene } from "../../engine/runtime/scene";
 import { attachTooltip } from "../../ui/tooltip";
-import { RaceRepository, type RaceDocument } from "../../races";
+import { RaceRepository, type RaceDocument } from "../../raceLibrary";
 import { bindRaceBuilderControls } from "./ui/controls";
 import type { RaceBuilderContext } from "./ui/context";
 import { resolveRaceBuilderUi } from "./ui/elements";

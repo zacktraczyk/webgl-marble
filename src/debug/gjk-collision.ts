@@ -5,8 +5,8 @@ import {
   debugPointDefinition,
   debugPolylineDefinitions,
 } from "./definitions";
+import { GJKNarrowPhase } from "./gjk";
 import {
-  GJKNarrowPhase,
   SequentialImpulseSolver,
   type Collision,
 } from "../engine/physics/collision";

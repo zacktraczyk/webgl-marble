@@ -8,7 +8,7 @@ import {
   isRaceDocument,
   isRacePlayable,
   type RaceDocument,
-} from "../../races/types";
+} from "../../raceLibrary/types";
 import {
   MAX_MARBLE_RADIUS,
   MIN_MARBLE_RADIUS,

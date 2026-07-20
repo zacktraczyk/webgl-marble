@@ -62,31 +62,3 @@ export const createCollision = ({
   manifold,
   diagnostics,
 });
-
-/** Builds an approximate one-point manifold for diagnostic-only detectors. */
-export const createApproximateManifold = ({
-  entity1,
-  entity2,
-  normal,
-  penetrationDepth,
-  featureId,
-}: {
-  entity1: PhysicsEntity;
-  entity2: PhysicsEntity;
-  normal: [number, number];
-  penetrationDepth: number;
-  featureId: string;
-}): ContactManifold => ({
-  normal,
-  penetrationDepth,
-  points: [
-    {
-      position: [
-        (entity1.position[0] + entity2.position[0]) / 2,
-        (entity1.position[1] + entity2.position[1]) / 2,
-      ],
-      separation: -penetrationDepth,
-      featureId,
-    },
-  ],
-});

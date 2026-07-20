@@ -1,4 +1,4 @@
-import { RaceRepository, isRacePlayable, type RaceDocument } from "../../races";
+import { RaceRepository, isRacePlayable, type RaceDocument } from "../../raceLibrary";
 import { mountScene } from "../mount";
 import createRacePlayerScene from "./index";
 

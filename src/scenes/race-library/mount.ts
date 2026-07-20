@@ -7,7 +7,7 @@ import {
   createDefaultRace,
   isRacePlayable,
   requiredLegCount,
-} from "../../races";
+} from "../../raceLibrary";
 import { renderRaceThumbnail } from "../../game/level/thumbnail";
 import type { LegFinishPlan } from "../../game/race/eraSchedule";
 import { computeEraSchedule } from "../../game/race/eraSchedule";

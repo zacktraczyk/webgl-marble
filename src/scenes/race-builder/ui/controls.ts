@@ -4,7 +4,7 @@ import {
   createDefaultLeg,
   createDefaultParticipants,
   requiredLegCount,
-} from "../../../races";
+} from "../../../raceLibrary";
 import { createExitAnimator } from "../../../ui/exitAnimation";
 import { wireLegListReorder } from "./dragReorder";
 import type { RaceBuilderContext } from "./context";

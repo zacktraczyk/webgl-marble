@@ -1,11 +1,39 @@
 import {
   createCollision,
-  createApproximateManifold,
   type Collision,
+  type ContactManifold,
   type NarrowPhase,
-} from "../types";
-import { Observer } from "../../../utils/observer";
-import type { PhysicsEntity } from "../../entity";
+} from "../engine/physics/collision/types";
+import { Observer } from "../engine/utils/observer";
+import type { PhysicsEntity } from "../engine/physics/entity";
+
+/** Builds an approximate one-point manifold for diagnostic-only detectors. */
+const createApproximateManifold = ({
+  entity1,
+  entity2,
+  normal,
+  penetrationDepth,
+  featureId,
+}: {
+  entity1: PhysicsEntity;
+  entity2: PhysicsEntity;
+  normal: [number, number];
+  penetrationDepth: number;
+  featureId: string;
+}): ContactManifold => ({
+  normal,
+  penetrationDepth,
+  points: [
+    {
+      position: [
+        (entity1.position[0] + entity2.position[0]) / 2,
+        (entity1.position[1] + entity2.position[1]) / 2,
+      ],
+      separation: -penetrationDepth,
+      featureId,
+    },
+  ],
+});
 
 /** Diagnostic GJK/EPA implementation. Production contacts use SAT manifolds. */
 export class GJKNarrowPhase implements NarrowPhase {

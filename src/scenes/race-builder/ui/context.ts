@@ -1,4 +1,4 @@
-import type { RaceRepository, RaceDocument } from "../../../races";
+import type { RaceRepository, RaceDocument } from "../../../raceLibrary";
 import type { RaceBuilderUi } from "./elements";
 
 /** Shared mutable state + wiring passed into every race-builder UI module. */

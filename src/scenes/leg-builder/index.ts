@@ -1,6 +1,6 @@
 import type { Scene, SceneContext } from "../../engine/runtime/scene";
 import { createLegRoundConfiguration } from "../../game/race/legRound";
-import { RaceRepository } from "../../races";
+import { RaceRepository } from "../../raceLibrary";
 import { LegBuilderRuntime, type LegBuilderOptions } from "./runtime";
 
 export type { LegBuilderOptions } from "./runtime";

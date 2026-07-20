@@ -9,7 +9,7 @@ import {
   isRacePlayable,
   requiredLegCount,
   type RaceLegDocument,
-} from "../../../races";
+} from "../../../raceLibrary";
 import { renderLevelThumbnail } from "../../../game/level/thumbnail";
 import { openConfirmDelete } from "../../../ui/confirmDelete";
 import { wireLegDragHandle } from "./dragReorder";
