@@ -40,7 +40,7 @@ describe("spawn point", () => {
     const lowerBound = parts.at(-2);
     const upperBound = parts.at(-1);
 
-    expect(parts).toHaveLength(5);
+    expect(parts).toHaveLength(4);
     expect(lowerBound?.localTransform?.rotation).toBeCloseTo(
       -DEFAULT_SPAWN_DIRECTION_VARIANCE
     );
@@ -60,7 +60,7 @@ describe("spawn point", () => {
     });
     const parts = definition.render?.parts ?? [];
 
-    expect(parts).toHaveLength(5);
+    expect(parts).toHaveLength(4);
     expect(parts[0].primitive.type).toBe("circle");
     expect(parts[0].localTransform?.scale).toEqual([16, 16]);
   });
