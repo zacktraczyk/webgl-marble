@@ -165,7 +165,7 @@ import ConfirmDeleteDialog from "../ui/ConfirmDeleteDialog.astro";
         </h2>
         <div
           data-preview
-          class="relative mt-[1.125rem] min-h-0 flex-1 overflow-hidden rounded-lg after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-14 after:bg-gradient-to-t after:from-panel after:to-transparent"
+          class="group/preview relative mt-[1.125rem] min-h-0 flex-1 overflow-hidden rounded-lg"
         >
           <div
             data-empty-preview
@@ -190,6 +190,23 @@ import ConfirmDeleteDialog from "../ui/ConfirmDeleteDialog.astro";
             <span class="text-sm font-bold tracking-[-0.01em]"
               >This race needs legs</span
             >
+          </div>
+          <div
+            data-preview-fade
+            class="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-14 bg-gradient-to-t from-panel to-transparent opacity-100 transition-opacity duration-300 motion-reduce:transition-none"
+            aria-hidden="true"
+          >
+          </div>
+          <div
+            data-preview-scrollbar
+            class="pointer-events-none absolute inset-y-2 right-2 z-20 hidden w-1 rounded-full bg-canvas/60 opacity-0 transition-opacity duration-100 group-hover/tile:opacity-100 group-focus-within/tile:opacity-100 motion-reduce:transition-none"
+            aria-hidden="true"
+          >
+            <div
+              data-preview-scroll-thumb
+              class="absolute inset-x-0 top-0 min-h-6 rounded-full bg-ink-faint transition-colors duration-100 group-hover/preview:bg-ink-dim motion-reduce:transition-none"
+            >
+            </div>
           </div>
         </div>
         <div class="mt-5 flex items-center justify-between gap-3">
@@ -237,7 +254,7 @@ import ConfirmDeleteDialog from "../ui/ConfirmDeleteDialog.astro";
           data-delete-race
           aria-label="Delete race"
           data-tooltip="Delete race"
-          class="grid size-8 place-items-center rounded-full bg-canvas/75 text-ink-dim backdrop-blur-[4px] transition-[color,background-color] duration-100 ease-out hover:bg-canvas hover:text-[oklch(70%_0.19_25)]"
+          class="grid size-8 place-items-center rounded-full bg-canvas/75 text-ink-dim backdrop-blur-[4px] transition-[color,background-color] duration-100 ease-out hover:bg-canvas hover:text-red-400"
         >
           <!-- lucide: trash -->
           <svg

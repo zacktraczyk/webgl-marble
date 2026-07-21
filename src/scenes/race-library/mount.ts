@@ -15,6 +15,7 @@ import { createExitAnimator } from "../../ui/exitAnimation";
 import { attachTooltip } from "../../ui/tooltip";
 import { legCountLabel } from "../format";
 import { raceBuilderUrl } from "../urls";
+import { attachThumbnailTour, type ThumbnailTour } from "./thumbnailTour";
 
 /** Mounts the race library grid on `/`. */
 export const mountRaceLibrary = () => {
@@ -51,6 +52,7 @@ export const mountRaceLibrary = () => {
   const cancel = document.querySelector<HTMLButtonElement>("#create-cancel");
 
   let participantCount = DEFAULT_PARTICIPANT_COUNT;
+  let thumbnailTours: ThumbnailTour[] = [];
 
   const renderCreateForm = () => {
     if (
@@ -130,6 +132,8 @@ export const mountRaceLibrary = () => {
 
   const renderLibrary = () => {
     if (!grid || !template || !createTile) return;
+    for (const tour of thumbnailTours) tour.destroy();
+    thumbnailTours = [];
     const races = repository.list();
     grid.replaceChildren();
 
@@ -146,6 +150,16 @@ export const mountRaceLibrary = () => {
       );
 
       const preview = fragment.querySelector<HTMLElement>("[data-preview]")!;
+      const previewFade = fragment.querySelector<HTMLElement>(
+        "[data-preview-fade]"
+      )!;
+      const previewScrollbar = fragment.querySelector<HTMLElement>(
+        "[data-preview-scrollbar]"
+      )!;
+      const previewScrollThumb = fragment.querySelector<HTMLElement>(
+        "[data-preview-scroll-thumb]"
+      )!;
+      previewFade.hidden = race.legs.length === 1;
       const emptyPreview = fragment.querySelector<HTMLElement>(
         "[data-empty-preview]"
       )!;
@@ -176,6 +190,15 @@ export const mountRaceLibrary = () => {
               // Short stacks still fill the preview frame, track centered.
               minHeight: preview.clientHeight,
             }
+          );
+          thumbnailTours.push(
+            attachThumbnailTour(
+              preview,
+              canvas,
+              previewFade,
+              previewScrollbar,
+              previewScrollThumb
+            )
           );
         });
       }
