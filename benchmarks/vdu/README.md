@@ -38,3 +38,11 @@ The `scaling` suite runs the selected scenario at every value supplied through
 full-race case both frozen and with physics active. One preview server and one
 browser process are reused across suite cases, while each measured run still
 gets a fresh page.
+
+## Recorded baseline
+
+The canonical Apple M1 Pro result is stored as a compact
+[machine-readable baseline](../baselines/vdu-instancing-m1-pro.json). Its
+[performance note](../../docs/performance/vdu-instancing.md) explains the setup,
+interpretation, and reproduction commands. Raw per-frame reports under
+`benchmarks/results/` are intentionally gitignored.
