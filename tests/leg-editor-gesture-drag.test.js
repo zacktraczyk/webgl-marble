@@ -204,7 +204,7 @@ describe("leg editor gesture drag", () => {
     const selection = new LegEditorSelection(() => objects);
     selection.replace(copy.id);
     const discarded = [];
-    const host = {
+    const session = {
       gesture: {
         kind: "move",
         pointerId: 1,
@@ -216,7 +216,9 @@ describe("leg editor gesture drag", () => {
         changed: false,
       },
       selection,
-      selectedObjects: [copy],
+      lastPointerScreen: null,
+    };
+    const env = {
       callbacks: {
         onDiscard: (removed) => discarded.push(...removed),
         onObjectsCommit: () => {
@@ -230,7 +232,7 @@ describe("leg editor gesture drag", () => {
       isTemporarySelection: () => false,
     };
 
-    handlePointerUp(host, {
+    handlePointerUp(session, env, {
       pointerId: 1,
       preventDefault: () => {},
     });

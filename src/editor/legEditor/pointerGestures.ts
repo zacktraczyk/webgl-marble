@@ -5,8 +5,9 @@ import {
 } from "../../game/level/geometry";
 import { pickLevelObject, pickTolerance, type ResizeHandle } from "../geometry";
 import type { LevelObjectData } from "../../game/level/document";
-import { isPusherTool, SelectedTool, type PusherTool } from "../tools";
+import { isPusherTool, SelectedTool } from "../tools";
 import { HANDLE_HIT_RADIUS, MIN_WALL_LENGTH } from "./constants";
+import type { EditorEnv } from "./env";
 import {
   updateMarqueeDrag,
   updateMotionRangeDrag,
@@ -14,154 +15,95 @@ import {
   updateTransformDrag,
   updateWallDrag,
   updateWallEndpointDrag,
-  type DragDepsBase,
 } from "./gestureDrag";
-import type {
-  EditorGesture,
-  TransformGesture,
-  WallEndpointFeedback,
-} from "./gestures";
+import type { TransformGesture } from "./gestures";
 import {
   endpointAt,
   findWallEndpointTarget,
   motionRangeHandleAt,
   resizeHandleAt,
   rotationHandleAt,
-  type HandleTestDeps,
-  type WallEndpointTarget,
 } from "./handles";
-import type { LegEditorKeyboard } from "./keyboard";
-import type { LegEditorSelection } from "./selection";
-import { snapPlacementPoint, snapWallEndpoint, type SnapDeps } from "./snap";
-
-type PointerGestureCallbacks = {
-  onObjectsChange(objects: readonly LevelObjectData[]): void;
-  onObjectsCommit(objects: readonly LevelObjectData[]): void;
-  onCreateWall(start: Vec2, end: Vec2): LevelObjectData;
-  onPlaceObject(tool: PusherTool, position: Vec2): LevelObjectData;
-  onToolComplete(tool: SelectedTool): void;
-  onInsert(objects: readonly LevelObjectData[]): LevelObjectData[];
-  onDiscard(objects: readonly LevelObjectData[]): void;
-};
-
-type PointerCameraControls = {
-  panByScreen(deltaX: number, deltaY: number): void;
-};
-
-export type PointerGestureHost = {
-  gesture: EditorGesture | null;
-  wallAnchor: Vec2 | null;
-  wallPreviewEnd: Vec2 | null;
-  endpointFeedback: WallEndpointFeedback | null;
-  placementPreviewPosition: Vec2 | null;
-  lastPointerScreen: Vec2 | null;
-  activeTool: SelectedTool;
-  readOnly: boolean;
-  handleDeps: HandleTestDeps;
-  snapDeps: SnapDeps;
-  dragDeps: DragDepsBase;
-  selection: LegEditorSelection;
-  callbacks: PointerGestureCallbacks;
-  cameraControls: PointerCameraControls;
-  keyboard: Pick<LegEditorKeyboard, "spaceHeld">;
-  creationToolActive: boolean;
-  selectedObject: LevelObjectData | null;
-  selectedObjects: readonly LevelObjectData[];
-  cameraZoom: number;
-  screenPoint(event: PointerEvent): Vec2;
-  worldPoint(screenPoint: Vec2): Vec2;
-  screenDistance(first: Vec2, second: Vec2): number;
-  capturePointer(pointerId: number): void;
-  releasePointer(pointerId: number): void;
-  cancelGesture(): void;
-  updateIdleState(
-    screenPoint: Vec2,
-    options?: { temporarySelection?: boolean }
-  ): void;
-  showEndpointFeedback(
-    target: WallEndpointTarget | null,
-    kind: WallEndpointFeedback["kind"]
-  ): void;
-  isTemporarySelection(modifier: {
-    metaKey: boolean;
-    ctrlKey: boolean;
-  }): boolean;
-  clearWallAnchor(): void;
-  getObjects(): readonly LevelObjectData[];
-  getDefaultWallThickness(): number;
-  setCursor(cursor: string): void;
-};
+import type { EditorSession } from "./session";
+import { snapPlacementPoint, snapWallEndpoint } from "./snap";
 
 export function beginPan(
-  host: PointerGestureHost,
+  session: EditorSession,
+  env: EditorEnv,
   event: PointerEvent,
   screenPoint: Vec2
 ) {
-  host.gesture = {
+  session.gesture = {
     kind: "pan",
     pointerId: event.pointerId,
     lastScreen: screenPoint,
   };
-  host.capturePointer(event.pointerId);
-  host.setCursor("grabbing");
+  env.capturePointer(event.pointerId);
+  env.setCursor("grabbing");
 }
 
 export function beginMove(
-  host: PointerGestureHost,
+  session: EditorSession,
+  env: EditorEnv,
   event: PointerEvent,
   screenPoint: Vec2,
   options: { inserted?: boolean; sourceSelection?: string[] } = {}
 ) {
   const originals = new Map(
-    host.selectedObjects.map((object) => [object.id, structuredClone(object)])
+    session.selection.selectedObjects.map((object) => [
+      object.id,
+      structuredClone(object),
+    ])
   );
-  host.gesture = {
+  session.gesture = {
     kind: "move",
     pointerId: event.pointerId,
-    startWorld: host.worldPoint(screenPoint),
+    startWorld: env.worldPoint(screenPoint),
     startScreen: screenPoint,
     originals,
     inserted: options.inserted ?? false,
     sourceSelection: options.sourceSelection ?? [],
     changed: false,
   };
-  host.capturePointer(event.pointerId);
-  host.setCursor("grabbing");
+  env.capturePointer(event.pointerId);
+  env.setCursor("grabbing");
 }
 
 export function beginTransform(
-  host: PointerGestureHost,
+  session: EditorSession,
+  env: EditorEnv,
   event: PointerEvent,
   object: LevelObjectData,
   kind: TransformGesture["kind"],
   screenPoint: Vec2,
   handle?: ResizeHandle
 ) {
-  host.gesture = {
+  session.gesture = {
     kind,
     pointerId: event.pointerId,
     objectId: object.id,
     handle,
-    startShape: getLevelObjectShape(object, host.getDefaultWallThickness()),
-    startWorld: host.worldPoint(screenPoint),
+    startShape: getLevelObjectShape(object, env.getDefaultWallThickness()),
+    startWorld: env.worldPoint(screenPoint),
     startScreen: screenPoint,
     changed: false,
   };
-  host.capturePointer(event.pointerId);
+  env.capturePointer(event.pointerId);
 }
 
 function tryBeginPan(
-  host: PointerGestureHost,
+  session: EditorSession,
+  env: EditorEnv,
   event: PointerEvent,
   screenPoint: Vec2
 ): boolean {
-  const temporaryPan = host.keyboard.spaceHeld && event.button === 0;
+  const temporaryPan = env.keyboard.spaceHeld && event.button === 0;
   if (
     event.button === 1 ||
     temporaryPan ||
-    (host.activeTool === SelectedTool.Pan && event.button === 0)
+    (session.activeTool === SelectedTool.Pan && event.button === 0)
   ) {
-    beginPan(host, event, screenPoint);
+    beginPan(session, env, event, screenPoint);
     event.preventDefault();
     return true;
   }
@@ -169,31 +111,32 @@ function tryBeginPan(
 }
 
 function tryBeginWallDraw(
-  host: PointerGestureHost,
+  session: EditorSession,
+  env: EditorEnv,
   event: PointerEvent,
   screenPoint: Vec2,
   temporarySelection: boolean
 ): boolean {
   if (
-    host.activeTool !== SelectedTool.Wall ||
+    session.activeTool !== SelectedTool.Wall ||
     temporarySelection ||
-    host.readOnly
+    session.readOnly
   ) {
     return false;
   }
-  const worldPoint = host.worldPoint(screenPoint);
-  const existingAnchor = host.wallAnchor;
+  const worldPoint = env.worldPoint(screenPoint);
+  const existingAnchor = session.wallAnchor;
   const anchored = existingAnchor !== null;
   const start = existingAnchor
     ? ([...existingAnchor] as Vec2)
-    : snapPlacementPoint(host.snapDeps, worldPoint, event.altKey);
+    : snapPlacementPoint(env.snapDeps(), worldPoint, event.altKey);
   const end = anchored
-    ? snapWallEndpoint(host.snapDeps, start, worldPoint, {
+    ? snapWallEndpoint(env.snapDeps(), start, worldPoint, {
         free: event.altKey,
         constrain: event.shiftKey,
       })
     : ([...start] as Vec2);
-  host.gesture = {
+  session.gesture = {
     kind: "wall",
     pointerId: event.pointerId,
     start,
@@ -202,46 +145,52 @@ function tryBeginWallDraw(
     anchored,
     changed: false,
   };
-  host.capturePointer(event.pointerId);
+  env.capturePointer(event.pointerId);
   event.preventDefault();
   return true;
 }
 
 function tryBeginPlacement(
-  host: PointerGestureHost,
+  session: EditorSession,
+  env: EditorEnv,
   event: PointerEvent,
   screenPoint: Vec2,
   temporarySelection: boolean
 ): boolean {
-  if (!isPusherTool(host.activeTool) || temporarySelection || host.readOnly) {
+  if (
+    !isPusherTool(session.activeTool) ||
+    temporarySelection ||
+    session.readOnly
+  ) {
     return false;
   }
-  host.gesture = {
+  session.gesture = {
     kind: "place",
     pointerId: event.pointerId,
-    tool: host.activeTool,
+    tool: session.activeTool,
     startScreen: screenPoint,
   };
-  host.capturePointer(event.pointerId);
+  env.capturePointer(event.pointerId);
   event.preventDefault();
   return true;
 }
 
 function tryBeginMotionRange(
-  host: PointerGestureHost,
+  session: EditorSession,
+  env: EditorEnv,
   event: PointerEvent,
   screenPoint: Vec2
 ): boolean {
-  const selectedObject = host.selectedObject;
+  const selectedObject = session.selection.selectedObject;
   if (
     !selectedObject ||
-    !motionRangeHandleAt(host.handleDeps, selectedObject, screenPoint) ||
-    host.readOnly ||
+    !motionRangeHandleAt(env.handleDeps(), selectedObject, screenPoint) ||
+    session.readOnly ||
     !selectedObject.motion
   ) {
     return false;
   }
-  host.gesture = {
+  session.gesture = {
     kind: "motion-range",
     pointerId: event.pointerId,
     objectId: selectedObject.id,
@@ -249,20 +198,21 @@ function tryBeginMotionRange(
     startScreen: screenPoint,
     changed: false,
   };
-  host.capturePointer(event.pointerId);
+  env.capturePointer(event.pointerId);
   event.preventDefault();
   return true;
 }
 
 function tryBeginWallEndpoint(
-  host: PointerGestureHost,
+  session: EditorSession,
+  env: EditorEnv,
   event: PointerEvent,
   screenPoint: Vec2,
   temporarySelection: boolean
 ): boolean {
-  const selectedObject = host.selectedObject;
+  const selectedObject = session.selection.selectedObject;
   const directEndpointTarget = temporarySelection
-    ? findWallEndpointTarget(host.handleDeps, screenPoint, HANDLE_HIT_RADIUS, {
+    ? findWallEndpointTarget(env.handleDeps(), screenPoint, HANDLE_HIT_RADIUS, {
         selectableOnly: true,
       })
     : null;
@@ -272,16 +222,16 @@ function tryBeginWallEndpoint(
   const endpoint =
     directEndpointTarget?.endpoint ??
     (endpointObject
-      ? endpointAt(host.handleDeps, endpointObject, screenPoint)
+      ? endpointAt(env.handleDeps(), endpointObject, screenPoint)
       : null);
-  if (!endpointObject || !endpoint || host.readOnly) {
+  if (!endpointObject || !endpoint || session.readOnly) {
     return false;
   }
   if (directEndpointTarget) {
-    host.selection.replace(endpointObject.id);
+    session.selection.replace(endpointObject.id);
   }
   const { start, end } = getWallEndpoints(endpointObject);
-  host.gesture = {
+  session.gesture = {
     kind: "wall-endpoint",
     pointerId: event.pointerId,
     objectId: endpointObject.id,
@@ -291,34 +241,36 @@ function tryBeginWallEndpoint(
     startScreen: screenPoint,
     changed: false,
   };
-  host.showEndpointFeedback(directEndpointTarget, "edit");
-  host.capturePointer(event.pointerId);
+  env.showEndpointFeedback(directEndpointTarget, "edit");
+  env.capturePointer(event.pointerId);
   event.preventDefault();
   return true;
 }
 
 function tryBeginTransform(
-  host: PointerGestureHost,
+  session: EditorSession,
+  env: EditorEnv,
   event: PointerEvent,
   screenPoint: Vec2
 ): boolean {
-  const selectedObject = host.selectedObject;
-  if (!selectedObject || host.readOnly) {
+  const selectedObject = session.selection.selectedObject;
+  if (!selectedObject || session.readOnly) {
     return false;
   }
-  if (rotationHandleAt(host.handleDeps, selectedObject, screenPoint)) {
-    beginTransform(host, event, selectedObject, "rotate", screenPoint);
+  if (rotationHandleAt(env.handleDeps(), selectedObject, screenPoint)) {
+    beginTransform(session, env, event, selectedObject, "rotate", screenPoint);
     event.preventDefault();
     return true;
   }
   const resizeHandle = resizeHandleAt(
-    host.handleDeps,
+    env.handleDeps(),
     selectedObject,
     screenPoint
   );
   if (resizeHandle) {
     beginTransform(
-      host,
+      session,
+      env,
       event,
       selectedObject,
       "resize",
@@ -332,58 +284,61 @@ function tryBeginTransform(
 }
 
 function tryBeginMoveOrMarquee(
-  host: PointerGestureHost,
+  session: EditorSession,
+  env: EditorEnv,
   event: PointerEvent,
   screenPoint: Vec2
 ): boolean {
   const pickedObject = pickLevelObject(
-    host.getObjects(),
-    host.worldPoint(screenPoint),
-    pickTolerance(host.cameraZoom),
-    host.getDefaultWallThickness()
+    env.getObjects(),
+    env.worldPoint(screenPoint),
+    pickTolerance(env.cameraZoom()),
+    env.getDefaultWallThickness()
   );
   if (pickedObject) {
     if (event.shiftKey) {
-      if (host.selection.has(pickedObject.id)) {
-        host.selection.delete(pickedObject.id);
-        host.updateIdleState(screenPoint);
+      if (session.selection.has(pickedObject.id)) {
+        session.selection.delete(pickedObject.id);
+        env.updateIdleState(screenPoint);
         event.preventDefault();
         return true;
       }
-      host.selection.add(pickedObject.id);
-    } else if (!host.selection.has(pickedObject.id)) {
-      host.selection.replace(pickedObject.id);
+      session.selection.add(pickedObject.id);
+    } else if (!session.selection.has(pickedObject.id)) {
+      session.selection.replace(pickedObject.id);
     }
-    host.selection.setHovered(pickedObject.id);
-    if (!host.readOnly) {
+    session.selection.setHovered(pickedObject.id);
+    if (!session.readOnly) {
       if (event.altKey) {
-        const sourceSelection = host.selectedObjects.map((object) => object.id);
-        const copies = host.callbacks.onInsert(
-          structuredClone(host.selectedObjects).filter(
+        const sourceSelection = session.selection.selectedObjects.map(
+          (object) => object.id
+        );
+        const copies = env.callbacks.onInsert(
+          structuredClone(session.selection.selectedObjects).filter(
             (object) => object.prefab !== "spawn-point"
           )
         );
         if (copies.length > 0) {
-          host.selection.replaceAll(copies.map((object) => object.id));
-          beginMove(host, event, screenPoint, {
+          session.selection.replaceAll(copies.map((object) => object.id));
+          beginMove(session, env, event, screenPoint, {
             inserted: true,
             sourceSelection,
           });
         }
       } else {
-        beginMove(host, event, screenPoint);
+        beginMove(session, env, event, screenPoint);
       }
     }
     event.preventDefault();
     return true;
   }
 
-  const initialSelection = host.selection.snapshot();
+  const initialSelection = session.selection.snapshot();
   if (!event.shiftKey) {
-    host.selection.clear();
+    session.selection.clear();
   }
-  const worldPoint = host.worldPoint(screenPoint);
-  host.gesture = {
+  const worldPoint = env.worldPoint(screenPoint);
+  session.gesture = {
     kind: "marquee",
     pointerId: event.pointerId,
     startWorld: worldPoint,
@@ -393,117 +348,121 @@ function tryBeginMoveOrMarquee(
     initialSelection,
     changed: false,
   };
-  host.capturePointer(event.pointerId);
+  env.capturePointer(event.pointerId);
   event.preventDefault();
   return true;
 }
 
 export function handlePointerDown(
-  host: PointerGestureHost,
+  session: EditorSession,
+  env: EditorEnv,
   event: PointerEvent
 ) {
-  const screenPoint = host.screenPoint(event);
-  host.lastPointerScreen = screenPoint;
+  const screenPoint = env.screenPoint(event);
+  session.lastPointerScreen = screenPoint;
 
-  if (tryBeginPan(host, event, screenPoint)) {
+  if (tryBeginPan(session, env, event, screenPoint)) {
     return;
   }
   if (event.button !== 0) {
     return;
   }
 
-  const temporarySelection = host.isTemporarySelection(event);
-  if (tryBeginWallDraw(host, event, screenPoint, temporarySelection)) {
+  const temporarySelection = env.isTemporarySelection(event);
+  if (tryBeginWallDraw(session, env, event, screenPoint, temporarySelection)) {
     return;
   }
-  if (tryBeginPlacement(host, event, screenPoint, temporarySelection)) {
+  if (tryBeginPlacement(session, env, event, screenPoint, temporarySelection)) {
     return;
   }
-  if (host.activeTool !== SelectedTool.Pointer && !temporarySelection) {
+  if (session.activeTool !== SelectedTool.Pointer && !temporarySelection) {
     return;
   }
-  if (tryBeginMotionRange(host, event, screenPoint)) {
+  if (tryBeginMotionRange(session, env, event, screenPoint)) {
     return;
   }
-  if (tryBeginWallEndpoint(host, event, screenPoint, temporarySelection)) {
+  if (
+    tryBeginWallEndpoint(session, env, event, screenPoint, temporarySelection)
+  ) {
     return;
   }
-  if (tryBeginTransform(host, event, screenPoint)) {
+  if (tryBeginTransform(session, env, event, screenPoint)) {
     return;
   }
-  tryBeginMoveOrMarquee(host, event, screenPoint);
+  tryBeginMoveOrMarquee(session, env, event, screenPoint);
 }
 
 export function handlePointerMove(
-  host: PointerGestureHost,
+  session: EditorSession,
+  env: EditorEnv,
   event: PointerEvent
 ) {
-  const screenPoint = host.screenPoint(event);
-  host.lastPointerScreen = screenPoint;
-  if (!host.gesture) {
-    const temporarySelection = host.isTemporarySelection(event);
-    const snapDeps = host.snapDeps;
+  const screenPoint = env.screenPoint(event);
+  session.lastPointerScreen = screenPoint;
+  if (!session.gesture) {
+    const temporarySelection = env.isTemporarySelection(event);
+    const snapDeps = env.snapDeps();
     if (
-      host.activeTool === SelectedTool.Wall &&
-      host.wallAnchor &&
+      session.activeTool === SelectedTool.Wall &&
+      session.wallAnchor &&
       !temporarySelection &&
-      !host.readOnly
+      !session.readOnly
     ) {
-      host.wallPreviewEnd = snapWallEndpoint(
+      session.wallPreviewEnd = snapWallEndpoint(
         snapDeps,
-        host.wallAnchor,
-        host.worldPoint(screenPoint),
+        session.wallAnchor,
+        env.worldPoint(screenPoint),
         {
           free: event.altKey,
           constrain: event.shiftKey,
         }
       );
     } else if (
-      host.creationToolActive &&
+      session.creationToolActive &&
       !temporarySelection &&
-      !host.readOnly
+      !session.readOnly
     ) {
       const position = snapPlacementPoint(
         snapDeps,
-        host.worldPoint(screenPoint),
+        env.worldPoint(screenPoint),
         event.altKey
       );
-      host.placementPreviewPosition = isPusherTool(host.activeTool)
+      session.placementPreviewPosition = isPusherTool(session.activeTool)
         ? position
         : null;
     } else if (temporarySelection) {
-      host.endpointFeedback = null;
-      host.placementPreviewPosition = null;
+      session.endpointFeedback = null;
+      session.placementPreviewPosition = null;
     }
-    host.updateIdleState(screenPoint, {
+    env.updateIdleState(screenPoint, {
       temporarySelection,
     });
     return;
   }
 
-  if (event.pointerId !== host.gesture.pointerId) {
+  if (event.pointerId !== session.gesture.pointerId) {
     return;
   }
 
-  if (host.gesture.kind === "pan") {
-    host.cameraControls.panByScreen(
-      screenPoint[0] - host.gesture.lastScreen[0],
-      screenPoint[1] - host.gesture.lastScreen[1]
+  if (session.gesture.kind === "pan") {
+    env.cameraControls.panByScreen(
+      screenPoint[0] - session.gesture.lastScreen[0],
+      screenPoint[1] - session.gesture.lastScreen[1]
     );
-    host.gesture.lastScreen = screenPoint;
+    session.gesture.lastScreen = screenPoint;
     event.preventDefault();
     return;
   }
 
-  const worldPoint = host.worldPoint(screenPoint);
-  const dragDeps = host.dragDeps;
-  const snapDeps = host.snapDeps;
+  const worldPoint = env.worldPoint(screenPoint);
+  const dragDeps = env.dragDeps();
+  const snapDeps = env.snapDeps();
   let result: "pending" | "handled" | "cancel";
 
-  switch (host.gesture.kind) {
+  switch (session.gesture.kind) {
     case "motion-range":
       result = updateMotionRangeDrag(
-        host.gesture,
+        session.gesture,
         screenPoint,
         worldPoint,
         event,
@@ -511,7 +470,7 @@ export function handlePointerMove(
       );
       break;
     case "wall":
-      result = updateWallDrag(host.gesture, screenPoint, worldPoint, event, {
+      result = updateWallDrag(session.gesture, screenPoint, worldPoint, event, {
         ...dragDeps,
         snapDeps,
       });
@@ -520,14 +479,14 @@ export function handlePointerMove(
       result = "handled";
       break;
     case "marquee":
-      result = updateMarqueeDrag(host.gesture, screenPoint, worldPoint, {
+      result = updateMarqueeDrag(session.gesture, screenPoint, worldPoint, {
         ...dragDeps,
-        selection: host.selection,
+        selection: session.selection,
       });
       break;
     case "move":
       result = updateMoveDrag(
-        host.gesture,
+        session.gesture,
         screenPoint,
         worldPoint,
         event,
@@ -536,7 +495,7 @@ export function handlePointerMove(
       break;
     case "wall-endpoint":
       result = updateWallEndpointDrag(
-        host.gesture,
+        session.gesture,
         screenPoint,
         worldPoint,
         event,
@@ -546,7 +505,7 @@ export function handlePointerMove(
     case "resize":
     case "rotate":
       result = updateTransformDrag(
-        host.gesture,
+        session.gesture,
         screenPoint,
         worldPoint,
         event,
@@ -561,21 +520,25 @@ export function handlePointerMove(
     return;
   }
   if (result === "cancel") {
-    host.cancelGesture();
+    env.cancelGesture();
     return;
   }
   event.preventDefault();
 }
 
-export function handlePointerUp(host: PointerGestureHost, event: PointerEvent) {
-  if (!host.gesture || event.pointerId !== host.gesture.pointerId) {
+export function handlePointerUp(
+  session: EditorSession,
+  env: EditorEnv,
+  event: PointerEvent
+) {
+  if (!session.gesture || event.pointerId !== session.gesture.pointerId) {
     return;
   }
-  const gesture = host.gesture;
-  const screenPoint = host.screenPoint(event);
-  host.lastPointerScreen = screenPoint;
-  host.gesture = null;
-  host.releasePointer(event.pointerId);
+  const gesture = session.gesture;
+  const screenPoint = env.screenPoint(event);
+  session.lastPointerScreen = screenPoint;
+  session.gesture = null;
+  env.releasePointer(event.pointerId);
 
   if (gesture.kind === "wall") {
     const length = Math.hypot(
@@ -583,36 +546,36 @@ export function handlePointerUp(host: PointerGestureHost, event: PointerEvent) {
       gesture.end[1] - gesture.start[1]
     );
     if ((gesture.changed || gesture.anchored) && length >= MIN_WALL_LENGTH) {
-      const object = host.callbacks.onCreateWall(gesture.start, gesture.end);
-      host.selection.replace(object.id);
+      const object = env.callbacks.onCreateWall(gesture.start, gesture.end);
+      session.selection.replace(object.id);
       if (gesture.anchored) {
-        host.wallAnchor = [...gesture.end];
-        host.wallPreviewEnd = [...gesture.end];
+        session.wallAnchor = [...gesture.end];
+        session.wallPreviewEnd = [...gesture.end];
       } else {
-        host.clearWallAnchor();
+        env.clearWallAnchor();
       }
-      host.callbacks.onToolComplete(SelectedTool.Wall);
+      env.callbacks.onToolComplete(SelectedTool.Wall);
     } else if (!gesture.anchored) {
-      host.wallAnchor = [...gesture.start];
-      host.wallPreviewEnd = [...gesture.start];
+      session.wallAnchor = [...gesture.start];
+      session.wallPreviewEnd = [...gesture.start];
     } else {
-      host.wallPreviewEnd = [...gesture.end];
+      session.wallPreviewEnd = [...gesture.end];
     }
   } else if (gesture.kind === "place") {
-    if (host.screenDistance(screenPoint, gesture.startScreen) < 8) {
+    if (env.screenDistance(screenPoint, gesture.startScreen) < 8) {
       const position = snapPlacementPoint(
-        host.snapDeps,
-        host.worldPoint(screenPoint),
+        env.snapDeps(),
+        env.worldPoint(screenPoint),
         event.altKey
       );
-      const object = host.callbacks.onPlaceObject(gesture.tool, position);
-      host.selection.replace(object.id);
-      host.placementPreviewPosition = null;
-      host.callbacks.onToolComplete(gesture.tool);
+      const object = env.callbacks.onPlaceObject(gesture.tool, position);
+      session.selection.replace(object.id);
+      session.placementPreviewPosition = null;
+      env.callbacks.onToolComplete(gesture.tool);
     }
   } else if (gesture.kind === "move" && gesture.inserted && !gesture.changed) {
-    host.callbacks.onDiscard(host.selectedObjects);
-    host.selection.replaceAll(gesture.sourceSelection);
+    env.callbacks.onDiscard(session.selection.selectedObjects);
+    session.selection.replaceAll(gesture.sourceSelection);
   } else if (
     (gesture.kind === "move" ||
       gesture.kind === "resize" ||
@@ -621,11 +584,33 @@ export function handlePointerUp(host: PointerGestureHost, event: PointerEvent) {
       gesture.kind === "motion-range") &&
     gesture.changed
   ) {
-    host.callbacks.onObjectsCommit(host.selectedObjects);
+    env.callbacks.onObjectsCommit(session.selection.selectedObjects);
   }
 
-  host.updateIdleState(screenPoint, {
-    temporarySelection: host.isTemporarySelection(event),
+  if (gesture.kind === "move" && gesture.inserted && gesture.changed) {
+    const firstEntry = gesture.originals.entries().next().value;
+    if (firstEntry) {
+      const [id, original] = firstEntry;
+      const object = env.getObjects().find((candidate) => candidate.id === id);
+      if (object) {
+        const before = getLevelObjectShape(
+          original,
+          env.getDefaultWallThickness()
+        ).position;
+        const after = getLevelObjectShape(
+          object,
+          env.getDefaultWallThickness()
+        ).position;
+        session.repeatDuplicateDelta = [
+          after[0] - before[0],
+          after[1] - before[1],
+        ];
+      }
+    }
+  }
+
+  env.updateIdleState(screenPoint, {
+    temporarySelection: env.isTemporarySelection(event),
   });
   event.preventDefault();
 }

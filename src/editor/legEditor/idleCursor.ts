@@ -1,5 +1,4 @@
 import type { Vec2 } from "../../engine/core/transform";
-import type { LevelObjectData } from "../../game/level/document";
 import { getWallEndpoints } from "../../game/level/geometry";
 import {
   pickLevelObject,
@@ -8,83 +7,60 @@ import {
 } from "../geometry";
 import { SelectedTool } from "../tools";
 import { HANDLE_HIT_RADIUS } from "./constants";
-import type { EditorGesture, WallEndpointFeedback } from "./gestures";
+import type { EditorEnv } from "./env";
 import {
   endpointAt,
   findWallEndpointTarget,
   motionRangeHandleAt,
   resizeHandleAt,
   rotationHandleAt,
-  type HandleTestDeps,
-  type WallEndpointTarget,
 } from "./handles";
-import type { LegEditorKeyboard } from "./keyboard";
-import type { LegEditorSelection } from "./selection";
-
-export type IdleCursorContext = {
-  gesture: EditorGesture | null;
-  keyboard: Pick<LegEditorKeyboard, "spaceHeld" | "selectionModifierHeld">;
-  activeTool: SelectedTool;
-  creationToolActive: boolean;
-  readOnly: boolean;
-  selection: LegEditorSelection;
-  handleDeps: HandleTestDeps;
-  selectedObject: LevelObjectData | null;
-  getObjects: () => readonly LevelObjectData[];
-  worldPoint: (screenPoint: Vec2) => Vec2;
-  cameraZoom: number;
-  getDefaultWallThickness: () => number;
-  setCursor: (cursor: string) => void;
-  setEndpointFeedback: (feedback: WallEndpointFeedback | null) => void;
-  showEndpointFeedback: (
-    target: WallEndpointTarget | null,
-    kind: WallEndpointFeedback["kind"]
-  ) => void;
-};
+import type { EditorSession } from "./session";
 
 export function updateIdleState(
-  ctx: IdleCursorContext,
+  session: EditorSession,
+  env: EditorEnv,
   screenPoint: Vec2,
   {
-    temporarySelection = ctx.keyboard.selectionModifierHeld &&
-      ctx.creationToolActive,
+    temporarySelection = env.keyboard.selectionModifierHeld &&
+      session.creationToolActive,
   }: { temporarySelection?: boolean } = {}
 ) {
-  if (ctx.gesture) {
+  if (session.gesture) {
     return;
   }
-  if (ctx.keyboard.spaceHeld || ctx.activeTool === SelectedTool.Pan) {
-    ctx.selection.setHovered(null);
-    ctx.setCursor("grab");
+  if (env.keyboard.spaceHeld || session.activeTool === SelectedTool.Pan) {
+    session.selection.setHovered(null);
+    env.setCursor("grab");
     return;
   }
-  if (ctx.creationToolActive && !temporarySelection) {
-    ctx.selection.setHovered(null);
-    ctx.setCursor(ctx.readOnly ? "not-allowed" : "crosshair");
+  if (session.creationToolActive && !temporarySelection) {
+    session.selection.setHovered(null);
+    env.setCursor(session.readOnly ? "not-allowed" : "crosshair");
     return;
   }
 
-  const handleDeps = ctx.handleDeps;
+  const handleDeps = env.handleDeps();
   const directEndpointTarget = temporarySelection
     ? findWallEndpointTarget(handleDeps, screenPoint, HANDLE_HIT_RADIUS, {
         selectableOnly: true,
       })
     : null;
   if (directEndpointTarget) {
-    ctx.selection.setHovered(directEndpointTarget.objectId);
-    ctx.showEndpointFeedback(directEndpointTarget, "edit");
-    ctx.setCursor(ctx.readOnly ? "default" : "crosshair");
+    session.selection.setHovered(directEndpointTarget.objectId);
+    env.showEndpointFeedback(directEndpointTarget, "edit");
+    env.setCursor(session.readOnly ? "default" : "crosshair");
     return;
   }
 
-  ctx.setEndpointFeedback(null);
-  const selectedObject = ctx.selectedObject;
+  session.endpointFeedback = null;
+  const selectedObject = session.selection.selectedObject;
   if (
     selectedObject &&
     motionRangeHandleAt(handleDeps, selectedObject, screenPoint)
   ) {
-    ctx.selection.setHovered(selectedObject.id);
-    ctx.setCursor(ctx.readOnly ? "default" : "crosshair");
+    session.selection.setHovered(selectedObject.id);
+    env.setCursor(session.readOnly ? "default" : "crosshair");
     return;
   }
   const selectedEndpoint = selectedObject
@@ -92,8 +68,8 @@ export function updateIdleState(
     : null;
   if (selectedObject?.prefab === "wall" && selectedEndpoint) {
     const { start, end } = getWallEndpoints(selectedObject);
-    ctx.selection.setHovered(selectedObject.id);
-    ctx.showEndpointFeedback(
+    session.selection.setHovered(selectedObject.id);
+    env.showEndpointFeedback(
       {
         object: selectedObject,
         objectId: selectedObject.id,
@@ -102,45 +78,51 @@ export function updateIdleState(
       },
       "edit"
     );
-    ctx.setCursor(ctx.readOnly ? "default" : "crosshair");
+    env.setCursor(session.readOnly ? "default" : "crosshair");
     return;
   }
   if (
     selectedObject &&
     rotationHandleAt(handleDeps, selectedObject, screenPoint)
   ) {
-    ctx.selection.setHovered(selectedObject.id);
-    ctx.setCursor(ctx.readOnly ? "default" : "grab");
+    session.selection.setHovered(selectedObject.id);
+    env.setCursor(session.readOnly ? "default" : "grab");
     return;
   }
   const handle = selectedObject
     ? resizeHandleAt(handleDeps, selectedObject, screenPoint)
     : null;
   if (handle) {
-    ctx.selection.setHovered(selectedObject?.id ?? null);
-    ctx.setCursor(ctx.readOnly ? "default" : resizeHandleCursor(handle));
+    session.selection.setHovered(selectedObject?.id ?? null);
+    env.setCursor(session.readOnly ? "default" : resizeHandleCursor(handle));
     return;
   }
   const hoveredObject = pickLevelObject(
-    ctx.getObjects(),
-    ctx.worldPoint(screenPoint),
-    pickTolerance(ctx.cameraZoom),
-    ctx.getDefaultWallThickness()
+    env.getObjects(),
+    env.worldPoint(screenPoint),
+    pickTolerance(env.cameraZoom()),
+    env.getDefaultWallThickness()
   );
-  ctx.selection.setHovered(hoveredObject?.id ?? null);
-  ctx.setCursor(hoveredObject && !ctx.readOnly ? "grab" : "default");
+  session.selection.setHovered(hoveredObject?.id ?? null);
+  env.setCursor(hoveredObject && !session.readOnly ? "grab" : "default");
 }
 
-export function updateCursor(ctx: IdleCursorContext) {
-  if (ctx.gesture?.kind === "pan") {
-    ctx.setCursor("grabbing");
-  } else if (ctx.keyboard.spaceHeld || ctx.activeTool === SelectedTool.Pan) {
-    ctx.setCursor("grab");
-  } else if (ctx.keyboard.selectionModifierHeld && ctx.creationToolActive) {
-    ctx.setCursor("default");
-  } else if (ctx.creationToolActive) {
-    ctx.setCursor(ctx.readOnly ? "not-allowed" : "crosshair");
+export function updateCursor(session: EditorSession, env: EditorEnv) {
+  if (session.gesture?.kind === "pan") {
+    env.setCursor("grabbing");
+  } else if (
+    env.keyboard.spaceHeld ||
+    session.activeTool === SelectedTool.Pan
+  ) {
+    env.setCursor("grab");
+  } else if (
+    env.keyboard.selectionModifierHeld &&
+    session.creationToolActive
+  ) {
+    env.setCursor("default");
+  } else if (session.creationToolActive) {
+    env.setCursor(session.readOnly ? "not-allowed" : "crosshair");
   } else {
-    ctx.setCursor("default");
+    env.setCursor("default");
   }
 }

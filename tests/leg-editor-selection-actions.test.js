@@ -24,20 +24,23 @@ const createHost = (initial) => {
   selection.replaceAll(objects.map((object) => object.id));
   let nextId = 1;
   const commits = [];
-  const host = {
+  const session = {
     readOnly: false,
     selection,
     activeTool: 1,
-    selectedObjects: objects,
+    gesture: null,
+    wallAnchor: null,
+    get creationToolActive() {
+      return false;
+    },
+  };
+  const env = {
     getObjects: () => objects,
     getDefaultWallThickness: () => 20,
     getGridLayout: () =>
       createGridLayout({ min: [-300, -300], max: [300, 300] }),
-    gesture: null,
-    wallAnchor: null,
     cancelGesture: () => {},
     clearWallAnchor: () => {},
-    clearSelection: () => selection.clear(),
     updateCursor: () => {},
     callbacks: {
       onDelete: () => {},
@@ -56,19 +59,16 @@ const createHost = (initial) => {
       onFocus: () => {},
     },
   };
-  Object.defineProperty(host, "selectedObjects", {
-    get: () => selection.selectedObjects,
-  });
-  return { host, objects, selection, commits };
+  return { session, env, objects, selection, commits };
 };
 
 describe("leg editor selection actions", () => {
   test("duplicates with fresh ids and a grid-step offset in one commit", () => {
     const source = wall("source");
-    const { host, objects, selection, commits } = createHost([source]);
-    const [stepX, stepY] = host.getGridLayout().step;
+    const { session, env, objects, selection, commits } = createHost([source]);
+    const [stepX, stepY] = env.getGridLayout().step;
 
-    expect(duplicateSelectedObjects(host)).toBe(true);
+    expect(duplicateSelectedObjects(session, env)).toBe(true);
 
     expect(objects).toHaveLength(2);
     expect(objects[1].id).not.toBe(source.id);
@@ -80,9 +80,9 @@ describe("leg editor selection actions", () => {
 
   test("duplicates with an explicit offset so Alt-drag spacing can repeat", () => {
     const source = wall("source");
-    const { host, objects } = createHost([source]);
+    const { session, env, objects } = createHost([source]);
 
-    expect(duplicateSelectedObjects(host, [75, -25])).toBe(true);
+    expect(duplicateSelectedObjects(session, env, [75, -25])).toBe(true);
 
     expect(objects[1].properties.start).toEqual([75, -25]);
     expect(objects[1].properties.end).toEqual([135, -25]);
@@ -92,12 +92,14 @@ describe("leg editor selection actions", () => {
     const first = wall("first", [0, 0], [20, 0]);
     const second = wall("second", [80, 0], [100, 0]);
     const source = createHost([first, second]);
-    expect(copySelectedObjects(source.host)).toBe(true);
+    expect(copySelectedObjects(source.session, source.env)).toBe(true);
 
     const destination = createHost([]);
-    expect(pasteClipboardObjects(destination.host, { at: [300, 200] })).toBe(
-      true
-    );
+    expect(
+      pasteClipboardObjects(destination.session, destination.env, {
+        at: [300, 200],
+      })
+    ).toBe(true);
 
     const inserted = destination.selection.selectedObjects;
     expect(inserted).toHaveLength(2);

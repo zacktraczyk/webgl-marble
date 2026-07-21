@@ -8,9 +8,8 @@ import {
 } from "../../game/level/geometry";
 import { moveShape } from "../geometry";
 import { SelectedTool } from "../tools";
-import type { EditorGesture } from "./gestures";
-import type { LegEditorSelection } from "./selection";
-import type { GridLayout } from "../../game/level/grid";
+import type { EditorEnv } from "./env";
+import type { EditorSession } from "./session";
 import {
   alignLevelObjects,
   distributeLevelObjects,
@@ -42,12 +41,12 @@ const writeClipboard = (objects: readonly LevelObjectData[]) => {
 };
 
 const clipboardCopies = (
-  host: SelectionActionHost,
+  env: EditorEnv,
   objects: readonly LevelObjectData[]
 ) =>
   structuredClone(copyableObjects(objects)).map((object) => {
     if (object.prefab === "wall" && object.properties.thickness === undefined) {
-      object.properties.thickness = host.getDefaultWallThickness();
+      object.properties.thickness = env.getDefaultWallThickness();
     }
     return object;
   });
@@ -66,37 +65,12 @@ const readClipboard = () => {
   return structuredClone(memoryClipboard);
 };
 
-export type SelectionActionHost = {
-  readonly readOnly: boolean;
-  readonly selection: LegEditorSelection;
-  readonly activeTool: SelectedTool;
-  readonly callbacks: {
-    onDelete(objects: readonly LevelObjectData[]): void;
-    onInsert(objects: readonly LevelObjectData[]): LevelObjectData[];
-    onDiscard(objects: readonly LevelObjectData[]): void;
-    onObjectsChange(objects: readonly LevelObjectData[]): void;
-    onObjectsCommit(objects: readonly LevelObjectData[]): void;
-    onFocus(objects: readonly LevelObjectData[]): void;
-    onToolRequest(tool: SelectedTool): void;
-  };
-  readonly selectedObjects: readonly LevelObjectData[];
-  readonly getObjects: () => readonly LevelObjectData[];
-  readonly getDefaultWallThickness: () => number;
-  readonly getGridLayout: () => GridLayout;
-  gesture: EditorGesture | null;
-  wallAnchor: Vec2 | null;
-  cancelGesture(): void;
-  clearWallAnchor(): void;
-  clearSelection(): void;
-  updateCursor(): void;
-};
-
-export const selectAllObjects = (host: SelectionActionHost) => {
-  if (host.readOnly) {
+export const selectAllObjects = (session: EditorSession, env: EditorEnv) => {
+  if (session.readOnly) {
     return false;
   }
-  host.selection.replaceAll(
-    host
+  session.selection.replaceAll(
+    env
       .getObjects()
       .filter((object) => !object.locked)
       .map((object) => object.id)
@@ -104,60 +78,63 @@ export const selectAllObjects = (host: SelectionActionHost) => {
   return true;
 };
 
-export const handleEscapeKey = (host: SelectionActionHost) => {
-  if (host.gesture) {
-    host.cancelGesture();
-  } else if (host.wallAnchor) {
-    host.clearWallAnchor();
-  } else if (host.activeTool !== SelectedTool.Pointer) {
-    host.callbacks.onToolRequest(SelectedTool.Pointer);
-  } else if (host.selection.size > 0) {
-    host.clearSelection();
+export const handleEscapeKey = (session: EditorSession, env: EditorEnv) => {
+  if (session.gesture) {
+    env.cancelGesture();
+  } else if (session.wallAnchor) {
+    env.clearWallAnchor();
+  } else if (session.activeTool !== SelectedTool.Pointer) {
+    env.callbacks.onToolRequest(SelectedTool.Pointer);
+  } else if (session.selection.size > 0) {
+    session.selection.clearAll();
   }
   return true;
 };
 
-export const finishWallDraft = (host: SelectionActionHost) => {
-  if (!host.wallAnchor) {
+export const finishWallDraft = (session: EditorSession, env: EditorEnv) => {
+  if (!session.wallAnchor) {
     return false;
   }
-  host.clearWallAnchor();
-  host.updateCursor();
+  env.clearWallAnchor();
+  env.updateCursor();
   return true;
 };
 
-export const deleteSelectedObjects = (host: SelectionActionHost) => {
-  const selected = copyableObjects(host.selectedObjects);
-  if (selected.length === 0 || host.readOnly) {
+export const deleteSelectedObjects = (
+  session: EditorSession,
+  env: EditorEnv
+) => {
+  const selected = copyableObjects(session.selection.selectedObjects);
+  if (selected.length === 0 || session.readOnly) {
     return false;
   }
-  host.cancelGesture();
-  host.callbacks.onDelete(selected);
-  host.clearSelection();
+  env.cancelGesture();
+  env.callbacks.onDelete(selected);
+  session.selection.clearAll();
   return true;
 };
 
 export const hasClipboardObjects = () => readClipboard().length > 0;
 
-export const copySelectedObjects = (host: SelectionActionHost) => {
-  const selected = copyableObjects(host.selectedObjects);
+export const copySelectedObjects = (session: EditorSession, env: EditorEnv) => {
+  const selected = copyableObjects(session.selection.selectedObjects);
   if (selected.length === 0) {
     return false;
   }
-  writeClipboard(clipboardCopies(host, selected));
+  writeClipboard(clipboardCopies(env, selected));
   return true;
 };
 
-export const cutSelectedObjects = (host: SelectionActionHost) => {
-  const selected = copyableObjects(host.selectedObjects);
-  if (selected.length === 0 || host.readOnly) {
+export const cutSelectedObjects = (session: EditorSession, env: EditorEnv) => {
+  const selected = copyableObjects(session.selection.selectedObjects);
+  if (selected.length === 0 || session.readOnly) {
     return false;
   }
-  writeClipboard(clipboardCopies(host, selected));
-  host.cancelGesture();
-  host.callbacks.onDelete(selected);
-  host.selection.replaceAll(
-    host.selectedObjects
+  writeClipboard(clipboardCopies(env, selected));
+  env.cancelGesture();
+  env.callbacks.onDelete(selected);
+  session.selection.replaceAll(
+    session.selection.selectedObjects
       .filter((object) => !selected.includes(object))
       .map((object) => object.id)
   );
@@ -165,137 +142,147 @@ export const cutSelectedObjects = (host: SelectionActionHost) => {
 };
 
 const insertCopies = (
-  host: SelectionActionHost,
+  session: EditorSession,
+  env: EditorEnv,
   source: readonly LevelObjectData[],
   delta: Vec2
 ) => {
   const copies = structuredClone(copyableObjects(source));
-  if (copies.length === 0 || host.readOnly) {
+  if (copies.length === 0 || session.readOnly) {
     return false;
   }
   for (const object of copies) {
-    moveLevelObjectBy(object, delta, host.getDefaultWallThickness());
+    moveLevelObjectBy(object, delta, env.getDefaultWallThickness());
   }
-  const inserted = host.callbacks.onInsert(copies);
-  host.selection.replaceAll(inserted.map((object) => object.id));
-  host.callbacks.onObjectsCommit(inserted);
+  const inserted = env.callbacks.onInsert(copies);
+  session.selection.replaceAll(inserted.map((object) => object.id));
+  env.callbacks.onObjectsCommit(inserted);
   return inserted.length > 0;
 };
 
 export const duplicateSelectedObjects = (
-  host: SelectionActionHost,
-  delta: Vec2 = [...host.getGridLayout().step]
-) => insertCopies(host, host.selectedObjects, delta);
+  session: EditorSession,
+  env: EditorEnv,
+  delta: Vec2 = [...env.getGridLayout().step]
+) => insertCopies(session, env, session.selection.selectedObjects, delta);
 
 export const pasteClipboardObjects = (
-  host: SelectionActionHost,
+  session: EditorSession,
+  env: EditorEnv,
   options: { inPlace?: boolean; at?: Vec2 } = {}
 ) => {
   const clipboard = readClipboard();
-  if (clipboard.length === 0 || host.readOnly) {
+  if (clipboard.length === 0 || session.readOnly) {
     return false;
   }
   let delta: Vec2;
   if (options.at) {
-    const bounds = getSelectionBounds(
-      clipboard,
-      host.getDefaultWallThickness()
-    );
+    const bounds = getSelectionBounds(clipboard, env.getDefaultWallThickness());
     const center = bounds ? selectionCenter(bounds) : ([0, 0] as Vec2);
     delta = [options.at[0] - center[0], options.at[1] - center[1]];
   } else if (options.inPlace) {
     delta = [0, 0];
   } else {
-    delta = [...host.getGridLayout().step];
+    delta = [...env.getGridLayout().step];
   }
-  return insertCopies(host, clipboard, delta);
+  return insertCopies(session, env, clipboard, delta);
 };
 
 export const alignSelectedObjects = (
-  host: SelectionActionHost,
+  session: EditorSession,
+  env: EditorEnv,
   alignment: SelectionAlignment
 ) => {
-  const selected = host.selectedObjects;
+  const selected = session.selection.selectedObjects;
   if (
-    host.readOnly ||
-    !alignLevelObjects(selected, host.getDefaultWallThickness(), alignment)
+    session.readOnly ||
+    !alignLevelObjects(selected, env.getDefaultWallThickness(), alignment)
   ) {
     return false;
   }
-  host.callbacks.onObjectsChange(selected);
-  host.callbacks.onObjectsCommit(selected);
+  env.callbacks.onObjectsChange(selected);
+  env.callbacks.onObjectsCommit(selected);
   return true;
 };
 
 export const distributeSelectedObjects = (
-  host: SelectionActionHost,
+  session: EditorSession,
+  env: EditorEnv,
   distribution: SelectionDistribution
 ) => {
-  const selected = host.selectedObjects;
+  const selected = session.selection.selectedObjects;
   if (
-    host.readOnly ||
+    session.readOnly ||
     !distributeLevelObjects(
       selected,
-      host.getDefaultWallThickness(),
+      env.getDefaultWallThickness(),
       distribution
     )
   ) {
     return false;
   }
-  host.callbacks.onObjectsChange(selected);
-  host.callbacks.onObjectsCommit(selected);
+  env.callbacks.onObjectsChange(selected);
+  env.callbacks.onObjectsCommit(selected);
   return true;
 };
 
 export const mirrorCopySelectedObjects = (
-  host: SelectionActionHost,
+  session: EditorSession,
+  env: EditorEnv,
   mirror: SelectionMirror
 ) => {
-  const copies = structuredClone(copyableObjects(host.selectedObjects));
+  const copies = structuredClone(
+    copyableObjects(session.selection.selectedObjects)
+  );
   if (
-    host.readOnly ||
-    !mirrorLevelObjects(copies, host.getDefaultWallThickness(), mirror, [0, 0])
+    session.readOnly ||
+    !mirrorLevelObjects(copies, env.getDefaultWallThickness(), mirror, [0, 0])
   ) {
     return false;
   }
-  const inserted = host.callbacks.onInsert(copies);
-  host.selection.replaceAll(inserted.map((object) => object.id));
-  host.callbacks.onObjectsCommit(inserted);
+  const inserted = env.callbacks.onInsert(copies);
+  session.selection.replaceAll(inserted.map((object) => object.id));
+  env.callbacks.onObjectsCommit(inserted);
   return inserted.length > 0;
 };
 
 export const mirrorSelectedObjects = (
-  host: SelectionActionHost,
+  session: EditorSession,
+  env: EditorEnv,
   mirror: SelectionMirror
 ) => {
-  const selected = host.selectedObjects;
+  const selected = session.selection.selectedObjects;
   if (
-    host.readOnly ||
-    !mirrorLevelObjects(selected, host.getDefaultWallThickness(), mirror)
+    session.readOnly ||
+    !mirrorLevelObjects(selected, env.getDefaultWallThickness(), mirror)
   ) {
     return false;
   }
-  host.callbacks.onObjectsChange(selected);
-  host.callbacks.onObjectsCommit(selected);
+  env.callbacks.onObjectsChange(selected);
+  env.callbacks.onObjectsCommit(selected);
   return true;
 };
 
-export const focusSelectedObjects = (host: SelectionActionHost) => {
-  const selected = host.selectedObjects;
+export const focusSelectedObjects = (
+  session: EditorSession,
+  env: EditorEnv
+) => {
+  const selected = session.selection.selectedObjects;
   if (selected.length === 0) {
     return false;
   }
-  host.callbacks.onFocus(selected);
+  env.callbacks.onFocus(selected);
   return true;
 };
 
 export const nudgeSelectedObjects = (
-  host: SelectionActionHost,
+  session: EditorSession,
+  env: EditorEnv,
   direction: Vec2,
   distance: number
 ) => {
-  const selected = host.selectedObjects;
-  if (selected.length === 0 || host.readOnly) {
+  const selected = session.selection.selectedObjects;
+  if (selected.length === 0 || session.readOnly) {
     return false;
   }
   for (const object of selected) {
@@ -310,7 +297,7 @@ export const nudgeSelectedObjects = (
         [end[0] + direction[0] * distance, end[1] + direction[1] * distance]
       );
     } else {
-      const shape = getLevelObjectShape(object, host.getDefaultWallThickness());
+      const shape = getLevelObjectShape(object, env.getDefaultWallThickness());
       applyLevelObjectShape(
         object,
         moveShape(shape, [
@@ -320,7 +307,7 @@ export const nudgeSelectedObjects = (
       );
     }
   }
-  host.callbacks.onObjectsChange(selected);
-  host.callbacks.onObjectsCommit(selected);
+  env.callbacks.onObjectsChange(selected);
+  env.callbacks.onObjectsCommit(selected);
   return true;
 };
