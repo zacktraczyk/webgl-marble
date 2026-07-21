@@ -53,7 +53,7 @@ type Transition = {
 const CAMERA_INSET = 24;
 
 export type RacePlayerOptions = {
-  /** Optional authoring safeguard. Normal races wait for the true one-marble finish. */
+  /** Optional authoring safeguard. Normal races wait until only one team remains. */
   maximumLegDurationMs?: number | null;
 };
 
@@ -530,7 +530,7 @@ export class RacePlayerRuntime {
         ? `Leg timed out — ${participant.name} team is eliminated.`
         : reason === "skipped"
           ? `Leg skipped — ${participant.name} team is eliminated.`
-          : `${participant.name} has the final marble on the track and is eliminated.`;
+          : `${participant.name} is the only team left on the track and is eliminated.`;
     this.presenter.setText("race-eliminated", participant.name);
 
     // Each marble the incoming leg releases drains one finished marble of the

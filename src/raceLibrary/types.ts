@@ -39,7 +39,7 @@ export type RaceLegDocument = {
 export type RaceRules = {
   /** Every active team starts each leg with the same full field. */
   marblesPerTeam: number;
-  /** The team that owns the final marble left on the course is eliminated. */
+  /** The final team with marbles left on the course is eliminated. */
   eliminatedPerLeg: 1;
 };
 

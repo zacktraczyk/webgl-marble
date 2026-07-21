@@ -219,7 +219,7 @@ export class RaceController {
       this.motionElapsedMs += deltaMs;
     }
 
-    this.freezeIfLastMarbleRemains();
+    this.freezeIfSingleTeamRemains();
   }
 
   dispose() {
@@ -261,22 +261,21 @@ export class RaceController {
       : null;
   }
 
-  private freezeIfLastMarbleRemains() {
+  private freezeIfSingleTeamRemains() {
     if (
       this.phase !== "running" ||
       this.releaseQueue?.remaining !== 0 ||
-      this.finishTracker.remainingMarbles !== 1
+      this.finishTracker.eliminatedTeamIndex === null
     ) {
       return false;
     }
     this.phase = "complete";
     this.physicsActive = false;
     if (this.external) {
-      const survivor = this.raceMarbles.find(
-        (marble) => !marble.markedForDeletion
-      );
-      if (survivor) {
-        this.freezeMarbleInPlace(survivor);
+      for (const marble of [...this.raceMarbles]) {
+        if (!marble.markedForDeletion) {
+          this.freezeMarbleInPlace(marble);
+        }
       }
     } else {
       this.stage.physicsEnabled = false;
@@ -388,7 +387,7 @@ export class RaceController {
       finishRecord.bayIndex,
       finishRecord.slotIndex
     );
-    return this.freezeIfLastMarbleRemains();
+    return this.freezeIfSingleTeamRemains();
   }
 
   private collectFinishedMarble(

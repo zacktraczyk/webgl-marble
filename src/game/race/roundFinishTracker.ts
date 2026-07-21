@@ -42,13 +42,17 @@ export class RoundFinishTracker {
   }
 
   get eliminatedTeamIndex() {
-    if (this.remainingMarbles !== 1) {
-      return null;
+    let remainingTeamIndex: number | null = null;
+    for (let teamIndex = 0; teamIndex < this.teamCount; teamIndex++) {
+      if (this.finishCounts[teamIndex] >= this.marblesPerTeam) {
+        continue;
+      }
+      if (remainingTeamIndex !== null) {
+        return null;
+      }
+      remainingTeamIndex = teamIndex;
     }
-    const teamIndex = this.finishCounts.findIndex(
-      (finished) => finished < this.marblesPerTeam
-    );
-    return teamIndex >= 0 ? teamIndex : null;
+    return remainingTeamIndex;
   }
 
   record(teamIndex: number): FinishRecord {

@@ -103,6 +103,77 @@ describe("race controller", () => {
     expect(race.snapshot.eliminatedTeamIndex).toBe(2);
   });
 
+  test("completes when every moving marble belongs to one team", () => {
+    const stage = {
+      physicsEnabled: true,
+      registerPhysicsObserver: () => {},
+    };
+    const level = { has: () => true };
+    const race = new RaceController(stage, level, {
+      teamCount: 2,
+      marblesPerTeam: 5,
+      releaseIntervalMs: 100,
+    });
+    race.phase = "running";
+    race.releaseQueue = { remaining: 0 };
+
+    for (let index = 0; index < 5; index++) {
+      race.finishTracker.record(1);
+    }
+
+    expect(race.freezeIfSingleTeamRemains()).toBe(true);
+    expect(race.snapshot).toMatchObject({
+      phase: "complete",
+      remainingMarbles: 5,
+      eliminatedTeamIndex: 0,
+    });
+    expect(stage.physicsEnabled).toBe(false);
+  });
+
+  test("freezes every remaining marble when external mode completes", () => {
+    const spawned = [];
+    const makeMarble = (id) => ({
+      id,
+      tags: new Set(["team:1", "race-marble", "released-marble"]),
+      hasTag: (tag) => tag !== undefined,
+      markedForDeletion: false,
+      position: [id, id],
+      delete() {
+        this.markedForDeletion = true;
+      },
+    });
+    const stage = {
+      registerPhysicsObserver: () => {},
+      spawn: (definition) => {
+        spawned.push(definition);
+        return { delete: () => {} };
+      },
+    };
+    const race = new RaceController(
+      stage,
+      { has: () => true },
+      { teamCount: 2, marblesPerTeam: 5, releaseIntervalMs: 100 },
+      { external: { bounds: { minX: -100, maxX: 100, minY: -100, maxY: 100 } } }
+    );
+    race.phase = "running";
+    race.releaseQueue = { remaining: 0 };
+    race.raceMarbles.push(
+      ...Array.from({ length: 5 }, (_, id) => makeMarble(id))
+    );
+    for (let index = 0; index < 5; index++) {
+      race.finishTracker.record(1);
+    }
+
+    expect(race.freezeIfSingleTeamRemains()).toBe(true);
+    expect(spawned).toHaveLength(5);
+    expect(
+      spawned.every((definition) => definition.physics === undefined)
+    ).toBe(true);
+    expect(race.raceMarbles.every((marble) => marble.markedForDeletion)).toBe(
+      true
+    );
+  });
+
   test("uses stable colors for released marbles while retaining local team tags", () => {
     const spawned = [];
     const stage = {

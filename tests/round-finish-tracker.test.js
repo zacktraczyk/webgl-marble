@@ -50,6 +50,35 @@ describe("round finish tracker", () => {
     expect(tracker.eliminatedTeamIndex).toBe(1);
   });
 
+  test("eliminates the only team still moving even when it has several marbles", () => {
+    const tracker = new RoundFinishTracker(2, 5);
+
+    for (let index = 0; index < 5; index++) {
+      tracker.record(1);
+    }
+
+    expect(tracker.remainingMarbles).toBe(5);
+    expect(tracker.eliminatedTeamIndex).toBe(0);
+  });
+
+  test("waits while marbles from more than one team are still moving", () => {
+    const tracker = new RoundFinishTracker(3, 5);
+
+    for (let index = 0; index < 5; index++) {
+      tracker.record(0);
+    }
+    for (let index = 0; index < 4; index++) {
+      tracker.record(1);
+    }
+
+    expect(tracker.remainingMarbles).toBe(6);
+    expect(tracker.eliminatedTeamIndex).toBeNull();
+
+    tracker.record(1);
+    expect(tracker.remainingMarbles).toBe(5);
+    expect(tracker.eliminatedTeamIndex).toBe(2);
+  });
+
   test("keeps a team's claimed bay stable across later finishes", () => {
     const tracker = new RoundFinishTracker(2, 2);
 
