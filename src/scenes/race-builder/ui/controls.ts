@@ -182,7 +182,13 @@ export const bindRaceBuilderControls = (
       )
         return;
       const leg = createDefaultLeg({ index: context.race.legs.length });
-      repository.addLeg(context.race.id, leg);
+      context.race = repository.addLeg(context.race.id, leg);
+      context.onEvent({
+        type: "leg_created",
+        race: context.race,
+        legNumber: context.race.legs.findIndex(({ id }) => id === leg.id) + 1,
+        creationSource: "add_leg",
+      });
       window.location.assign(context.editLegUrl(leg.id));
     },
     { signal }
@@ -203,10 +209,24 @@ export const bindRaceBuilderControls = (
       }
       const next = structuredClone(context.race);
       next.legs.splice(needed);
+      const existingLegCount = next.legs.length;
       while (next.legs.length < needed) {
         next.legs.push(createDefaultLeg({ index: next.legs.length }));
       }
       context.saveRace(next);
+      if (!context.race) return;
+      for (
+        let index = existingLegCount;
+        index < context.race.legs.length;
+        index++
+      ) {
+        context.onEvent({
+          type: "leg_created",
+          race: context.race,
+          legNumber: index + 1,
+          creationSource: "complete_setup",
+        });
+      }
     },
     { signal }
   );

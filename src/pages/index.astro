@@ -280,7 +280,17 @@ import ConfirmDeleteDialog from "../ui/ConfirmDeleteDialog.astro";
   </template>
 
   <script>
+    import { captureEvent, EVENTS } from "../lib/analytics";
     import { mountRaceLibrary } from "../scenes/race-library/mount";
-    mountRaceLibrary();
+    try {
+      mountRaceLibrary();
+    } catch (error) {
+      captureEvent(EVENTS.OPERATION_FAILED, {
+        surface: "race_library",
+        operation: "load_race_library",
+        reason: "initialization_error",
+      });
+      throw error;
+    }
   </script>
 </Layout>

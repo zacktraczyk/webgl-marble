@@ -319,7 +319,21 @@ import ConfirmDeleteDialog from "../ui/ConfirmDeleteDialog.astro";
 </Layout>
 
 <script>
+  import { captureEvent, EVENTS, reportException } from "../lib/analytics";
   import { mountScene } from "../scenes/mount";
   import createScene from "../scenes/race-builder";
-  mountScene(createScene());
+  mountScene(createScene(), {
+    onError: (error) => {
+      captureEvent(EVENTS.OPERATION_FAILED, {
+        surface: "race_builder",
+        operation: "load_race_builder",
+        reason: "runtime_error",
+      });
+      reportException(error, {
+        surface: "race_builder",
+        operation: "load_race_builder",
+        reason: "runtime_error",
+      });
+    },
+  });
 </script>

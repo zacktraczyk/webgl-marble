@@ -29,3 +29,4 @@ benchmarks/results/*
 
 # local AI assistant configuration
 .claude/
+.vercel

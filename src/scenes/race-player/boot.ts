@@ -3,6 +3,12 @@ import {
   isRacePlayable,
   type RaceDocument,
 } from "../../raceLibrary";
+import {
+  captureEvent,
+  EVENTS,
+  raceAnalyticsProperties,
+  reportException,
+} from "../../lib/analytics";
 import { mountScene } from "../mount";
 import { raceBuilderUrl } from "../urls";
 import createRacePlayerScene from "./index";
@@ -56,6 +62,11 @@ export const bootRacePlayer = () => {
   const player = document.querySelector<HTMLElement>("#race-player");
 
   if (!race) {
+    captureEvent(EVENTS.OPERATION_FAILED, {
+      surface: "race_player",
+      operation: "load_race_player",
+      reason: "not_found",
+    });
     showPageErrorState({
       title: "Race not found",
       copy: "It may have been deleted from this browser.",
@@ -63,6 +74,11 @@ export const bootRacePlayer = () => {
     return;
   }
   if (!isRacePlayable(race)) {
+    captureEvent(EVENTS.OPERATION_FAILED, {
+      surface: "race_player",
+      operation: "load_race_player",
+      reason: "setup_incomplete",
+    });
     showPageErrorState({
       title: "Race setup is incomplete",
       copy: "A race needs exactly one leg for each team that will be eliminated.",
@@ -74,6 +90,16 @@ export const bootRacePlayer = () => {
     return;
   }
   if (!player) {
+    captureEvent(EVENTS.OPERATION_FAILED, {
+      surface: "race_player",
+      operation: "load_race_player",
+      reason: "missing_root",
+    });
+    reportException(new Error("Race player root element is missing"), {
+      surface: "race_player",
+      operation: "load_race_player",
+      reason: "missing_root",
+    });
     return;
   }
 
@@ -85,10 +111,52 @@ export const bootRacePlayer = () => {
   }
   player.hidden = false;
   try {
-    mountScene(createRacePlayerScene(race, player), {
-      errorElement: document.querySelector<HTMLElement>("#race-error"),
-    });
+    mountScene(
+      createRacePlayerScene(race, player, {
+        onLifecycleEvent: (event) => {
+          const raceProperties = raceAnalyticsProperties(race);
+          if (event.type === "started") {
+            captureEvent(EVENTS.RACE_STARTED, {
+              ...raceProperties,
+              run_number: event.runNumber,
+            });
+            return;
+          }
+          captureEvent(EVENTS.RACE_COMPLETED, {
+            ...raceProperties,
+            duration_ms: event.durationMs,
+            run_number: event.runNumber,
+            winner_team_index: event.winnerTeamIndex,
+          });
+        },
+      }),
+      {
+        errorElement: document.querySelector<HTMLElement>("#race-error"),
+        onError: (error) => {
+          captureEvent(EVENTS.OPERATION_FAILED, {
+            surface: "race_player",
+            operation: "load_race_player",
+            reason: "runtime_error",
+          });
+          reportException(error, {
+            surface: "race_player",
+            operation: "load_race_player",
+            reason: "runtime_error",
+          });
+        },
+      }
+    );
   } catch (error) {
+    captureEvent(EVENTS.OPERATION_FAILED, {
+      surface: "race_player",
+      operation: "load_race_player",
+      reason: "initialization_error",
+    });
+    reportException(error, {
+      surface: "race_player",
+      operation: "load_race_player",
+      reason: "initialization_error",
+    });
     showPageErrorState({
       title: "Race could not start",
       copy: `${error}`,

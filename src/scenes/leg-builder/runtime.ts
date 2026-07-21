@@ -48,6 +48,7 @@ export type LegBuilderOptions = {
   initialLevel?: SerializedLevel;
   roundConfiguration?: RoundConfiguration;
   onCommit?: (level: SerializedLevel) => void;
+  onPreviewStarted?: () => void;
 };
 
 export class LegBuilderRuntime {
@@ -65,6 +66,7 @@ export class LegBuilderRuntime {
   private readonly transformInspector: TransformInspectorController;
   private readonly courseSync: LegCourseSync;
   private readonly onCommit: LegBuilderOptions["onCommit"];
+  private readonly onPreviewStarted: LegBuilderOptions["onPreviewStarted"];
   private configuration: RoundConfiguration;
   /**
    * Era finish plan handed in by the leg builder. The settings inputs cannot
@@ -86,6 +88,7 @@ export class LegBuilderRuntime {
     // DOM and engine
     this.ui = resolveBuilderUi(rootElement);
     this.onCommit = options.onCommit;
+    this.onPreviewStarted = options.onPreviewStarted;
     if (options.initialLevel) {
       this.syncLevelInputs(options.initialLevel);
     }
@@ -535,7 +538,11 @@ export class LegBuilderRuntime {
   };
 
   private readonly toggleRace = () => {
+    const wasReady = this.race.snapshot.phase === "ready";
     this.race.toggleRunning();
+    if (wasReady && this.race.snapshot.phase === "running") {
+      this.onPreviewStarted?.();
+    }
     this.syncPlaybackState(this.race.snapshot.phase !== "ready");
   };
 

@@ -1,4 +1,9 @@
 import type { Scene, SceneContext } from "../../engine/runtime/scene";
+import {
+  captureEvent,
+  EVENTS,
+  legAnalyticsProperties,
+} from "../../lib/analytics";
 import { createLegRoundConfiguration } from "../../game/race/legRound";
 import { RaceRepository, legScheduleInputs } from "../../raceLibrary";
 import { raceBuilderUrl } from "../urls";
@@ -132,6 +137,7 @@ const wireRaceHomeLink = () => {
     builder,
     race,
     raceLeg,
+    legIndex,
     repository,
     roundConfiguration,
   };
@@ -145,11 +151,22 @@ export default function createScene(): Scene {
   return {
     load: (context: SceneContext) => {
       disposeChrome = setupSidebar();
-      const { builder, race, raceLeg, repository, roundConfiguration } =
-        wireRaceHomeLink();
+      const {
+        builder,
+        race,
+        raceLeg,
+        legIndex,
+        repository,
+        roundConfiguration,
+      } = wireRaceHomeLink();
 
       let currentRace = race;
       let currentLeg = raceLeg;
+      let capturedFirstEdit = false;
+      const currentLegProperties = () =>
+        currentRace && legIndex >= 0
+          ? legAnalyticsProperties(currentRace, legIndex + 1)
+          : null;
 
       inner = createLegBuilder(builder, {
         ...(currentRace && currentLeg && roundConfiguration
@@ -165,11 +182,28 @@ export default function createScene(): Scene {
                   level: { ...level, name: currentLeg.name },
                 };
                 currentRace = repository.saveLeg(currentRace.id, currentLeg);
+                if (!capturedFirstEdit) {
+                  const properties = currentLegProperties();
+                  if (properties) {
+                    capturedFirstEdit = true;
+                    captureEvent(EVENTS.LEG_EDITED, properties);
+                  }
+                }
+              },
+              onPreviewStarted: () => {
+                const properties = currentLegProperties();
+                if (properties) {
+                  captureEvent(EVENTS.LEG_PREVIEW_STARTED, properties);
+                }
               },
             }
           : {}),
       });
       inner.load?.(context);
+      const properties = currentLegProperties();
+      if (properties) {
+        captureEvent(EVENTS.LEG_EDITOR_OPENED, properties);
+      }
     },
     fixedUpdate: (deltaMs) => inner?.fixedUpdate?.(deltaMs),
     update: (deltaMs, interpolation) => inner?.update?.(deltaMs, interpolation),

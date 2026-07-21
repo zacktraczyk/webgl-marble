@@ -111,14 +111,39 @@ import "./_leg-builder.css";
 </Layout>
 
 <script>
+  import { captureEvent, EVENTS, reportException } from "../../lib/analytics";
   import { mountScene } from "../../scenes/mount";
   import { setInlineError } from "../../ui/pageError";
   import createScene from "../../scenes/leg-builder";
 
   const errorElement = document.getElementById("builder-error");
   try {
-    mountScene(createScene(), { errorElement });
+    mountScene(createScene(), {
+      errorElement,
+      onError: (error) => {
+        captureEvent(EVENTS.OPERATION_FAILED, {
+          surface: "leg_builder",
+          operation: "load_leg_builder",
+          reason: "runtime_error",
+        });
+        reportException(error, {
+          surface: "leg_builder",
+          operation: "load_leg_builder",
+          reason: "runtime_error",
+        });
+      },
+    });
   } catch (error) {
+    captureEvent(EVENTS.OPERATION_FAILED, {
+      surface: "leg_builder",
+      operation: "load_leg_builder",
+      reason: "initialization_error",
+    });
+    reportException(error, {
+      surface: "leg_builder",
+      operation: "load_leg_builder",
+      reason: "initialization_error",
+    });
     setInlineError(errorElement, error);
   }
 </script>

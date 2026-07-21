@@ -55,7 +55,17 @@ const CAMERA_INSET = 24;
 export type RacePlayerOptions = {
   /** Optional authoring safeguard. Normal races wait until only one team remains. */
   maximumLegDurationMs?: number | null;
+  onLifecycleEvent?: (event: RacePlayerLifecycleEvent) => void;
 };
+
+export type RacePlayerLifecycleEvent =
+  | { type: "started"; runNumber: number }
+  | {
+      type: "completed";
+      durationMs: number;
+      runNumber: number;
+      winnerTeamIndex: number;
+    };
 
 const optionalButtons = (root: HTMLElement, roles: readonly string[]) =>
   roles.flatMap((role) => [
@@ -68,6 +78,7 @@ export class RacePlayerRuntime {
   private readonly stage: Stage;
   private readonly progression: RaceProgression;
   private readonly maximumLegDurationMs: number | null;
+  private readonly onLifecycleEvent: RacePlayerOptions["onLifecycleEvent"];
   private readonly backLink: HTMLAnchorElement | null;
   private readonly pauseButtons: HTMLButtonElement[];
   private readonly restartButtons: HTMLButtonElement[];
@@ -80,6 +91,8 @@ export class RacePlayerRuntime {
   private legWindow: LegWindow | null = null;
   private transition: Transition | null = null;
   private legElapsedMs = 0;
+  private runElapsedMs = 0;
+  private runNumber = 0;
   private playbackPaused = false;
   private disposed = false;
   private statusMessage = "";
@@ -88,7 +101,7 @@ export class RacePlayerRuntime {
     raceDocument: RaceDocument,
     rootElement: HTMLElement | null,
     signal: AbortSignal,
-    { maximumLegDurationMs = null }: RacePlayerOptions = {}
+    { maximumLegDurationMs = null, onLifecycleEvent }: RacePlayerOptions = {}
   ) {
     if (!isRaceDocument(raceDocument) || !isRacePlayable(raceDocument)) {
       throw new Error(
@@ -120,6 +133,7 @@ export class RacePlayerRuntime {
       this.root.querySelector<HTMLAnchorElement>("#race-back-link");
     this.presenter = new RacePlayerPresenter(this.root);
     this.maximumLegDurationMs = maximumLegDurationMs;
+    this.onLifecycleEvent = onLifecycleEvent;
     this.progression = new RaceProgression(
       this.raceDocument.participants.length,
       this.raceDocument.legs.length
@@ -198,6 +212,7 @@ export class RacePlayerRuntime {
     }
 
     const legWindow = this.legWindow;
+    this.runElapsedMs += Math.max(0, deltaMs);
     legWindow.previous?.fixedUpdate(deltaMs);
     legWindow.current.fixedUpdate(deltaMs);
     if (this.transition?.released) {
@@ -433,6 +448,12 @@ export class RacePlayerRuntime {
 
   private launchCurrentLeg() {
     this.legWindow?.current.controller?.toggleRunning();
+    if (this.legWindow?.current.controller?.snapshot.phase === "running") {
+      this.onLifecycleEvent?.({
+        type: "started",
+        runNumber: this.runNumber,
+      });
+    }
     this.statusMessage = this.runningStatus;
     this.updateInterface();
   }
@@ -461,6 +482,8 @@ export class RacePlayerRuntime {
   }
 
   private startRace() {
+    this.runNumber++;
+    this.runElapsedMs = 0;
     this.transition = null;
     this.legElapsedMs = 0;
     this.playbackPaused = false;
@@ -513,6 +536,12 @@ export class RacePlayerRuntime {
       this.statusMessage = `${winner.name} wins ${this.raceDocument.name}!`;
       this.presenter.setText("race-winner", winner.name);
       this.presenter.setText("race-eliminated", "");
+      this.onLifecycleEvent?.({
+        type: "completed",
+        durationMs: Math.round(this.runElapsedMs),
+        runNumber: this.runNumber,
+        winnerTeamIndex: result.winnerIndex,
+      });
       // Camera stays on the final leg; the frozen field is the end tableau.
       this.updateInterface();
       return;

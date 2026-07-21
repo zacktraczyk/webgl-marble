@@ -27,6 +27,11 @@ const {
       rel="stylesheet"
     />
     <title>{title}</title>
+    <script>
+      import { initializeAnalytics } from "../lib/analytics/client";
+
+      initializeAnalytics();
+    </script>
   </head>
   <body class="h-screen w-screen bg-canvas text-ink antialiased">
     <slot />
