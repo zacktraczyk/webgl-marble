@@ -156,6 +156,14 @@ export const render = (context: RaceBuilderContext) => {
           level: { ...structuredClone(leg.level), name: duplicateName },
         };
         context.race = repository.addLeg(context.race.id, copy, index + 1);
+        context.onEvents([
+          {
+            type: "leg_created",
+            race: context.race,
+            legNumber: index + 2,
+            creationSource: "duplicate_leg",
+          },
+        ]);
         context.render();
       },
       { signal }
@@ -170,6 +178,7 @@ export const render = (context: RaceBuilderContext) => {
           onConfirm: () => {
             if (!context.race) return;
             context.race = repository.deleteLeg(context.race.id, leg.id);
+            context.onEvents([{ type: "race_updated", race: context.race }]);
             context.render();
           },
         });

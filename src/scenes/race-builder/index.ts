@@ -1,6 +1,16 @@
 import type { Scene } from "../../engine/runtime/scene";
+import { captureEvent, EVENTS } from "../../lib/analytics";
+import {
+  markRaceSetupCompleted,
+  wasRaceSetupCompleted,
+} from "../../lib/analytics/setupCompletion";
 import { attachTooltip } from "../../ui/tooltip";
-import { RaceRepository, type RaceDocument } from "../../raceLibrary";
+import {
+  isRacePlayable,
+  RaceRepository,
+  type RaceDocument,
+} from "../../raceLibrary";
+import { createRaceBuilderAnalytics } from "./analytics";
 import { bindRaceBuilderControls } from "./ui/controls";
 import type { RaceBuilderContext } from "./ui/context";
 import { resolveRaceBuilderUi } from "./ui/elements";
@@ -14,21 +24,34 @@ function createRaceBuilder(signal: AbortSignal) {
   const params = new URLSearchParams(window.location.search);
   const raceId = params.get("race") ?? "";
   const ui = resolveRaceBuilderUi();
+  const initialRace = repository.get(raceId);
+  const initialSetupComplete = initialRace
+    ? isRacePlayable(initialRace)
+    : false;
+  const setupCompletedCaptured =
+    initialSetupComplete || wasRaceSetupCompleted(raceId);
+  if (initialSetupComplete) markRaceSetupCompleted(raceId);
 
   const editLegUrl = (legId: string) => legBuilderUrl(raceId, legId);
+  const onEvents = createRaceBuilderAnalytics({
+    setupCompleted: setupCompletedCaptured,
+    onSetupCompleted: (race) => markRaceSetupCompleted(race.id),
+  });
 
   const context: RaceBuilderContext = {
     ui,
     repository,
     raceId,
     signal,
-    race: repository.get(raceId),
+    race: initialRace,
     draggedItem: null,
     pendingFocusLegId: null,
+    onEvents,
     render: () => render(context),
     saveRace: (next: RaceDocument) => {
       context.race = repository.save(next);
       context.render();
+      return context.race;
     },
     editLegUrl,
   };
@@ -36,6 +59,10 @@ function createRaceBuilder(signal: AbortSignal) {
   let disposeControls = () => {};
 
   if (!context.race) {
+    captureEvent(EVENTS.SURFACE_BLOCKED, {
+      surface: "race_builder",
+      reason: "not_found",
+    });
     if (ui.missing) ui.missing.hidden = false;
     if (ui.playLink) ui.playLink.hidden = true;
   } else {

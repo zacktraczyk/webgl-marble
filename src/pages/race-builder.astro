@@ -319,7 +319,19 @@ import ConfirmDeleteDialog from "../ui/ConfirmDeleteDialog.astro";
 </Layout>
 
 <script>
+  import { reportOperationFailure } from "../lib/analytics";
   import { mountScene } from "../scenes/mount";
   import createScene from "../scenes/race-builder";
-  mountScene(createScene());
+  mountScene(createScene(), {
+    onError: (error, phase) => {
+      const reason =
+        phase === "load" ? "initialization_error" : "runtime_error";
+      reportOperationFailure({
+        surface: "race_builder",
+        operation: "load_race_builder",
+        reason,
+        error,
+      });
+    },
+  });
 </script>

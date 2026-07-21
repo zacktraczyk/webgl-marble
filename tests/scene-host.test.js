@@ -104,7 +104,7 @@ describe("SceneHost", () => {
       {
         scheduler,
         fixedDeltaMs: 10,
-        onError: (error) => errors.push(error),
+        onError: (error, phase) => errors.push({ error, phase }),
       }
     );
 
@@ -114,5 +114,31 @@ describe("SceneHost", () => {
     expect(host.running).toBe(false);
     expect(disposeCount).toBe(1);
     expect(errors).toHaveLength(1);
+    expect(errors[0].phase).toBe("runtime");
+  });
+
+  test("distinguishes scene load failures from runtime failures", () => {
+    const scheduler = new FakeFrameScheduler();
+    const errors = [];
+    let disposeCount = 0;
+    const host = new SceneHost(
+      {
+        load: () => {
+          throw new Error("load failure");
+        },
+        dispose: () => disposeCount++,
+      },
+      {
+        scheduler,
+        onError: (error, phase) => errors.push({ error, phase }),
+      }
+    );
+
+    host.start();
+
+    expect(host.running).toBe(false);
+    expect(disposeCount).toBe(1);
+    expect(errors).toHaveLength(1);
+    expect(errors[0].phase).toBe("load");
   });
 });

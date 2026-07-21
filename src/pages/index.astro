@@ -9,9 +9,7 @@ import ConfirmDeleteDialog from "../ui/ConfirmDeleteDialog.astro";
 ---
 
 <Layout title="Race Library · Marble Races">
-  <main
-    class="mx-auto max-w-[68rem] px-6 pb-32 pt-[clamp(2.5rem,7vh,5rem)]"
-  >
+  <main class="mx-auto max-w-[68rem] px-6 pb-32 pt-[clamp(2.5rem,7vh,5rem)]">
     <header class="mb-14 flex items-end justify-between gap-8">
       <h1
         class="font-extrabold tracking-[-0.03em] leading-[0.9] text-[clamp(4.5rem,13vw,9rem)] [text-shadow:0.08em_0.09em_0_var(--color-stamp)]"
@@ -127,8 +125,7 @@ import ConfirmDeleteDialog from "../ui/ConfirmDeleteDialog.astro";
           />
           <output
             id="create-marbles-output"
-            class="w-16 text-right text-xs tabular-nums text-ink-dim"
-          ></output>
+            class="w-16 text-right text-xs tabular-nums text-ink-dim"></output>
         </div>
       </div>
 
@@ -136,8 +133,7 @@ import ConfirmDeleteDialog from "../ui/ConfirmDeleteDialog.astro";
         <button
           id="create-cancel"
           type="button"
-          class="pill pill-ghost text-sm hover:transform-none"
-          >Cancel</button
+          class="pill pill-ghost text-sm hover:transform-none">Cancel</button
         >
         <button type="submit" class="pill pill-primary text-sm"
           >Create race</button
@@ -212,8 +208,7 @@ import ConfirmDeleteDialog from "../ui/ConfirmDeleteDialog.astro";
         <div class="mt-5 flex items-center justify-between gap-3">
           <span
             data-legs
-            class="whitespace-nowrap text-sm font-medium text-ink-dim"
-          ></span>
+            class="whitespace-nowrap text-sm font-medium text-ink-dim"></span>
           <!-- Fixed width so every card's button matches regardless of label.
                Group hover/focus on the wrap presses the candy-pill shadow. -->
           <span
@@ -280,7 +275,17 @@ import ConfirmDeleteDialog from "../ui/ConfirmDeleteDialog.astro";
   </template>
 
   <script>
+    import { reportOperationFailure } from "../lib/analytics";
     import { mountRaceLibrary } from "../scenes/race-library/mount";
-    mountRaceLibrary();
+    try {
+      mountRaceLibrary();
+    } catch (error) {
+      reportOperationFailure({
+        surface: "race_library",
+        operation: "load_race_library",
+        reason: "initialization_error",
+      });
+      throw error;
+    }
   </script>
 </Layout>

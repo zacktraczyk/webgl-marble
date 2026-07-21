@@ -13,6 +13,12 @@ import { renderRaceThumbnail } from "../../game/level/thumbnail";
 import { openConfirmDelete } from "../../ui/confirmDelete";
 import { createExitAnimator } from "../../ui/exitAnimation";
 import { attachTooltip } from "../../ui/tooltip";
+import {
+  captureEvent,
+  EVENTS,
+  raceAnalyticsProperties,
+  reportOperationFailure,
+} from "../../lib/analytics";
 import { legCountLabel } from "../format";
 import { raceBuilderUrl } from "../urls";
 import { attachThumbnailTour, type ThumbnailTour } from "./thumbnailTour";
@@ -119,15 +125,25 @@ export const mountRaceLibrary = () => {
   form?.addEventListener("submit", (event) => {
     event.preventDefault();
     if (!marblesSlider) return;
-    const race = repository.create(
-      createDefaultRace({
-        name: nameInput?.value,
-        description: descriptionInput?.value,
-        participantCount,
-        marblesPerTeam: MARBLES_PER_TEAM_OPTIONS[Number(marblesSlider.value)],
-      })
-    );
-    window.location.assign(raceBuilderUrl(race.id));
+    try {
+      const race = repository.create(
+        createDefaultRace({
+          name: nameInput?.value,
+          description: descriptionInput?.value,
+          participantCount,
+          marblesPerTeam: MARBLES_PER_TEAM_OPTIONS[Number(marblesSlider.value)],
+        })
+      );
+      captureEvent(EVENTS.RACE_CREATED, raceAnalyticsProperties(race));
+      window.location.assign(raceBuilderUrl(race.id));
+    } catch (error) {
+      reportOperationFailure({
+        surface: "race_library",
+        operation: "create_race",
+        reason: "persistence_error",
+      });
+      throw error;
+    }
   });
 
   const renderLibrary = () => {

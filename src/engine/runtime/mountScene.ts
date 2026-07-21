@@ -20,12 +20,15 @@ export const mountScene = (
     typeof errorElement === "string"
       ? document.getElementById(errorElement)
       : errorElement;
-  const reportError = (error: unknown) => {
+  const reportError: NonNullable<SceneHostOptions["onError"]> = (
+    error,
+    phase
+  ) => {
     if (element) {
       element.textContent = `${error}`;
     }
     if (hostOptions.onError) {
-      hostOptions.onError(error);
+      hostOptions.onError(error, phase);
     } else {
       console.error(error);
     }

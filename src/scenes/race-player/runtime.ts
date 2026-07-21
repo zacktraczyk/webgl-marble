@@ -19,6 +19,7 @@ import { computeLegStackLayout, type LegFrame } from "./legStack";
 import { fallbackEliminationIndex, RaceProgression } from "./progression";
 import { RaceCameraController } from "./raceCamera";
 import { RaceCountdown } from "./countdown";
+import { RaceRunLifecycle, type RacePlayerLifecycleEvent } from "./lifecycle";
 import { RacePlayerPresenter } from "./presenter";
 import { setupChromeAutoHide } from "./chromeAutoHide";
 import { bindRacePlayerControls, runningLegStatus } from "./controls";
@@ -55,7 +56,10 @@ const CAMERA_INSET = 24;
 export type RacePlayerOptions = {
   /** Optional authoring safeguard. Normal races wait until only one team remains. */
   maximumLegDurationMs?: number | null;
+  onLifecycleEvent?: (event: RacePlayerLifecycleEvent) => void;
 };
+
+export type { RacePlayerLifecycleEvent } from "./lifecycle";
 
 const optionalButtons = (root: HTMLElement, roles: readonly string[]) =>
   roles.flatMap((role) => [
@@ -68,6 +72,7 @@ export class RacePlayerRuntime {
   private readonly stage: Stage;
   private readonly progression: RaceProgression;
   private readonly maximumLegDurationMs: number | null;
+  private readonly lifecycle: RaceRunLifecycle;
   private readonly backLink: HTMLAnchorElement | null;
   private readonly pauseButtons: HTMLButtonElement[];
   private readonly restartButtons: HTMLButtonElement[];
@@ -88,7 +93,7 @@ export class RacePlayerRuntime {
     raceDocument: RaceDocument,
     rootElement: HTMLElement | null,
     signal: AbortSignal,
-    { maximumLegDurationMs = null }: RacePlayerOptions = {}
+    { maximumLegDurationMs = null, onLifecycleEvent }: RacePlayerOptions = {}
   ) {
     if (!isRaceDocument(raceDocument) || !isRacePlayable(raceDocument)) {
       throw new Error(
@@ -120,6 +125,7 @@ export class RacePlayerRuntime {
       this.root.querySelector<HTMLAnchorElement>("#race-back-link");
     this.presenter = new RacePlayerPresenter(this.root);
     this.maximumLegDurationMs = maximumLegDurationMs;
+    this.lifecycle = new RaceRunLifecycle(onLifecycleEvent);
     this.progression = new RaceProgression(
       this.raceDocument.participants.length,
       this.raceDocument.legs.length
@@ -198,6 +204,7 @@ export class RacePlayerRuntime {
     }
 
     const legWindow = this.legWindow;
+    this.lifecycle.advance(deltaMs);
     legWindow.previous?.fixedUpdate(deltaMs);
     legWindow.current.fixedUpdate(deltaMs);
     if (this.transition?.released) {
@@ -433,6 +440,9 @@ export class RacePlayerRuntime {
 
   private launchCurrentLeg() {
     this.legWindow?.current.controller?.toggleRunning();
+    if (this.legWindow?.current.controller?.snapshot.phase === "running") {
+      this.lifecycle.startRun();
+    }
     this.statusMessage = this.runningStatus;
     this.updateInterface();
   }
@@ -461,6 +471,7 @@ export class RacePlayerRuntime {
   }
 
   private startRace() {
+    this.lifecycle.prepareRun();
     this.transition = null;
     this.legElapsedMs = 0;
     this.playbackPaused = false;
@@ -513,6 +524,7 @@ export class RacePlayerRuntime {
       this.statusMessage = `${winner.name} wins ${this.raceDocument.name}!`;
       this.presenter.setText("race-winner", winner.name);
       this.presenter.setText("race-eliminated", "");
+      this.lifecycle.completeRun(result.winnerIndex);
       // Camera stays on the final leg; the frozen field is the end tableau.
       this.updateInterface();
       return;

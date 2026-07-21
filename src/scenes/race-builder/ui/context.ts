@@ -1,4 +1,5 @@
 import type { RaceRepository, RaceDocument } from "../../../raceLibrary";
+import type { RaceBuilderEvent } from "../events";
 import type { RaceBuilderUi } from "./elements";
 
 /** Shared mutable state + wiring passed into every race-builder UI module. */
@@ -10,7 +11,8 @@ export type RaceBuilderContext = {
   race: RaceDocument | null;
   draggedItem: HTMLElement | null;
   pendingFocusLegId: string | null;
+  onEvents: (events: readonly RaceBuilderEvent[]) => void;
   render: () => void;
-  saveRace: (next: RaceDocument) => void;
+  saveRace: (next: RaceDocument) => RaceDocument;
   editLegUrl: (legId: string) => string;
 };

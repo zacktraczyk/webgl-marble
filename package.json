@@ -32,7 +32,8 @@
   "dependencies": {
     "@tailwindcss/vite": "4.3.3",
     "astro": "5.11.1",
-    "gl-matrix": "3.4.3"
+    "gl-matrix": "3.4.3",
+    "posthog-js": "1.405.3"
   },
   "devDependencies": {
     "@astrojs/check": "0.9.9",

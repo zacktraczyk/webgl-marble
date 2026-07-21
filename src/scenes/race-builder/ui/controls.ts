@@ -90,12 +90,13 @@ export const bindRaceBuilderControls = (
     if (!context.race || nextCount < 2 || nextCount > MAX_RACE_PARTICIPANTS)
       return;
     const defaults = createDefaultParticipants(nextCount);
-    context.saveRace({
+    const saved = context.saveRace({
       ...context.race,
       participants: defaults.map(
         (participant, index) => context.race!.participants[index] ?? participant
       ),
     });
+    context.onEvents([{ type: "race_updated", race: saved }]);
   };
 
   ui.nameInput?.addEventListener("input", () => fitTextArea(ui.nameInput), {
@@ -182,7 +183,15 @@ export const bindRaceBuilderControls = (
       )
         return;
       const leg = createDefaultLeg({ index: context.race.legs.length });
-      repository.addLeg(context.race.id, leg);
+      context.race = repository.addLeg(context.race.id, leg);
+      context.onEvents([
+        {
+          type: "leg_created",
+          race: context.race,
+          legNumber: context.race.legs.length,
+          creationSource: "add_leg",
+        },
+      ]);
       window.location.assign(context.editLegUrl(leg.id));
     },
     { signal }
@@ -201,12 +210,30 @@ export const bindRaceBuilderControls = (
       ) {
         return;
       }
+      const previousLegCount = context.race.legs.length;
       const next = structuredClone(context.race);
       next.legs.splice(needed);
+      const existingLegCount = next.legs.length;
       while (next.legs.length < needed) {
         next.legs.push(createDefaultLeg({ index: next.legs.length }));
       }
-      context.saveRace(next);
+      const generatedLegCount = next.legs.length - existingLegCount;
+      const removedLegCount = Math.max(previousLegCount - needed, 0);
+      const saved = context.saveRace(next);
+      context.onEvents([
+        {
+          type: "race_setup_autofilled",
+          race: saved,
+          generatedLegCount,
+          removedLegCount,
+        },
+        ...Array.from({ length: generatedLegCount }, (_, offset) => ({
+          type: "leg_created" as const,
+          race: saved,
+          legNumber: existingLegCount + offset + 1,
+          creationSource: "complete_setup" as const,
+        })),
+      ]);
     },
     { signal }
   );

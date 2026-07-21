@@ -28,11 +28,13 @@ export interface SceneHostOptions {
   maxFrameDeltaMs?: number;
   maxSubSteps?: number;
   scheduler?: FrameScheduler;
-  onError?: (error: unknown) => void;
+  onError?: (error: unknown, phase: SceneErrorPhase) => void;
   collectPerformance?: boolean;
   performanceSampleIntervalMs?: number;
   onPerformanceSample?: (sample: ScenePerformanceSample) => void;
 }
+
+export type SceneErrorPhase = "load" | "runtime";
 
 export interface ScenePerformanceSample {
   fps: number;
@@ -47,7 +49,7 @@ export class SceneHost {
   private readonly _maxFrameDeltaMs: number;
   private readonly _maxSubSteps: number;
   private readonly _scheduler: FrameScheduler;
-  private readonly _onError: (error: unknown) => void;
+  private readonly _onError: (error: unknown, phase: SceneErrorPhase) => void;
   private readonly _collectPerformance: boolean;
   private readonly _performanceSampleIntervalMs: number;
   private readonly _onPerformanceSample?: (
@@ -93,7 +95,7 @@ export class SceneHost {
     try {
       this._scene.load?.({ signal: this._abortController.signal });
     } catch (error) {
-      this._onError(error);
+      this._onError(error, "load");
       this._abortController.abort();
       this._abortController = null;
       this._scene.dispose?.();
@@ -160,7 +162,7 @@ export class SceneHost {
       this._recordPerformance(rawElapsed, steps);
       this._frameHandle = this._scheduler.request(this._frame);
     } catch (error) {
-      this._onError(error);
+      this._onError(error, "runtime");
       this.stop();
     }
   };

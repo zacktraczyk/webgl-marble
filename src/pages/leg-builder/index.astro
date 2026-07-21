@@ -111,14 +111,33 @@ import "./_leg-builder.css";
 </Layout>
 
 <script>
+  import { reportOperationFailure } from "../../lib/analytics";
   import { mountScene } from "../../scenes/mount";
   import { setInlineError } from "../../ui/pageError";
   import createScene from "../../scenes/leg-builder";
 
   const errorElement = document.getElementById("builder-error");
   try {
-    mountScene(createScene(), { errorElement });
+    mountScene(createScene(), {
+      errorElement,
+      onError: (error, phase) => {
+        const reason =
+          phase === "load" ? "initialization_error" : "runtime_error";
+        reportOperationFailure({
+          surface: "leg_builder",
+          operation: "load_leg_builder",
+          reason,
+          error,
+        });
+      },
+    });
   } catch (error) {
+    reportOperationFailure({
+      surface: "leg_builder",
+      operation: "load_leg_builder",
+      reason: "initialization_error",
+      error,
+    });
     setInlineError(errorElement, error);
   }
 </script>
