@@ -1,0 +1,110 @@
+---
+// Intentionally standalone: application chrome and scene loops would add noise.
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>VDU benchmark</title>
+    <style>
+      :global(*) {
+        box-sizing: border-box;
+      }
+
+      :global(html),
+      :global(body) {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        background: #101216;
+      }
+
+      canvas {
+        display: block;
+        width: 800px;
+        height: 800px;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="benchmark-canvas" width="800" height="800"></canvas>
+    <script>
+      import { createVduBenchmark } from "../../benchmarks/vdu/harness";
+      import { DEFAULT_SCENARIO_COUNTS } from "../../benchmarks/vdu/scenarios";
+      import type {
+        VduScenarioConfig,
+        VduScenarioName,
+      } from "../../benchmarks/shared/types";
+
+      type VDURenderStrategy = VduScenarioConfig["renderer"];
+
+      const scenarioNames = new Set<VduScenarioName>([
+        "random-balls",
+        "contiguous",
+        "grouped-runs",
+        "fragmented",
+        "unique-meshes",
+        "full-race",
+      ]);
+      const rendererNames = new Set<VDURenderStrategy>([
+        "auto",
+        "basic",
+        "instanced",
+      ]);
+
+      const parseInteger = (
+        value: string | null,
+        fallback: number,
+        minimum = 1
+      ) => {
+        if (value === null) {
+          return fallback;
+        }
+        const parsed = Number(value);
+        return Number.isSafeInteger(parsed) && parsed >= minimum
+          ? parsed
+          : fallback;
+      };
+
+      try {
+        const parameters = new URLSearchParams(location.search);
+        const requestedScenario = parameters.get("scenario") ?? "contiguous";
+        const name: VduScenarioName = scenarioNames.has(
+          requestedScenario as VduScenarioName
+        )
+          ? (requestedScenario as VduScenarioName)
+          : "contiguous";
+        const requestedRenderer = parameters.get("renderer") ?? "auto";
+        const renderer: VDURenderStrategy = rendererNames.has(
+          requestedRenderer as VDURenderStrategy
+        )
+          ? (requestedRenderer as VDURenderStrategy)
+          : "auto";
+        const canvas = document.querySelector("#benchmark-canvas");
+        if (!(canvas instanceof HTMLCanvasElement)) {
+          throw new Error("Failed to find benchmark canvas");
+        }
+        const config: VduScenarioConfig = {
+          name,
+          renderer,
+          count: parseInteger(
+            parameters.get("count"),
+            DEFAULT_SCENARIO_COUNTS[name]
+          ),
+          seed: parseInteger(parameters.get("seed"), 20_260_720, 0),
+          physics: parameters.get("physics") === "true",
+        };
+        window.__BENCHMARK__ = createVduBenchmark(canvas, config);
+      } catch (error) {
+        window.__BENCHMARK_ERROR__ =
+          error instanceof Error
+            ? (error.stack ?? error.message)
+            : String(error);
+        console.error(error);
+      }
+    </script>
+  </body>
+</html>

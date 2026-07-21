@@ -17,6 +17,10 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "bun test",
+    "bench:vdu": "bun benchmarks/vdu/runner.ts run",
+    "bench:vdu:smoke": "bun benchmarks/vdu/runner.ts run --preset smoke",
+    "bench:vdu:full": "bun benchmarks/vdu/runner.ts run --suite full",
+    "bench:vdu:compare": "bun benchmarks/vdu/runner.ts compare",
     "clean": "rm -rf dist node_modules/.cache"
   },
   "dependencies": {
@@ -26,6 +30,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.30.1",
+    "@types/pngjs": "^6.0.5",
     "@typescript-eslint/parser": "^8.35.1",
     "eslint": "^9.30.1",
     "eslint-config-prettier": "^10.1.5",
@@ -33,8 +38,11 @@
     "eslint-plugin-jsx-a11y": "^6.10.2",
     "eslint-plugin-prettier": "^5.5.1",
     "lint-staged": "^15.0.0",
+    "pixelmatch": "^7.2.0",
+    "pngjs": "^7.0.0",
     "prettier": "^3.0.0",
     "prettier-plugin-astro": "^0.13.0",
+    "puppeteer-core": "^25.3.0",
     "tailwindcss": "^4.1.11",
     "typescript-eslint": "^8.35.1",
     "vite-plugin-eslint": "^1.8.1",

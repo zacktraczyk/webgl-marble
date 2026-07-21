@@ -32,6 +32,21 @@ import instancedVertShader from "./glsl/instanced.vert.glsl";
 const FLOATS_PER_INSTANCE = 10;
 const INSTANCE_STRIDE = FLOATS_PER_INSTANCE * Float32Array.BYTES_PER_ELEMENT;
 
+/** Selects the draw path used by the VDU. `auto` preserves production behavior. */
+export type VDURenderStrategy = "auto" | "basic" | "instanced";
+
+export interface VDUOptions {
+  renderStrategy?: VDURenderStrategy;
+}
+
+/** JSON-safe capability data used by diagnostics and the benchmark harness. */
+export interface VDURenderMetadata {
+  requestedStrategy: VDURenderStrategy;
+  activeStrategy: "basic" | "instanced" | "unsupported";
+  drawMode: "TRIANGLES" | "LINES";
+  instancingSupported: boolean;
+}
+
 /**
  * Visual Display Unit — WebGL renderer for World-owned entity components.
  *
@@ -52,6 +67,7 @@ export class VDU {
   private readonly _instanced: ANGLE_instanced_arrays | null;
   private readonly _instancedPipeline: InstancedPipeline | null;
   private readonly _instanceBuffer: WebGLBuffer | null = null;
+  private readonly _renderStrategy: VDURenderStrategy;
   /** Persistent, geometrically grown per-instance staging array. */
   private _instanceData = new Float32Array(0);
   /** Which attribute set is currently enabled, to skip redundant calls. */
@@ -63,7 +79,8 @@ export class VDU {
 
   constructor(
     canvasParam: HTMLCanvasElement | string,
-    camera: Camera2D = new Camera2D()
+    camera: Camera2D = new Camera2D(),
+    { renderStrategy = "auto" }: VDUOptions = {}
   ) {
     // Get canvas element
     let canvas: HTMLCanvasElement;
@@ -86,6 +103,7 @@ export class VDU {
       );
     }
     this._gl = gl;
+    this._renderStrategy = renderStrategy;
 
     this._pipeline = createPipeline(gl, vertShader, fragShader);
 
@@ -122,6 +140,28 @@ export class VDU {
 
   get drawMode() {
     return this._drawMode;
+  }
+
+  /** Requested draw path. The value is immutable for the VDU's lifetime. */
+  get renderStrategy() {
+    return this._renderStrategy;
+  }
+
+  /** Reports the path that the next render will use without exposing GL state. */
+  get renderMetadata(): VDURenderMetadata {
+    let activeStrategy: VDURenderMetadata["activeStrategy"] = "basic";
+    if (this._drawMode === "TRIANGLES" && this._renderStrategy !== "basic") {
+      activeStrategy = this._instanced ? "instanced" : "basic";
+      if (this._renderStrategy === "instanced" && !this._instanced) {
+        activeStrategy = "unsupported";
+      }
+    }
+    return {
+      requestedStrategy: this._renderStrategy,
+      activeStrategy,
+      drawMode: this._drawMode,
+      instancingSupported: this._instanced !== null,
+    };
   }
 
   addEntity(
@@ -231,8 +271,22 @@ export class VDU {
 
     this._cleanup();
 
+    if (
+      this._drawMode === "TRIANGLES" &&
+      this._renderStrategy === "instanced" &&
+      !this._instanced
+    ) {
+      throw new Error(
+        "The instanced VDU render strategy requires ANGLE_instanced_arrays"
+      );
+    }
+
     // Instancing only serves TRIANGLES; LINES demos stay on the per-entity path.
-    if (this._drawMode === "TRIANGLES" && this._instanced) {
+    if (
+      this._drawMode === "TRIANGLES" &&
+      this._renderStrategy !== "basic" &&
+      this._instanced
+    ) {
       this._renderInstanced(canvas, cameraMatrix);
     } else {
       this._renderBasic(canvas, cameraMatrix);

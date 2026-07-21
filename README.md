@@ -77,7 +77,28 @@ npm run preview
 | `bun type-check` | Run TypeScript type checking |
 | `bun format`     | Format code with Prettier    |
 | `bun test`       | Run unit tests (Bun)         |
+| `bun bench:vdu`  | Benchmark VDU render paths   |
 | `bun clean`      | Clean build artifacts        |
+
+## VDU performance benchmark
+
+The browser benchmark compares the basic and instanced WebGL paths with paired,
+interleaved runs against a production build. It separately checks visual output
+and WebGL call counts so instrumentation does not affect timed samples.
+
+```bash
+# Short harness check
+bun run bench:vdu:smoke
+
+# Standard paired benchmark
+bun run bench:vdu -- --scenario contiguous --count 2500
+
+# All representative scenarios
+bun run bench:vdu:full
+```
+
+See [`benchmarks/vdu/README.md`](benchmarks/vdu/README.md) for presets, GPU
+timing, cross-build comparison, and result interpretation.
 
 ## Layout
 
