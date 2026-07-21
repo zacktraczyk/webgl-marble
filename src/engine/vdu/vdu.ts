@@ -14,9 +14,23 @@ import type {
   RenderPartDefinition,
   RenderPrimitive,
 } from "./component";
-import { createPipeline, type Pipeline } from "./pipeline";
+import {
+  createInstancedPipeline,
+  createPipeline,
+  type InstancedPipeline,
+  type Pipeline,
+} from "./pipeline";
 import fragShader from "./glsl/frag.glsl";
 import vertShader from "./glsl/vert.glsl";
+import instancedFragShader from "./glsl/instanced.frag.glsl";
+import instancedVertShader from "./glsl/instanced.vert.glsl";
+
+/**
+ * Per-instance record layout for the instanced path: two affine matrix rows
+ * (`aMatX`, `aMatY`) followed by an RGBA color — 10 floats, 40-byte stride.
+ */
+const FLOATS_PER_INSTANCE = 10;
+const INSTANCE_STRIDE = FLOATS_PER_INSTANCE * Float32Array.BYTES_PER_ELEMENT;
 
 /**
  * Visual Display Unit — WebGL renderer for World-owned entity components.
@@ -33,6 +47,19 @@ export class VDU {
   private readonly _meshBuffers = new Map<string, MeshBuffer>();
 
   private _drawMode: "TRIANGLES" | "LINES" = "TRIANGLES";
+
+  // Instanced-draw state — populated only when ANGLE_instanced_arrays exists.
+  private readonly _instanced: ANGLE_instanced_arrays | null;
+  private readonly _instancedPipeline: InstancedPipeline | null;
+  private readonly _instanceBuffer: WebGLBuffer | null = null;
+  /** Persistent, geometrically grown per-instance staging array. */
+  private _instanceData = new Float32Array(0);
+  /** Which attribute set is currently enabled, to skip redundant calls. */
+  private _attribMode: "none" | "basic" | "instanced" = "none";
+  /** Last program used and resolution uploaded, to set uResolution lazily. */
+  private _lastProgram: WebGLProgram | null = null;
+  private _lastResWidth = -1;
+  private _lastResHeight = -1;
 
   constructor(
     canvasParam: HTMLCanvasElement | string,
@@ -61,6 +88,24 @@ export class VDU {
     this._gl = gl;
 
     this._pipeline = createPipeline(gl, vertShader, fragShader);
+
+    // Instanced rendering is optional: fall back to the per-entity draw loop
+    // when the WebGL1 extension is unavailable.
+    this._instanced = gl.getExtension("ANGLE_instanced_arrays");
+    if (this._instanced) {
+      this._instancedPipeline = createInstancedPipeline(
+        gl,
+        instancedVertShader,
+        instancedFragShader
+      );
+      this._instanceBuffer = gl.createBuffer();
+      if (!this._instanceBuffer) {
+        throw new Error("Failed to create instance buffer");
+      }
+    } else {
+      this._instancedPipeline = null;
+    }
+
     this._drawEntities = [];
     this.camera = camera;
   }
@@ -179,17 +224,61 @@ export class VDU {
     gl.disable(gl.DEPTH_TEST);
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-    const pipeline = this._pipeline;
-    gl.useProgram(pipeline.program);
-    // uResolution is identical for every entity, so set it once per frame.
-    gl.uniform2f(pipeline.uResolution, canvas.clientWidth, canvas.clientHeight);
+    // Depth is disabled and the context has no depth buffer, so only clear color.
+    gl.clear(gl.COLOR_BUFFER_BIT);
 
     const cameraMatrix = this.camera.matrix();
 
     this._cleanup();
 
+    // Instancing only serves TRIANGLES; LINES demos stay on the per-entity path.
+    if (this._drawMode === "TRIANGLES" && this._instanced) {
+      this._renderInstanced(canvas, cameraMatrix);
+    } else {
+      this._renderBasic(canvas, cameraMatrix);
+    }
+  }
+
+  /**
+   * Uploads `uResolution` for a program only when the canvas size changed since
+   * the last upload for that same program (a per-program uniform is reset when
+   * the program is swapped, so a program change also forces a re-upload).
+   */
+  private _setResolution(
+    location: WebGLUniformLocation,
+    program: WebGLProgram,
+    canvas: HTMLCanvasElement
+  ) {
+    const width = canvas.clientWidth;
+    const height = canvas.clientHeight;
+    if (
+      program === this._lastProgram &&
+      width === this._lastResWidth &&
+      height === this._lastResHeight
+    ) {
+      return;
+    }
+    this._gl.uniform2f(location, width, height);
+    this._lastResWidth = width;
+    this._lastResHeight = height;
+  }
+
+  /** Per-entity draw loop. Used for LINES mode and when instancing is absent. */
+  private _renderBasic(canvas: HTMLCanvasElement, cameraMatrix: mat3) {
+    const gl = this._gl;
+    const pipeline = this._pipeline;
+    gl.useProgram(pipeline.program);
+    this._setResolution(pipeline.uResolution, pipeline.program, canvas);
+    this._lastProgram = pipeline.program;
+
+    // Enable the vertex attribute once; the pointer is re-bound per buffer.
+    if (this._attribMode !== "basic") {
+      this._disableInstancedAttribs();
+      gl.enableVertexAttribArray(pipeline.aVertexPosition);
+      this._attribMode = "basic";
+    }
+
+    const mode = this._drawMode === "LINES" ? gl.LINE_LOOP : gl.TRIANGLES;
     let lastBuffer: WebGLBuffer | undefined = undefined;
     for (const entity of this._drawEntities) {
       const mesh = entity.mesh;
@@ -197,15 +286,7 @@ export class VDU {
       // Bind + point the attribute only when the buffer changes.
       if (mesh.buffer !== lastBuffer) {
         gl.bindBuffer(gl.ARRAY_BUFFER, mesh.buffer);
-        gl.enableVertexAttribArray(pipeline.aVertexPosition);
-        gl.vertexAttribPointer(
-          pipeline.aVertexPosition,
-          2,
-          gl.FLOAT,
-          false,
-          0,
-          0
-        );
+        gl.vertexAttribPointer(pipeline.aVertexPosition, 2, gl.FLOAT, false, 0, 0);
         lastBuffer = mesh.buffer;
       }
 
@@ -214,12 +295,123 @@ export class VDU {
       gl.uniformMatrix3fv(pipeline.uMatrix, false, entity.matrix);
       gl.uniform4fv(pipeline.uColor, entity.color);
 
-      if (this._drawMode === "LINES") {
-        gl.drawArrays(gl.LINE_LOOP, 0, mesh.vertexCount);
-      } else {
-        gl.drawArrays(gl.TRIANGLES, 0, mesh.vertexCount);
-      }
+      gl.drawArrays(mode, 0, mesh.vertexCount);
     }
+  }
+
+  /**
+   * Batched draw loop using `ANGLE_instanced_arrays`. Entities are grouped into
+   * maximal *contiguous* runs that share a mesh buffer and each run draws in one
+   * `drawArraysInstancedANGLE` call. Batching only contiguous runs (never a
+   * global sort by mesh) keeps submission order intact, so alpha-blended overlap
+   * between successive parts renders exactly as the per-entity path would.
+   */
+  private _renderInstanced(canvas: HTMLCanvasElement, cameraMatrix: mat3) {
+    const gl = this._gl;
+    const ext = this._instanced!;
+    const pipeline = this._instancedPipeline!;
+    gl.useProgram(pipeline.program);
+    this._setResolution(pipeline.uResolution, pipeline.program, canvas);
+    this._lastProgram = pipeline.program;
+
+    // Enable the vertex + per-instance attribute arrays and set divisors once.
+    if (this._attribMode !== "instanced") {
+      gl.enableVertexAttribArray(pipeline.aVertexPosition);
+      gl.enableVertexAttribArray(pipeline.aMatX);
+      gl.enableVertexAttribArray(pipeline.aMatY);
+      gl.enableVertexAttribArray(pipeline.aColor);
+      ext.vertexAttribDivisorANGLE(pipeline.aVertexPosition, 0);
+      ext.vertexAttribDivisorANGLE(pipeline.aMatX, 1);
+      ext.vertexAttribDivisorANGLE(pipeline.aMatY, 1);
+      ext.vertexAttribDivisorANGLE(pipeline.aColor, 1);
+      this._attribMode = "instanced";
+    }
+
+    const entities = this._drawEntities;
+    let start = 0;
+    while (start < entities.length) {
+      const mesh = entities[start].mesh;
+      // Extend the run over every following entity sharing this mesh buffer.
+      let end = start + 1;
+      while (end < entities.length && entities[end].mesh.buffer === mesh.buffer) {
+        end++;
+      }
+
+      const runLength = end - start;
+      this._ensureInstanceCapacity(runLength);
+      const data = this._instanceData;
+      let offset = 0;
+      for (let index = start; index < end; index++) {
+        const entity = entities[index];
+        entity.computeMatrix();
+        mat3.multiply(entity.matrix, cameraMatrix, entity.matrix);
+        const matrix = entity.matrix;
+        // Pack the two affine output rows: x = m0,m3,m6 · [x,y,1], y = m1,m4,m7.
+        data[offset] = matrix[0];
+        data[offset + 1] = matrix[3];
+        data[offset + 2] = matrix[6];
+        data[offset + 3] = matrix[1];
+        data[offset + 4] = matrix[4];
+        data[offset + 5] = matrix[7];
+        const color = entity.color;
+        data[offset + 6] = color[0];
+        data[offset + 7] = color[1];
+        data[offset + 8] = color[2];
+        data[offset + 9] = color[3];
+        offset += FLOATS_PER_INSTANCE;
+      }
+
+      // Shared mesh geometry.
+      gl.bindBuffer(gl.ARRAY_BUFFER, mesh.buffer);
+      gl.vertexAttribPointer(pipeline.aVertexPosition, 2, gl.FLOAT, false, 0, 0);
+
+      // Per-instance transform + color.
+      gl.bindBuffer(gl.ARRAY_BUFFER, this._instanceBuffer);
+      gl.bufferSubData(gl.ARRAY_BUFFER, 0, data.subarray(0, offset));
+      gl.vertexAttribPointer(pipeline.aMatX, 3, gl.FLOAT, false, INSTANCE_STRIDE, 0);
+      gl.vertexAttribPointer(pipeline.aMatY, 3, gl.FLOAT, false, INSTANCE_STRIDE, 12);
+      gl.vertexAttribPointer(pipeline.aColor, 4, gl.FLOAT, false, INSTANCE_STRIDE, 24);
+
+      ext.drawArraysInstancedANGLE(gl.TRIANGLES, 0, mesh.vertexCount, runLength);
+      start = end;
+    }
+  }
+
+  /**
+   * Grows the persistent instance-staging array (and reallocates GPU storage)
+   * geometrically so it holds at least `instanceCount` records. No-ops once the
+   * array is large enough, so steady-state frames allocate nothing.
+   * @param instanceCount records that must fit
+   */
+  private _ensureInstanceCapacity(instanceCount: number) {
+    const needed = instanceCount * FLOATS_PER_INSTANCE;
+    if (needed <= this._instanceData.length) {
+      return;
+    }
+    let capacity = this._instanceData.length || FLOATS_PER_INSTANCE * 64;
+    while (capacity < needed) {
+      capacity *= 2;
+    }
+    this._instanceData = new Float32Array(capacity);
+    const gl = this._gl;
+    gl.bindBuffer(gl.ARRAY_BUFFER, this._instanceBuffer);
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      capacity * Float32Array.BYTES_PER_ELEMENT,
+      gl.DYNAMIC_DRAW
+    );
+  }
+
+  /** Disables the per-instance attribute arrays (leaves `aVertexPosition`). */
+  private _disableInstancedAttribs() {
+    const pipeline = this._instancedPipeline;
+    if (!pipeline) {
+      return;
+    }
+    const gl = this._gl;
+    gl.disableVertexAttribArray(pipeline.aMatX);
+    gl.disableVertexAttribArray(pipeline.aMatY);
+    gl.disableVertexAttribArray(pipeline.aColor);
   }
 
   /**
@@ -243,5 +435,11 @@ export class VDU {
     this._drawEntities = [];
     this._meshBuffers.clear();
     this._gl.deleteProgram(this._pipeline.program);
+    if (this._instancedPipeline) {
+      this._gl.deleteProgram(this._instancedPipeline.program);
+    }
+    if (this._instanceBuffer) {
+      this._gl.deleteBuffer(this._instanceBuffer);
+    }
   }
 }
