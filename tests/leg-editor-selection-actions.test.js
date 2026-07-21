@@ -39,9 +39,6 @@ const createHost = (initial) => {
     getDefaultWallThickness: () => 20,
     getGridLayout: () =>
       createGridLayout({ min: [-300, -300], max: [300, 300] }),
-    cancelGesture: () => {},
-    clearWallAnchor: () => {},
-    updateCursor: () => {},
     callbacks: {
       onDelete: () => {},
       onInsert: (copies) => {

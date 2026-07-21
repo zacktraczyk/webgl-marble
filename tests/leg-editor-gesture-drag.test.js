@@ -5,8 +5,8 @@ import {
   updateMarqueeDrag,
   updateMoveDrag,
   updateWallDrag,
-} from "../src/editor/legEditor/gestureDrag.ts";
-import { handlePointerUp } from "../src/editor/legEditor/pointerGestures.ts";
+} from "../src/editor/legEditor/input/drag.ts";
+import { handlePointerUp } from "../src/editor/legEditor/input/index.ts";
 import { LegEditorSelection } from "../src/editor/legEditor/selection.ts";
 
 const bounds = { min: [-705, -390], max: [705, 270] };
@@ -217,6 +217,21 @@ describe("leg editor gesture drag", () => {
       },
       selection,
       lastPointerScreen: null,
+      activeTool: 1, // SelectedTool.Pointer
+      readOnly: false,
+      creationToolActive: false,
+      endpointFeedback: null,
+      isTemporarySelection: () => false,
+      setEndpointFeedback: (target, kind) => {
+        session.endpointFeedback = target
+          ? {
+              objectId: target.objectId,
+              endpoint: target.endpoint,
+              position: [...target.position],
+              kind,
+            }
+          : null;
+      },
     };
     const env = {
       callbacks: {
@@ -228,13 +243,26 @@ describe("leg editor gesture drag", () => {
       screenPoint: () => [0, 0],
       releasePointer: () => {},
       screenDistance: () => 0,
-      updateIdleState: () => {},
-      isTemporarySelection: () => false,
+      keyboard: { spaceHeld: false, selectionModifierHeld: false },
+      setCursor: () => {},
+      handleDeps: () => ({
+        worldToScreen: (point) => point,
+        screenDistance: () => 0,
+        getObjects: () => objects,
+        getDefaultWallThickness: () => 20,
+        cameraZoom: 1,
+      }),
+      getObjects: () => objects,
+      worldPoint: () => [0, 0],
+      cameraZoom: () => 1,
+      getDefaultWallThickness: () => 20,
     };
 
     handlePointerUp(session, env, {
       pointerId: 1,
       preventDefault: () => {},
+      metaKey: false,
+      ctrlKey: false,
     });
 
     expect(discarded).toEqual([copy]);

@@ -1,18 +1,12 @@
-import type { LevelObjectData } from "../../game/level/document";
+import type { LevelObjectData } from "../../../game/level/document";
 import {
   applyLevelObjectShape,
   setWallEndpoints,
-} from "../../game/level/geometry";
-import type { EditorEnv } from "./env";
-import type { EditorGesture } from "./gestures";
-import type { EditorSession } from "./session";
-
-const findObject = (env: EditorEnv, id: string | null) => {
-  if (!id) {
-    return null;
-  }
-  return env.getObjects().find((object) => object.id === id) ?? null;
-};
+} from "../../../game/level/geometry";
+import { findLevelObject, type EditorEnv } from "../env";
+import type { EditorGesture } from "../gestures";
+import { updateCursor } from "./idleCursor";
+import type { EditorSession } from "../session";
 
 export function rollbackGesture(
   session: EditorSession,
@@ -22,7 +16,7 @@ export function rollbackGesture(
   if (gesture.kind === "move" && gesture.changed) {
     if (gesture.inserted) {
       const inserted = [...gesture.originals.keys()]
-        .map((id) => findObject(env, id))
+        .map((id) => findLevelObject(env.getObjects, id))
         .filter((object): object is LevelObjectData => Boolean(object));
       env.callbacks.onDiscard(inserted);
       session.selection.replaceAll(gesture.sourceSelection);
@@ -30,7 +24,7 @@ export function rollbackGesture(
     }
     const restored: LevelObjectData[] = [];
     for (const [id, original] of gesture.originals) {
-      const object = findObject(env, id);
+      const object = findLevelObject(env.getObjects, id);
       if (!object) {
         continue;
       }
@@ -43,7 +37,7 @@ export function rollbackGesture(
 
   if (gesture.kind === "move" && gesture.inserted) {
     const inserted = [...gesture.originals.keys()]
-      .map((id) => findObject(env, id))
+      .map((id) => findLevelObject(env.getObjects, id))
       .filter((object): object is LevelObjectData => Boolean(object));
     env.callbacks.onDiscard(inserted);
     session.selection.replaceAll(gesture.sourceSelection);
@@ -54,7 +48,7 @@ export function rollbackGesture(
     (gesture.kind === "resize" || gesture.kind === "rotate") &&
     gesture.changed
   ) {
-    const object = findObject(env, gesture.objectId);
+    const object = findLevelObject(env.getObjects, gesture.objectId);
     if (object) {
       applyLevelObjectShape(object, gesture.startShape);
       env.callbacks.onObjectsChange([object]);
@@ -63,7 +57,7 @@ export function rollbackGesture(
   }
 
   if (gesture.kind === "wall-endpoint" && gesture.changed) {
-    const object = findObject(env, gesture.objectId);
+    const object = findLevelObject(env.getObjects, gesture.objectId);
     if (object?.prefab === "wall") {
       setWallEndpoints(object, gesture.start, gesture.end);
       env.callbacks.onObjectsChange([object]);
@@ -72,7 +66,7 @@ export function rollbackGesture(
   }
 
   if (gesture.kind === "motion-range" && gesture.changed) {
-    const object = findObject(env, gesture.objectId);
+    const object = findLevelObject(env.getObjects, gesture.objectId);
     if (object) {
       object.motion = structuredClone(gesture.startMotion);
       env.callbacks.onObjectsChange([object]);
@@ -93,5 +87,5 @@ export function cancelGesture(session: EditorSession, env: EditorEnv): void {
   }
   session.gesture = null;
   session.endpointFeedback = null;
-  env.updateCursor();
+  updateCursor(session, env);
 }

@@ -1,13 +1,13 @@
-import type { Vec2 } from "../../engine/core/transform";
-import { snapDeltaToGrid, type GridLayout } from "../../game/level/grid";
-import type { LevelObjectData } from "../../game/level/document";
+import type { Vec2 } from "../../../engine/core/transform";
+import { snapDeltaToGrid, type GridLayout } from "../../../game/level/grid";
+import type { LevelObjectData } from "../../../game/level/document";
 import {
   applyLevelObjectShape,
   getLevelObjectBounds,
   getLevelObjectShape,
   setWallEndpoints,
   type LevelObjectShape,
-} from "../../game/level/geometry";
+} from "../../../game/level/geometry";
 import {
   boundsFromPoints,
   boundsIntersect,
@@ -15,18 +15,18 @@ import {
   moveShape,
   resizeShape,
   rotateShape,
-} from "../geometry";
-import { oscillationPeriodForRange } from "../../game/level/motion";
+} from "../../geometry";
+import { oscillationPeriodForRange } from "../../../game/level/motion";
 import {
   DRAG_THRESHOLD,
   MIN_OBJECT_SIZE,
   ROTATION_SNAP_STEP,
   SIZE_SNAP_STEP,
-} from "./constants";
-import type { EditorGesture, TransformGesture } from "./gestures";
-import type { SnapDeps } from "./snap";
-import { snapWallEndpoint } from "./snap";
-import type { LegEditorSelection } from "./selection";
+} from "../constants";
+import type { EditorGesture, TransformGesture } from "../gestures";
+import type { SnapDeps } from "../hitTest";
+import { snapWallEndpoint } from "../hitTest";
+import type { LegEditorSelection } from "../selection";
 
 export type DragUpdateResult = "pending" | "handled" | "cancel";
 

@@ -1,13 +1,24 @@
-import type { Vec2 } from "../../engine/core/transform";
+import type { Vec2 } from "../../../engine/core/transform";
 import {
   getLevelObjectShape,
   getWallEndpoints,
-} from "../../game/level/geometry";
-import { pickLevelObject, pickTolerance, type ResizeHandle } from "../geometry";
-import type { LevelObjectData } from "../../game/level/document";
-import { isPusherTool, SelectedTool } from "../tools";
-import { HANDLE_HIT_RADIUS, MIN_WALL_LENGTH } from "./constants";
-import type { EditorEnv } from "./env";
+} from "../../../game/level/geometry";
+import { pickLevelObject, pickTolerance, type ResizeHandle } from "../../geometry";
+import type { LevelObjectData } from "../../../game/level/document";
+import { isPusherTool, SelectedTool } from "../../tools";
+import { HANDLE_HIT_RADIUS, MIN_WALL_LENGTH } from "../constants";
+import type { EditorEnv } from "../env";
+import type { TransformGesture } from "../gestures";
+import {
+  endpointAt,
+  findWallEndpointTarget,
+  motionRangeHandleAt,
+  resizeHandleAt,
+  rotationHandleAt,
+  snapPlacementPoint,
+  snapWallEndpoint,
+} from "../hitTest";
+import type { EditorSession } from "../session";
 import {
   updateMarqueeDrag,
   updateMotionRangeDrag,
@@ -15,17 +26,16 @@ import {
   updateTransformDrag,
   updateWallDrag,
   updateWallEndpointDrag,
-} from "./gestureDrag";
-import type { TransformGesture } from "./gestures";
-import {
-  endpointAt,
-  findWallEndpointTarget,
-  motionRangeHandleAt,
-  resizeHandleAt,
-  rotationHandleAt,
-} from "./handles";
-import type { EditorSession } from "./session";
-import { snapPlacementPoint, snapWallEndpoint } from "./snap";
+} from "./drag";
+import { updateIdleState } from "./idleCursor";
+import { cancelGesture } from "./rollback";
+
+// Input-module API implemented in private helpers (not separate public modules).
+export type { DragDepsBase, DragUpdateResult } from "./drag";
+export { updateCursor, updateIdleState } from "./idleCursor";
+export { LegEditorKeyboard } from "./keyboard";
+export type { LegEditorKeyboardActions } from "./keyboard";
+export { cancelGesture, rollbackGesture } from "./rollback";
 
 export function beginPan(
   session: EditorSession,
@@ -241,7 +251,7 @@ function tryBeginWallEndpoint(
     startScreen: screenPoint,
     changed: false,
   };
-  env.showEndpointFeedback(directEndpointTarget, "edit");
+  session.setEndpointFeedback(directEndpointTarget, "edit");
   env.capturePointer(event.pointerId);
   event.preventDefault();
   return true;
@@ -299,7 +309,7 @@ function tryBeginMoveOrMarquee(
     if (event.shiftKey) {
       if (session.selection.has(pickedObject.id)) {
         session.selection.delete(pickedObject.id);
-        env.updateIdleState(screenPoint);
+        updateIdleState(session, env, screenPoint);
         event.preventDefault();
         return true;
       }
@@ -368,7 +378,7 @@ export function handlePointerDown(
     return;
   }
 
-  const temporarySelection = env.isTemporarySelection(event);
+  const temporarySelection = session.isTemporarySelection(event);
   if (tryBeginWallDraw(session, env, event, screenPoint, temporarySelection)) {
     return;
   }
@@ -400,7 +410,7 @@ export function handlePointerMove(
   const screenPoint = env.screenPoint(event);
   session.lastPointerScreen = screenPoint;
   if (!session.gesture) {
-    const temporarySelection = env.isTemporarySelection(event);
+    const temporarySelection = session.isTemporarySelection(event);
     const snapDeps = env.snapDeps();
     if (
       session.activeTool === SelectedTool.Wall &&
@@ -434,7 +444,7 @@ export function handlePointerMove(
       session.endpointFeedback = null;
       session.placementPreviewPosition = null;
     }
-    env.updateIdleState(screenPoint, {
+    updateIdleState(session, env, screenPoint, {
       temporarySelection,
     });
     return;
@@ -520,7 +530,7 @@ export function handlePointerMove(
     return;
   }
   if (result === "cancel") {
-    env.cancelGesture();
+    cancelGesture(session, env);
     return;
   }
   event.preventDefault();
@@ -552,7 +562,7 @@ export function handlePointerUp(
         session.wallAnchor = [...gesture.end];
         session.wallPreviewEnd = [...gesture.end];
       } else {
-        env.clearWallAnchor();
+        session.clearWallAnchor();
       }
       env.callbacks.onToolComplete(SelectedTool.Wall);
     } else if (!gesture.anchored) {
@@ -609,8 +619,8 @@ export function handlePointerUp(
     }
   }
 
-  env.updateIdleState(screenPoint, {
-    temporarySelection: env.isTemporarySelection(event),
+  updateIdleState(session, env, screenPoint, {
+    temporarySelection: session.isTemporarySelection(event),
   });
   event.preventDefault();
 }

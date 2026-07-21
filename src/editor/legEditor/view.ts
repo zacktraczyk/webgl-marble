@@ -16,7 +16,7 @@ import {
   type RectangleLevelShape,
 } from "../../game/level/geometry";
 import { getRotationHandle, getResizeAnchors } from "../geometry";
-import { getSelectionBounds } from "./selectionTransforms";
+import { getSelectionBounds } from "./selection";
 import type {
   SelectionMarquee,
   WallDraft,

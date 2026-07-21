@@ -7,7 +7,7 @@ import {
   findWallEndpointTarget,
   resizeHandleAt,
   rotationHandleAt,
-} from "../src/editor/legEditor/handles.ts";
+} from "../src/editor/legEditor/hitTest.ts";
 
 const wall = (overrides = {}) => ({
   id: "wall",

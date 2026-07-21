@@ -5,7 +5,7 @@ import { ROTATION_SNAP_STEP } from "../src/editor/legEditor/constants.ts";
 import {
   snapPlacementPoint,
   snapWallEndpoint,
-} from "../src/editor/legEditor/snap.ts";
+} from "../src/editor/legEditor/hitTest.ts";
 
 const bounds = { min: [-705, -390], max: [705, 270] };
 const gridLayout = createGridLayout(bounds);

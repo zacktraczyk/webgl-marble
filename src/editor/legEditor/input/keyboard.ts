@@ -1,5 +1,5 @@
-import type { Vec2 } from "../../engine/core/transform";
-import { SelectedTool } from "../tools";
+import type { Vec2 } from "../../../engine/core/transform";
+import { SelectedTool } from "../../tools";
 
 export type LegEditorKeyboardActions = {
   undo(): void;

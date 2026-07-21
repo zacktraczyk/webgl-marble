@@ -2,11 +2,8 @@ import type { Vec2 } from "../../engine/core/transform";
 import type { LevelObjectData } from "../../game/level/document";
 import type { GridLayout } from "../../game/level/grid";
 import type { PusherTool, SelectedTool } from "../tools";
-import type { DragDepsBase } from "./gestureDrag";
-import type { WallEndpointFeedback } from "./gestures";
-import type { HandleTestDeps, WallEndpointTarget } from "./handles";
-import type { LegEditorKeyboard } from "./keyboard";
-import type { SnapDeps } from "./snap";
+import type { DragDepsBase, LegEditorKeyboard } from "./input";
+import type { HandleTestDeps, SnapDeps } from "./hitTest";
 
 export type EditorCallbacks = {
   onObjectsChange(objects: readonly LevelObjectData[]): void;
@@ -29,6 +26,7 @@ export type EditorCameraControls = {
   handleWheel(screenPoint: Vec2, event: WheelEvent): void;
 };
 
+/** Service ports for editor modules — no session mutations. */
 export type EditorEnv = {
   readonly callbacks: EditorCallbacks;
   readonly getObjects: () => readonly LevelObjectData[];
@@ -47,19 +45,14 @@ export type EditorEnv = {
   readonly handleDeps: () => HandleTestDeps;
   readonly snapDeps: () => SnapDeps;
   readonly dragDeps: () => DragDepsBase;
-  readonly cancelGesture: () => void;
-  readonly updateIdleState: (
-    screenPoint: Vec2,
-    options?: { temporarySelection?: boolean }
-  ) => void;
-  readonly updateCursor: () => void;
-  readonly showEndpointFeedback: (
-    target: WallEndpointTarget | null,
-    kind: WallEndpointFeedback["kind"]
-  ) => void;
-  readonly isTemporarySelection: (modifier: {
-    metaKey: boolean;
-    ctrlKey: boolean;
-  }) => boolean;
-  readonly clearWallAnchor: () => void;
 };
+
+export function findLevelObject(
+  getObjects: () => readonly LevelObjectData[],
+  id: string | null
+): LevelObjectData | null {
+  if (!id) {
+    return null;
+  }
+  return getObjects().find((object) => object.id === id) ?? null;
+}

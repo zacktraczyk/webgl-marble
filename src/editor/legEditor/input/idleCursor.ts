@@ -1,21 +1,21 @@
-import type { Vec2 } from "../../engine/core/transform";
-import { getWallEndpoints } from "../../game/level/geometry";
+import type { Vec2 } from "../../../engine/core/transform";
+import { getWallEndpoints } from "../../../game/level/geometry";
 import {
   pickLevelObject,
   pickTolerance,
   resizeHandleCursor,
-} from "../geometry";
-import { SelectedTool } from "../tools";
-import { HANDLE_HIT_RADIUS } from "./constants";
-import type { EditorEnv } from "./env";
+} from "../../geometry";
+import { SelectedTool } from "../../tools";
+import { HANDLE_HIT_RADIUS } from "../constants";
+import type { EditorEnv } from "../env";
 import {
   endpointAt,
   findWallEndpointTarget,
   motionRangeHandleAt,
   resizeHandleAt,
   rotationHandleAt,
-} from "./handles";
-import type { EditorSession } from "./session";
+} from "../hitTest";
+import type { EditorSession } from "../session";
 
 export function updateIdleState(
   session: EditorSession,
@@ -48,7 +48,7 @@ export function updateIdleState(
     : null;
   if (directEndpointTarget) {
     session.selection.setHovered(directEndpointTarget.objectId);
-    env.showEndpointFeedback(directEndpointTarget, "edit");
+    session.setEndpointFeedback(directEndpointTarget, "edit");
     env.setCursor(session.readOnly ? "default" : "crosshair");
     return;
   }
@@ -69,7 +69,7 @@ export function updateIdleState(
   if (selectedObject?.prefab === "wall" && selectedEndpoint) {
     const { start, end } = getWallEndpoints(selectedObject);
     session.selection.setHovered(selectedObject.id);
-    env.showEndpointFeedback(
+    session.setEndpointFeedback(
       {
         object: selectedObject,
         objectId: selectedObject.id,

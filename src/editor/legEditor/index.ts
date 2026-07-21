@@ -7,25 +7,23 @@ import type {
   PusherPlacementPreview,
   SelectionMarquee,
   WallDraft,
-  WallEndpointFeedback,
 } from "./gestures";
-import type { EditorCallbacks, EditorCameraControls, EditorEnv } from "./env";
-import { cancelGesture } from "./gestureRollback";
 import {
-  findWallEndpointTarget,
-  type HandleTestDeps,
-  type WallEndpointTarget,
-} from "./handles";
+  findLevelObject,
+  type EditorCallbacks,
+  type EditorCameraControls,
+  type EditorEnv,
+} from "./env";
+import { findWallEndpointTarget, type HandleTestDeps, type SnapDeps } from "./hitTest";
 import {
-  updateCursor as applyIdleCursor,
-  updateIdleState as applyIdleState,
-} from "./idleCursor";
-import { LegEditorKeyboard } from "./keyboard";
-import {
+  cancelGesture,
   handlePointerDown,
   handlePointerMove,
   handlePointerUp,
-} from "./pointerGestures";
+  LegEditorKeyboard,
+  updateCursor,
+  updateIdleState,
+} from "./input";
 import { EditorSession } from "./session";
 import {
   alignSelectedObjects,
@@ -44,7 +42,6 @@ import {
   pasteClipboardObjects,
   selectAllObjects,
 } from "./selectionActions";
-import { type SnapDeps } from "./snap";
 import {
   applyLevelObjectShape,
   type LevelObjectShape,
@@ -54,7 +51,7 @@ import type {
   SelectionAlignment,
   SelectionDistribution,
   SelectionMirror,
-} from "./selectionTransforms";
+} from "./selection";
 
 export type EditorContextAction =
   | "duplicate"
@@ -82,8 +79,8 @@ export type {
   WallDraft,
   WallEndpointFeedback,
 } from "./gestures";
-export type { WallEndpointExclusion, WallEndpointTarget } from "./handles";
-export { EditorOverlay } from "./overlay";
+export type { WallEndpointExclusion, WallEndpointTarget } from "./hitTest";
+export { EditorOverlay } from "./view";
 
 export class LegEditorController {
   private readonly stage: Stage;
@@ -93,9 +90,9 @@ export class LegEditorController {
   private readonly getGridSnapEnabled: () => boolean;
   private readonly getGridLayout: () => GridLayout;
   private readonly callbacks: EditorCallbacks;
-  private readonly keyboard: LegEditorKeyboard;
   private readonly session: EditorSession;
   private readonly env: EditorEnv;
+  private readonly keyboard: LegEditorKeyboard;
 
   constructor({
     stage,
@@ -124,36 +121,21 @@ export class LegEditorController {
     this.getGridLayout = getGridLayout;
     this.callbacks = callbacks;
 
-    // Editor state
     this.session = new EditorSession(getObjects);
-
-    // Input wiring
-    this.bindCanvasEvents(signal);
-    this.keyboard = this.createKeyboard(signal);
-
-    // Module environment
     this.env = this.createEnv();
-  }
-
-  private bindCanvasEvents(signal: AbortSignal) {
-    const canvas = this.stage.canvas;
-    canvas.addEventListener("pointerdown", this.pointerDown, { signal });
-    canvas.addEventListener("pointermove", this.pointerMove, { signal });
-    canvas.addEventListener("pointerup", this.pointerUp, { signal });
-    canvas.addEventListener("pointercancel", this.pointerCancel, { signal });
-    canvas.addEventListener("pointerleave", this.pointerLeave, { signal });
-    canvas.addEventListener("wheel", this.wheel, { signal, passive: false });
+    this.keyboard = this.createKeyboard(signal);
+    this.bindCanvasEvents(signal);
   }
 
   private createKeyboard(signal: AbortSignal) {
     return new LegEditorKeyboard(
       {
         undo: () => {
-          this.env.cancelGesture();
+          cancelGesture(this.session, this.env);
           this.callbacks.onUndo();
         },
         redo: () => {
-          this.env.cancelGesture();
+          cancelGesture(this.session, this.env);
           this.callbacks.onRedo();
         },
         copy: this.copySelection,
@@ -179,7 +161,7 @@ export class LegEditorController {
         deleteSelection: this.deleteSelection,
         nudgeSelection: this.nudgeSelection,
         modifierChanged: this.handleSelectionModifierChange,
-        spaceChanged: () => this.updateCursor(),
+        spaceChanged: () => updateCursor(this.session, this.env),
         blur: this.handleWindowBlur,
       },
       signal
@@ -187,17 +169,19 @@ export class LegEditorController {
   }
 
   private createEnv(): EditorEnv {
+    // Keyboard is assigned after env; modules only read it after construction.
+    // eslint-disable-next-line @typescript-eslint/no-this-alias -- env ports
+    const controller = this;
     return {
-      // Shared deps
       callbacks: this.callbacks,
       getObjects: this.getObjects,
       getDefaultWallThickness: this.getDefaultWallThickness,
       getGridSnapEnabled: this.getGridSnapEnabled,
       getGridLayout: this.getGridLayout,
       cameraControls: this.cameraControls,
-      keyboard: this.keyboard,
-
-      // Canvas helpers
+      get keyboard() {
+        return controller.keyboard;
+      },
       screenPoint: (event) => this.screenPoint(event),
       worldPoint: (screenPoint) => this.worldPoint(screenPoint),
       screenDistance: (first, second) => this.screenDistance(first, second),
@@ -205,46 +189,34 @@ export class LegEditorController {
       capturePointer: (pointerId) => this.capturePointer(pointerId),
       releasePointer: (pointerId) => this.releasePointer(pointerId),
       cameraZoom: () => this.cameraZoom,
-
-      // Zoom-sensitive deps
       handleDeps: () => this.handleDeps,
       snapDeps: () => this.snapDeps,
       dragDeps: () => this.dragDeps,
-
-      // Cross-cutting ops
-      cancelGesture: () => cancelGesture(this.session, this.env),
-      updateIdleState: (screenPoint, options) =>
-        this.updateIdleState(screenPoint, options),
-      updateCursor: () => this.updateCursor(),
-      showEndpointFeedback: (target, kind) =>
-        this.showEndpointFeedback(target, kind),
-      isTemporarySelection: (modifier) => this.isTemporarySelection(modifier),
-      clearWallAnchor: () => this.clearWallAnchor(),
     };
   }
 
   setActiveTool(tool: SelectedTool) {
     if (this.session.activeTool !== tool) {
-      this.env.cancelGesture();
-      this.clearWallAnchor();
+      cancelGesture(this.session, this.env);
+      this.session.clearWallAnchor();
     }
     this.session.activeTool = tool;
     this.session.selection.setHovered(null);
     this.session.endpointFeedback = null;
     this.session.placementPreviewPosition = null;
-    this.updateCursor();
+    updateCursor(this.session, this.env);
   }
 
   setReadOnly(readOnly: boolean) {
     if (readOnly && !this.session.readOnly) {
-      this.env.cancelGesture();
-      this.clearWallAnchor();
+      cancelGesture(this.session, this.env);
+      this.session.clearWallAnchor();
       this.session.selection.setHovered(null);
       this.session.endpointFeedback = null;
       this.session.placementPreviewPosition = null;
     }
     this.session.readOnly = readOnly;
-    this.updateCursor();
+    updateCursor(this.session, this.env);
   }
 
   clearSelection() {
@@ -416,13 +388,6 @@ export class LegEditorController {
       : null;
   }
 
-  private findObject(id: string | null) {
-    if (!id) {
-      return null;
-    }
-    return this.getObjects().find((object) => object.id === id) ?? null;
-  }
-
   private get handleDeps(): HandleTestDeps {
     return {
       worldToScreen: (point) =>
@@ -448,7 +413,7 @@ export class LegEditorController {
           options
         ),
       setEndpointFeedback: (target, kind) =>
-        this.showEndpointFeedback(target, kind),
+        this.session.setEndpointFeedback(target, kind),
     };
   }
 
@@ -459,7 +424,7 @@ export class LegEditorController {
       getGridSnapEnabled: this.getGridSnapEnabled,
       getGridLayout: this.getGridLayout,
       getObjects: this.getObjects,
-      findObject: (id: string) => this.findObject(id),
+      findObject: (id: string) => findLevelObject(this.getObjects, id),
       onObjectsChange: this.callbacks.onObjectsChange.bind(this.callbacks),
     };
   }
@@ -492,48 +457,18 @@ export class LegEditorController {
     }
   }
 
-  private clearWallAnchor() {
-    this.session.wallAnchor = null;
-    this.session.wallPreviewEnd = null;
-    this.session.endpointFeedback = null;
-  }
-
   private screenDistance(first: Vec2, second: Vec2) {
     return Math.hypot(first[0] - second[0], first[1] - second[1]);
   }
 
-  private isTemporarySelection(modifier: {
-    metaKey: boolean;
-    ctrlKey: boolean;
-  }) {
-    return (
-      this.session.creationToolActive && (modifier.metaKey || modifier.ctrlKey)
-    );
-  }
-
-  private showEndpointFeedback(
-    target: WallEndpointTarget | null,
-    kind: WallEndpointFeedback["kind"]
-  ) {
-    this.session.endpointFeedback = target
-      ? {
-          objectId: target.objectId,
-          endpoint: target.endpoint,
-          position: [...target.position],
-          kind,
-        }
-      : null;
-  }
-
-  private updateIdleState(
-    screenPoint: Vec2,
-    options?: { temporarySelection?: boolean }
-  ) {
-    applyIdleState(this.session, this.env, screenPoint, options);
-  }
-
-  private updateCursor() {
-    applyIdleCursor(this.session, this.env);
+  private bindCanvasEvents(signal: AbortSignal) {
+    const canvas = this.stage.canvas;
+    canvas.addEventListener("pointerdown", this.pointerDown, { signal });
+    canvas.addEventListener("pointermove", this.pointerMove, { signal });
+    canvas.addEventListener("pointerup", this.pointerUp, { signal });
+    canvas.addEventListener("pointercancel", this.pointerCancel, { signal });
+    canvas.addEventListener("pointerleave", this.pointerLeave, { signal });
+    canvas.addEventListener("wheel", this.wheel, { signal, passive: false });
   }
 
   private readonly pointerDown = (event: PointerEvent) => {
@@ -550,7 +485,7 @@ export class LegEditorController {
 
   private readonly pointerCancel = (event: PointerEvent) => {
     if (this.session.gesture?.pointerId === event.pointerId) {
-      this.env.cancelGesture();
+      cancelGesture(this.session, this.env);
     }
   };
 
@@ -560,7 +495,7 @@ export class LegEditorController {
     if (!this.session.gesture) {
       this.session.selection.setHovered(null);
       this.session.endpointFeedback = null;
-      this.updateCursor();
+      updateCursor(this.session, this.env);
     }
   };
 
@@ -610,19 +545,19 @@ export class LegEditorController {
   private readonly handleSelectionModifierChange = (held: boolean) => {
     this.session.endpointFeedback = null;
     if (this.session.lastPointerScreen) {
-      this.updateIdleState(this.session.lastPointerScreen, {
+      updateIdleState(this.session, this.env, this.session.lastPointerScreen, {
         temporarySelection: held && this.session.creationToolActive,
       });
     } else {
-      this.updateCursor();
+      updateCursor(this.session, this.env);
     }
   };
 
   private readonly handleWindowBlur = () => {
     this.session.endpointFeedback = null;
     if (this.session.gesture) {
-      this.env.cancelGesture();
+      cancelGesture(this.session, this.env);
     }
-    this.updateCursor();
+    updateCursor(this.session, this.env);
   };
 }

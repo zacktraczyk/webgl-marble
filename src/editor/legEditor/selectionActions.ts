@@ -9,6 +9,7 @@ import {
 import { moveShape } from "../geometry";
 import { SelectedTool } from "../tools";
 import type { EditorEnv } from "./env";
+import { cancelGesture, updateCursor } from "./input";
 import type { EditorSession } from "./session";
 import {
   alignLevelObjects,
@@ -20,7 +21,7 @@ import {
   type SelectionAlignment,
   type SelectionDistribution,
   type SelectionMirror,
-} from "./selectionTransforms";
+} from "./selection";
 
 const CLIPBOARD_KEY = "marble:leg-editor-clipboard";
 let memoryClipboard: LevelObjectData[] = [];
@@ -80,9 +81,9 @@ export const selectAllObjects = (session: EditorSession, env: EditorEnv) => {
 
 export const handleEscapeKey = (session: EditorSession, env: EditorEnv) => {
   if (session.gesture) {
-    env.cancelGesture();
+    cancelGesture(session, env);
   } else if (session.wallAnchor) {
-    env.clearWallAnchor();
+    session.clearWallAnchor();
   } else if (session.activeTool !== SelectedTool.Pointer) {
     env.callbacks.onToolRequest(SelectedTool.Pointer);
   } else if (session.selection.size > 0) {
@@ -95,8 +96,8 @@ export const finishWallDraft = (session: EditorSession, env: EditorEnv) => {
   if (!session.wallAnchor) {
     return false;
   }
-  env.clearWallAnchor();
-  env.updateCursor();
+  session.clearWallAnchor();
+  updateCursor(session, env);
   return true;
 };
 
@@ -108,7 +109,7 @@ export const deleteSelectedObjects = (
   if (selected.length === 0 || session.readOnly) {
     return false;
   }
-  env.cancelGesture();
+  cancelGesture(session, env);
   env.callbacks.onDelete(selected);
   session.selection.clearAll();
   return true;
@@ -131,7 +132,7 @@ export const cutSelectedObjects = (session: EditorSession, env: EditorEnv) => {
     return false;
   }
   writeClipboard(clipboardCopies(env, selected));
-  env.cancelGesture();
+  cancelGesture(session, env);
   env.callbacks.onDelete(selected);
   session.selection.replaceAll(
     session.selection.selectedObjects
