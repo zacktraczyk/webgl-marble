@@ -63,7 +63,7 @@ export async function discoverBrowserExecutable(
   throw new Error(
     explicitPath
       ? `Browser executable is not accessible: ${explicitPath}`
-      : "Could not find Chrome or Chromium. Pass --browser or set PUPPETEER_EXECUTABLE_PATH."
+      : "Could not find Chrome or Chromium. Pass --chrome or set PUPPETEER_EXECUTABLE_PATH or CHROME_PATH."
   );
 }
 

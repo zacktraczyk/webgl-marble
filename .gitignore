@@ -18,11 +18,14 @@ benchmarks/results/*
 !benchmarks/results/.gitkeep
 
 # environment variables
-.env
-.env.production
+.env*
+!.env.example
 
 # macOS-specific files
 .DS_Store
 
 # jetbrains setting folder
 .idea/
+
+# local AI assistant configuration
+.claude/

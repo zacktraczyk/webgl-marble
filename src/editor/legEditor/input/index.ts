@@ -3,7 +3,11 @@ import {
   getLevelObjectShape,
   getWallEndpoints,
 } from "../../../game/level/geometry";
-import { pickLevelObject, pickTolerance, type ResizeHandle } from "../../geometry";
+import {
+  pickLevelObject,
+  pickTolerance,
+  type ResizeHandle,
+} from "../../geometry";
 import type { LevelObjectData } from "../../../game/level/document";
 import { isPusherTool, SelectedTool } from "../../tools";
 import { HANDLE_HIT_RADIUS, MIN_WALL_LENGTH } from "../constants";

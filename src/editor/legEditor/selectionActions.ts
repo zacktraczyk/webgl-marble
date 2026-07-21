@@ -41,10 +41,7 @@ const writeClipboard = (objects: readonly LevelObjectData[]) => {
   }
 };
 
-const clipboardCopies = (
-  env: EditorEnv,
-  objects: readonly LevelObjectData[]
-) =>
+const clipboardCopies = (env: EditorEnv, objects: readonly LevelObjectData[]) =>
   structuredClone(copyableObjects(objects)).map((object) => {
     if (object.prefab === "wall" && object.properties.thickness === undefined) {
       object.properties.thickness = env.getDefaultWallThickness();

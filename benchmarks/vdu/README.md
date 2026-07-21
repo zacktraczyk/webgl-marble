@@ -5,6 +5,22 @@ same production build. It uses fresh pages, per-page warmup, balanced paired
 ordering, raw frame samples, a wrapper-free timed pass, and a separate WebGL
 structural audit.
 
+## Prerequisites
+
+Install Google Chrome or Chromium before running the browser benchmark. The
+runner checks conventional installation paths on macOS, Windows, and Linux. If
+your browser is installed elsewhere, provide it with one of these methods:
+
+```sh
+bun benchmarks/vdu/runner.ts run --preset smoke --chrome /path/to/chrome
+PUPPETEER_EXECUTABLE_PATH=/path/to/chrome bun benchmarks/vdu/runner.ts run --preset smoke
+CHROME_PATH=/path/to/chrome bun benchmarks/vdu/runner.ts run --preset smoke
+```
+
+Run `bun benchmarks/vdu/runner.ts --help` for the complete option reference.
+
+## Running the benchmark
+
 ```sh
 bun benchmarks/vdu/runner.ts run --preset smoke
 bun benchmarks/vdu/runner.ts run --scenario contiguous --count 2500
@@ -38,6 +54,10 @@ The `scaling` suite runs the selected scenario at every value supplied through
 full-race case both frozen and with physics active. One preview server and one
 browser process are reused across suite cases, while each measured run still
 gets a fresh page.
+
+Result JSON and visual-diff artifacts are written to `benchmarks/results/` by
+default. Override that location with `--output-dir`; local results are ignored
+by Git.
 
 ## Recorded baseline
 

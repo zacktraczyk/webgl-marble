@@ -1,11 +1,16 @@
 {
-  "name": "marble",
-  "description": "A WebGL-based marble race game with physics engine",
-  "version": "1.0.0",
+  "name": "marble-races",
+  "description": "Marble Races, a WebGL game with a custom physics engine",
+  "version": "0.1.0",
   "type": "module",
   "private": true,
-  "author": "Your Name",
+  "author": "Zack Traczyk <me@zacktraczyk.com>",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:zacktraczyk/marble-races.git"
+  },
+  "packageManager": "bun@1.3.11",
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
@@ -13,10 +18,11 @@
     "astro": "astro",
     "lint": "eslint . --ext .ts,.js,.astro",
     "lint:fix": "eslint . --ext .ts,.js,.astro --fix",
-    "type-check": "tsc --noEmit",
+    "type-check": "astro check",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "bun test",
+    "check": "bun run format:check && bun run lint && bun run type-check && bun run test && bun run build",
     "bench:vdu": "bun benchmarks/vdu/runner.ts run",
     "bench:vdu:smoke": "bun benchmarks/vdu/runner.ts run --preset smoke",
     "bench:vdu:full": "bun benchmarks/vdu/runner.ts run --suite full",
@@ -24,41 +30,30 @@
     "clean": "rm -rf dist node_modules/.cache"
   },
   "dependencies": {
-    "@tailwindcss/vite": "^4.1.11",
+    "@tailwindcss/vite": "4.3.3",
     "astro": "5.11.1",
-    "gl-matrix": "^3.4.3"
+    "gl-matrix": "3.4.3"
   },
   "devDependencies": {
-    "@eslint/js": "^9.30.1",
-    "@types/pngjs": "^6.0.5",
-    "@typescript-eslint/parser": "^8.35.1",
-    "eslint": "^9.30.1",
-    "eslint-config-prettier": "^10.1.5",
-    "eslint-plugin-astro": "^1.3.1",
-    "eslint-plugin-jsx-a11y": "^6.10.2",
-    "eslint-plugin-prettier": "^5.5.1",
-    "lint-staged": "^15.0.0",
-    "pixelmatch": "^7.2.0",
-    "pngjs": "^7.0.0",
-    "prettier": "^3.0.0",
-    "prettier-plugin-astro": "^0.13.0",
-    "puppeteer-core": "^25.3.0",
-    "tailwindcss": "^4.1.11",
-    "typescript-eslint": "^8.35.1",
-    "vite-plugin-eslint": "^1.8.1",
-    "vite-plugin-glsl": "^1.5.1"
-  },
-  "lint-staged": {
-    "*.{js,ts,astro}": [
-      "eslint --fix",
-      "prettier --write"
-    ],
-    "*.{json,md,yml,yaml}": [
-      "prettier --write"
-    ]
+    "@astrojs/check": "0.9.9",
+    "@eslint/js": "9.30.1",
+    "@types/node": "26.1.1",
+    "@types/pngjs": "6.0.5",
+    "eslint": "9.30.1",
+    "eslint-config-prettier": "10.1.5",
+    "eslint-plugin-astro": "1.3.1",
+    "globals": "17.7.0",
+    "pixelmatch": "7.2.0",
+    "pngjs": "7.0.0",
+    "prettier": "3.6.2",
+    "prettier-plugin-astro": "0.13.0",
+    "puppeteer-core": "25.3.0",
+    "tailwindcss": "4.3.3",
+    "typescript": "5.8.3",
+    "typescript-eslint": "8.35.1",
+    "vite-plugin-glsl": "1.5.1"
   },
   "engines": {
-    "node": ">=18.0.0",
-    "bun": ">=1.0.0"
+    "bun": "1.3.11"
   }
 }

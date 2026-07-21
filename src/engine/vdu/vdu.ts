@@ -340,7 +340,14 @@ export class VDU {
       // Bind + point the attribute only when the buffer changes.
       if (mesh.buffer !== lastBuffer) {
         gl.bindBuffer(gl.ARRAY_BUFFER, mesh.buffer);
-        gl.vertexAttribPointer(pipeline.aVertexPosition, 2, gl.FLOAT, false, 0, 0);
+        gl.vertexAttribPointer(
+          pipeline.aVertexPosition,
+          2,
+          gl.FLOAT,
+          false,
+          0,
+          0
+        );
         lastBuffer = mesh.buffer;
       }
 
@@ -387,7 +394,10 @@ export class VDU {
       const mesh = entities[start].mesh;
       // Extend the run over every following entity sharing this mesh buffer.
       let end = start + 1;
-      while (end < entities.length && entities[end].mesh.buffer === mesh.buffer) {
+      while (
+        end < entities.length &&
+        entities[end].mesh.buffer === mesh.buffer
+      ) {
         end++;
       }
 
@@ -417,16 +427,49 @@ export class VDU {
 
       // Shared mesh geometry.
       gl.bindBuffer(gl.ARRAY_BUFFER, mesh.buffer);
-      gl.vertexAttribPointer(pipeline.aVertexPosition, 2, gl.FLOAT, false, 0, 0);
+      gl.vertexAttribPointer(
+        pipeline.aVertexPosition,
+        2,
+        gl.FLOAT,
+        false,
+        0,
+        0
+      );
 
       // Per-instance transform + color.
       gl.bindBuffer(gl.ARRAY_BUFFER, this._instanceBuffer);
       gl.bufferSubData(gl.ARRAY_BUFFER, 0, data.subarray(0, offset));
-      gl.vertexAttribPointer(pipeline.aMatX, 3, gl.FLOAT, false, INSTANCE_STRIDE, 0);
-      gl.vertexAttribPointer(pipeline.aMatY, 3, gl.FLOAT, false, INSTANCE_STRIDE, 12);
-      gl.vertexAttribPointer(pipeline.aColor, 4, gl.FLOAT, false, INSTANCE_STRIDE, 24);
+      gl.vertexAttribPointer(
+        pipeline.aMatX,
+        3,
+        gl.FLOAT,
+        false,
+        INSTANCE_STRIDE,
+        0
+      );
+      gl.vertexAttribPointer(
+        pipeline.aMatY,
+        3,
+        gl.FLOAT,
+        false,
+        INSTANCE_STRIDE,
+        12
+      );
+      gl.vertexAttribPointer(
+        pipeline.aColor,
+        4,
+        gl.FLOAT,
+        false,
+        INSTANCE_STRIDE,
+        24
+      );
 
-      ext.drawArraysInstancedANGLE(gl.TRIANGLES, 0, mesh.vertexCount, runLength);
+      ext.drawArraysInstancedANGLE(
+        gl.TRIANGLES,
+        0,
+        mesh.vertexCount,
+        runLength
+      );
       start = end;
     }
   }

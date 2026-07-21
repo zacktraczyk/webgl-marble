@@ -17,7 +17,7 @@ export class RaceProgression {
 
   constructor(
     private readonly participantCount: number,
-    private readonly legCount: number
+    legCount: number
   ) {
     if (!Number.isInteger(participantCount) || participantCount < 2) {
       throw new Error("A race requires at least two teams");

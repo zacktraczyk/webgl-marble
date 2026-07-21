@@ -115,10 +115,7 @@ export function updateCursor(session: EditorSession, env: EditorEnv) {
     session.activeTool === SelectedTool.Pan
   ) {
     env.setCursor("grab");
-  } else if (
-    env.keyboard.selectionModifierHeld &&
-    session.creationToolActive
-  ) {
+  } else if (env.keyboard.selectionModifierHeld && session.creationToolActive) {
     env.setCursor("default");
   } else if (session.creationToolActive) {
     env.setCursor(session.readOnly ? "not-allowed" : "crosshair");

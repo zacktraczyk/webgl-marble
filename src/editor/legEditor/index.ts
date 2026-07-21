@@ -14,7 +14,11 @@ import {
   type EditorCameraControls,
   type EditorEnv,
 } from "./env";
-import { findWallEndpointTarget, type HandleTestDeps, type SnapDeps } from "./hitTest";
+import {
+  findWallEndpointTarget,
+  type HandleTestDeps,
+  type SnapDeps,
+} from "./hitTest";
 import {
   cancelGesture,
   handlePointerDown,
