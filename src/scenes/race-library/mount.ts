@@ -191,15 +191,17 @@ export const mountRaceLibrary = () => {
               minHeight: preview.clientHeight,
             }
           );
-          thumbnailTours.push(
-            attachThumbnailTour(
-              preview,
-              canvas,
-              previewFade,
-              previewScrollbar,
-              previewScrollThumb
-            )
-          );
+          if (race.legs.length > 1) {
+            thumbnailTours.push(
+              attachThumbnailTour(
+                preview,
+                canvas,
+                previewFade,
+                previewScrollbar,
+                previewScrollThumb
+              )
+            );
+          }
         });
       }
 
